@@ -1,0 +1,2 @@
+-- Seeding is handled by: npm run db:seed
+-- This file is intentionally empty — see supabase/scripts/seed.js

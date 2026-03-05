@@ -1,0 +1,54 @@
+# Dependencies
+node_modules
+
+# Nuxt build output
+.nuxt
+.output
+dist
+
+# NuxtHub local state
+.hub
+
+# Nuxt cache
+.cache
+
+# TypeScript build cache
+*.tsbuildinfo
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Logs
+logs
+*.log
+npm-debug.log*
+
+# Supabase CLI temp/local state
+supabase/.temp
+supabase/.branches
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea
+.vscode/
+
+# Claude Code — agent memory is ephemeral session state, not source
+.claude/agent-memory/
+
+.data
+
+# Playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+
+# Git worktrees
+.worktrees/
+
+.worktrees/ui-refactor/.data
