@@ -7,8 +7,10 @@ export function useAirlineOptions() {
 
   async function load() {
     loading.value = true
-    const { data } = await db.from('airlines').select('icao, name, alias').order('name')
-    options.value = (data ?? []).map(a => ({
+    const data = await fetchAllRows(db, 'airlines', q =>
+      q.select('icao, name, alias').order('name'),
+    )
+    options.value = data.map(a => ({
       label: a.alias ? `${a.alias} / ${a.name} (${a.icao})` : `${a.name} (${a.icao})`,
       value: a.icao,
     }))

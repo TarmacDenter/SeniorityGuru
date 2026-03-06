@@ -10,44 +10,35 @@ export const useSeniorityStore = defineStore('seniority', () => {
   const entriesError = ref<string | null>(null)
 
   async function fetchLists() {
-    // Call useDb() inside action, not at module level (Nuxt composable rule)
     const db = useDb()
 
     listsLoading.value = true
     listsError.value = null
 
-    const { data, error } = await db
-      .from('seniority_lists')
-      .select('*')
-      .order('effective_date', { ascending: false })
-
-    if (error) {
-      listsError.value = error.message
-    } else {
-      lists.value = data ?? []
+    try {
+      lists.value = await fetchAllRows(db, 'seniority_lists', q =>
+        q.select('*').order('effective_date', { ascending: false }),
+      )
+    } catch (e: any) {
+      listsError.value = e.message
     }
 
     listsLoading.value = false
   }
 
   async function fetchEntries(listId: string) {
-    // Call useDb() inside action, not at module level (Nuxt composable rule)
     const db = useDb()
 
     entriesLoading.value = true
     entriesError.value = null
     entries.value = []
 
-    const { data, error } = await db
-      .from('seniority_entries')
-      .select('*')
-      .eq('list_id', listId)
-      .order('seniority_number', { ascending: true })
-
-    if (error) {
-      entriesError.value = error.message
-    } else {
-      entries.value = data ?? []
+    try {
+      entries.value = await fetchAllRows(db, 'seniority_entries', q =>
+        q.select('*').eq('list_id', listId).order('seniority_number', { ascending: true }),
+      )
+    } catch (e: any) {
+      entriesError.value = e.message
     }
 
     entriesLoading.value = false
