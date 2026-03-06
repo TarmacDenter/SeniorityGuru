@@ -28,6 +28,7 @@ npm-debug.log*
 # Supabase CLI temp/local state
 supabase/.temp
 supabase/.branches
+supabase/snippets/
 
 # OS
 .DS_Store

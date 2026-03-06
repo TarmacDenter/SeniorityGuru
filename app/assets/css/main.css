@@ -27,12 +27,12 @@
   --ui-bg-muted: var(--color-navy-900);
   --ui-bg-elevated: var(--color-navy-800);
   --ui-bg-accented: var(--color-navy-700);
-  --ui-border: var(--ui-color-slate-700);
-  --ui-border-muted: color-mix(in srgb, var(--ui-color-slate-700) 50%, transparent);
-  --ui-text-dimmed: var(--ui-color-slate-500);
-  --ui-text-muted: var(--ui-color-slate-400);
-  --ui-text-toned: var(--ui-color-slate-300);
-  --ui-text: var(--ui-color-slate-200);
+  --ui-border: var(--color-slate-700);
+  --ui-border-muted: color-mix(in srgb, var(--color-slate-700) 50%, transparent);
+  --ui-text-dimmed: var(--color-slate-500);
+  --ui-text-muted: var(--color-slate-600);
+  --ui-text-toned: var(--color-slate-300);
+  --ui-text: var(--color-slate-200);
   --ui-text-highlighted: white;
 }
 

@@ -186,6 +186,7 @@ supabase db push        # push local migrations to remote
 - Server-only secrets (service key) only used in `server/` routes
 - Composables for shared data-fetching logic (e.g., `useSeniorityList()`)
 - NuxtUI components used for all UI primitives — no custom component duplicates what NuxtUI provides
+- **Theming**: always use Nuxt UI semantic tokens (`--ui-bg`, `--ui-text-muted`, `--ui-border`, etc.) — only use raw Tailwind utilities as an escape hatch when Nuxt UI semantics can't achieve what's needed. When referencing colors inside `--ui-*` overrides, use Tailwind's `--color-*` variables (e.g., `var(--color-slate-200)`), NOT `--ui-color-*`
 - TypeScript strict mode; define DB types from Supabase generated types (`supabase gen types typescript`)
 
 ### Validation & DTOs

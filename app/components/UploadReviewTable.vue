@@ -8,7 +8,62 @@
       :pagination-options="{ getPaginationRowModel: getPaginationRowModel() }"
       class="w-full"
       :ui="{ tr: 'data-[error=true]:bg-error/10' }"
-    />
+    >
+      <template v-for="field in editableFields" :key="field" #[`${field}-cell`]="{ row }">
+        <div class="cursor-pointer" @click="startEditing(row.index, field)">
+          <template v-if="isEditing(row.index, field)">
+            <UInputNumber
+              v-if="field === 'seniority_number'"
+              :model-value="(row.original[field] as number | undefined)"
+              size="xs"
+              class="w-full"
+              :color="rowErrors.has(row.index) ? 'error' : undefined"
+              autofocus
+              @update:model-value="(v: number | null) => emit('updateCell', row.index, field, v ?? 0)"
+              @blur="stopEditing"
+              @keydown.enter="stopEditing"
+              @keydown.escape="stopEditing"
+            />
+            <UInput
+              v-else
+              :model-value="String(row.original[field] ?? '')"
+              size="xs"
+              class="w-full"
+              :color="rowErrors.has(row.index) ? 'error' : undefined"
+              autofocus
+              @update:model-value="(v: string) => emit('updateCell', row.index, field, v)"
+              @blur="stopEditing"
+              @keydown.enter="stopEditing"
+              @keydown.escape="stopEditing"
+            />
+          </template>
+          <span v-else class="text-sm" :class="rowErrors.has(row.index) ? 'text-error' : ''">
+            {{ row.original[field] ?? '' }}
+          </span>
+        </div>
+      </template>
+
+      <template #errors-cell="{ row }">
+        <UIcon
+          v-if="rowErrors.has(row.index)"
+          name="i-lucide-alert-triangle"
+          class="text-error"
+          :title="rowErrors.get(row.index)?.join('\n')"
+        />
+      </template>
+
+      <template #actions-cell="{ row }">
+        <UButton
+          icon="i-lucide-trash-2"
+          color="error"
+          variant="ghost"
+          size="xs"
+          aria-label="Delete row"
+          @click="emit('deleteRow', row.index)"
+        />
+      </template>
+    </UTable>
+
     <div v-if="pageCount > 1" class="flex justify-center">
       <UPagination
         v-model:page="currentPage"
@@ -21,7 +76,6 @@
 </template>
 
 <script setup lang="ts">
-import { h, resolveComponent } from 'vue'
 import { getPaginationRowModel } from '@tanstack/vue-table'
 import type { SeniorityEntry } from '#shared/schemas/seniority-list'
 import type { TableColumn } from '@nuxt/ui'
@@ -45,66 +99,34 @@ const emit = defineEmits<{
   deleteRow: [rowIndex: number]
 }>()
 
-function makeEditableCell(field: keyof SeniorityEntry) {
-  return ({ row }: { row: { original: Partial<SeniorityEntry>; index: number } }) => {
-    const value = row.original[field]
-    const rowIndex = row.index
-    const hasError = props.rowErrors.has(rowIndex)
-    const isNumber = field === 'seniority_number'
-    const componentName = isNumber ? 'UInputNumber' : 'UInput'
+const editingCell = ref<{ row: number; field: string } | null>(null)
 
-    return h(resolveComponent(componentName), {
-      id: `cell-${field}-${rowIndex}`,
-      name: `${field}-${rowIndex}`,
-      modelValue: value ?? (isNumber ? undefined : ''),
-      size: 'xs',
-      class: 'w-full',
-      color: hasError ? 'error' : undefined,
-      'onUpdate:modelValue': (newVal: string | number | null) => {
-        const parsed = isNumber
-          ? (typeof newVal === 'number' ? newVal : parseInt(String(newVal ?? ''), 10))
-          : String(newVal ?? '')
-        emit('updateCell', rowIndex, field, parsed)
-      },
-    })
-  }
+const editableFields: (keyof SeniorityEntry)[] = [
+  'seniority_number', 'employee_number', 'name', 'seat', 'base', 'fleet', 'hire_date', 'retire_date',
+]
+
+function isEditing(rowIndex: number, field: string) {
+  return editingCell.value?.row === rowIndex && editingCell.value?.field === field
+}
+
+function startEditing(rowIndex: number, field: string) {
+  editingCell.value = { row: rowIndex, field }
+}
+
+function stopEditing() {
+  editingCell.value = null
 }
 
 const columns: TableColumn<Partial<SeniorityEntry>>[] = [
-  { accessorKey: 'seniority_number', header: 'Sen #', cell: makeEditableCell('seniority_number') },
-  { accessorKey: 'employee_number', header: 'Emp #', cell: makeEditableCell('employee_number') },
-  { accessorKey: 'name', header: 'Name', cell: makeEditableCell('name') },
-  { accessorKey: 'seat', header: 'Seat', cell: makeEditableCell('seat') },
-  { accessorKey: 'base', header: 'Base', cell: makeEditableCell('base') },
-  { accessorKey: 'fleet', header: 'Fleet', cell: makeEditableCell('fleet') },
-  { accessorKey: 'hire_date', header: 'Hire Date', cell: makeEditableCell('hire_date') },
-  { accessorKey: 'retire_date', header: 'Retire Date', cell: makeEditableCell('retire_date') },
-  {
-    id: 'errors',
-    header: '',
-    cell: ({ row }) => {
-      const errs = props.rowErrors.get(row.index)
-      if (!errs) return null
-      return h(resolveComponent('UIcon'), {
-        name: 'i-lucide-alert-triangle',
-        class: 'text-error',
-        title: errs.join('\n'),
-      })
-    },
-  },
-  {
-    id: 'actions',
-    header: '',
-    cell: ({ row }) => {
-      return h(resolveComponent('UButton'), {
-        icon: 'i-lucide-trash-2',
-        color: 'error',
-        variant: 'ghost',
-        size: 'xs',
-        'aria-label': 'Delete row',
-        onClick: () => emit('deleteRow', row.index),
-      })
-    },
-  },
+  { accessorKey: 'seniority_number', header: 'Sen #' },
+  { accessorKey: 'employee_number', header: 'Emp #' },
+  { accessorKey: 'name', header: 'Name' },
+  { accessorKey: 'seat', header: 'Seat' },
+  { accessorKey: 'base', header: 'Base' },
+  { accessorKey: 'fleet', header: 'Fleet' },
+  { accessorKey: 'hire_date', header: 'Hire Date' },
+  { accessorKey: 'retire_date', header: 'Retire Date' },
+  { id: 'errors', header: '' },
+  { id: 'actions', header: '' },
 ]
 </script>

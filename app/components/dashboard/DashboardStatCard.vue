@@ -15,10 +15,10 @@
 
 <script setup lang="ts">
 defineProps<{
-  label: string
-  value: string
-  trend?: string
-  trendUp?: boolean
-  icon?: string
-}>()
+  label: string;
+  value: string;
+  trend?: string;
+  trendUp?: boolean;
+  icon?: string;
+}>();
 </script>
