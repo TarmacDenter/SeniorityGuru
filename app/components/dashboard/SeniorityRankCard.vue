@@ -8,7 +8,10 @@
         <div>
           <p class="text-sm text-muted">Your Seniority Number</p>
           <p class="text-4xl font-bold font-mono text-highlighted">
-            #{{ rank.seniorityNumber.toLocaleString() }}
+            #{{ rank.adjustedSeniority?.toLocaleString() ?? rank.seniorityNumber.toLocaleString() }}
+          </p>
+          <p v-if="rank.adjustedSeniority && rank.adjustedSeniority !== rank.seniorityNumber" class="text-xs text-muted">
+            List #{{ rank.seniorityNumber.toLocaleString() }} · adjusted for retirements
           </p>
         </div>
       </div>
@@ -43,6 +46,7 @@
 defineProps<{
   rank: {
     seniorityNumber: number
+    adjustedSeniority?: number
     base: string
     seat: string
     fleet: string
