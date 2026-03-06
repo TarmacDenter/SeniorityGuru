@@ -211,12 +211,12 @@ shared/
 
 ## Git Workflow
 
-- **Strategy**: GitFlow — see [WORKFLOW.md](WORKFLOW.md) for full reference
-- **Branches**: `main` (production), `develop` (integration), `feature/*`, `release/vX.Y.Z`, `hotfix/*`
+- **Strategy**: Linear develop with rebase — see [WORKFLOW.md](WORKFLOW.md) for full reference
+- **Branches**: `main` (production/releases), `develop` (integration), `feature/*`, `release/vX.Y.Z`, `hotfix/*`
 - **Never** commit directly to `main` or `develop`
 - **Branch from**: `develop` for features; `main` for hotfixes
-- **Merge via**: squash merge only on GitHub; PR title becomes the squash commit message
-- **Releases**: semantic-release runs automatically on push to `main`
+- **Feature integration**: rebase feature branches onto `develop`, then fast-forward merge (linear history)
+- **Releases**: squash merge `develop` → `main`; semantic-release runs automatically on push to `main`
 
 ### Commit Message Format — Conventional Commits
 
