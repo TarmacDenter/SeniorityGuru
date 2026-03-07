@@ -74,7 +74,7 @@ describe('ChangePasswordSchema', () => {
     })
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.issues[0].path).toContain('confirmPassword')
+      expect(result.error.issues[0]!.path).toContain('confirmPassword')
     }
   })
 
