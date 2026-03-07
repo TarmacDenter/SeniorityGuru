@@ -1,9 +1,13 @@
 <template>
-  <div class="max-w-2xl mx-auto space-y-6">
-    <h1 class="text-2xl font-bold">Settings</h1>
+  <UDashboardPanel>
+    <template #header>
+      <SeniorityNavbar title="Settings" />
+    </template>
 
-    <!-- Profile -->
-    <UCard>
+    <template #body>
+      <div class="max-w-2xl mx-auto space-y-6 p-4 sm:p-6">
+        <!-- Profile -->
+        <UCard>
       <template #header>
         <h2 class="text-lg font-semibold">Profile</h2>
       </template>
@@ -60,7 +64,9 @@
         <UButton type="submit" :loading="passwordLoading">Change password</UButton>
       </UForm>
     </UCard>
-  </div>
+      </div>
+    </template>
+  </UDashboardPanel>
 </template>
 
 <script setup lang="ts">
