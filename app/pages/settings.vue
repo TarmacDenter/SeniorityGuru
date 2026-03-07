@@ -45,10 +45,26 @@
       </UForm>
     </UCard>
 
+    <!-- Email -->
+    <UCard>
+      <template #header>
+        <h2 class="text-lg font-semibold">Email</h2>
+      </template>
+
+      <p class="text-sm text-muted mb-4">Current email: <strong>{{ user?.email }}</strong></p>
+
+      <UForm :schema="ChangeEmailSchema" :state="emailState" class="space-y-4" @submit="onChangeEmail">
+        <UFormField label="New email address" name="newEmail">
+          <UInput v-model="emailState.newEmail" type="email" placeholder="new@example.com" class="w-full" />
+        </UFormField>
+        <UButton type="submit" :loading="emailLoading">Update email</UButton>
+      </UForm>
+    </UCard>
+
     <!-- Security -->
     <UCard>
       <template #header>
-        <h2 class="text-lg font-semibold">Security</h2>
+        <h2 class="text-lg font-semibold">Password</h2>
       </template>
 
       <UForm :schema="ChangePasswordSchema" :state="passwordState" class="space-y-4" @submit="onChangePassword">
@@ -70,8 +86,8 @@
 </template>
 
 <script setup lang="ts">
-import { UpdateProfileSchema, UpdatePreferencesSchema, ChangePasswordSchema } from '#shared/schemas/settings'
-import type { UpdateProfileState, UpdatePreferencesState, ChangePasswordState } from '#shared/schemas/settings'
+import { UpdateProfileSchema, UpdatePreferencesSchema, ChangePasswordSchema, ChangeEmailSchema } from '#shared/schemas/settings'
+import type { UpdateProfileState, UpdatePreferencesState, ChangePasswordState, ChangeEmailState } from '#shared/schemas/settings'
 import { normalizeEmployeeNumber } from '#shared/schemas/seniority-list'
 import { useUserStore } from '~/stores/user'
 
@@ -143,6 +159,26 @@ async function onSavePrefs() {
 
   await userStore.fetchProfile()
   toast.add({ title: 'Preferences saved', color: 'success' })
+}
+
+// --- Email form ---
+const emailLoading = ref(false)
+const emailState = reactive<ChangeEmailState>({
+  newEmail: '',
+})
+
+async function onChangeEmail() {
+  emailLoading.value = true
+  const { error } = await supabase.auth.updateUser({ email: emailState.newEmail })
+  emailLoading.value = false
+
+  if (error) {
+    toast.add({ title: error.message, color: 'error' })
+    return
+  }
+
+  emailState.newEmail = ''
+  toast.add({ title: 'Confirmation link sent to your new email address', color: 'success' })
 }
 
 // --- Password form ---

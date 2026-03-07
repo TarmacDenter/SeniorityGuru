@@ -19,3 +19,8 @@ export const ChangePasswordSchema = z.object({
   message: 'Passwords do not match', path: ['confirmPassword'],
 })
 export type ChangePasswordState = z.infer<typeof ChangePasswordSchema>
+
+export const ChangeEmailSchema = z.object({
+  newEmail: z.string().email('Please enter a valid email address'),
+})
+export type ChangeEmailState = z.infer<typeof ChangeEmailSchema>

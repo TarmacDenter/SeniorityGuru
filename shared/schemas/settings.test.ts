@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect } from 'vitest'
-import { UpdateProfileSchema, UpdatePreferencesSchema, ChangePasswordSchema } from './settings'
+import { UpdateProfileSchema, UpdatePreferencesSchema, ChangePasswordSchema, ChangeEmailSchema } from './settings'
 
 describe('UpdateProfileSchema', () => {
   it('accepts valid profile data', () => {
@@ -93,6 +93,23 @@ describe('ChangePasswordSchema', () => {
       password: 'newpass123',
       confirmPassword: 'newpass123',
     })
+    expect(result.success).toBe(false)
+  })
+})
+
+describe('ChangeEmailSchema', () => {
+  it('accepts a valid email', () => {
+    const result = ChangeEmailSchema.safeParse({ newEmail: 'new@example.com' })
+    expect(result.success).toBe(true)
+  })
+
+  it('rejects an invalid email', () => {
+    const result = ChangeEmailSchema.safeParse({ newEmail: 'not-an-email' })
+    expect(result.success).toBe(false)
+  })
+
+  it('rejects an empty string', () => {
+    const result = ChangeEmailSchema.safeParse({ newEmail: '' })
     expect(result.success).toBe(false)
   })
 })
