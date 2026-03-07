@@ -17,25 +17,27 @@
 </template>
 
 <script setup lang="ts">
-import type { ChartData } from 'chart.js';
+import type { ChartData } from 'chart.js'
 
 const props = defineProps<{
-  data: { labels: string[]; data: number[]; };
-}>();
+  data: { labels: string[]; data: number[] }
+}>()
+
+const { colors } = useChartTheme()
 
 const chartData = computed<ChartData<'line'>>(() => ({
   labels: props.data.labels,
   datasets: [{
     label: 'Seniority %',
     data: props.data.data,
-    borderColor: '#3b82f6',
-    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+    borderColor: colors.amber,
+    backgroundColor: colors.amberLight,
     fill: true,
     tension: 0.3,
     pointRadius: 0,
     pointHitRadius: 10,
   }],
-}));
+}))
 
 const chartOptions = {
   interaction: { mode: 'index' as const, intersect: false },

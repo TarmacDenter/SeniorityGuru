@@ -11,9 +11,16 @@
     <template #body>
       <!-- Overview tab -->
       <div v-if="activeTab === 'overview'" class="p-4 sm:p-6 space-y-6">
-        <!-- Loading state -->
-        <div v-if="loading" class="space-y-4 py-6">
-          <USkeleton v-for="i in 4" :key="i" class="h-24 w-full" />
+        <!-- Loading state — layout-matching skeletons -->
+        <div v-if="loading" class="space-y-6 py-6">
+          <USkeleton class="h-32 w-full" />
+          <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <USkeleton v-for="i in 4" :key="i" class="h-24" />
+          </div>
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <USkeleton class="lg:col-span-2 h-[320px]" />
+            <USkeleton class="h-[320px]" />
+          </div>
         </div>
 
         <!-- Empty: no seniority list -->
@@ -42,21 +49,49 @@
           />
 
           <!-- Rank card (only when user found) -->
-          <DashboardSeniorityRankCard v-if="userFound" :rank="rankCard" />
+          <DashboardSeniorityRankCard
+            v-if="userFound"
+            :rank="rankCard"
+            class="dashboard-enter"
+          />
 
           <!-- Stats grid (always when data exists) -->
-          <DashboardStatsGrid :stats="stats" />
+          <DashboardStatsGrid
+            :stats="stats"
+            class="dashboard-enter"
+            style="animation-delay: 80ms"
+          />
 
           <!-- Trajectory + Base Status (only when user found) -->
-          <div v-if="userFound" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div class="lg:col-span-2">
-              <DashboardTrajectoryChart :data="trajectoryData" />
+          <template v-if="userFound">
+            <USeparator
+              label="Your Trajectory"
+              :ui="{ label: 'font-mono text-xs uppercase tracking-widest' }"
+              class="dashboard-enter"
+              style="animation-delay: 140ms"
+            />
+            <div
+              class="grid grid-cols-1 lg:grid-cols-3 gap-6 dashboard-enter"
+              style="animation-delay: 160ms"
+            >
+              <div class="lg:col-span-2">
+                <DashboardTrajectoryChart :data="trajectoryData" />
+              </div>
+              <DashboardBaseStatusTable :data="baseStatusData" />
             </div>
-            <DashboardBaseStatusTable :data="baseStatusData" />
-          </div>
+          </template>
 
           <!-- Retirement Comparison + Seniority Comparison -->
-          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <USeparator
+            label="Projections"
+            :ui="{ label: 'font-mono text-xs uppercase tracking-widest' }"
+            class="dashboard-enter"
+            style="animation-delay: 220ms"
+          />
+          <div
+            class="grid grid-cols-1 lg:grid-cols-2 gap-6 dashboard-enter"
+            style="animation-delay: 240ms"
+          >
             <DashboardRetirementComparison
               :quals="quals"
               :compute-projection="computeRetirementProjection"
@@ -72,7 +107,16 @@
           </div>
 
           <!-- Aggregate Stats + Recent Lists -->
-          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <USeparator
+            label="Fleet Overview"
+            :ui="{ label: 'font-mono text-xs uppercase tracking-widest' }"
+            class="dashboard-enter"
+            style="animation-delay: 300ms"
+          />
+          <div
+            class="grid grid-cols-1 lg:grid-cols-3 gap-6 dashboard-enter"
+            style="animation-delay: 320ms"
+          >
             <div class="lg:col-span-2">
               <DashboardAggregateStatsGrid :data="aggregateStats" />
             </div>

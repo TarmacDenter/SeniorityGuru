@@ -1,5 +1,9 @@
 <template>
-  <UCard>
+  <UCard
+    :ui="{
+      root: 'border-l-4 border-l-amber-500',
+    }"
+  >
     <div class="flex flex-col sm:flex-row sm:items-center gap-4">
       <div class="flex items-center gap-4 flex-1">
         <div class="flex items-center justify-center size-16 rounded-xl bg-primary/10">
@@ -37,18 +41,24 @@
         <span>TOP %</span>
         <span class="font-mono">{{ rank.percentile }}%</span>
       </div>
-      <div class="w-full h-2 rounded-full bg-(--ui-bg-accented)">
-        <div
-          class="h-full rounded-full bg-primary"
-          :style="{ width: `${rank.percentile}%` }"
-        />
-      </div>
+      <UProgress
+        :model-value="animatedPercentile"
+        :max="100"
+        size="sm"
+        :ui="{
+          indicator: 'bg-gradient-to-r from-amber-500 to-cyan-500',
+        }"
+      />
     </div>
+
+    <p v-if="yearsOfService !== null" class="text-xs text-muted mt-2">
+      {{ yearsOfService }} {{ yearsOfService === 1 ? 'year' : 'years' }} of service
+    </p>
   </UCard>
 </template>
 
 <script setup lang="ts">
-defineProps<{
+const props = defineProps<{
   rank: {
     seniorityNumber: number
     adjustedSeniority?: number
@@ -59,4 +69,20 @@ defineProps<{
     hireDate: string
   }
 }>()
+
+const animatedPercentile = ref(0)
+
+const yearsOfService = computed(() => {
+  if (!props.rank.hireDate) return null
+  const hire = new Date(props.rank.hireDate)
+  const now = new Date()
+  const years = Math.floor((now.getTime() - hire.getTime()) / (365.25 * 24 * 60 * 60 * 1000))
+  return years >= 0 ? years : null
+})
+
+onMounted(() => {
+  requestAnimationFrame(() => {
+    animatedPercentile.value = props.rank.percentile
+  })
+})
 </script>

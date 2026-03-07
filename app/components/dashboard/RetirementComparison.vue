@@ -32,7 +32,6 @@ import type { Tables } from '#shared/types/database'
 
 type SeniorityEntry = Tables<'seniority_entries'>
 type FilterFn = (entry: SeniorityEntry) => boolean
-
 type Qual = { seat: string; fleet: string; base: string; label: string }
 
 const props = defineProps<{
@@ -40,57 +39,13 @@ const props = defineProps<{
   computeProjection: (filterFn: FilterFn) => { labels: string[]; data: number[]; filteredTotal: number }
 }>()
 
+const { colors } = useChartTheme()
+const qualsRef = computed(() => props.quals)
+const { scopeOptions, makeFilter } = useScopeFilter(qualsRef)
+
 const currentScope = ref('Company-wide')
 const compareScope = ref('')
 const showPercentage = ref(false)
-
-const scopeOptions = computed(() => {
-  const opts = ['Company-wide']
-
-  // Individual bases, seats, fleets (deduplicated from quals)
-  const bases = new Set<string>()
-  const seats = new Set<string>()
-  const fleets = new Set<string>()
-  for (const q of props.quals) {
-    bases.add(q.base)
-    seats.add(q.seat)
-    fleets.add(q.fleet)
-  }
-  for (const base of Array.from(bases).sort()) opts.push(`Base: ${base}`)
-  for (const seat of Array.from(seats).sort()) opts.push(`Seat: ${seat}`)
-  for (const fleet of Array.from(fleets).sort()) opts.push(`Fleet: ${fleet}`)
-
-  // Actual qual combos only
-  for (const q of props.quals) opts.push(q.label)
-
-  return opts
-})
-
-function makeFilter(scope: string): FilterFn {
-  if (!scope || scope === 'Company-wide') return () => true
-
-  if (scope.startsWith('Base: ')) {
-    const base = scope.replace('Base: ', '')
-    return (e) => e.base === base
-  }
-  if (scope.startsWith('Seat: ')) {
-    const seat = scope.replace('Seat: ', '')
-    return (e) => e.seat === seat
-  }
-  if (scope.startsWith('Fleet: ')) {
-    const fleet = scope.replace('Fleet: ', '')
-    return (e) => e.fleet === fleet
-  }
-
-  // seat/fleet/base combo
-  const parts = scope.split('/')
-  if (parts.length === 3) {
-    const [seat, fleet, base] = parts
-    return (e) => e.seat === seat && e.fleet === fleet && e.base === base
-  }
-
-  return () => true
-}
 
 function toPercentages(data: number[], filteredTotal: number): number[] {
   let remaining = filteredTotal
@@ -111,7 +66,7 @@ const chartData = computed<ChartData<'bar'>>(() => {
     label: currentScope.value || 'Company-wide',
     data: currentData,
     backgroundColor: 'rgba(245, 158, 11, 0.6)',
-    borderColor: '#f59e0b',
+    borderColor: colors.amber,
     borderWidth: 1,
     borderRadius: 4,
   }]
@@ -125,8 +80,8 @@ const chartData = computed<ChartData<'bar'>>(() => {
     datasets.push({
       label: compareScope.value,
       data: compareData,
-      backgroundColor: 'rgba(59, 130, 246, 0.5)',
-      borderColor: '#3b82f6',
+      backgroundColor: colors.cyanLight,
+      borderColor: colors.cyan,
       borderWidth: 1,
       borderRadius: 4,
     })
