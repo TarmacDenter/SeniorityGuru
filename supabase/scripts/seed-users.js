@@ -13,7 +13,7 @@ if (!url.includes('127.0.0.1') && !url.includes('localhost')) {
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_KEY
+  process.env.SUPABASE_SECRET_KEY
 )
 
 export const ADMIN_ID    = '00000000-0000-0000-0000-000000000001'

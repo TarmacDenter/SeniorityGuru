@@ -97,7 +97,7 @@ Both `useSupabaseUser()` (client) and `serverSupabaseUser()` (server) return **J
 ```bash
 SUPABASE_URL=
 SUPABASE_KEY=           # anon/public key
-SUPABASE_SERVICE_KEY=   # server-side only, never expose to client
+SUPABASE_SECRET_KEY=    # server-side only, never expose to client
 ```
 
 ---

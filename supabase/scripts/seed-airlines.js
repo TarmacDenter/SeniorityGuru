@@ -12,7 +12,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url))
 
 const supabase = createClient(
   /** @type {string} */ (process.env.SUPABASE_URL),
-  /** @type {string} */ (process.env.SUPABASE_SERVICE_KEY)
+  /** @type {string} */ (process.env.SUPABASE_SECRET_KEY)
 )
 
 export async function seedAirlines() {

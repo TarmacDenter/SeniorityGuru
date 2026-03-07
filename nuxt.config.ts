@@ -25,7 +25,7 @@ export default defineNuxtConfig({
     // D1/KV/Blob/Cache all default to false; no CF primitives needed
   },
   runtimeConfig: {
-    supabaseServiceKey: process.env.SUPABASE_SERVICE_KEY
+    supabaseSecretKey: process.env.SUPABASE_SECRET_KEY
   },
   routeRules: {
     // Auth-protected dashboard pages: no SSR needed (user-specific, not indexable)

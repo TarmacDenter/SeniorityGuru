@@ -19,6 +19,7 @@
     "db:reset": "supabase db reset && npm run db:types",
     "db:types": "supabase gen types typescript --local | grep -v '^Connecting' > shared/types/database.ts",
     "db:seed-airlines": "node --env-file=.env supabase/scripts/seed-airlines.js",
+    "db:seed-airlines:prod": "node --env-file=.env.prod supabase/scripts/seed-airlines.js",
     "db:seed-users": "node --env-file=.env supabase/scripts/seed-users.js",
     "db:seed-seniority": "node --env-file=.env supabase/scripts/seed-seniority.js",
     "db:seed-dev": "node --env-file=.env supabase/scripts/seed-dev.js",
