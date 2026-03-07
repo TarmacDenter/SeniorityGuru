@@ -2,7 +2,7 @@
   <UCard>
     <template #header>
       <div class="flex items-center justify-between">
-        <h3 class="font-semibold text-highlighted">Seniority Trajectory</h3>
+        <h3 class="font-semibold text-highlighted">Company Seniority Trajectory</h3>
         <UBadge color="primary" variant="subtle" size="sm">Projected</UBadge>
       </div>
     </template>
@@ -17,16 +17,16 @@
 </template>
 
 <script setup lang="ts">
-import type { ChartData, ChartOptions } from 'chart.js'
+import type { ChartData } from 'chart.js';
 
 const props = defineProps<{
-  data: { labels: string[]; data: number[] }
-}>()
+  data: { labels: string[]; data: number[]; };
+}>();
 
 const chartData = computed<ChartData<'line'>>(() => ({
   labels: props.data.labels,
   datasets: [{
-    label: 'Seniority Number',
+    label: 'Seniority %',
     data: props.data.data,
     borderColor: '#3b82f6',
     backgroundColor: 'rgba(59, 130, 246, 0.1)',
@@ -35,11 +35,41 @@ const chartData = computed<ChartData<'line'>>(() => ({
     pointRadius: 0,
     pointHitRadius: 10,
   }],
-}))
+}));
 
-const chartOptions: ChartOptions<'line'> = {
-  scales: {
-    y: { reverse: true, title: { display: true, text: 'Seniority #' } },
+const chartOptions = {
+  interaction: { mode: 'index' as const, intersect: false },
+  plugins: {
+    tooltip: {
+      callbacks: {
+        title(items: any[]) {
+          const label = items[0]?.label
+          if (!label) return ''
+          const d = new Date(label)
+          return d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+        },
+        label(item: any) {
+          return `${item.dataset.label}: ${item.parsed.y}%`
+        },
+      },
+    },
   },
-}
+  scales: {
+    x: {
+      ticks: {
+        callback(this: any, _value: any, index: number) {
+          const label = props.data.labels[index];
+          if (!label) return '';
+          return new Date(label).getFullYear().toString();
+        },
+      },
+    },
+    y: {
+      min: 0,
+      max: 100,
+      title: { display: true, text: 'Seniority %' },
+      ticks: { callback: (v: any) => `${v}%` },
+    },
+  },
+};
 </script>

@@ -27,51 +27,55 @@ export function countRetiredAbove(
 }
 
 /**
- * Generate time points: monthly for first 5 years from startDate, yearly after, until endDate.
+ * Generate time points: yearly intervals from startDate until endDate.
  */
 export function generateTimePoints(startDate: Date, endDate: Date): Date[] {
   const points: Date[] = []
-  const fiveYearsOut = new Date(startDate)
-  fiveYearsOut.setFullYear(fiveYearsOut.getFullYear() + 5)
-
-  // Monthly for first 5 years
   const current = new Date(startDate)
-  while (current <= endDate && current <= fiveYearsOut) {
-    points.push(new Date(current))
-    current.setMonth(current.getMonth() + 1)
-  }
 
-  // Yearly after 5 years
-  if (current <= endDate) {
-    // Align to next year boundary from fiveYearsOut
-    const yearlyStart = new Date(fiveYearsOut)
-    yearlyStart.setFullYear(yearlyStart.getFullYear() + 1)
-    yearlyStart.setMonth(startDate.getMonth())
-    yearlyStart.setDate(startDate.getDate())
-    const yearly = new Date(yearlyStart)
-    while (yearly <= endDate) {
-      points.push(new Date(yearly))
-      yearly.setFullYear(yearly.getFullYear() + 1)
-    }
+  // Always use yearly intervals
+  while (current <= endDate) {
+    points.push(new Date(current))
+    current.setFullYear(current.getFullYear() + 1)
   }
 
   return points
 }
 
 /**
- * Build trajectory: for each time point, compute adjusted rank.
+ * Build trajectory: for each time point, compute rank within the (optionally filtered) set.
+ * Rank = number of non-retired pilots ahead of user in the filtered set + 1.
  */
 export function buildTrajectory(
   entries: SeniorityEntry[],
   userSenNum: number,
   timePoints: Date[],
   filterFn?: FilterFn,
-): { date: string; rank: number }[] {
+): { date: string; rank: number; percentile: number }[] {
+  // Pre-filter entries to the category
+  const filtered = filterFn ? entries.filter(filterFn) : entries
+  const totalInCategory = filtered.length
+  // Count pilots ahead of user in the filtered set (lower seniority_number)
+  const aheadInCategory = filtered.filter((e) => e.seniority_number < userSenNum)
+  const initialRank = aheadInCategory.length + 1
+
   return timePoints.map((tp) => {
-    const retired = countRetiredAbove(entries, userSenNum, tp, filterFn)
+    // Count how many of those ahead have retired by this time point
+    let retiredAhead = 0
+    for (const e of aheadInCategory) {
+      if (!e.retire_date) continue
+      if (new Date(e.retire_date) <= tp) retiredAhead++
+    }
+    const rank = initialRank - retiredAhead
+    // Use static denominator (initial category size) to avoid wild swings as pool shrinks
+    // Invert: 100% = most senior (#1), 0% = most junior (last)
+    const percentile = totalInCategory > 0
+      ? Math.round(((totalInCategory - rank + 1) / totalInCategory) * 1000) / 10
+      : 0
     return {
-      date: tp.toISOString().split('T')[0],
-      rank: userSenNum - retired,
+      date: tp.toISOString().split('T')[0]!,
+      rank,
+      percentile,
     }
   })
 }
@@ -122,7 +126,7 @@ export function useDashboardStats() {
     const today = new Date()
     const retired = countRetiredAbove(entries, entry.seniority_number, today)
     const adjustedSeniority = entry.seniority_number - retired
-    const percentile = total > 0 ? ((total - adjustedSeniority + 1) / total) * 100 : 0
+    const percentile = total > 0 ? (adjustedSeniority / total) * 100 : 0
 
     return {
       seniorityNumber: entry.seniority_number,
@@ -141,21 +145,34 @@ export function useDashboardStats() {
     const lists = seniorityStore.lists
     const currentYear = new Date().getFullYear()
 
-    const retirementsThisYear = entries.filter((e) => {
+    const entry = userEntry.value
+
+    const retiringThisYear = entries.filter((e) => {
       if (!e.retire_date) return false
       return new Date(e.retire_date).getFullYear() === currentYear
-    }).length
+    })
+    const retirementsThisYear = retiringThisYear.length
 
-    // Compute base rank for user
+    // Count how many retiring this year are senior to (ahead of) the user
+    let retiringSeniorToMe = 0
+    if (entry) {
+      retiringSeniorToMe = retiringThisYear.filter(
+        (e) => e.seniority_number < entry.seniority_number,
+      ).length
+    }
+
+    // Compute rank for user's seat/fleet/base combo
     let baseRankValue = '--'
-    const entry = userEntry.value
-    if (entry && entry.base) {
-      const baseEntries = entries.filter((e) => e.base === entry.base)
-      const rawRank = baseEntries.filter((e) => e.seniority_number < entry.seniority_number).length + 1
+    let baseRankLabel = 'Your Base Rank'
+    if (entry && entry.base && entry.seat && entry.fleet) {
+      const comboFilter: FilterFn = (e) =>
+        e.seat === entry.seat && e.fleet === entry.fleet && e.base === entry.base
+      const comboEntries = entries.filter(comboFilter)
+      const rawRank = comboEntries.filter((e) => e.seniority_number < entry.seniority_number).length + 1
       const today = new Date()
-      const baseFilter: FilterFn = (e) => e.base === entry.base
-      const retired = countRetiredAbove(entries, entry.seniority_number, today, baseFilter)
+      const retired = countRetiredAbove(entries, entry.seniority_number, today, comboFilter)
       baseRankValue = formatNumber(rawRank - retired)
+      baseRankLabel = `${entry.seat}/${entry.fleet}/${entry.base}`
     }
 
     return [
@@ -169,12 +186,12 @@ export function useDashboardStats() {
       {
         label: 'Retirements This Year',
         value: formatNumber(retirementsThisYear),
-        trend: undefined as string | undefined,
-        trendUp: undefined as boolean | undefined,
+        trend: entry ? `${formatNumber(retiringSeniorToMe)} senior to you` : undefined as string | undefined,
+        trendUp: retiringSeniorToMe > 0 ? true : undefined as boolean | undefined,
         icon: 'i-lucide-calendar-clock',
       },
       {
-        label: 'Your Base Rank',
+        label: baseRankLabel,
         value: baseRankValue,
         trend: undefined as string | undefined,
         trendUp: undefined as boolean | undefined,
@@ -211,16 +228,25 @@ export function useDashboardStats() {
       const comboEntries = entries.filter(filterFn)
       const total = comboEntries.length
 
+      // Count already-retired pilots in this combo (retired as of today)
+      const retiredInCombo = comboEntries.filter((e) => {
+        if (!e.retire_date) return false
+        return new Date(e.retire_date) <= today
+      }).length
+      const adjustedTotal = total - retiredInCombo
+
       let rank = 0
       let adjustedRank = 0
       let percentile = 0
+      let adjustedPercentile = 0
       let isUserCurrent = false
 
       if (entry) {
         rank = comboEntries.filter((e) => e.seniority_number < entry.seniority_number).length + 1
         const retired = countRetiredAbove(entries, entry.seniority_number, today, filterFn)
         adjustedRank = rank - retired
-        percentile = total > 0 ? Math.round(((total - adjustedRank + 1) / total) * 100 * 10) / 10 : 0
+        percentile = total > 0 ? Math.round((rank / total) * 100 * 10) / 10 : 0
+        adjustedPercentile = adjustedTotal > 0 ? Math.round((adjustedRank / adjustedTotal) * 100 * 10) / 10 : 0
         isUserCurrent = entry.base === combo.base && entry.seat === combo.seat && entry.fleet === combo.fleet
       }
 
@@ -231,7 +257,9 @@ export function useDashboardStats() {
         rank,
         adjustedRank,
         total,
+        adjustedTotal,
         percentile,
+        adjustedPercentile,
         isUserCurrent,
       }
     })
@@ -252,7 +280,7 @@ export function useDashboardStats() {
       endDate = new Date(entry.retire_date)
     } else {
       endDate = new Date(today)
-      endDate.setFullYear(endDate.getFullYear() + 10)
+      endDate.setFullYear(endDate.getFullYear() + 30)
     }
 
     const timePoints = generateTimePoints(today, endDate)
@@ -260,18 +288,21 @@ export function useDashboardStats() {
 
     return {
       labels: trajectory.map((t) => t.date),
-      data: trajectory.map((t) => t.rank),
+      data: trajectory.map((t) => t.percentile),
     }
   })
 
   // --- RETIREMENT PROJECTIONS ---
-  function computeRetirementProjection(filterFn: FilterFn = () => true): { labels: string[]; data: number[] } {
+  function computeRetirementProjection(filterFn: FilterFn = () => true): { labels: string[]; data: number[]; filteredTotal: number } {
     const entry = userEntry.value
     const entries = seniorityStore.entries
 
     if (!entry) {
-      return { labels: [], data: [] }
+      return { labels: [], data: [], filteredTotal: 0 }
     }
+
+    const filteredEntries = entries.filter(filterFn)
+    const filteredTotal = filteredEntries.length
 
     const today = new Date()
     let endDate: Date
@@ -279,33 +310,32 @@ export function useDashboardStats() {
       endDate = new Date(entry.retire_date)
     } else {
       endDate = new Date(today)
-      endDate.setFullYear(endDate.getFullYear() + 10)
+      endDate.setFullYear(endDate.getFullYear() + 30)
     }
 
     const timePoints = generateTimePoints(today, endDate)
     if (timePoints.length === 0) {
-      return { labels: [], data: [] }
+      return { labels: [], data: [], filteredTotal }
     }
 
     const labels: string[] = []
     const data: number[] = []
 
     for (let i = 0; i < timePoints.length; i++) {
-      const bucketStart = i === 0 ? today : timePoints[i - 1]
-      const bucketEnd = timePoints[i]
+      const bucketStart = i === 0 ? today : timePoints[i - 1]!
+      const bucketEnd = timePoints[i]!
 
-      const count = entries.filter((e) => {
+      const count = filteredEntries.filter((e) => {
         if (!e.retire_date) return false
-        if (!filterFn(e)) return false
         const rd = new Date(e.retire_date)
         return rd > bucketStart && rd <= bucketEnd
       }).length
 
-      labels.push(formatDate(bucketEnd.toISOString().split('T')[0]))
+      labels.push(formatDate(bucketEnd.toISOString().split('T')[0]!))
       data.push(count)
     }
 
-    return { labels, data }
+    return { labels, data, filteredTotal }
   }
 
   // --- COMPARATIVE TRAJECTORY ---
@@ -314,7 +344,7 @@ export function useDashboardStats() {
     compareFilter: FilterFn,
   ): { labels: string[]; currentData: number[]; compareData: number[] } {
     const entry = userEntry.value
-    const entries = seniorityStore.entries
+    const allEntries = seniorityStore.entries
 
     if (!entry) {
       return { labels: [], currentData: [], compareData: [] }
@@ -326,17 +356,21 @@ export function useDashboardStats() {
       endDate = new Date(entry.retire_date)
     } else {
       endDate = new Date(today)
-      endDate.setFullYear(endDate.getFullYear() + 10)
+      endDate.setFullYear(endDate.getFullYear() + 30)
     }
 
+    // Ensure the user's entry is included in the set for hypothetical projections.
+    // If the user selects a category they're not in, their entry won't match the filter,
+    // so buildTrajectory still works — it computes where the user would slot in by
+    // seniority number. We pass all entries so buildTrajectory can filter internally.
     const timePoints = generateTimePoints(today, endDate)
-    const currentTrajectory = buildTrajectory(entries, entry.seniority_number, timePoints, currentFilter)
-    const compareTrajectory = buildTrajectory(entries, entry.seniority_number, timePoints, compareFilter)
+    const currentTrajectory = buildTrajectory(allEntries, entry.seniority_number, timePoints, currentFilter)
+    const compareTrajectory = buildTrajectory(allEntries, entry.seniority_number, timePoints, compareFilter)
 
     return {
       labels: currentTrajectory.map((t) => t.date),
-      currentData: currentTrajectory.map((t) => t.rank),
-      compareData: compareTrajectory.map((t) => t.rank),
+      currentData: currentTrajectory.map((t) => t.percentile),
+      compareData: compareTrajectory.map((t) => t.percentile),
     }
   }
 
@@ -388,24 +422,21 @@ export function useDashboardStats() {
     }))
   })
 
-  // --- FILTER OPTIONS ---
-  const filterOptions = computed(() => {
+  // --- QUALS (actual seat/fleet/base combos from seniority data) ---
+  const quals = computed(() => {
     const entries = seniorityStore.entries
-    const bases = new Set<string>()
-    const seats = new Set<string>()
-    const fleets = new Set<string>()
+    const seen = new Set<string>()
+    const result: { seat: string; fleet: string; base: string; label: string }[] = []
 
     for (const e of entries) {
-      if (e.base) bases.add(e.base)
-      if (e.seat) seats.add(e.seat)
-      if (e.fleet) fleets.add(e.fleet)
+      if (!e.seat || !e.fleet || !e.base) continue
+      const key = `${e.seat}/${e.fleet}/${e.base}`
+      if (seen.has(key)) continue
+      seen.add(key)
+      result.push({ seat: e.seat, fleet: e.fleet, base: e.base, label: key })
     }
 
-    return {
-      bases: Array.from(bases).sort(),
-      seats: Array.from(seats).sort(),
-      fleets: Array.from(fleets).sort(),
-    }
+    return result.sort((a, b) => a.label.localeCompare(b.label))
   })
 
   return {
@@ -420,6 +451,6 @@ export function useDashboardStats() {
     computeComparativeTrajectory,
     aggregateStats,
     recentLists,
-    filterOptions,
+    quals,
   }
 }

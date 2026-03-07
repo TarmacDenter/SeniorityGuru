@@ -34,10 +34,15 @@
 
     <div class="mt-4">
       <div class="flex justify-between text-xs text-muted mb-1">
-        <span>Percentile</span>
+        <span>TOP %</span>
         <span class="font-mono">{{ rank.percentile }}%</span>
       </div>
-      <UProgress :value="rank.percentile" color="primary" size="sm" />
+      <div class="w-full h-2 rounded-full bg-(--ui-bg-accented)">
+        <div
+          class="h-full rounded-full bg-primary"
+          :style="{ width: `${rank.percentile}%` }"
+        />
+      </div>
     </div>
   </UCard>
 </template>

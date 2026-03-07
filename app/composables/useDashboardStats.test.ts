@@ -93,19 +93,19 @@ describe('countRetiredAbove', () => {
 })
 
 describe('generateTimePoints', () => {
-  it('generates monthly points for first 5 years', () => {
+  it('generates yearly points', () => {
     const start = new Date('2026-01-01')
-    const end = new Date('2031-01-01') // exactly 5 years
+    const end = new Date('2031-01-01') // 5 years
     const points = generateTimePoints(start, end)
 
-    // 60 monthly points (Jan 2026 through Dec 2030)
-    expect(points.length).toBe(60)
+    // 6 yearly points (2026 through 2031 inclusive)
+    expect(points.length).toBe(6)
 
     // First point is start
-    expect(points[0].toISOString().split('T')[0]).toBe('2026-01-01')
+    expect(points[0]!.toISOString().split('T')[0]).toBe('2026-01-01')
 
-    // Second point is one month later
-    expect(points[1].toISOString().split('T')[0]).toBe('2026-02-01')
+    // Second point is one year later
+    expect(points[1]!.toISOString().split('T')[0]).toBe('2027-01-01')
 
     // All within range
     for (const p of points) {
@@ -113,16 +113,16 @@ describe('generateTimePoints', () => {
     }
   })
 
-  it('switches to yearly after 5 years', () => {
+  it('generates correct number of points for long range', () => {
     const start = new Date('2026-01-01')
     const end = new Date('2040-01-01') // 14 years
     const points = generateTimePoints(start, end)
 
-    // Monthly portion (60) + yearly after 5 years (9)
-    expect(points.length).toBe(60 + 9)
+    // 15 yearly points (2026 through 2040 inclusive)
+    expect(points.length).toBe(15)
 
     // Last point should reach 2040
-    expect(points[points.length - 1].toISOString().split('T')[0]).toBe('2040-01-01')
+    expect(points[points.length - 1]!.toISOString().split('T')[0]).toBe('2040-01-01')
   })
 
   it('stops at or before endDate', () => {
@@ -135,13 +135,13 @@ describe('generateTimePoints', () => {
     }
   })
 
-  it('handles case where endDate < 5 years out (all monthly)', () => {
+  it('handles short range', () => {
     const start = new Date('2026-01-01')
-    const end = new Date('2027-06-01') // 18 months
+    const end = new Date('2027-06-01') // 1.5 years
     const points = generateTimePoints(start, end)
 
-    // Should be 18 monthly points (Jan 2026 through Jun 2027, not inclusive of boundary)
-    expect(points.length).toBe(17)
+    // 2 yearly points: 2026-01-01 and 2027-01-01
+    expect(points.length).toBe(2)
 
     // All should be within range
     for (const p of points) {
@@ -168,11 +168,14 @@ describe('buildTrajectory', () => {
 
     const trajectory = buildTrajectory(entries, 5, timePoints)
 
+    // 3 pilots ahead (sen 1,2,3), so initial rank = 4 of 4 total
+    // Inverted percentile with static denominator: (total - rank + 1) / total * 100
+    // 100% = most senior, 0% = most junior
     expect(trajectory).toEqual([
-      { date: '2026-01-01', rank: 5 }, // no retirements yet
-      { date: '2026-12-01', rank: 4 }, // seniority_number 1 retired
-      { date: '2027-12-01', rank: 3 }, // 1 and 2 retired
-      { date: '2028-12-01', rank: 2 }, // 1, 2, and 3 retired
+      { date: '2026-01-01', rank: 4, percentile: 25 },    // (4-4+1)/4 = 25%
+      { date: '2026-12-01', rank: 3, percentile: 50 },    // (4-3+1)/4 = 50%
+      { date: '2027-12-01', rank: 2, percentile: 75 },    // (4-2+1)/4 = 75%
+      { date: '2028-12-01', rank: 1, percentile: 100 },   // (4-1+1)/4 = 100%
     ])
   })
 
@@ -192,10 +195,11 @@ describe('buildTrajectory', () => {
     const timePoints = [new Date('2030-01-01'), new Date('2035-01-01')]
     const trajectory = buildTrajectory(entries, 5, timePoints)
 
-    // No retirements ever happen (null retire_date), so rank stays at 5
+    // 2 pilots ahead (sen 1,2), no retirements (null retire_date), so rank stays at 3 of 3
+    // (3 - 3 + 1) / 3 = 33.3%
     expect(trajectory).toEqual([
-      { date: '2030-01-01', rank: 5 },
-      { date: '2035-01-01', rank: 5 },
+      { date: '2030-01-01', rank: 3, percentile: 33.3 },
+      { date: '2035-01-01', rank: 3, percentile: 33.3 },
     ])
   })
 })
@@ -328,7 +332,7 @@ describe('useDashboardStats composable', () => {
       expect(s[1].label).toBe('Retirements This Year')
       expect(s[3].label).toBe('Lists Uploaded')
       expect(s[3].value).toBe('2')
-      expect(s[2].label).toBe('Your Base Rank')
+      expect(s[2].label).toBe('CA/737/JFK')
     })
   })
 
@@ -415,8 +419,8 @@ describe('useDashboardStats composable', () => {
     })
   })
 
-  describe('filterOptions', () => {
-    it('builds unique filter values', () => {
+  describe('quals', () => {
+    it('builds unique qual combos from actual entries', () => {
       mockSeniorityStore.entries = [
         makeEntry({ base: 'JFK', seat: 'CA', fleet: '737' }),
         makeEntry({ base: 'LAX', seat: 'FO', fleet: '777' }),
@@ -424,12 +428,25 @@ describe('useDashboardStats composable', () => {
         makeEntry({ base: null, seat: null, fleet: null }), // nulls excluded
       ]
 
-      const { filterOptions } = useDashboardStats()
-      const opts = filterOptions.value
+      const { quals } = useDashboardStats()
+      expect(quals.value).toEqual([
+        { seat: 'CA', fleet: '737', base: 'JFK', label: 'CA/737/JFK' },
+        { seat: 'FO', fleet: '777', base: 'LAX', label: 'FO/777/LAX' },
+      ])
+    })
 
-      expect(opts.bases).toEqual(['JFK', 'LAX'])
-      expect(opts.seats).toEqual(['CA', 'FO'])
-      expect(opts.fleets).toEqual(['737', '777'])
+    it('does not generate combos that do not exist in the data', () => {
+      mockSeniorityStore.entries = [
+        makeEntry({ base: 'JFK', seat: 'CA', fleet: '737' }),
+        makeEntry({ base: 'LAX', seat: 'FO', fleet: '777' }),
+      ]
+
+      const { quals } = useDashboardStats()
+      const labels = quals.value.map((q) => q.label)
+      // Should NOT contain cross-product combos like CA/777/LAX
+      expect(labels).not.toContain('CA/777/LAX')
+      expect(labels).not.toContain('FO/737/JFK')
+      expect(labels).toHaveLength(2)
     })
   })
 
@@ -450,9 +467,9 @@ describe('useDashboardStats composable', () => {
       const { trajectoryData } = useDashboardStats()
       expect(trajectoryData.value.labels.length).toBeGreaterThan(0)
       expect(trajectoryData.value.data.length).toBeGreaterThan(0)
-      // Rank should decrease over time as retirements happen
-      expect(trajectoryData.value.data[0]).toBeGreaterThanOrEqual(
-        trajectoryData.value.data[trajectoryData.value.data.length - 1],
+      // Percentile should increase over time as retirements improve standing (up = more senior)
+      expect(trajectoryData.value.data[trajectoryData.value.data.length - 1]).toBeGreaterThanOrEqual(
+        trajectoryData.value.data[0],
       )
     })
   })

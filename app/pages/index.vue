@@ -58,14 +58,16 @@
           <!-- Retirement Comparison + Seniority Comparison -->
           <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <DashboardRetirementComparison
-              :filter-options="filterOptions"
+              :quals="quals"
               :compute-projection="computeRetirementProjection"
             />
             <DashboardSeniorityComparison
               v-if="userFound"
-              :filter-options="filterOptions"
+              :quals="quals"
               :compute-comparative="computeComparativeTrajectory"
               :user-base="rankCard.base"
+              :user-seat="rankCard.seat"
+              :user-fleet="rankCard.fleet"
             />
           </div>
 
@@ -117,7 +119,7 @@ const {
   hasData, hasEmployeeNumber, userFound,
   rankCard, stats, baseStatusData,
   trajectoryData, computeRetirementProjection, computeComparativeTrajectory,
-  aggregateStats, recentLists, filterOptions,
+  aggregateStats, recentLists, quals,
 } = useDashboardStats()
 
 onMounted(async () => {

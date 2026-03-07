@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-A web app for airline pilots to track and project their seniority standing over time. Users can see their position on the master seniority list, project trajectory by base and seat, and analyze retirement pressure / upcoming vacancies.
+A web app for airline pilots to track and project their seniority standing over time.
 
 ---
 
@@ -12,11 +12,17 @@ A web app for airline pilots to track and project their seniority standing over 
 |---|---|
 | Framework | Nuxt 4 |
 | UI | NuxtUI (module) |
-| State | Pinia
+| State | Pinia |
 | Backend / DB | Supabase |
 | Auth | `@nuxtjs/supabase` module (SSR cookies / PKCE) |
 | Deployment | NuxtHub (Cloudflare Workers) |
 | Language | TypeScript throughout |
+
+---
+
+## Environment
+
+- Always use `node`/`npm` as the runtime, NOT `bun` or other alternatives
 
 ---
 
@@ -49,84 +55,40 @@ Both `useSupabaseUser()` (client) and `serverSupabaseUser()` (server) return **J
 - NOT available as claims: `id`, `email_confirmed_at`, `created_at`, `phone_confirmed_at`
 - If you need the full User object, call `supabase.auth.getUser()` explicitly
 
----
+### SSR/CSR Awareness — CRITICAL
 
-## Database Schema (planned)
-
-```sql
--- airlines (reference table — loaded from CSV via npm run db:seed-airlines)
-icao text primary key
-iata text
-name text not null
-alias text  -- alternate/common name
-
--- profiles (extends auth.users)
-id uuid references auth.users primary key
-role user_role default 'user'
-icao_code text references airlines(icao) on delete set null  -- nullable; required to access app
-employee_number text
-hire_date date
-created_at timestamptz
-
--- seniority_lists
-id uuid primary key
-airline text
-effective_date date
-uploaded_by uuid references profiles
-status text -- 'active' | 'archived'
-
--- seniority_entries
-id uuid primary key
-list_id uuid references seniority_lists
-seniority_number integer
-employee_number text
-name text
-hire_date date
-base text
-seat text -- 'CA' | 'FO'
-fleet text
-retire_date date  -- age-65 retirement date (no dob stored)
-```
+- **Always consider SSR vs CSR rendering mode** when writing middleware, plugins, composables, or any code that runs on page load. This project uses `ssr: false` for some routes (`/seniority/**`) and SSR for others
+- **`routeRules: { ssr: false }` changes timing of everything**: plugins, middleware, composable hydration
+- **`useSupabaseUser()`** is populated by a `page:start` hook on the client, NOT during plugin setup. On CSR-only routes the user ref is `null` when middleware runs — the auth middleware must call `client.auth.getClaims()` as a fallback
+- **Always test both SSR and CSR routes** when changing auth, middleware, or navigation logic
 
 ---
 
-## Core Features
+## Nuxt 4 Conventions
 
-- [ ] Auth (sign up, login, confirm, profile setup)
-- [ ] Upload / import seniority list (CSV)
-- [ ] Master seniority list view with user's position highlighted
-- [ ] Seniority trajectory over time (chart by year)
-- [ ] Base/seat breakdown — seniority rank per base
-- [ ] Retirement projections — age 65 retirements by year
-- [ ] Upcoming retirements table (pilots ahead of user)
-- [ ] Admin / moderator list management
+- **Always use Nuxt semantics over raw Vue Router** — use `navigateTo()` instead of `router.push()`, `useRoute()` / `useRouter()` as auto-imports, `definePageMeta` for route meta. Never import from `vue-router` directly
+- `shared/` is for code shared between `app/` and `server/` — use `#shared/*` alias
+- Generated DB types belong in `shared/types/database.ts`
+- `~/` maps to `app/`; `#shared/` for cross-layer imports
 
 ---
 
-## Project Structure
+## Nuxt UI / Theming
 
-```
-/
-├── app/
-│   ├── pages/
-│   │   ├── index.vue           # dashboard
-│   │   ├── login.vue
-│   │   ├── confirm.vue         # PKCE callback — required
-│   │   ├── seniority/
-│   │   │   ├── index.vue       # master list
-│   │   │   └── [id].vue        # individual list view
-│   │   └── admin/
-│   ├── components/
-│   ├── composables/
-│   └── middleware/
-│       └── auth.ts             # redirect unauthenticated users
-├── server/
-│   └── api/                    # Nitro routes using serverSupabaseClient
-├── supabase/
-│   ├── migrations/
-│   └── seed.sql
-└── nuxt.config.ts
-```
+- Use Nuxt UI's `UTheme` and `app.config.ts` for theming — do NOT use raw `--ui-color-*` CSS variables. Consult the Nuxt MCP server for component slot APIs before using them
+- When working with `UTable`, the `ui.tr` prop only accepts static class strings, not functions
+- **Always use `v-model:` for stateful props** on Nuxt UI components (e.g., `v-model:pagination`, `v-model:sorting`). Using `:prop` (one-way binding) means the UI won't update when you mutate the ref
+- **UTable pagination**: use `useTemplateRef('table')` and control via `table.tableApi.setPageIndex()` — do NOT mutate the `v-model:pagination` ref directly
+
+---
+
+## Database / Supabase
+
+- Use Supabase JS client with Zod DTOs for data access — do NOT use Drizzle ORM
+- RLS policies must avoid self-referencing recursion
+- Always use `user.sub` (not `user.id`) for Supabase auth user identification
+- Always target local Supabase instance for development and seeding, not remote DB
+- Schema: `airlines`, `profiles`, `seniority_lists`, `seniority_entries` — see `supabase/migrations/` for full definitions
 
 ---
 
@@ -148,10 +110,10 @@ npm run dev             # Nuxt dev server
 npm run build           # production build
 npm test                # run test suite (Vitest)
 npm run test:watch      # run tests in watch mode
+npm run test:e2e        # run Playwright e2e tests
 npm run typecheck       # run vue-tsc type check
 npm run db:types        # regenerate types/database.ts from Supabase schema
 npm run db:seed-airlines  # load airlines CSV into local Supabase
-
 npm run db:start        # spins up local Supabase (requires Docker)
 npm run db:reset        # apply migrations + seed.sql
 supabase db push        # push local migrations to remote
@@ -174,9 +136,11 @@ supabase db push        # push local migrations to remote
 
 **Rules:**
 - Test file lives next to the file it tests (co-location)
-- Use `vi.hoisted` for mock variables that `vi.mock` factories reference — `vi.mock` is hoisted but top-level variables are not
-- Never use `ref` (or other auto-imports) inside `vi.hoisted` — import explicitly from `vue` or use plain mutable objects instead
+- Use `vi.hoisted` for mock variables that `vi.mock` factories reference — never use auto-imports (like `ref`) inside `vi.hoisted`
 - `navigateTo` is a Nuxt auto-import — mock it with `mockNuxtImport`, not `vi.mock`
+- Pinia stores are NOT Nuxt auto-imports — must be explicitly imported in middleware
+
+**E2E:** Playwright (`e2e/` directory). Auth fixture logs in via the real login form. Requires local Supabase running + seeded.
 
 ---
 
@@ -186,26 +150,16 @@ supabase db push        # push local migrations to remote
 - Server-only secrets (service key) only used in `server/` routes
 - Composables for shared data-fetching logic (e.g., `useSeniorityList()`)
 - NuxtUI components used for all UI primitives — no custom component duplicates what NuxtUI provides
-- **Theming**: always use Nuxt UI semantic tokens (`--ui-bg`, `--ui-text-muted`, `--ui-border`, etc.) — only use raw Tailwind utilities as an escape hatch when Nuxt UI semantics can't achieve what's needed. When referencing colors inside `--ui-*` overrides, use Tailwind's `--color-*` variables (e.g., `var(--color-slate-200)`), NOT `--ui-color-*`
-- TypeScript strict mode; define DB types from Supabase generated types (`supabase gen types typescript`)
+- **Theming**: always use Nuxt UI semantic tokens (`--ui-bg`, `--ui-text-muted`, `--ui-border`, etc.) — use raw Tailwind utilities only as escape hatch. When referencing colors inside `--ui-*` overrides, use Tailwind's `--color-*` variables, NOT `--ui-color-*`
+- TypeScript strict mode; define DB types from Supabase generated types
 
 ### Validation & DTOs
 
 Use **Zod** at every boundary between the frontend and backend. Define schemas in `shared/schemas/` so they can be imported by both Nitro routes and Vue pages/composables.
 
-**Pattern:**
-- Define a Zod schema (e.g., `CreateSeniorityListSchema`)
-- Infer the TypeScript type from it (`z.infer<typeof CreateSeniorityListSchema>`)
-- Validate incoming request bodies in Nitro routes with `safeParse` — return 422 on failure
-- Use the same schema for form validation on the client (e.g., with `vee-validate` + Zod or manual `safeParse`)
+- Define a Zod schema → infer TypeScript type → validate with `safeParse` (return 422 on failure)
+- Use the same schema for client form validation
 - Never trust raw request data — always parse through the schema before use
-
-```
-shared/
-└── schemas/
-    ├── seniority-list.ts   # CreateSeniorityListSchema, SeniorityEntrySchema, etc.
-    └── profile.ts          # UpdateProfileSchema, etc.
-```
 
 ---
 
@@ -214,19 +168,9 @@ shared/
 - **Strategy**: Linear develop with rebase — see [WORKFLOW.md](WORKFLOW.md) for full reference
 - **Branches**: `main` (production/releases), `develop` (integration), `feature/*`, `release/vX.Y.Z`, `hotfix/*`
 - **Never** commit directly to `main` or `develop`
-- **Branch from**: `develop` for features; `main` for hotfixes
-- **Feature integration**: rebase feature branches onto `develop`, then fast-forward merge (linear history)
-- **Releases**: squash merge `develop` → `main`; semantic-release runs automatically on push to `main`
-
-### Commit Message Format — Conventional Commits
-
-```
-type(scope): description
-```
-
-Valid types: `feat`, `fix`, `chore`, `docs`, `refactor`, `test`, `ci`, `perf`
-
-Breaking changes: use `feat!:` or add `BREAKING CHANGE:` in the footer.
+- **Feature integration**: rebase onto `develop`, fast-forward merge
+- **Releases**: squash merge `develop` → `main`; semantic-release runs automatically
+- **Commit format**: Conventional Commits (`type(scope): description`) — enforced via husky + commitlint
 
 ### Claude Slash Commands
 
@@ -236,12 +180,3 @@ Breaking changes: use `feat!:` or add `BREAKING CHANGE:` in the footer.
 | `/pr` | Draft and open a PR for the current branch |
 | `/hotfix` | Create a hotfix branch from main |
 | `/release` | Prepare a release branch from develop |
-
----
-
-## Open Questions / Decisions Pending
-
-- [ ] How are seniority lists sourced? Manual CSV upload by admin, or user-submitted?
-- [ ] Is the app single-airline or multi-airline?
-- [ ] Does the app need public/unauthenticated views?
-- [ ] Paid tiers / access gating?
