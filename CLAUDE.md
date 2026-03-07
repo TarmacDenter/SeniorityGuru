@@ -87,7 +87,7 @@ Both `useSupabaseUser()` (client) and `serverSupabaseUser()` (server) return **J
 - Use Supabase JS client with Zod DTOs for data access — do NOT use Drizzle ORM
 - RLS policies must avoid self-referencing recursion
 - Always use `user.sub` (not `user.id`) for Supabase auth user identification
-- Always target local Supabase instance for development and seeding, not remote DB
+- Always target local Supabase instance for devment and seeding, not remote DB
 - Schema: `airlines`, `profiles`, `seniority_lists`, `seniority_entries` — see `supabase/migrations/` for full definitions
 
 ---
@@ -165,18 +165,18 @@ Use **Zod** at every boundary between the frontend and backend. Define schemas i
 
 ## Git Workflow
 
-- **Strategy**: Linear develop with rebase — see [WORKFLOW.md](WORKFLOW.md) for full reference
-- **Branches**: `main` (production/releases), `develop` (integration), `feature/*`, `release/vX.Y.Z`, `hotfix/*`
-- **Never** commit directly to `main` or `develop`
-- **Feature integration**: rebase onto `develop`, fast-forward merge
-- **Releases**: squash merge `develop` → `main`; semantic-release runs automatically
+- **Strategy**: Linear dev with rebase — see [WORKFLOW.md](WORKFLOW.md) for full reference
+- **Branches**: `main` (production/releases), `dev` (integration), `feature/*`, `release/vX.Y.Z`, `hotfix/*`
+- **Never** commit directly to `main` or `dev`
+- **Feature integration**: rebase onto `dev`, fast-forward merge
+- **Releases**: squash merge `dev` → `main`; semantic-release runs automatically
 - **Commit format**: Conventional Commits (`type(scope): description`) — enforced via husky + commitlint
 
 ### Claude Slash Commands
 
 | Command | Purpose |
 |---|---|
-| `/feature` | Create a feature branch from develop |
+| `/feature` | Create a feature branch from dev |
 | `/pr` | Draft and open a PR for the current branch |
 | `/hotfix` | Create a hotfix branch from main |
-| `/release` | Prepare a release branch from develop |
+| `/release` | Prepare a release branch from dev |

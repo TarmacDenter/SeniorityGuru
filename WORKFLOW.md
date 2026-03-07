@@ -5,7 +5,7 @@
 ```
 main ──────────────────────────────────────────► (production, tagged releases)
   │                         ▲
-  └── develop ──────────────┤──────────────────► (integration branch)
+  └── dev ──────────────┤──────────────────► (integration branch)
         │          ▲        │
         └── feature/* ──────┘
 ```
@@ -17,10 +17,10 @@ main ─────────────────────────
 | Branch | Purpose | Branch from | Merge to |
 |---|---|---|---|
 | `main` | Production code; every merge triggers a release | — | — |
-| `develop` | Integration; all feature work lands here | `main` | `main` via release branch |
-| `feature/*` | New features or improvements | `develop` | `develop` |
-| `release/vX.Y.Z` | Release stabilization; no new features | `develop` | `main` (+ back-merge to `develop`) |
-| `hotfix/*` | Emergency fixes for production | `main` | `main` (+ back-merge to `develop`) |
+| `dev` | Integration; all feature work lands here | `main` | `main` via release branch |
+| `feature/*` | New features or improvements | `dev` | `dev` |
+| `release/vX.Y.Z` | Release stabilization; no new features | `dev` | `main` (+ back-merge to `dev`) |
+| `hotfix/*` | Emergency fixes for production | `main` | `main` (+ back-merge to `dev`) |
 
 ---
 
@@ -64,14 +64,14 @@ feat!: rename seniority_entries columns
 ## Feature Branch Workflow
 
 ```bash
-git checkout develop
-git pull origin develop
+git checkout dev
+git pull origin dev
 git checkout -b feature/my-feature
 
 # ... work, commit with conventional messages ...
 
 git push origin feature/my-feature
-# Open PR: feature/my-feature → develop
+# Open PR: feature/my-feature → dev
 # Use squash merge on GitHub
 ```
 
@@ -80,14 +80,14 @@ git push origin feature/my-feature
 ## Release Workflow
 
 ```bash
-# Cut a release branch from develop
-git checkout develop && git pull
+# Cut a release branch from dev
+git checkout dev && git pull
 git checkout -b release/v1.2.0
 
 # Stabilize — only bug fixes on this branch
 git push origin release/v1.2.0
 # Open PR: release/v1.2.0 → main (squash merge)
-# Also open PR: release/v1.2.0 → develop to back-merge fixes
+# Also open PR: release/v1.2.0 → dev to back-merge fixes
 ```
 
 semantic-release runs automatically on every push to `main` and:
@@ -107,7 +107,7 @@ git checkout -b hotfix/fix-description
 # Fix the issue
 git push origin hotfix/fix-description
 # Open PR: hotfix/fix-description → main (squash merge)
-# Open PR: hotfix/fix-description → develop (squash merge)
+# Open PR: hotfix/fix-description → dev (squash merge)
 ```
 
 ---
@@ -125,4 +125,4 @@ git push origin hotfix/fix-description
 
 Configure on GitHub:
 - `main` — require PR, require CI pass, no direct push
-- `develop` — require PR, require CI pass, no direct push
+- `dev` — require PR, require CI pass, no direct push

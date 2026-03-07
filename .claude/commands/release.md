@@ -1,8 +1,8 @@
-Prepare a release branch from develop following the project GitFlow workflow.
+Prepare a release branch from dev following the project GitFlow workflow.
 
 1. Run `git status` to confirm the working tree is clean.
-2. Run `git checkout develop && git pull origin develop`.
-3. Run `git log --oneline $(git describe --tags --abbrev=0 HEAD)..HEAD` (or `git log --oneline main..develop` if no tags exist) to summarize commits going into this release.
+2. Run `git checkout dev && git pull origin dev`.
+3. Run `git log --oneline $(git describe --tags --abbrev=0 HEAD)..HEAD` (or `git log --oneline main..dev` if no tags exist) to summarize commits going into this release.
 4. Analyze the commits to determine the next version following semver:
    - `feat` commits → minor bump
    - `fix` / `perf` commits → patch bump
@@ -13,5 +13,5 @@ Prepare a release branch from develop following the project GitFlow workflow.
 8. Remind the user:
    - Only bug fixes go on this branch — no new features
    - Open a PR: `release/v<version>` → `main` (squash merge)
-   - Open a PR: `release/v<version>` → `develop` (squash merge, to back-merge any fixes)
+   - Open a PR: `release/v<version>` → `dev` (squash merge, to back-merge any fixes)
    - semantic-release will automatically tag and publish the release when `main` is merged
