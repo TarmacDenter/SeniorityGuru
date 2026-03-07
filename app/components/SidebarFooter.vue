@@ -1,11 +1,11 @@
 <template>
-  <div class="flex flex-col gap-2 p-2 min-w-0">
+  <div class="flex flex-col gap-2 p-2 overflow-hidden">
     <UUser
       v-if="!collapsed"
       :name="user?.email ?? 'Pilot'"
       :avatar="{ icon: 'i-lucide-circle-user' }"
       size="sm"
-      :ui="{ name: 'truncate' }"
+      :ui="{ root: 'min-w-0 overflow-hidden', name: 'truncate' }"
     />
     <div class="flex items-center" :class="collapsed ? 'justify-center' : 'justify-between'">
       <UButton
