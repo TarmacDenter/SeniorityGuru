@@ -123,7 +123,7 @@ export function useSeniorityUpload() {
       reset()
       return
     }
-    await parseFile(files[0])
+    await parseFile(files[0]!)
   }
 
   /** Save the seniority list to the server. Returns the entry count on success, or throws. */

@@ -327,12 +327,12 @@ describe('useDashboardStats composable', () => {
       const s = stats.value
 
       expect(s).toHaveLength(4)
-      expect(s[0].label).toBe('Total Pilots')
-      expect(s[0].value).toBe('3')
-      expect(s[1].label).toBe('Retirements This Year')
-      expect(s[3].label).toBe('Lists Uploaded')
-      expect(s[3].value).toBe('2')
-      expect(s[2].label).toBe('CA/737/JFK')
+      expect(s![0]!.label).toBe('Total Pilots')
+      expect(s![0]!.value).toBe('3')
+      expect(s![1]!.label).toBe('Retirements This Year')
+      expect(s![3]!.label).toBe('Lists Uploaded')
+      expect(s![3]!.value).toBe('2')
+      expect(s![2]!.label).toBe('CA/737/JFK')
     })
   })
 
@@ -396,7 +396,7 @@ describe('useDashboardStats composable', () => {
 
       const { aggregateStats } = useDashboardStats()
       expect(aggregateStats.value.length).toBe(1)
-      expect(aggregateStats.value[0].totalPilots).toBe(1)
+      expect(aggregateStats.value[0]!.totalPilots).toBe(1)
     })
   })
 
@@ -411,11 +411,11 @@ describe('useDashboardStats composable', () => {
       const lists = recentLists.value
 
       expect(lists).toHaveLength(2)
-      expect(lists[0].title).toBe('Jan 2026 Seniority List')
-      expect(lists[0].description).toBe('Uploaded')
-      expect(lists[0].icon).toBe('i-lucide-file-text')
-      expect(lists[0].date).toBe('2026-01-15')
-      expect(lists[1].title).toBe('Jun 2025 Seniority List')
+      expect(lists[0]!.title).toBe('Jan 2026 Seniority List')
+      expect(lists[0]!.description).toBe('Uploaded')
+      expect(lists[0]!.icon).toBe('i-lucide-file-text')
+      expect(lists[0]!.date).toBe('2026-01-15')
+      expect(lists[1]!.title).toBe('Jun 2025 Seniority List')
     })
   })
 
@@ -468,8 +468,8 @@ describe('useDashboardStats composable', () => {
       expect(trajectoryData.value.labels.length).toBeGreaterThan(0)
       expect(trajectoryData.value.data.length).toBeGreaterThan(0)
       // Percentile should increase over time as retirements improve standing (up = more senior)
-      expect(trajectoryData.value.data[trajectoryData.value.data.length - 1]).toBeGreaterThanOrEqual(
-        trajectoryData.value.data[0],
+      expect(trajectoryData.value.data[trajectoryData.value.data.length - 1]!).toBeGreaterThanOrEqual(
+        trajectoryData.value.data[0]!,
       )
     })
   })

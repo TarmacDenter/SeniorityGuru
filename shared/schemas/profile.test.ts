@@ -22,7 +22,7 @@ describe('UpdateEmployeeNumberSchema', () => {
     const result = UpdateEmployeeNumberSchema.safeParse({ employeeNumber: '' })
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.issues[0].message).toBe('Employee number is required')
+      expect(result.error.issues[0]!.message).toBe('Employee number is required')
     }
   })
 

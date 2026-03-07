@@ -139,6 +139,7 @@
 
 <script setup lang="ts">
 import type { StepperItem } from '@nuxt/ui'
+import type { DateValue } from '@internationalized/date'
 
 definePageMeta({ middleware: 'auth', layout: 'seniority' })
 
@@ -170,8 +171,8 @@ watch(files, async (next) => {
 const currentStepIndex = computed(() => stepOrder.indexOf(currentStep.value as Step))
 const sampleRows = computed(() => upload.rawRows.value.slice(0, 3))
 const effectiveDateModel = computed({
-  get: () => upload.effectiveDate.value ?? undefined,
-  set: (value) => {
+  get: () => (upload.effectiveDate.value ?? undefined) as DateValue | undefined,
+  set: (value: DateValue | undefined) => {
     upload.effectiveDate.value = value ?? null
   },
 })
