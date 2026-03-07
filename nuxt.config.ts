@@ -21,7 +21,11 @@ export default defineNuxtConfig({
     preference: 'dark'
   },
   hub: {
-    // NuxtHub / Cloudflare Workers config
+    // Compute-only deploy — all data lives in Supabase
+    database: false,
+    kv: false,
+    blob: false,
+    cache: false,
   },
   runtimeConfig: {
     supabaseServiceKey: process.env.SUPABASE_SERVICE_KEY

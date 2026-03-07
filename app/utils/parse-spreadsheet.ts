@@ -1,5 +1,5 @@
-import { normalizeEmployeeNumber, normalizeDate, computeRetireDate } from '../../shared/schemas/seniority-list'
-import type { SeniorityEntry } from '../../shared/schemas/seniority-list'
+import { normalizeEmployeeNumber, normalizeDate, computeRetireDate } from '#shared/schemas/seniority-list'
+import type { SeniorityEntry } from '#shared/schemas/seniority-list'
 
 export interface ColumnMap {
   seniority_number: number
