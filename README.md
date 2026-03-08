@@ -121,4 +121,4 @@ PR titles follow `type(scope): description`. CI runs typecheck on all PRs.
 
 ## License
 
-Private — not open source.
+GPL-3.0 — see [LICENSE](LICENSE).
