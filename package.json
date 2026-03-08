@@ -1,6 +1,7 @@
 {
   "name": "seniority-guru",
   "private": true,
+  "license": "GPL-3.0-only",
   "type": "module",
   "scripts": {
     "build": "nuxt build",
