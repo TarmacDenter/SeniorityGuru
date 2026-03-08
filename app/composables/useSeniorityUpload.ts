@@ -10,6 +10,9 @@ import {
   type ColumnMap,
   type MappingOptions,
 } from '~/utils/parse-spreadsheet'
+import { createLogger } from '#shared/utils/logger'
+
+const log = createLogger('upload')
 
 export function useSeniorityUpload() {
   // Step 1: Raw file data
@@ -57,6 +60,8 @@ export function useSeniorityUpload() {
     rawRows.value = rows
     fileName.value = file.name
 
+    log.info('File parsed', { fileName: file.name, rows: rows.length, columns: headers.length })
+
     // Auto-detect column mapping
     columnMap.value = autoDetectColumnMap(headers)
   }
@@ -87,6 +92,9 @@ export function useSeniorityUpload() {
       }
     })
     rowErrors.value = errors
+    if (errors.size > 0) {
+      log.warn('Validation errors found', { errorCount: errors.size, totalRows: entries.value.length })
+    }
   }
 
   /** Update a single cell and re-validate that row. */
@@ -130,6 +138,7 @@ export function useSeniorityUpload() {
   async function save(): Promise<number> {
     saving.value = true
     saveError.value = null
+    log.info('Upload started', { entryCount: entries.value.length, effectiveDate: effectiveDate.value?.toString() })
     try {
       const effectiveDateValue = effectiveDate.value ? effectiveDate.value.toString() : ''
       const result = await $fetch('/api/seniority-lists', {
@@ -139,9 +148,11 @@ export function useSeniorityUpload() {
           entries: entries.value,
         },
       })
+      log.info('Upload succeeded', { count: result.count })
       return result.count ?? 0
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Upload failed'
+      log.error('Upload failed', { error: message })
       saveError.value = message
       throw err
     } finally {

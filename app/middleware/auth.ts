@@ -1,4 +1,7 @@
 import { useUserStore } from '~/stores/user'
+import { createLogger } from '#shared/utils/logger'
+
+const log = createLogger('auth-middleware')
 
 export default defineNuxtRouteMiddleware(async (to) => {
   const user = useSupabaseUser()
@@ -18,6 +21,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
 
   // Level 1: not authenticated
   if (!user.value) {
+    log.info('Unauthenticated access, redirecting to login', { path: to.path })
     return navigateTo('/auth/login')
   }
 
@@ -26,6 +30,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
   // Use user_metadata.email_verified instead.
   const emailVerified = user.value.user_metadata?.email_verified
   if (!emailVerified && !to.path.startsWith('/auth/')) {
+    log.info('Email not verified, redirecting', { path: to.path })
     return navigateTo('/auth/resend-email')
   }
 
@@ -37,6 +42,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
       await userStore.fetchProfile()
     }
     if (userStore.profile?.role !== 'admin' && !userStore.profile?.icao_code) {
+      log.info('No airline set, redirecting to setup', { path: to.path })
       return navigateTo('/auth/setup-profile')
     }
   }

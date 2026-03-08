@@ -1,5 +1,8 @@
 import { defineStore } from 'pinia'
 import type { Tables } from '#shared/types/database'
+import { createLogger } from '#shared/utils/logger'
+
+const log = createLogger('user-store')
 
 export const useUserStore = defineStore('user', () => {
   const profile = ref<Tables<'profiles'> | null>(null)
@@ -27,8 +30,10 @@ export const useUserStore = defineStore('user', () => {
       .single()
 
     if (dbError) {
+      log.error('Profile fetch failed', { userId, error: dbError.message })
       error.value = dbError.message
     } else {
+      log.debug('Profile loaded', { userId, airline: data?.icao_code })
       profile.value = data
     }
 

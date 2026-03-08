@@ -1,21 +1,32 @@
 import { serverSupabaseClient, serverSupabaseUser } from '#supabase/server'
 import { CreateSeniorityListSchema } from '#shared/schemas/seniority-list'
+import { createLogger } from '#shared/utils/logger'
+
+const log = createLogger('seniority-api')
 
 export default defineEventHandler(async (event) => {
   const user = await serverSupabaseUser(event)
   if (!user) {
+    log.warn('Unauthenticated request rejected')
     throw createError({ statusCode: 401, statusMessage: 'Unauthorized' })
   }
 
   const body = await readBody(event)
   const parsed = CreateSeniorityListSchema.safeParse(body)
   if (!parsed.success) {
+    log.warn('Validation failed', { userId: user.sub, issues: parsed.error.issues.length })
     throw createError({
       statusCode: 422,
       statusMessage: 'Validation failed',
       data: parsed.error.issues,
     })
   }
+
+  log.info('Seniority list upload started', {
+    userId: user.sub,
+    effectiveDate: parsed.data.effective_date,
+    entryCount: parsed.data.entries.length,
+  })
 
   const client = await serverSupabaseClient(event)
 
@@ -27,10 +38,11 @@ export default defineEventHandler(async (event) => {
     .single()
 
   if (profileError) {
-    console.error('[seniority-lists] profile lookup failed:', profileError.message)
+    log.error('Profile lookup failed', { userId: user.sub, error: profileError.message })
     throw createError({ statusCode: 500, statusMessage: 'Internal server error' })
   }
   if (!profile?.icao_code) {
+    log.warn('No airline set on profile', { userId: user.sub })
     throw createError({ statusCode: 400, statusMessage: 'No airline set on profile' })
   }
 
@@ -46,7 +58,7 @@ export default defineEventHandler(async (event) => {
     .single()
 
   if (listError || !list) {
-    console.error('[seniority-lists] list insert failed:', listError?.message)
+    log.error('List insert failed', { userId: user.sub, error: listError?.message })
     throw createError({ statusCode: 500, statusMessage: 'Internal server error' })
   }
 
@@ -61,9 +73,16 @@ export default defineEventHandler(async (event) => {
     .insert(entries)
 
   if (entriesError) {
-    console.error('[seniority-lists] entries insert failed:', entriesError.message)
+    log.error('Entries insert failed', { userId: user.sub, listId: list.id, error: entriesError.message })
     throw createError({ statusCode: 500, statusMessage: 'Internal server error' })
   }
+
+  log.info('Seniority list upload completed', {
+    userId: user.sub,
+    listId: list.id,
+    entryCount: entries.length,
+    airline: profile.icao_code,
+  })
 
   return { id: list.id, count: entries.length }
 })
