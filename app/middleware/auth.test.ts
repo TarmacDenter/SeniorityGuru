@@ -34,10 +34,10 @@ describe('auth middleware', async () => {
   })
 
   describe('Level 1 — unauthenticated', () => {
-    it('redirects to /auth/login when no user', async () => {
+    it('redirects to /welcome when no user', async () => {
       mockUser.value = null
       await authMiddleware(routeTo('/'), routeTo('/'))
-      expect(mockNavigateTo).toHaveBeenCalledWith('/auth/login')
+      expect(mockNavigateTo).toHaveBeenCalledWith('/welcome')
     })
   })
 

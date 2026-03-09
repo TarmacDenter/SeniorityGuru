@@ -27,7 +27,7 @@
 - [x] User settings page (edit airline, employee number, retirement age, change password)
 - [x] Seniority list management — sidebar nav link to a "My Lists" page showing all uploaded lists; each list supports inline edit of title (airline label) and effective date, and a delete action; requires owner UPDATE + DELETE RLS policies on `seniority_lists`
 - [x] Upload error navigation — when upload completes with data errors, the error count is a clickable link that navigates to the affected rows, with a human-readable message describing each validation failure
-- [ ] Public landing page
+- [x] Public landing page
 
 ### Future
 
