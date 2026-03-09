@@ -79,6 +79,7 @@ Both `useSupabaseUser()` (client) and `serverSupabaseUser()` (server) return **J
 - When working with `UTable`, the `ui.tr` prop only accepts static class strings, not functions
 - **Always use `v-model:` for stateful props** on Nuxt UI components (e.g., `v-model:pagination`, `v-model:sorting`). Using `:prop` (one-way binding) means the UI won't update when you mutate the ref
 - **UTable pagination**: use `useTemplateRef('table')` and control via `table.tableApi.setPageIndex()` — do NOT mutate the `v-model:pagination` ref directly
+- **UDashboardPanel**: the `#header` slot only renders when content uses the `#body` named slot — putting content in the default slot skips the header. Always use `<template #header>` + `<template #body>` together
 
 ---
 
@@ -89,6 +90,7 @@ Both `useSupabaseUser()` (client) and `serverSupabaseUser()` (server) return **J
 - Always use `user.sub` (not `user.id`) for Supabase auth user identification
 - Always target local Supabase instance for devment and seeding, not remote DB
 - Schema: `airlines`, `profiles`, `seniority_lists`, `seniority_entries` — see `supabase/migrations/` for full definitions
+- **Supabase JS returns max 1000 rows by default** — always use `fetchAllRows()` (from `app/composables/useFetchAllRows.ts`) for any query that could exceed 1000 rows. Never use raw `.select('*')` without `.range()` or `fetchAllRows` for large tables like `seniority_entries`
 
 ---
 

@@ -43,11 +43,15 @@ Thumbs.db
 .claude/worktrees
 .data
 
+# MCP server config (local dev URLs)
+.mcp.json
+
 # Playwright
 /test-results/
 /playwright-report/
 /blob-report/
 /playwright/.cache/
+.playwright-mcp/
 
 # Git worktrees
 .worktrees/
