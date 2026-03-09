@@ -24,8 +24,9 @@
 
 ### Next Up
 
-- [ ] User settings page (edit airline, employee number, retirement age, change password)
-- [ ] Seniority list management (view/archive/delete uploaded lists) — requires new RLS policies for owner delete/update
+- [x] User settings page (edit airline, employee number, retirement age, change password)
+- [x] Seniority list management — sidebar nav link to a "My Lists" page showing all uploaded lists; each list supports inline edit of title (airline label) and effective date, and a delete action; requires owner UPDATE + DELETE RLS policies on `seniority_lists`
+- [ ] Upload error navigation — when upload completes with data errors, the error count is a clickable link that navigates to the affected rows, with a human-readable message describing each validation failure
 - [ ] Public landing page
 
 ### Future

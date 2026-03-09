@@ -4,6 +4,7 @@ import {
   SeniorityEntrySchema,
   SeniorityListIdSchema,
   CreateSeniorityListSchema,
+  UpdateSeniorityListSchema,
   normalizeEmployeeNumber,
   normalizeDate,
   computeRetireDate,
@@ -163,6 +164,41 @@ describe('CreateSeniorityListSchema', () => {
     const result = CreateSeniorityListSchema.safeParse({
       entries: [validEntry],
     })
+    expect(result.success).toBe(false)
+  })
+})
+
+describe('UpdateSeniorityListSchema', () => {
+  it('accepts valid airline and effective_date', () => {
+    const result = UpdateSeniorityListSchema.safeParse({
+      airline: 'United Airlines',
+      effective_date: '2026-03-01',
+    })
+    expect(result.success).toBe(true)
+  })
+
+  it('accepts airline alone', () => {
+    const result = UpdateSeniorityListSchema.safeParse({ airline: 'Delta' })
+    expect(result.success).toBe(true)
+  })
+
+  it('accepts effective_date alone', () => {
+    const result = UpdateSeniorityListSchema.safeParse({ effective_date: '2026-06-15' })
+    expect(result.success).toBe(true)
+  })
+
+  it('rejects empty airline', () => {
+    const result = UpdateSeniorityListSchema.safeParse({ airline: '' })
+    expect(result.success).toBe(false)
+  })
+
+  it('rejects invalid effective_date format', () => {
+    const result = UpdateSeniorityListSchema.safeParse({ effective_date: '03/01/2026' })
+    expect(result.success).toBe(false)
+  })
+
+  it('rejects empty object (at least one field required)', () => {
+    const result = UpdateSeniorityListSchema.safeParse({})
     expect(result.success).toBe(false)
   })
 })

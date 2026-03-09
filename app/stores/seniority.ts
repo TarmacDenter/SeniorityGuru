@@ -55,6 +55,16 @@ export const useSeniorityStore = defineStore('seniority', () => {
   /** Track which list's entries are currently loaded */
   const currentListId = ref<string | null>(null)
 
+  async function updateList(id: string, updates: { airline?: string; effective_date?: string }) {
+    const updated = await $fetch<Tables<'seniority_lists'>>(`/api/seniority-lists/${id}`, {
+      method: 'PATCH',
+      body: updates,
+    })
+    const idx = lists.value.findIndex(l => l.id === id)
+    if (idx !== -1) lists.value[idx] = updated
+    log.info('List updated in store', { listId: id })
+  }
+
   async function deleteList(id: string) {
     await $fetch(`/api/seniority-lists/${id}`, { method: 'DELETE' })
     lists.value = lists.value.filter(l => l.id !== id)
@@ -75,6 +85,7 @@ export const useSeniorityStore = defineStore('seniority', () => {
     entriesError,
     fetchLists,
     fetchEntries,
+    updateList,
     deleteList,
   }
 })
