@@ -1,6 +1,5 @@
 import { serverSupabaseServiceRole } from '#supabase/server'
 import { createLogger } from '#shared/utils/logger'
-import { requireAdmin } from '~/server/utils/requireAdmin'
 
 const log = createLogger('admin-api')
 

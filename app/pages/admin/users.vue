@@ -1,7 +1,7 @@
 <template>
   <UDashboardPanel>
     <template #header>
-      <UDashboardNavbar title="User Management">
+      <SeniorityNavbar title="User Management">
         <template #right>
           <UModal v-model:open="inviteOpen" title="Invite User" description="Send an invite link via email">
             <UButton label="Invite User" icon="i-lucide-mail-plus" />
@@ -20,9 +20,10 @@
             </template>
           </UModal>
         </template>
-      </UDashboardNavbar>
+      </SeniorityNavbar>
     </template>
 
+    <template #body>
     <div class="p-4">
       <UAlert v-if="fetchError" icon="i-lucide-alert-triangle" color="error" :title="fetchError" class="mb-4" />
 
@@ -55,6 +56,7 @@
         </template>
       </UTable>
     </div>
+    </template>
   </UDashboardPanel>
 </template>
 
