@@ -47,9 +47,17 @@ const errorDescription = computed(() => {
   return params.get('error_description')?.replace(/\+/g, ' ') ?? 'Something went wrong.'
 })
 
+const hashType = computed(() => {
+  const hash = route.hash
+  if (!hash) return null
+  const params = new URLSearchParams(hash.slice(1))
+  return params.get('type')
+})
+
 watchEffect(() => {
   if (user.value) {
-    navigateTo(route.query.type === 'recovery' ? '/auth/update-password' : '/')
+    const type = route.query.type || hashType.value
+    navigateTo(type === 'recovery' || type === 'invite' ? '/auth/update-password' : '/')
   }
 })
 </script>
