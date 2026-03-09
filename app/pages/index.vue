@@ -5,6 +5,19 @@
 
       <UDashboardToolbar>
         <UTabs v-model="activeTab" :items="tabs" :content="false" variant="link" />
+
+        <template #right>
+          <USelectMenu
+            v-if="listOptions.length > 1"
+            v-model="selectedListId"
+            :items="listOptions"
+            value-key="id"
+            label-key="label"
+            placeholder="Select list..."
+            class="w-48"
+            size="sm"
+          />
+        </template>
       </UDashboardToolbar>
     </template>
 
@@ -143,12 +156,23 @@ const tabs: TabsItem[] = [
 const activeTab = ref((route.query.tab as string) || 'overview')
 
 watch(activeTab, (tab) => {
-  navigateTo({ path: '/', query: tab === 'overview' ? {} : { tab } }, { replace: true })
+  const query: Record<string, string> = {}
+  if (tab !== 'overview') query.tab = tab
+  if (selectedListId.value) query.list = selectedListId.value
+  navigateTo({ path: '/', query }, { replace: true })
 })
 
 const seniorityStore = useSeniorityStore()
 const userStore = useUserStore()
 const loading = ref(true)
+const selectedListId = ref<string | null>(null)
+
+const listOptions = computed(() =>
+  seniorityStore.lists.map(l => ({
+    id: l.id,
+    label: l.effective_date,
+  })),
+)
 
 const {
   hasData, hasEmployeeNumber, userFound,
@@ -157,6 +181,16 @@ const {
   aggregateStats, recentLists, quals,
 } = useDashboardStats()
 
+watch(selectedListId, async (id) => {
+  if (!id || id === seniorityStore.currentListId) return
+  loading.value = true
+  await seniorityStore.fetchEntries(id)
+  const query: Record<string, string> = { list: id }
+  if (activeTab.value !== 'overview') query.tab = activeTab.value
+  navigateTo({ path: '/', query }, { replace: true })
+  loading.value = false
+})
+
 onMounted(async () => {
   if (!userStore.profile) {
     await userStore.fetchProfile()
@@ -164,9 +198,12 @@ onMounted(async () => {
 
   await seniorityStore.fetchLists()
 
-  const latestList = seniorityStore.lists[0] ?? null
-  if (latestList) {
-    await seniorityStore.fetchEntries(latestList.id)
+  const listFromQuery = route.query.list as string | undefined
+  const validList = listFromQuery && seniorityStore.lists.some(l => l.id === listFromQuery)
+  selectedListId.value = validList ? listFromQuery : (seniorityStore.lists[0]?.id ?? null)
+
+  if (selectedListId.value) {
+    await seniorityStore.fetchEntries(selectedListId.value)
   }
 
   loading.value = false
