@@ -91,6 +91,18 @@ const globalFilter = ref('');
 const expanded = ref({});
 const isMobile = useMediaQuery('(max-width: 639px)');
 
+// Imperatively sync filter to TanStack — v-model:global-filter alone doesn't
+// trigger recomputation because TanStack's mergeProxy lazily evaluates state getters.
+watch(globalFilter, (value) => {
+  if (table.value?.tableApi) {
+    table.value.tableApi.setGlobalFilter(value);
+    table.value.tableApi.setPageIndex(0);
+  }
+  else {
+    pagination.value.pageIndex = 0;
+  }
+});
+
 const pagination = ref({
   pageIndex: 0,
   pageSize: 50,

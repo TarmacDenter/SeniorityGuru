@@ -24,14 +24,25 @@
     </template>
 
     <template #body>
-    <div class="p-4">
-      <UAlert v-if="fetchError" icon="i-lucide-alert-triangle" color="error" :title="fetchError" class="mb-4" />
+    <div class="p-4 space-y-3">
+      <UAlert v-if="fetchError" icon="i-lucide-alert-triangle" color="error" :title="fetchError" />
+
+      <UInput
+        v-model="globalFilter"
+        icon="i-lucide-search"
+        placeholder="Search users..."
+        class="max-w-sm"
+      />
 
       <UTable
-        ref="table"
+        ref="usersTable"
         :data="users"
         :columns="columns"
         :loading="loading"
+        v-model:global-filter="globalFilter"
+        v-model:pagination="pagination"
+        v-model:sorting="sorting"
+        :pagination-options="paginationOptions"
         :ui="{ tr: 'data-[selected=true]:bg-(--ui-bg-elevated)' }"
       >
         <template #role-cell="{ row }">
@@ -55,6 +66,17 @@
           />
         </template>
       </UTable>
+
+      <div class="flex items-center justify-between">
+        <p class="text-sm text-(--ui-text-muted)">{{ totalRows }} results</p>
+        <UPagination
+          v-if="pageCount > 1"
+          :page="currentPage"
+          :total="totalRows"
+          :items-per-page="pagination.pageSize"
+          @update:page="(p: number) => usersTable?.tableApi?.setPageIndex(p - 1)"
+        />
+      </div>
     </div>
     </template>
   </UDashboardPanel>
@@ -62,6 +84,7 @@
 
 <script setup lang="ts">
 import type { TableColumn } from '@nuxt/ui'
+import { sortableHeader } from '~/utils/sortableHeader'
 
 definePageMeta({
   middleware: ['auth', 'admin'],
@@ -78,6 +101,17 @@ interface AdminUser {
   last_sign_in_at: string | null
 }
 
+const {
+  tableRef: usersTable,
+  globalFilter,
+  sorting,
+  pagination,
+  paginationOptions,
+  currentPage,
+  pageCount,
+  totalRows,
+} = useTableFeatures<AdminUser>('usersTable', { pageSize: 25 })
+
 const toast = useToast()
 const loading = ref(true)
 const fetchError = ref<string | null>(null)
@@ -92,13 +126,13 @@ const inviteLoading = ref(false)
 const roleOptions = ['user', 'moderator', 'admin']
 
 const columns: TableColumn<AdminUser>[] = [
-  { accessorKey: 'email', header: 'Email' },
-  { accessorKey: 'role', header: 'Role' },
-  { accessorKey: 'icao_code', header: 'Airline' },
-  { accessorKey: 'employee_number', header: 'Employee #' },
+  { accessorKey: 'email', header: sortableHeader<AdminUser>('Email') },
+  { accessorKey: 'role', header: sortableHeader<AdminUser>('Role') },
+  { accessorKey: 'icao_code', header: sortableHeader<AdminUser>('Airline') },
+  { accessorKey: 'employee_number', header: sortableHeader<AdminUser>('Employee #') },
   {
     accessorKey: 'created_at',
-    header: 'Created',
+    header: sortableHeader<AdminUser>('Created'),
     cell: ({ row }) => new Date(row.original.created_at).toLocaleDateString(),
   },
   { id: 'actions', header: '' },
