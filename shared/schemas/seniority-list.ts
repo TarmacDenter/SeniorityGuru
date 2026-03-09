@@ -82,6 +82,11 @@ export const SeniorityEntrySchema = z.object({
 })
 export type SeniorityEntry = z.infer<typeof SeniorityEntrySchema>
 
+export const SeniorityListIdSchema = z.object({
+  id: z.string().uuid('Invalid list ID'),
+})
+export type SeniorityListId = z.infer<typeof SeniorityListIdSchema>
+
 export const CreateSeniorityListSchema = z.object({
   effective_date: z.string().regex(isoDateRegex, 'Invalid date format'),
   entries: z.array(SeniorityEntrySchema).min(1, 'At least one entry is required'),

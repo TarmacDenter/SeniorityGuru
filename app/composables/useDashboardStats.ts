@@ -407,6 +407,7 @@ export function useDashboardStats() {
   // --- RECENT LISTS ---
   const recentLists = computed(() => {
     return seniorityStore.lists.map((list) => ({
+      id: list.id,
       title: `${formatDate(list.effective_date)} Seniority List`,
       description: 'Uploaded',
       icon: 'i-lucide-file-text',

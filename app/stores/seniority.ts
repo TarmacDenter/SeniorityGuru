@@ -37,6 +37,7 @@ export const useSeniorityStore = defineStore('seniority', () => {
     entriesLoading.value = true
     entriesError.value = null
     entries.value = []
+    currentListId.value = listId
 
     try {
       entries.value = await fetchAllRows(db, 'seniority_entries', q =>
@@ -51,14 +52,29 @@ export const useSeniorityStore = defineStore('seniority', () => {
     entriesLoading.value = false
   }
 
+  /** Track which list's entries are currently loaded */
+  const currentListId = ref<string | null>(null)
+
+  async function deleteList(id: string) {
+    await $fetch(`/api/seniority-lists/${id}`, { method: 'DELETE' })
+    lists.value = lists.value.filter(l => l.id !== id)
+    if (currentListId.value === id) {
+      entries.value = []
+      currentListId.value = null
+    }
+    log.info('List deleted from store', { listId: id })
+  }
+
   return {
     lists,
     entries,
+    currentListId,
     listsLoading,
     entriesLoading,
     listsError,
     entriesError,
     fetchLists,
     fetchEntries,
+    deleteList,
   }
 })

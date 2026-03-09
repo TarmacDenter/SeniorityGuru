@@ -2,6 +2,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   SeniorityEntrySchema,
+  SeniorityListIdSchema,
   CreateSeniorityListSchema,
   normalizeEmployeeNumber,
   normalizeDate,
@@ -112,6 +113,23 @@ describe('SeniorityEntrySchema', () => {
 
   it('rejects invalid hire_date', () => {
     expect(SeniorityEntrySchema.safeParse({ ...valid, hire_date: 'not-a-date' }).success).toBe(false)
+  })
+})
+
+describe('SeniorityListIdSchema', () => {
+  it('accepts a valid UUID', () => {
+    const result = SeniorityListIdSchema.safeParse({ id: '550e8400-e29b-41d4-a716-446655440000' })
+    expect(result.success).toBe(true)
+  })
+
+  it('rejects a non-UUID string', () => {
+    const result = SeniorityListIdSchema.safeParse({ id: 'not-a-uuid' })
+    expect(result.success).toBe(false)
+  })
+
+  it('rejects missing id', () => {
+    const result = SeniorityListIdSchema.safeParse({})
+    expect(result.success).toBe(false)
   })
 })
 
