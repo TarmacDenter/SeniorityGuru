@@ -2,7 +2,7 @@
   <div class="space-y-4">
     <UTable
       v-model:pagination="pagination"
-      :data="entries"
+      :data="displayEntries"
       :columns="columns"
       :get-row-id="(_row: Partial<SeniorityEntry>, index: number) => String(index)"
       :pagination-options="{ getPaginationRowModel: getPaginationRowModel() }"
@@ -44,12 +44,14 @@
       </template>
 
       <template #errors-cell="{ row }">
-        <UIcon
-          v-if="rowErrors.has(row.index)"
-          name="i-lucide-alert-triangle"
-          class="text-error"
-          :title="rowErrors.get(row.index)?.join('\n')"
-        />
+        <UTooltip v-if="rowErrors.has(row.index)">
+          <UIcon name="i-lucide-alert-triangle" class="text-error" />
+          <template #text>
+            <ul class="list-disc pl-3 text-xs space-y-0.5">
+              <li v-for="(err, i) in rowErrors.get(row.index)" :key="i">{{ formatRowError(err) }}</li>
+            </ul>
+          </template>
+        </UTooltip>
       </template>
 
       <template #actions-cell="{ row }">
@@ -67,7 +69,7 @@
     <div v-if="pageCount > 1" class="flex justify-center">
       <UPagination
         v-model:page="currentPage"
-        :total="entries.length"
+        :total="displayEntries.length"
         :items-per-page="pagination.pageSize"
         :sibling-count="1"
       />
@@ -79,16 +81,29 @@
 import { getPaginationRowModel } from '@tanstack/vue-table'
 import type { SeniorityEntry } from '#shared/schemas/seniority-list'
 import type { TableColumn } from '@nuxt/ui'
+import { formatRowError } from '~/utils/formatRowError'
 
 const PAGE_SIZE = 50
 
 const props = defineProps<{
   entries: Partial<SeniorityEntry>[]
   rowErrors: Map<number, string[]>
+  showErrorsOnly?: boolean
 }>()
 
 const pagination = ref({ pageIndex: 0, pageSize: PAGE_SIZE })
-const pageCount = computed(() => Math.ceil(props.entries.length / pagination.value.pageSize))
+
+const displayEntries = computed(() => {
+  if (!props.showErrorsOnly) return props.entries
+  return props.entries.filter((_, i) => props.rowErrors.has(i))
+})
+
+const pageCount = computed(() => Math.ceil(displayEntries.value.length / pagination.value.pageSize))
+
+// Reset to page 1 when toggling error filter
+watch(() => props.showErrorsOnly, () => {
+  pagination.value = { ...pagination.value, pageIndex: 0 }
+})
 const currentPage = computed({
   get: () => pagination.value.pageIndex + 1,
   set: (p: number) => { pagination.value = { ...pagination.value, pageIndex: p - 1 } },

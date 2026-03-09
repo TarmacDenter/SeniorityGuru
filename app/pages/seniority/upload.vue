@@ -67,13 +67,23 @@
                 <p class="text-sm text-muted">
                   {{ upload.entries.value.length }} rows
                   <template v-if="upload.errorCount.value > 0">
-                    &middot; <span class="text-error">{{ upload.errorCount.value }} errors</span>
+                    &middot;
+                    <UButton
+                      variant="link"
+                      color="error"
+                      size="xs"
+                      :icon="showErrorsOnly ? 'i-lucide-filter-x' : 'i-lucide-filter'"
+                      @click="showErrorsOnly = !showErrorsOnly"
+                    >
+                      {{ upload.errorCount.value }} errors{{ showErrorsOnly ? ' (filtered)' : '' }}
+                    </UButton>
                   </template>
                 </p>
               </div>
               <UploadReviewTable
                 :entries="upload.entries.value"
                 :row-errors="upload.rowErrors.value"
+                :show-errors-only="showErrorsOnly"
                 @update-cell="upload.updateCell"
                 @delete-row="upload.deleteRow"
               />
@@ -146,6 +156,7 @@ definePageMeta({ middleware: 'auth', layout: 'seniority' })
 const upload = useSeniorityUpload()
 const toast = useToast()
 const files = ref<File[] | null>(null)
+const showErrorsOnly = ref(false)
 
 const stepOrder = ['upload', 'mapping', 'review', 'confirm'] as const
 type Step = typeof stepOrder[number]
