@@ -33,5 +33,6 @@ export default defineNuxtConfig({
     '/seniority': { ssr: false },
     '/seniority/**': { ssr: false },
     '/settings': { ssr: false },
+    '/admin/**': { ssr: false },
   }
 })
