@@ -168,11 +168,14 @@ Use **Zod** at every boundary between the frontend and backend. Define schemas i
 ## Git Workflow
 
 - **Strategy**: Linear dev with rebase — see [WORKFLOW.md](WORKFLOW.md) for full reference
-- **Branches**: `main` (production/releases), `dev` (integration), `feature/*`, `release/vX.Y.Z`, `hotfix/*`
-- **Never** commit directly to `main` or `dev`
-- **Feature integration**: rebase onto `dev`, fast-forward merge
-- **Releases**: squash merge `dev` → `main`; semantic-release runs automatically
+- **Branches**: `main` (production, protected), `dev` (integration, unprotected), `feature/*`, `hotfix/*`
+- **Never** commit directly to `main`
+- **Feature integration**: rebase onto `dev`, fast-forward merge (push directly to `dev`)
+- **Releases**: squash merge `dev` → `main` via PR; semantic-release runs automatically
+- **Hotfixes**: squash merge to `main` via PR, then cherry-pick to `dev`
+- **History revision**: `dev` is unprotected — rebase and force-push freely to keep history clean
 - **Commit format**: Conventional Commits (`type(scope): description`) — enforced via husky + commitlint
+- **Quality gates**: pre-push hook runs typecheck + tests; CI runs both on push to `dev` and PRs to `main`
 
 ### Claude Slash Commands
 
@@ -181,4 +184,4 @@ Use **Zod** at every boundary between the frontend and backend. Define schemas i
 | `/feature` | Create a feature branch from dev |
 | `/pr` | Draft and open a PR for the current branch |
 | `/hotfix` | Create a hotfix branch from main |
-| `/release` | Prepare a release branch from dev |
+| `/ship` | Promote dev → main via squash-merge PR |

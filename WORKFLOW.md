@@ -1,12 +1,12 @@
 # Git Workflow
 
-## Strategy: GitFlow
+## Strategy: Linear Dev with Rebase (Solo Dev)
 
 ```
 main ──────────────────────────────────────────► (production, tagged releases)
   │                         ▲
-  └── dev ──────────────┤──────────────────► (integration branch)
-        │          ▲        │
+  └── dev ──────────────┤──────────────────► (integration / staging)
+        │          ▲
         └── feature/* ──────┘
 ```
 
@@ -17,10 +17,9 @@ main ─────────────────────────
 | Branch | Purpose | Branch from | Merge to |
 |---|---|---|---|
 | `main` | Production code; every merge triggers a release | — | — |
-| `dev` | Integration; all feature work lands here | `main` | `main` via release branch |
-| `feature/*` | New features or improvements | `dev` | `dev` |
-| `release/vX.Y.Z` | Release stabilization; no new features | `dev` | `main` (+ back-merge to `dev`) |
-| `hotfix/*` | Emergency fixes for production | `main` | `main` (+ back-merge to `dev`) |
+| `dev` | Integration & staging; all feature work lands here | `main` | `main` (squash merge via PR) |
+| `feature/*` | New features or improvements | `dev` | `dev` (rebase + fast-forward merge) |
+| `hotfix/*` | Emergency fixes for production | `main` | `main` (squash merge via PR, then cherry-pick to `dev`) |
 
 ---
 
@@ -28,7 +27,6 @@ main ─────────────────────────
 
 ```
 feature/short-description
-release/v1.2.0
 hotfix/short-description
 ```
 
@@ -70,28 +68,35 @@ git checkout -b feature/my-feature
 
 # ... work, commit with conventional messages ...
 
-git push origin feature/my-feature
-# Open PR: feature/my-feature → dev
-# Use squash merge on GitHub
+# When ready to integrate:
+git fetch origin dev
+git rebase origin/dev
+git checkout dev
+git merge --ff-only feature/my-feature
+git push origin dev
+
+# Clean up
+git branch -d feature/my-feature
 ```
+
+For small changes, pushing directly to `dev` is fine.
 
 ---
 
-## Release Workflow
+## Promoting Dev to Main (Release)
 
 ```bash
-# Cut a release branch from dev
-git checkout dev && git pull
-git checkout -b release/v1.2.0
+# Optionally clean up dev history first
+git checkout dev
+git rebase -i $(git merge-base dev main)
 
-# Stabilize — only bug fixes on this branch
-git push origin release/v1.2.0
-# Open PR: release/v1.2.0 → main (squash merge)
-# Also open PR: release/v1.2.0 → dev to back-merge fixes
+# Push dev, then open a PR: dev → main (squash merge)
+git push origin dev
+gh pr create --base main --title "feat: <release summary>"
 ```
 
 semantic-release runs automatically on every push to `main` and:
-1. Analyzes commits since last tag
+1. Analyzes the squash commit message
 2. Bumps version in `package.json`
 3. Generates/updates `CHANGELOG.md`
 4. Creates a GitHub release + tag
@@ -104,25 +109,31 @@ semantic-release runs automatically on every push to `main` and:
 git checkout main && git pull
 git checkout -b hotfix/fix-description
 
-# Fix the issue
+# Fix the issue, commit
 git push origin hotfix/fix-description
+
 # Open PR: hotfix/fix-description → main (squash merge)
-# Open PR: hotfix/fix-description → dev (squash merge)
+# After merge, cherry-pick the fix onto dev:
+git checkout dev && git pull
+git cherry-pick <commit-sha>
+git push origin dev
 ```
 
 ---
 
-## PR Rules
+## Quality Gates
 
-- All PRs use **squash merge** — one clean commit per PR on the target branch
-- PR title must follow Conventional Commits format (it becomes the squash commit message)
-- Link to related issue in the PR description
-- CI must pass (typecheck) before merging
+| Gate | Where | Runs |
+|---|---|---|
+| commitlint | Local (commit-msg hook) | Conventional Commits format |
+| typecheck + tests | Local (pre-push hook) | `npm run typecheck && npm test` |
+| CI (typecheck + tests) | GitHub (push to `dev`, PRs to `main`/`dev`) | Same as pre-push |
+| semantic-release | GitHub (push to `main`) | Version bump + changelog + tag |
 
 ---
 
-## Protected Branches
+## Branch Protection
 
 Configure on GitHub:
-- `main` — require PR, require CI pass, no direct push
-- `dev` — require PR, require CI pass, no direct push
+- `main` — require PR, require CI pass (typecheck + test), no direct push
+- `dev` — **unprotected** (push directly, force-push allowed for history revision)
