@@ -83,7 +83,7 @@ export function useSeniorityUpload() {
     }
   }
 
-  /** Run Zod validation on each entry row. */
+  /** Run Zod validation on each entry row, plus contiguous seniority number checks. */
   function validate() {
     const errors = new Map<number, string[]>()
     entries.value.forEach((entry, i) => {
@@ -92,6 +92,50 @@ export function useSeniorityUpload() {
         errors.set(i, result.error.issues.map(issue => `${issue.path.join('.')}: ${issue.message}`))
       }
     })
+
+    // Check for duplicate and non-contiguous seniority numbers
+    const senNumToIndices = new Map<number, number[]>()
+    entries.value.forEach((entry, i) => {
+      const num = entry.seniority_number
+      if (typeof num === 'number' && Number.isInteger(num) && num > 0) {
+        const indices = senNumToIndices.get(num) ?? []
+        indices.push(i)
+        senNumToIndices.set(num, indices)
+      }
+    })
+
+    // Flag duplicates
+    for (const [num, indices] of senNumToIndices) {
+      if (indices.length > 1) {
+        for (const i of indices) {
+          const existing = errors.get(i) ?? []
+          existing.push(`seniority_number: Duplicate seniority number ${num}`)
+          errors.set(i, existing)
+        }
+      }
+    }
+
+    // Check for gaps in the sequence 1..N
+    const allNums = Array.from(senNumToIndices.keys()).sort((a, b) => a - b)
+    if (allNums.length > 0) {
+      const expected = allNums.length
+      const max = allNums[allNums.length - 1]!
+      if (max !== expected || allNums[0] !== 1) {
+        // Find which numbers are out of place — flag entries whose seniority_number
+        // is outside the expected 1..N range or creates a gap
+        const expectedSet = new Set(Array.from({ length: expected }, (_, i) => i + 1))
+        for (const [num, indices] of senNumToIndices) {
+          if (!expectedSet.has(num)) {
+            for (const i of indices) {
+              const existing = errors.get(i) ?? []
+              existing.push(`seniority_number: Non-contiguous sequence — expected 1..${expected}, found ${num}`)
+              errors.set(i, existing)
+            }
+          }
+        }
+      }
+    }
+
     rowErrors.value = errors
     if (errors.size > 0) {
       log.warn('Validation errors found', { errorCount: errors.size, totalRows: entries.value.length })

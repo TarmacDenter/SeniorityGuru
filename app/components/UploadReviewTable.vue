@@ -4,22 +4,22 @@
       v-model:pagination="pagination"
       :data="displayEntries"
       :columns="columns"
-      :get-row-id="(_row: Partial<SeniorityEntry>, index: number) => String(index)"
+      :get-row-id="(row: IndexedEntry) => String(row._originalIndex)"
       :pagination-options="{ getPaginationRowModel: getPaginationRowModel() }"
       class="w-full"
       :ui="{ tr: 'data-[error=true]:bg-error/10' }"
     >
       <template v-for="field in editableFields" :key="field" #[`${field}-cell`]="{ row }">
-        <div class="cursor-pointer" @click="startEditing(row.index, field)">
-          <template v-if="isEditing(row.index, field)">
+        <div class="cursor-pointer" @click="startEditing(row.original._originalIndex, field)">
+          <template v-if="isEditing(row.original._originalIndex, field)">
             <UInputNumber
               v-if="field === 'seniority_number'"
               :model-value="(row.original[field] as number | undefined)"
               size="xs"
               class="w-full"
-              :color="rowErrors.has(row.index) ? 'error' : undefined"
+              :color="rowErrors.has(row.original._originalIndex) ? 'error' : undefined"
               autofocus
-              @update:model-value="(v: number | null) => emit('updateCell', row.index, field, v ?? 0)"
+              @update:model-value="(v: number | null) => emit('updateCell', row.original._originalIndex, field, v ?? 0)"
               @blur="stopEditing"
               @keydown.enter="stopEditing"
               @keydown.escape="stopEditing"
@@ -29,26 +29,26 @@
               :model-value="String(row.original[field] ?? '')"
               size="xs"
               class="w-full"
-              :color="rowErrors.has(row.index) ? 'error' : undefined"
+              :color="rowErrors.has(row.original._originalIndex) ? 'error' : undefined"
               autofocus
-              @update:model-value="(v: string) => emit('updateCell', row.index, field, v)"
+              @update:model-value="(v: string) => emit('updateCell', row.original._originalIndex, field, v)"
               @blur="stopEditing"
               @keydown.enter="stopEditing"
               @keydown.escape="stopEditing"
             />
           </template>
-          <span v-else class="text-sm" :class="rowErrors.has(row.index) ? 'text-error' : ''">
+          <span v-else class="text-sm" :class="rowErrors.has(row.original._originalIndex) ? 'text-error' : ''">
             {{ row.original[field] ?? '' }}
           </span>
         </div>
       </template>
 
       <template #errors-cell="{ row }">
-        <UTooltip v-if="rowErrors.has(row.index)">
+        <UTooltip v-if="rowErrors.has(row.original._originalIndex)">
           <UIcon name="i-lucide-alert-triangle" class="text-error" />
           <template #text>
             <ul class="list-disc pl-3 text-xs space-y-0.5">
-              <li v-for="(err, i) in rowErrors.get(row.index)" :key="i">{{ formatRowError(err) }}</li>
+              <li v-for="(err, i) in rowErrors.get(row.original._originalIndex)" :key="i">{{ formatRowError(err) }}</li>
             </ul>
           </template>
         </UTooltip>
@@ -61,7 +61,7 @@
           variant="ghost"
           size="xs"
           aria-label="Delete row"
-          @click="emit('deleteRow', row.index)"
+          @click="emit('deleteRow', row.original._originalIndex)"
         />
       </template>
     </UTable>
@@ -85,6 +85,8 @@ import { formatRowError } from '~/utils/formatRowError'
 
 const PAGE_SIZE = 50
 
+type IndexedEntry = Partial<SeniorityEntry> & { _originalIndex: number }
+
 const props = defineProps<{
   entries: Partial<SeniorityEntry>[]
   rowErrors: Map<number, string[]>
@@ -93,9 +95,10 @@ const props = defineProps<{
 
 const pagination = ref({ pageIndex: 0, pageSize: PAGE_SIZE })
 
-const displayEntries = computed(() => {
-  if (!props.showErrorsOnly) return props.entries
-  return props.entries.filter((_, i) => props.rowErrors.has(i))
+const displayEntries = computed<IndexedEntry[]>(() => {
+  const indexed = props.entries.map((entry, i) => ({ ...entry, _originalIndex: i }))
+  if (!props.showErrorsOnly) return indexed
+  return indexed.filter(e => props.rowErrors.has(e._originalIndex))
 })
 
 const pageCount = computed(() => Math.ceil(displayEntries.value.length / pagination.value.pageSize))
@@ -132,7 +135,7 @@ function stopEditing() {
   editingCell.value = null
 }
 
-const columns: TableColumn<Partial<SeniorityEntry>>[] = [
+const columns: TableColumn<IndexedEntry>[] = [
   { accessorKey: 'seniority_number', header: 'Sen #' },
   { accessorKey: 'employee_number', header: 'Emp #' },
   { accessorKey: 'name', header: 'Name' },
