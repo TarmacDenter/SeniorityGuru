@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect } from 'vitest'
-import { UpdateProfileSchema, UpdatePreferencesSchema, ChangePasswordSchema, ChangeEmailSchema } from './settings'
+import { UpdateProfileSchema, UpdatePreferencesSchema, ChangePasswordSchema, ChangeEmailSchema, UpdateEmployeeNumberSchema } from './settings'
 
 describe('UpdateProfileSchema', () => {
   it('accepts valid profile data', () => {
@@ -111,5 +111,35 @@ describe('ChangeEmailSchema', () => {
   it('rejects an empty string', () => {
     const result = ChangeEmailSchema.safeParse({ newEmail: '' })
     expect(result.success).toBe(false)
+  })
+})
+
+describe('UpdateEmployeeNumberSchema', () => {
+  it('accepts a valid employee number', () => {
+    expect(UpdateEmployeeNumberSchema.safeParse({ employeeNumber: '12345' }).success).toBe(true)
+  })
+
+  it('accepts a single character employee number', () => {
+    expect(UpdateEmployeeNumberSchema.safeParse({ employeeNumber: 'A' }).success).toBe(true)
+  })
+
+  it('accepts a 20 character employee number', () => {
+    expect(UpdateEmployeeNumberSchema.safeParse({ employeeNumber: '12345678901234567890' }).success).toBe(true)
+  })
+
+  it('rejects an empty string', () => {
+    const result = UpdateEmployeeNumberSchema.safeParse({ employeeNumber: '' })
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.error.issues[0]!.message).toBe('Employee number is required')
+    }
+  })
+
+  it('rejects a string longer than 20 characters', () => {
+    expect(UpdateEmployeeNumberSchema.safeParse({ employeeNumber: '123456789012345678901' }).success).toBe(false)
+  })
+
+  it('rejects missing employeeNumber field', () => {
+    expect(UpdateEmployeeNumberSchema.safeParse({}).success).toBe(false)
   })
 })

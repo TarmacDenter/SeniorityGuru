@@ -23,3 +23,8 @@ export const ChangeEmailSchema = z.object({
   newEmail: z.string().email('Please enter a valid email address'),
 })
 export type ChangeEmailState = z.infer<typeof ChangeEmailSchema>
+
+export const UpdateEmployeeNumberSchema = z.object({
+  employeeNumber: z.string().min(1, 'Employee number is required').max(20),
+})
+export type UpdateEmployeeNumberState = z.infer<typeof UpdateEmployeeNumberSchema>
