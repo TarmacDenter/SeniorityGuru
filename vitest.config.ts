@@ -8,6 +8,7 @@ export default defineVitestConfig({
         domEnvironment: 'happy-dom',
       },
     },
+    envFile: '.env.test',
     exclude: ['node_modules/**', 'e2e/**', '.worktrees/**'],
   },
 })

@@ -1,6 +1,7 @@
 import { serverSupabaseClient, serverSupabaseUser } from '#supabase/server'
 import { SeniorityListIdSchema, UpdateSeniorityListSchema } from '#shared/schemas/seniority-list'
 import { createLogger } from '#shared/utils/logger'
+import { invalidateCache, listsKey, listKey } from '../../utils/seniority-cache'
 
 const log = createLogger('seniority-api')
 
@@ -28,6 +29,9 @@ export default defineEventHandler(async (event) => {
     log.warn('Update failed or list not found', { userId: user.sub, listId: id, error: error?.message })
     throw createError({ statusCode: 404, statusMessage: 'List not found' })
   }
+
+  // Invalidate caches for this list and the user's lists index
+  await invalidateCache(listsKey(user.sub), listKey(id))
 
   log.info('Seniority list updated', { userId: user.sub, listId: data.id })
 

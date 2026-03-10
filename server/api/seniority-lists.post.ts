@@ -1,6 +1,7 @@
 import { serverSupabaseClient, serverSupabaseUser } from '#supabase/server'
 import { CreateSeniorityListSchema } from '#shared/schemas/seniority-list'
 import { createLogger } from '#shared/utils/logger'
+import { invalidateCache, listsKey } from '../utils/seniority-cache'
 
 const log = createLogger('seniority-api')
 
@@ -68,6 +69,9 @@ export default defineEventHandler(async (event) => {
     log.error('Entries insert failed', { userId: user.sub, listId: list.id, error: entriesError.message })
     throw createError({ statusCode: 500, statusMessage: 'Internal server error' })
   }
+
+  // Invalidate user's lists cache so next GET returns fresh data
+  await invalidateCache(listsKey(user.sub))
 
   log.info('Seniority list upload completed', {
     userId: user.sub,

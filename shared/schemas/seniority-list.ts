@@ -41,3 +41,35 @@ export const UpdateSeniorityListSchema = z.object({
   message: 'At least one field must be provided',
 })
 export type UpdateSeniorityList = z.infer<typeof UpdateSeniorityListSchema>
+
+// --- Response DTOs ---
+
+export const SeniorityListResponseSchema = z.object({
+  id: z.string().uuid(),
+  airline: z.string(),
+  title: z.string().nullable(),
+  effective_date: z.string(),
+  status: z.string(),
+  created_at: z.string(),
+})
+export type SeniorityListResponse = z.infer<typeof SeniorityListResponseSchema>
+
+export const SeniorityEntryResponseSchema = z.object({
+  id: z.string().uuid(),
+  list_id: z.string().uuid(),
+  seniority_number: z.number(),
+  employee_number: z.string(),
+  name: z.string().nullable(),
+  seat: z.string().nullable(),
+  base: z.string().nullable(),
+  fleet: z.string().nullable(),
+  hire_date: z.string(),
+  retire_date: z.string().nullable(),
+})
+export type SeniorityEntryResponse = z.infer<typeof SeniorityEntryResponseSchema>
+
+export const CreateSeniorityListResponseSchema = z.object({
+  id: z.string().uuid(),
+  count: z.number(),
+})
+export type CreateSeniorityListResponse = z.infer<typeof CreateSeniorityListResponseSchema>

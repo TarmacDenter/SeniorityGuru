@@ -13,7 +13,6 @@ export const useUserStore = defineStore('user', () => {
   const isModerator = computed(() => profile.value?.role === 'moderator' || profile.value?.role === 'admin')
 
   async function fetchProfile() {
-    const db = useDb()
     const user = useSupabaseUser()
 
     // useSupabaseUser() returns JWT claims — the user ID is in `sub`, not `id`
@@ -23,18 +22,13 @@ export const useUserStore = defineStore('user', () => {
     loading.value = true
     error.value = null
 
-    const { data, error: dbError } = await db
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single()
-
-    if (dbError) {
-      log.error('Profile fetch failed', { userId, error: dbError.message })
-      error.value = dbError.message
-    } else {
+    try {
+      const data = await $fetch<Tables<'profiles'>>('/api/profile')
       log.debug('Profile loaded', { userId, airline: data?.icao_code })
       profile.value = data
+    } catch (e: any) {
+      log.error('Profile fetch failed', { userId, error: e.message })
+      error.value = e.message
     }
 
     loading.value = false

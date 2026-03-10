@@ -1,39 +1,42 @@
 import { serverSupabaseClient, serverSupabaseUser } from '#supabase/server'
 import { SeniorityListIdSchema } from '#shared/schemas/seniority-list'
+import type { SeniorityListResponse } from '#shared/schemas/seniority-list'
 import { createLogger } from '#shared/utils/logger'
-import { invalidateCache, listsKey, listKey, entriesKey } from '../../utils/seniority-cache'
+import { getCached, setCache, listKey } from '../../utils/seniority-cache'
 
 const log = createLogger('seniority-api')
 
 export default defineEventHandler(async (event) => {
   const user = await serverSupabaseUser(event)
   if (!user) {
-    log.warn('Unauthenticated delete request rejected')
     throw createError({ statusCode: 401, statusMessage: 'Unauthorized' })
   }
 
   const { id } = await validateRouteParam(event, 'id', SeniorityListIdSchema)
 
+  const cached = await getCached<SeniorityListResponse>(listKey(id))
+  if (cached) {
+    log.debug('List cache hit', { listId: id })
+    return cached
+  }
+
   const client = await serverSupabaseClient(event)
 
-  // RLS enforces ownership — only the uploader can delete their own lists
   const { data, error } = await client
     .from('seniority_lists')
-    .delete()
+    .select('id, airline, title, effective_date, status, created_at')
     .eq('id', id)
-    .select('id')
     .single()
 
   if (error || !data) {
-    log.warn('Delete failed or list not found', { userId: user.sub, listId: id, error: error?.message })
+    log.warn('List not found', { userId: user.sub, listId: id, error: error?.message })
     throw createError({ statusCode: 404, statusMessage: 'List not found' })
   }
 
-  // Invalidate all related caches
-  await invalidateCache(listsKey(user.sub), listKey(id), entriesKey(id))
+  const list = data as SeniorityListResponse
 
-  log.info('Seniority list deleted', { userId: user.sub, listId: data.id })
+  await setCache(listKey(id), list)
+  log.debug('List fetched and cached', { listId: id })
 
-  setResponseStatus(event, 204)
-  return null
+  return list
 })

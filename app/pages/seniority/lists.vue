@@ -104,7 +104,7 @@
 
 <script setup lang="ts">
 import type { TableColumn } from '@nuxt/ui'
-import type { Tables } from '#shared/types/database'
+import type { SeniorityListResponse } from '#shared/schemas/seniority-list'
 import { UpdateSeniorityListSchema } from '#shared/schemas/seniority-list'
 import { sortableHeader } from '~/utils/sortableHeader'
 import { useSeniorityStore } from '~/stores/seniority'
@@ -114,7 +114,7 @@ definePageMeta({
   layout: 'seniority',
 })
 
-type SeniorityList = Tables<'seniority_lists'>
+type SeniorityList = SeniorityListResponse
 
 const seniorityStore = useSeniorityStore()
 const toast = useToast()

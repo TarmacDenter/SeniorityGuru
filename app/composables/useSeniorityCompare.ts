@@ -1,29 +1,21 @@
-import type { Tables } from '#shared/types/database'
+import type { SeniorityEntryResponse, SeniorityListResponse } from '#shared/schemas/seniority-list'
 import { computeComparison, type CompareResult } from '#shared/utils/seniority-compare'
 
-type Entry = Tables<'seniority_entries'>
-type List = Tables<'seniority_lists'>
-
 export function useSeniorityCompare(listIdA: Ref<string | null | undefined>, listIdB: Ref<string | null | undefined>) {
-  const db = useDb()
-
   const loading = ref(false)
   const error = ref<string | null>(null)
 
-  const entriesA = ref<Entry[]>([])
-  const entriesB = ref<Entry[]>([])
-  const listMetaA = ref<List | null>(null)
-  const listMetaB = ref<List | null>(null)
+  const entriesA = ref<SeniorityEntryResponse[]>([])
+  const entriesB = ref<SeniorityEntryResponse[]>([])
+  const listMetaA = ref<SeniorityListResponse | null>(null)
+  const listMetaB = ref<SeniorityListResponse | null>(null)
 
   async function fetchListData(listId: string) {
-    const [entries, metaResult] = await Promise.all([
-      fetchAllRows(db, 'seniority_entries', q =>
-        q.select('*').eq('list_id', listId).order('seniority_number'),
-      ),
-      db.from('seniority_lists').select('*').eq('id', listId).single(),
+    const [entries, meta] = await Promise.all([
+      $fetch<SeniorityEntryResponse[]>(`/api/seniority-lists/${listId}/entries`),
+      $fetch<SeniorityListResponse>(`/api/seniority-lists/${listId}`),
     ])
-    if (metaResult.error) throw new Error(metaResult.error.message)
-    return { entries, meta: metaResult.data }
+    return { entries, meta }
   }
 
   const comparison = computed<CompareResult | null>(() => {

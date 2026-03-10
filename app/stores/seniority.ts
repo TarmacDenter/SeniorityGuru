@@ -1,12 +1,12 @@
 import { defineStore } from 'pinia'
-import type { Tables } from '#shared/types/database'
+import type { SeniorityListResponse, SeniorityEntryResponse } from '#shared/schemas/seniority-list'
 import { createLogger } from '#shared/utils/logger'
 
 const log = createLogger('seniority-store')
 
 export const useSeniorityStore = defineStore('seniority', () => {
-  const lists = ref<Tables<'seniority_lists'>[]>([])
-  const entries = ref<Tables<'seniority_entries'>[]>([])
+  const lists = ref<SeniorityListResponse[]>([])
+  const entries = ref<SeniorityEntryResponse[]>([])
   const listsLoading = ref(false)
   const entriesLoading = ref(false)
   const listsError = ref<string | null>(null)
@@ -15,15 +15,11 @@ export const useSeniorityStore = defineStore('seniority', () => {
   const currentListId = ref<string | null>(null)
 
   async function fetchLists() {
-    const db = useDb()
-
     listsLoading.value = true
     listsError.value = null
 
     try {
-      lists.value = await fetchAllRows(db, 'seniority_lists', q =>
-        q.select('*').order('effective_date', { ascending: false }),
-      )
+      lists.value = await $fetch<SeniorityListResponse[]>('/api/seniority-lists')
       log.debug('Lists fetched', { count: lists.value.length })
     } catch (e: any) {
       log.error('Failed to fetch lists', { error: e.message })
@@ -34,17 +30,13 @@ export const useSeniorityStore = defineStore('seniority', () => {
   }
 
   async function fetchEntries(listId: string) {
-    const db = useDb()
-
     entriesLoading.value = true
     entriesError.value = null
     entries.value = []
     currentListId.value = listId
 
     try {
-      entries.value = await fetchAllRows(db, 'seniority_entries', q =>
-        q.select('*').eq('list_id', listId).order('seniority_number', { ascending: true }),
-      )
+      entries.value = await $fetch<SeniorityEntryResponse[]>(`/api/seniority-lists/${listId}/entries`)
       log.debug('Entries fetched', { listId, count: entries.value.length })
     } catch (e: any) {
       log.error('Failed to fetch entries', { listId, error: e.message })
@@ -55,7 +47,7 @@ export const useSeniorityStore = defineStore('seniority', () => {
   }
 
   async function updateList(id: string, updates: { title?: string; effective_date?: string }) {
-    const updated = await $fetch<Tables<'seniority_lists'>>(`/api/seniority-lists/${id}`, {
+    const updated = await $fetch<SeniorityListResponse>(`/api/seniority-lists/${id}`, {
       method: 'PATCH',
       body: updates,
     })
