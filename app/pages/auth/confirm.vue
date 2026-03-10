@@ -18,11 +18,14 @@
 </template>
 
 <script setup lang="ts">
-// PKCE auth callback — @nuxtjs/supabase handles token exchange automatically.
-// This page shows a loading state while the redirect resolves, or an error if the link is invalid.
+// Auth callback — handles both PKCE (query ?code=) and implicit flow (hash #access_token=).
+// @supabase/ssr forces flowType: "pkce", so detectSessionInUrl only looks for ?code= in
+// query params. Invites still use the implicit flow (tokens in hash), which the PKCE-mode
+// client ignores. We explicitly parse the hash and call setSession() to bridge this gap.
 
 definePageMeta({ layout: 'auth' })
 
+const supabase = useSupabaseClient()
 const user = useSupabaseUser()
 const route = useRoute()
 
@@ -52,6 +55,23 @@ const hashType = computed(() => {
   if (!hash) return null
   const params = new URLSearchParams(hash.slice(1))
   return params.get('type')
+})
+
+// Explicitly set session from hash tokens (implicit flow: invites, magic links)
+onMounted(async () => {
+  const hash = route.hash
+  if (!hash || !hash.includes('access_token')) return
+
+  const params = new URLSearchParams(hash.slice(1))
+  const accessToken = params.get('access_token')
+  const refreshToken = params.get('refresh_token')
+
+  if (accessToken && refreshToken) {
+    await supabase.auth.setSession({
+      access_token: accessToken,
+      refresh_token: refreshToken,
+    })
+  }
 })
 
 watchEffect(() => {

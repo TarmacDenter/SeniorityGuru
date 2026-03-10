@@ -56,16 +56,40 @@
         </template>
 
         <template #actions-cell="{ row }">
-          <UButton
-            icon="i-lucide-key-round"
-            variant="ghost"
-            size="xs"
-            label="Reset Password"
-            :loading="resettingPassword === row.original.id"
-            @click="resetPassword(row.original)"
-          />
+          <div class="flex gap-1">
+            <UButton
+              icon="i-lucide-key-round"
+              variant="ghost"
+              size="xs"
+              label="Reset Password"
+              :loading="resettingPassword === row.original.id"
+              @click="resetPassword(row.original)"
+            />
+            <UButton
+              icon="i-lucide-trash-2"
+              variant="ghost"
+              color="error"
+              size="xs"
+              @click="confirmDelete(row.original)"
+            />
+          </div>
         </template>
       </UTable>
+
+      <UModal v-model:open="deleteOpen" title="Delete User" description="This action cannot be undone.">
+        <template #body>
+          <p>
+            Are you sure you want to delete <strong>{{ deleteTarget?.email }}</strong>?
+            Their profile and all uploaded seniority lists will be permanently removed.
+          </p>
+        </template>
+        <template #footer>
+          <div class="flex justify-end gap-2">
+            <UButton label="Cancel" color="neutral" variant="ghost" @click="deleteOpen = false" />
+            <UButton label="Delete User" color="error" :loading="deleteLoading" @click="deleteUser" />
+          </div>
+        </template>
+      </UModal>
 
       <div class="flex items-center justify-between">
         <p class="text-sm text-(--ui-text-muted)">{{ totalRows }} results</p>
@@ -122,6 +146,9 @@ const resettingPassword = ref<string | null>(null)
 const inviteOpen = ref(false)
 const inviteEmail = ref('')
 const inviteLoading = ref(false)
+const deleteOpen = ref(false)
+const deleteTarget = ref<AdminUser | null>(null)
+const deleteLoading = ref(false)
 
 const roleOptions = ['user', 'moderator', 'admin']
 
@@ -191,11 +218,39 @@ async function sendInvite() {
     inviteEmail.value = ''
     inviteOpen.value = false
   }
-  catch {
-    toast.add({ title: 'Failed to send invite', color: 'error' })
+  catch (e: any) {
+    const message = e.statusCode === 409
+      ? 'This user is already registered and active'
+      : 'Failed to send invite'
+    toast.add({ title: message, color: 'error' })
   }
   finally {
     inviteLoading.value = false
+  }
+}
+
+function confirmDelete(user: AdminUser) {
+  deleteTarget.value = user
+  deleteOpen.value = true
+}
+
+async function deleteUser() {
+  if (!deleteTarget.value) return
+  deleteLoading.value = true
+  try {
+    await $fetch(`/api/admin/users/${deleteTarget.value.id}`, { method: 'DELETE' })
+    users.value = users.value.filter(u => u.id !== deleteTarget.value!.id)
+    toast.add({ title: 'User deleted', color: 'success' })
+    deleteOpen.value = false
+  }
+  catch (e: any) {
+    const message = e.statusCode === 400
+      ? e.data?.statusMessage || 'Cannot delete this user'
+      : 'Failed to delete user'
+    toast.add({ title: message, color: 'error' })
+  }
+  finally {
+    deleteLoading.value = false
   }
 }
 

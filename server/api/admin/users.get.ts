@@ -32,11 +32,11 @@ export default defineEventHandler(async (event) => {
     return {
       id: user.id,
       email: user.email,
-      lastSignIn: user.last_sign_in_at,
-      createdAt: user.created_at,
+      last_sign_in_at: user.last_sign_in_at,
+      created_at: user.created_at,
       role: profile?.role ?? 'user',
-      icaoCode: profile?.icao_code ?? null,
-      employeeNumber: profile?.employee_number ?? null,
+      icao_code: profile?.icao_code ?? null,
+      employee_number: profile?.employee_number ?? null,
     }
   })
 })

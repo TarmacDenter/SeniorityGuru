@@ -34,6 +34,22 @@ additional_redirect_urls = [
 jwt_expiry = 3600
 
 [auth.email]
-enable_signup = true
+enable_signup = false
 double_confirm_changes = true
 enable_confirmations = true
+
+[auth.email.template.invite]
+subject = "You're invited to SeniorityGuru"
+content_path = "./supabase/templates/invite.html"
+
+[auth.email.template.confirmation]
+subject = "Confirm your email"
+content_path = "./supabase/templates/confirmation.html"
+
+[auth.email.template.recovery]
+subject = "Reset your password"
+content_path = "./supabase/templates/recovery.html"
+
+[auth.email.template.email_change]
+subject = "Confirm your email change"
+content_path = "./supabase/templates/email_change.html"

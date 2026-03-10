@@ -16,9 +16,9 @@ test('authenticated user can access seniority page (ssr: false)', async ({
   await expect(page).toHaveURL(/\/seniority/)
 })
 
-test('unauthenticated user is redirected to login', async ({ page, goto }) => {
+test('unauthenticated user is redirected to welcome', async ({ page, goto }) => {
   await goto('/', { waitUntil: 'hydration' })
 
-  // Auth middleware should redirect to /auth/login
-  await expect(page).toHaveURL(/\/auth\/login/)
+  // Auth middleware redirects unauthenticated users to /welcome
+  await expect(page).toHaveURL(/\/welcome/)
 })
