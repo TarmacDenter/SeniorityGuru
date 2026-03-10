@@ -11,6 +11,7 @@ jobs:
   migrate:
     name: Push migrations
     runs-on: ubuntu-latest
+    environment: Dev
     steps:
       - uses: actions/checkout@v4
 
@@ -18,7 +19,7 @@ jobs:
         with:
           version: latest
 
-      - run: supabase link --project-ref ${{ secrets.SUPABASE_PROJECT_REF }}
+      - run: supabase link --project-ref ${{ vars.SUPABASE_PROJECT_REF }}
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
