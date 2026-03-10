@@ -1,5 +1,16 @@
 <template>
   <div class="space-y-3 pt-3">
+    <div v-if="filters?.length" data-testid="filter-bar" class="flex flex-wrap gap-3">
+      <UFormField v-for="filter in filters" :key="filter.key" :label="filter.label">
+        <USelectMenu
+          v-model="activeFilters[filter.key]"
+          :items="filterOptions[filter.key] ?? []"
+          multiple
+          :placeholder="`All ${filter.label}s`"
+          class="w-40"
+        />
+      </UFormField>
+    </div>
     <UInput
       v-model="table.globalFilter.value"
       icon="i-lucide-search"
@@ -8,7 +19,7 @@
     />
     <UTable
       ref="comparisonTable"
-      :data="data"
+      :data="filteredData"
       :columns="columns"
       v-model:global-filter="table.globalFilter.value"
       v-model:pagination="table.pagination.value"
@@ -30,12 +41,50 @@
 
 <script setup lang="ts">
 import type { TableColumn } from '@nuxt/ui'
+import type { FilterConfig } from '~/utils/column-definitions'
 
-defineProps<{
+const props = defineProps<{
   data: any[]
   columns: TableColumn<any>[]
   searchPlaceholder?: string
+  filters?: FilterConfig[]
 }>()
 
 const table = useTableFeatures('comparisonTable')
+
+// Reactive state: selected values per filter key
+const activeFilters = reactive<Record<string, string[]>>({})
+
+// Compute unique option values for each filter key from unfiltered data
+const filterOptions = computed<Record<string, string[]>>(() => {
+  if (!props.filters?.length) return {}
+  const options: Record<string, string[]> = {}
+  for (const filter of props.filters) {
+    const values = new Set<string>()
+    for (const row of props.data) {
+      const val = (row as Record<string, unknown>)[filter.key]
+      if (val != null && val !== '') {
+        values.add(String(val))
+      }
+    }
+    options[filter.key] = [...values].sort()
+  }
+  return options
+})
+
+// Compute filtered data: AND between fields, OR within a field
+const filteredData = computed(() => {
+  if (!props.filters?.length) return props.data
+
+  return props.data.filter((row) => {
+    for (const filter of props.filters!) {
+      const selected = activeFilters[filter.key]
+      if (!selected || selected.length === 0) continue
+      const val = (row as Record<string, unknown>)[filter.key]
+      const strVal = val != null ? String(val) : ''
+      if (!selected.includes(strVal)) return false
+    }
+    return true
+  })
+})
 </script>

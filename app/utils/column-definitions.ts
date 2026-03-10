@@ -2,6 +2,20 @@ import type { TableColumn } from '@nuxt/ui'
 import { sortableHeader } from '~/utils/sortableHeader'
 import type { RetiredPilot, DepartedPilot, QualMove, RankChange, NewHire } from '#shared/utils/seniority-compare'
 
+export interface FilterConfig {
+  key: string
+  label: string
+}
+
+export const qualMoveFilters: FilterConfig[] = [
+  { key: 'old_seat', label: 'Old Seat' },
+  { key: 'new_seat', label: 'New Seat' },
+  { key: 'old_fleet', label: 'Old Fleet' },
+  { key: 'new_fleet', label: 'New Fleet' },
+  { key: 'old_base', label: 'Old Base' },
+  { key: 'new_base', label: 'New Base' },
+]
+
 export const retiredColumns: TableColumn<RetiredPilot>[] = [
   { accessorKey: 'seniority_number', header: sortableHeader<RetiredPilot>('#') },
   { accessorKey: 'employee_number', header: sortableHeader<RetiredPilot>('Employee #') },

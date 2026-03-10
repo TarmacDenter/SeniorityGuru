@@ -54,7 +54,7 @@
             <ComparisonTab :data="comparison.departed" :columns="departedColumns" search-placeholder="Search departed..." />
           </template>
           <template #qual-moves>
-            <ComparisonTab :data="comparison.qualMoves" :columns="qualMoveColumns" search-placeholder="Search qual moves..." />
+            <ComparisonTab :data="comparison.qualMoves" :columns="qualMoveColumns" :filters="qualMoveFilters" search-placeholder="Search qual moves..." />
           </template>
           <template #rank-changes>
             <ComparisonTab :data="comparison.rankChanges" :columns="rankChangeColumns" search-placeholder="Search rank changes..." />
@@ -80,7 +80,7 @@
 
 <script setup lang="ts">
 import { useSeniorityStore } from '~/stores/seniority'
-import { retiredColumns, departedColumns, qualMoveColumns, rankChangeColumns, newHireColumns } from '~/utils/column-definitions'
+import { retiredColumns, departedColumns, qualMoveColumns, rankChangeColumns, newHireColumns, qualMoveFilters } from '~/utils/column-definitions'
 
 definePageMeta({
   middleware: 'auth',
