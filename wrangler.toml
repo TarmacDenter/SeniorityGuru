@@ -1,0 +1,7 @@
+# Local Wrangler overrides — merged with NuxtHub's generated config
+# See: https://developers.cloudflare.com/workers/observability/logs/workers-logs/
+
+[observability]
+[observability.logs]
+enabled = true
+invocation_logs = true
