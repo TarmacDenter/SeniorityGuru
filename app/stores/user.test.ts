@@ -36,7 +36,7 @@ describe('user store', () => {
       await store.fetchProfile()
 
       expect(store.profile).not.toBeNull()
-      expect(store.profile?.icao_code).toBe('DAL')
+      expect(store.profile!.icao_code).toBe('DAL')
       expect(store.error).toBeNull()
     })
 
