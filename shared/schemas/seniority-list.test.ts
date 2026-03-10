@@ -6,8 +6,6 @@ import {
   CreateSeniorityListSchema,
   UpdateSeniorityListSchema,
   normalizeEmployeeNumber,
-  normalizeDate,
-  computeRetireDate,
 } from './seniority-list'
 
 describe('normalizeEmployeeNumber', () => {
@@ -25,48 +23,6 @@ describe('normalizeEmployeeNumber', () => {
   })
 })
 
-describe('normalizeDate', () => {
-  it('passes through YYYY-MM-DD unchanged', () => {
-    expect(normalizeDate('2010-01-15')).toBe('2010-01-15')
-  })
-  it('converts MM/DD/YYYY', () => {
-    expect(normalizeDate('01/15/2010')).toBe('2010-01-15')
-  })
-  it('converts M/D/YYYY (no leading zeroes)', () => {
-    expect(normalizeDate('1/5/2010')).toBe('2010-01-05')
-  })
-  it('converts MM-DD-YYYY', () => {
-    expect(normalizeDate('06-15-1970')).toBe('1970-06-15')
-  })
-  it('converts M/D/YY with 2-digit year (<=50 = 2000s)', () => {
-    expect(normalizeDate('3/7/10')).toBe('2010-03-07')
-  })
-  it('converts M/D/YY with 2-digit year (>50 = 1900s)', () => {
-    expect(normalizeDate('3/7/70')).toBe('1970-03-07')
-  })
-  it('converts Excel serial number', () => {
-    // 40193 = Jan 15, 2010 in Excel
-    expect(normalizeDate('40193')).toBe('2010-01-15')
-  })
-  it('returns original string for unparseable input', () => {
-    expect(normalizeDate('not-a-date')).toBe('not-a-date')
-  })
-  it('handles empty string', () => {
-    expect(normalizeDate('')).toBe('')
-  })
-  it('trims whitespace', () => {
-    expect(normalizeDate('  01/15/2010  ')).toBe('2010-01-15')
-  })
-})
-
-describe('computeRetireDate', () => {
-  it('adds retirement age to DOB', () => {
-    expect(computeRetireDate('1970-06-15', 65)).toBe('2035-06-15')
-  })
-  it('handles leap day DOB', () => {
-    expect(computeRetireDate('1960-02-29', 65)).toBe('2025-02-28')
-  })
-})
 
 describe('SeniorityEntrySchema', () => {
   const valid = {

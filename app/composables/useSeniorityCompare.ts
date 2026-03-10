@@ -1,6 +1,5 @@
 import type { Tables } from '#shared/types/database'
-import { computeComparison } from '#shared/utils/seniority-compare'
-export type { RetiredPilot, DepartedPilot, QualMove, RankChange, NewHire, CompareResult } from '#shared/utils/seniority-compare'
+import { computeComparison, type CompareResult } from '#shared/utils/seniority-compare'
 
 type Entry = Tables<'seniority_entries'>
 type List = Tables<'seniority_lists'>

@@ -1,6 +1,6 @@
 import type { TableColumn } from '@nuxt/ui'
 import { sortableHeader } from '~/utils/sortableHeader'
-import type { RetiredPilot, DepartedPilot, QualMove, RankChange, NewHire } from '~/composables/useSeniorityCompare'
+import type { RetiredPilot, DepartedPilot, QualMove, RankChange, NewHire } from '#shared/utils/seniority-compare'
 
 export const retiredColumns: TableColumn<RetiredPilot>[] = [
   { accessorKey: 'seniority_number', header: sortableHeader<RetiredPilot>('#') },

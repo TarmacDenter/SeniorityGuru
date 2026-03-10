@@ -1,6 +1,7 @@
 import * as XLSX from 'xlsx'
 import type { SeniorityEntry } from '#shared/schemas/seniority-list'
-import { SeniorityEntrySchema, isoDateRegex } from '#shared/schemas/seniority-list'
+import { SeniorityEntrySchema } from '#shared/schemas/seniority-list'
+import { ISO_DATE_REGEX } from '#shared/constants'
 import { parseDate } from '@internationalized/date'
 import type { DateValue } from 'reka-ui'
 import {
@@ -75,7 +76,7 @@ export function useSeniorityUpload() {
     // Default effective date to the most recent hire date
     const hireDates = mapped
       .map(e => e.hire_date)
-      .filter((d): d is string => !!d && isoDateRegex.test(d))
+      .filter((d): d is string => !!d && ISO_DATE_REGEX.test(d))
     if (hireDates.length > 0) {
       hireDates.sort()
       effectiveDate.value = parseDate(hireDates[hireDates.length - 1]!)

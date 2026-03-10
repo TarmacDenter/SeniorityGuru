@@ -9,8 +9,8 @@ export function uuidField(message = 'Invalid UUID') {
  * Add password confirmation refinement to any schema that has `password` and `confirmPassword` fields.
  * Returns a ZodEffects that rejects when the two fields don't match.
  */
-export function withPasswordConfirmation<T extends ZodRawShape>(
-  schema: ZodObject<T & { password: z.ZodString; confirmPassword: z.ZodString }>,
+export function withPasswordConfirmation<T extends ZodRawShape & { password: z.ZodString; confirmPassword: z.ZodString }>(
+  schema: ZodObject<T>,
 ) {
   return schema.refine(d => d.password === d.confirmPassword, {
     message: 'Passwords do not match',

@@ -1,8 +1,5 @@
 import { z } from 'zod'
 import { ISO_DATE_REGEX } from '#shared/constants'
-// Re-export date utilities so existing consumers don't break during incremental migration
-export { normalizeDate, computeRetireDate } from '#shared/utils/date'
-export { ISO_DATE_REGEX as isoDateRegex } from '#shared/constants'
 
 /** Strip leading zeroes from purely numeric strings. "007123" -> "7123", "0" -> "0" */
 export function normalizeEmployeeNumber(value: string): string {
