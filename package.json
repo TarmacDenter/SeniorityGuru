@@ -41,6 +41,7 @@
   "devDependencies": {
     "@commitlint/cli": "^20.4.3",
     "@commitlint/config-conventional": "^20.4.3",
+    "@iconify-json/lucide": "^1.2.96",
     "@nuxt/test-utils": "^4.0.0",
     "@playwright/test": "^1.58.2",
     "@semantic-release/changelog": "^6.0.3",
