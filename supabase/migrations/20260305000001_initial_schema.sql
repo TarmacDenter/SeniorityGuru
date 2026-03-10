@@ -1,23 +1,26 @@
 -- ============================================================
--- 1. Airlines reference table (ICAO codes)
+-- SeniorityGuru — Initial Schema
+-- Squashed from 8 pre-launch migrations into a single file.
+-- ============================================================
+
+-- ============================================================
+-- 1. Airlines reference table
 -- ============================================================
 CREATE TABLE public.airlines (
   icao    text PRIMARY KEY,
   iata    text,
   name    text NOT NULL,
-  alias   text   -- alternate/common name for the airline
+  alias   text
 );
 
 ALTER TABLE public.airlines ENABLE ROW LEVEL SECURITY;
 
--- Anyone can read airlines — needed for signup dropdown before auth
 CREATE POLICY "airlines: public read"
   ON public.airlines FOR SELECT
   TO anon, authenticated
   USING (true);
 
--- No seed data in migration — airlines are loaded separately from CSV.
--- See: supabase/scripts/seed-airlines.js + supabase/data/iata_airlines.csv
+GRANT SELECT ON public.airlines TO anon, authenticated;
 
 -- ============================================================
 -- 2. Enum + Profiles table
@@ -31,14 +34,14 @@ CREATE TABLE public.profiles (
   employee_number          text,
   mandatory_retirement_age integer          NOT NULL DEFAULT 65,
   created_at               timestamptz      NOT NULL DEFAULT now()
-  -- NOTE: hire_date is intentionally omitted. It is derived by looking up the
-  -- user's employee_number in seniority_entries and is not stored redundantly.
 );
 
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
+GRANT SELECT, UPDATE ON public.profiles TO authenticated;
+
 -- ============================================================
--- 3. Security definer helpers
+-- 3. Security definer helper
 -- ============================================================
 CREATE OR REPLACE FUNCTION public.get_my_role()
 RETURNS public.user_role
@@ -47,8 +50,6 @@ AS $$ SELECT role FROM public.profiles WHERE id = auth.uid() $$;
 
 -- ============================================================
 -- 4. Auto-create profile on signup
---    Reads icao_code from user metadata if provided at signup.
---    ON CONFLICT DO NOTHING makes seed + normal signup safe.
 -- ============================================================
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path = public
@@ -69,11 +70,8 @@ CREATE TRIGGER on_auth_user_created
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
 -- ============================================================
--- 5. RLS policies for profiles
---    Consolidated + initplan-safe (wrapped in SELECT)
+-- 5. Profiles RLS policies
 -- ============================================================
-
--- SELECT: user reads own OR admin reads all
 CREATE POLICY "profiles: select"
   ON public.profiles FOR SELECT
   USING (
@@ -81,7 +79,6 @@ CREATE POLICY "profiles: select"
     OR (select public.get_my_role()) = 'admin'
   );
 
--- UPDATE: user updates own (no role escalation) OR admin updates all
 CREATE POLICY "profiles: update"
   ON public.profiles FOR UPDATE
   USING (
@@ -93,7 +90,7 @@ CREATE POLICY "profiles: update"
       WHEN (select public.get_my_role()) = 'admin' THEN true
       ELSE (
         (select auth.uid()) = id
-        AND role = (SELECT p.role FROM public.profiles p WHERE p.id = (select auth.uid()))
+        AND role = (select public.get_my_role())
       )
     END
   );
@@ -104,15 +101,18 @@ CREATE POLICY "profiles: update"
 CREATE TABLE public.seniority_lists (
   id              uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
   airline         text        NOT NULL,
+  title           text,
   effective_date  date        NOT NULL,
   uploaded_by     uuid        NOT NULL REFERENCES public.profiles(id),
   status          text        NOT NULL DEFAULT 'active',
-  created_at      timestamptz NOT NULL DEFAULT now()
+  created_at      timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT seniority_lists_status_check CHECK (status IN ('active', 'archived'))
 );
 
 ALTER TABLE public.seniority_lists ENABLE ROW LEVEL SECURITY;
 
--- SELECT: owner OR staff
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.seniority_lists TO authenticated;
+
 CREATE POLICY "seniority_lists: select"
   ON public.seniority_lists FOR SELECT
   USING (
@@ -120,19 +120,36 @@ CREATE POLICY "seniority_lists: select"
     OR (select public.get_my_role()) IN ('admin', 'moderator')
   );
 
--- INSERT: authenticated users insert own
 CREATE POLICY "seniority_lists: insert own"
   ON public.seniority_lists FOR INSERT
   TO authenticated
   WITH CHECK ((select auth.uid()) = uploaded_by);
+
+CREATE POLICY "seniority_lists: update"
+  ON public.seniority_lists FOR UPDATE
+  USING (
+    (select auth.uid()) = uploaded_by
+    OR (select public.get_my_role()) IN ('admin', 'moderator')
+  )
+  WITH CHECK (
+    (select public.get_my_role()) IN ('admin', 'moderator')
+    OR (select auth.uid()) = uploaded_by
+  );
+
+CREATE POLICY "seniority_lists: delete"
+  ON public.seniority_lists FOR DELETE
+  USING (
+    (select auth.uid()) = uploaded_by
+    OR (select public.get_my_role()) IN ('admin', 'moderator')
+  );
 
 -- ============================================================
 -- 7. Seniority Entries
 -- ============================================================
 CREATE TABLE public.seniority_entries (
   id                uuid    PRIMARY KEY DEFAULT gen_random_uuid(),
-  list_id           uuid    NOT NULL REFERENCES public.seniority_lists(id) ON DELETE CASCADE,
   seniority_number  integer NOT NULL,
+  list_id           uuid    NOT NULL REFERENCES public.seniority_lists(id) ON DELETE CASCADE,
   employee_number   text    NOT NULL,
   name              text,
   hire_date         date    NOT NULL,
@@ -140,13 +157,13 @@ CREATE TABLE public.seniority_entries (
   seat              text,
   fleet             text,
   retire_date       date,
-  -- An employee may appear only once per list publication
   CONSTRAINT seniority_entries_list_employee_unique UNIQUE (list_id, employee_number)
 );
 
 ALTER TABLE public.seniority_entries ENABLE ROW LEVEL SECURITY;
 
--- SELECT: owns parent list OR staff
+GRANT SELECT, INSERT, DELETE ON public.seniority_entries TO authenticated;
+
 CREATE POLICY "seniority_entries: select"
   ON public.seniority_entries FOR SELECT
   USING (
@@ -158,7 +175,6 @@ CREATE POLICY "seniority_entries: select"
     OR (select public.get_my_role()) IN ('admin', 'moderator')
   );
 
--- INSERT: authenticated users insert for own lists
 CREATE POLICY "seniority_entries: insert own"
   ON public.seniority_entries FOR INSERT
   TO authenticated
@@ -169,3 +185,7 @@ CREATE POLICY "seniority_entries: insert own"
         AND uploaded_by = (select auth.uid())
     )
   );
+
+CREATE POLICY "seniority_entries: staff delete"
+  ON public.seniority_entries FOR DELETE
+  USING ((select public.get_my_role()) IN ('admin', 'moderator'));
