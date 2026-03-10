@@ -54,7 +54,7 @@ export const useSeniorityStore = defineStore('seniority', () => {
     entriesLoading.value = false
   }
 
-  async function updateList(id: string, updates: { airline?: string; effective_date?: string }) {
+  async function updateList(id: string, updates: { title?: string; effective_date?: string }) {
     const updated = await $fetch<Tables<'seniority_lists'>>(`/api/seniority-lists/${id}`, {
       method: 'PATCH',
       body: updates,

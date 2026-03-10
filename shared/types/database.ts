@@ -144,6 +144,7 @@ export type Database = {
           effective_date: string
           id: string
           status: string
+          title: string | null
           uploaded_by: string
         }
         Insert: {
@@ -152,6 +153,7 @@ export type Database = {
           effective_date: string
           id?: string
           status?: string
+          title?: string | null
           uploaded_by: string
         }
         Update: {
@@ -160,6 +162,7 @@ export type Database = {
           effective_date?: string
           id?: string
           status?: string
+          title?: string | null
           uploaded_by?: string
         }
         Relationships: [

@@ -30,13 +30,14 @@ export type SeniorityListId = z.infer<typeof SeniorityListIdSchema>
 export const CreateSeniorityListSchema = z.object({
   effective_date: z.string().regex(ISO_DATE_REGEX, 'Invalid date format'),
   entries: z.array(SeniorityEntrySchema).min(1, 'At least one entry is required'),
+  title: z.string().min(1).optional(),
 })
 export type CreateSeniorityList = z.infer<typeof CreateSeniorityListSchema>
 
 export const UpdateSeniorityListSchema = z.object({
-  airline: z.string().min(1, 'Airline is required').optional(),
+  title: z.string().min(1).optional(),
   effective_date: z.string().regex(ISO_DATE_REGEX, 'Invalid date format').optional(),
-}).refine(d => d.airline !== undefined || d.effective_date !== undefined, {
+}).refine(d => d.title !== undefined || d.effective_date !== undefined, {
   message: 'At least one field must be provided',
 })
 export type UpdateSeniorityList = z.infer<typeof UpdateSeniorityListSchema>

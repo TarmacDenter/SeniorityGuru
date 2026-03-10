@@ -117,7 +117,7 @@ onMounted(async () => {
 
 const listOptions = computed(() =>
   seniorityStore.lists.map(l => ({
-    label: `${l.airline} — ${l.effective_date}`,
+    label: l.title ? `${l.title} — ${l.effective_date}` : l.effective_date,
     value: l.id,
   })),
 )

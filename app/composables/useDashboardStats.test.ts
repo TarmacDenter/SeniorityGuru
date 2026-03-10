@@ -32,6 +32,7 @@ function makeList(overrides: Partial<SeniorityList> = {}): SeniorityList {
     effective_date: '2026-01-15',
     created_at: '2026-01-15T00:00:00Z',
     status: 'active',
+    title: null,
     uploaded_by: 'user-1',
     ...overrides,
   }

@@ -125,16 +125,16 @@ describe('CreateSeniorityListSchema', () => {
 })
 
 describe('UpdateSeniorityListSchema', () => {
-  it('accepts valid airline and effective_date', () => {
+  it('accepts title and effective_date', () => {
     const result = UpdateSeniorityListSchema.safeParse({
-      airline: 'United Airlines',
+      title: 'January List',
       effective_date: '2026-03-01',
     })
     expect(result.success).toBe(true)
   })
 
-  it('accepts airline alone', () => {
-    const result = UpdateSeniorityListSchema.safeParse({ airline: 'Delta' })
+  it('accepts title alone', () => {
+    const result = UpdateSeniorityListSchema.safeParse({ title: 'Q1 Seniority' })
     expect(result.success).toBe(true)
   })
 
@@ -143,8 +143,8 @@ describe('UpdateSeniorityListSchema', () => {
     expect(result.success).toBe(true)
   })
 
-  it('rejects empty airline', () => {
-    const result = UpdateSeniorityListSchema.safeParse({ airline: '' })
+  it('rejects empty title', () => {
+    const result = UpdateSeniorityListSchema.safeParse({ title: '' })
     expect(result.success).toBe(false)
   })
 
@@ -155,6 +155,62 @@ describe('UpdateSeniorityListSchema', () => {
 
   it('rejects empty object (at least one field required)', () => {
     const result = UpdateSeniorityListSchema.safeParse({})
+    expect(result.success).toBe(false)
+  })
+
+  it('does NOT accept airline field', () => {
+    const result = UpdateSeniorityListSchema.safeParse({ airline: 'Delta' })
+    expect(result.success).toBe(false)
+  })
+
+  it('strips airline field when passed alongside valid fields', () => {
+    const result = UpdateSeniorityListSchema.safeParse({
+      airline: 'Delta',
+      effective_date: '2026-03-01',
+    })
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.data).not.toHaveProperty('airline')
+    }
+  })
+})
+
+describe('CreateSeniorityListSchema title field', () => {
+  const validEntry = {
+    seniority_number: 1,
+    employee_number: '12345',
+    seat: 'CA',
+    base: 'JFK',
+    fleet: '737',
+    hire_date: '2010-01-15',
+  }
+
+  it('accepts optional title in create payload', () => {
+    const result = CreateSeniorityListSchema.safeParse({
+      effective_date: '2026-01-15',
+      entries: [validEntry],
+      title: 'January List',
+    })
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.data.title).toBe('January List')
+    }
+  })
+
+  it('accepts create payload without title', () => {
+    const result = CreateSeniorityListSchema.safeParse({
+      effective_date: '2026-01-15',
+      entries: [validEntry],
+    })
+    expect(result.success).toBe(true)
+  })
+
+  it('rejects empty string title in create payload', () => {
+    const result = CreateSeniorityListSchema.safeParse({
+      effective_date: '2026-01-15',
+      entries: [validEntry],
+      title: '',
+    })
     expect(result.success).toBe(false)
   })
 })

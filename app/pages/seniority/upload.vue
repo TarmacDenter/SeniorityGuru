@@ -95,6 +95,10 @@
                 <UInputDate v-model="effectiveDateModel" class="w-full" />
               </UFormField>
 
+              <UFormField label="Title (optional)" name="title">
+                <UInput v-model="upload.title.value" placeholder="e.g. January 2026 Seniority List" class="w-full" />
+              </UFormField>
+
               <div class="bg-elevated rounded-lg p-4 space-y-2 text-sm">
                 <div class="flex justify-between">
                   <span class="text-muted">Rows</span>

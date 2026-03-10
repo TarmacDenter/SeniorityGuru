@@ -11,7 +11,7 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 401, statusMessage: 'Unauthorized' })
   }
 
-  const { entries, effective_date } = await validateBody(event, CreateSeniorityListSchema)
+  const { entries, effective_date, title } = await validateBody(event, CreateSeniorityListSchema)
 
   log.info('Seniority list upload started', {
     userId: user.sub,
@@ -44,6 +44,7 @@ export default defineEventHandler(async (event) => {
       airline: profile.icao_code,
       effective_date,
       uploaded_by: user.sub,
+      ...(title && { title }),
     })
     .select('id')
     .single()

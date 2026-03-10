@@ -63,11 +63,14 @@
         </div>
 
         <!-- Edit Modal -->
-        <UModal v-model:open="editOpen" title="Edit List" description="Update the airline label or effective date">
+        <UModal v-model:open="editOpen" title="Edit List" description="Update the title or effective date">
           <template #body>
             <UForm :schema="UpdateSeniorityListSchema" :state="editState" class="space-y-4" @submit="saveEdit">
-              <UFormField label="Airline" name="airline">
-                <UInput v-model="editState.airline" class="w-full" />
+              <UFormField label="Airline">
+                <UInput :model-value="editAirline" disabled class="w-full" />
+              </UFormField>
+              <UFormField label="Title" name="title">
+                <UInput v-model="editState.title" placeholder="Optional title" class="w-full" />
               </UFormField>
               <UFormField label="Effective Date" name="effective_date">
                 <UInput v-model="editState.effective_date" type="date" class="w-full" />
@@ -132,6 +135,7 @@ const {
 
 const columns: TableColumn<SeniorityList>[] = [
   { accessorKey: 'airline', header: sortableHeader<SeniorityList>('Airline') },
+  { accessorKey: 'title', header: sortableHeader<SeniorityList>('Title') },
   { accessorKey: 'effective_date', header: sortableHeader<SeniorityList>('Effective Date') },
   {
     accessorKey: 'created_at',
@@ -150,14 +154,16 @@ const columns: TableColumn<SeniorityList>[] = [
 const editOpen = ref(false)
 const saving = ref(false)
 const editListId = ref<string | null>(null)
+const editAirline = ref('')
 const editState = reactive({
-  airline: '',
+  title: '',
   effective_date: '',
 })
 
 function openEdit(list: SeniorityList) {
   editListId.value = list.id
-  editState.airline = list.airline
+  editAirline.value = list.airline
+  editState.title = list.title ?? ''
   editState.effective_date = list.effective_date
   editOpen.value = true
 }
@@ -168,7 +174,7 @@ async function saveEdit() {
   saving.value = true
   try {
     await seniorityStore.updateList(editListId.value, {
-      airline: editState.airline,
+      ...(editState.title && { title: editState.title }),
       effective_date: editState.effective_date,
     })
     toast.add({ title: 'List updated', color: 'success' })

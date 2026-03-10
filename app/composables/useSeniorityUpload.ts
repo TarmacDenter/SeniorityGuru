@@ -43,6 +43,7 @@ export function useSeniorityUpload() {
 
   // Step 4: Upload metadata
   const effectiveDate = ref<DateValue | null>(null)
+  const title = ref('')
   const saving = ref(false)
   const saveError = ref<string | null>(null)
 
@@ -191,6 +192,7 @@ export function useSeniorityUpload() {
         body: {
           effective_date: effectiveDateValue,
           entries: entries.value,
+          ...(title.value && { title: title.value }),
         },
       })
       log.info('Upload succeeded', { count: result.count })
@@ -215,6 +217,7 @@ export function useSeniorityUpload() {
     entries.value = []
     rowErrors.value = new Map()
     effectiveDate.value = null
+    title.value = ''
     saving.value = false
     saveError.value = null
   }
@@ -229,6 +232,7 @@ export function useSeniorityUpload() {
     entries,
     rowErrors,
     effectiveDate,
+    title,
     saving,
     saveError,
     // Computed
