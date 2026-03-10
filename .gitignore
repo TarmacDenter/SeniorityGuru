@@ -56,6 +56,9 @@ Thumbs.db
 # Git worktrees
 .worktrees/
 
+# Local docs (how-tos, summaries, scratch notes)
+docs.local/
+
 # VSCode workspace (user-specific)
 *.code-workspace
 
