@@ -1,4 +1,4 @@
-# Local Wrangler overrides — merged with NuxtHub's generated config
+name = "seniority-guru"# Local Wrangler overrides — merged with NuxtHub's generated config
 # See: https://developers.cloudflare.com/workers/observability/logs/workers-logs/
 
 [observability]
