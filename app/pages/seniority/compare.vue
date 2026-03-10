@@ -176,8 +176,8 @@ definePageMeta({
 const seniorityStore = useSeniorityStore()
 const route = useRoute()
 
-const listIdA = ref<string | null>((route.query.a as string) || null)
-const listIdB = ref<string | null>((route.query.b as string) || null)
+const listIdA = ref<string | undefined>((route.query.a as string) || undefined)
+const listIdB = ref<string | undefined>((route.query.b as string) || undefined)
 
 const { loading, error, comparison } = useSeniorityCompare(listIdA, listIdB)
 
@@ -203,8 +203,8 @@ onMounted(async () => {
   }
   // Auto-select most recent two if not already set
   if (!listIdA.value && !listIdB.value && seniorityStore.lists.length >= 2) {
-    listIdA.value = seniorityStore.lists[1].id // second most recent = older
-    listIdB.value = seniorityStore.lists[0].id // most recent = newer
+    listIdA.value = seniorityStore.lists[1]!.id // second most recent = older
+    listIdB.value = seniorityStore.lists[0]!.id // most recent = newer
   }
 })
 

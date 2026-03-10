@@ -138,7 +138,7 @@ export function computeComparison(
   return { retired, departed, qualMoves, rankChanges, newHires }
 }
 
-export function useSeniorityCompare(listIdA: Ref<string | null>, listIdB: Ref<string | null>) {
+export function useSeniorityCompare(listIdA: Ref<string | null | undefined>, listIdB: Ref<string | null | undefined>) {
   const db = useDb()
 
   const loading = ref(false)

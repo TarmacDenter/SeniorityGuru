@@ -165,7 +165,7 @@ watch(activeTab, (tab) => {
 const seniorityStore = useSeniorityStore()
 const userStore = useUserStore()
 const loading = ref(true)
-const selectedListId = ref<string | null>(null)
+const selectedListId = ref<string | undefined>(undefined)
 
 const listOptions = computed(() =>
   seniorityStore.lists.map(l => ({
@@ -200,7 +200,7 @@ onMounted(async () => {
 
   const listFromQuery = route.query.list as string | undefined
   const validList = listFromQuery && seniorityStore.lists.some(l => l.id === listFromQuery)
-  selectedListId.value = validList ? listFromQuery : (seniorityStore.lists[0]?.id ?? null)
+  selectedListId.value = validList ? listFromQuery : (seniorityStore.lists[0]?.id ?? undefined)
 
   if (selectedListId.value) {
     await seniorityStore.fetchEntries(selectedListId.value)

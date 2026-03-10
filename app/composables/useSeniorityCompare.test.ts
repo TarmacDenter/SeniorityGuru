@@ -26,7 +26,7 @@ describe('computeComparison', () => {
 
     const result = computeComparison(older, newer, '2026-01-01')
     expect(result.retired).toHaveLength(1)
-    expect(result.retired[0].employee_number).toBe('100')
+    expect(result.retired[0]!.employee_number).toBe('100')
     expect(result.departed).toHaveLength(0)
   })
 
@@ -77,7 +77,7 @@ describe('computeComparison', () => {
 
     const result = computeComparison(older, newer, '2026-01-01')
     expect(result.newHires).toHaveLength(1)
-    expect(result.newHires[0].employee_number).toBe('500')
+    expect(result.newHires[0]!.employee_number).toBe('500')
   })
 
   it('handles identical lists (no changes)', () => {
