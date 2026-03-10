@@ -5,7 +5,7 @@ import {
   SignUpSchema,
   SetupProfileSchema,
   ResetPasswordSchema,
-  UpdatePasswordSchema,
+  RecoveryPasswordSchema,
   ResendEmailSchema,
 } from './auth'
 
@@ -107,9 +107,9 @@ describe('ResetPasswordSchema', () => {
   })
 })
 
-describe('UpdatePasswordSchema', () => {
+describe('RecoveryPasswordSchema', () => {
   it('accepts matching passwords of sufficient length', () => {
-    const result = UpdatePasswordSchema.safeParse({
+    const result = RecoveryPasswordSchema.safeParse({
       password: 'newpassword1',
       confirmPassword: 'newpassword1',
     })
@@ -117,7 +117,7 @@ describe('UpdatePasswordSchema', () => {
   })
 
   it('rejects mismatched passwords', () => {
-    const result = UpdatePasswordSchema.safeParse({
+    const result = RecoveryPasswordSchema.safeParse({
       password: 'newpassword1',
       confirmPassword: 'differentpass',
     })
@@ -129,7 +129,7 @@ describe('UpdatePasswordSchema', () => {
   })
 
   it('rejects password shorter than 8 characters', () => {
-    const result = UpdatePasswordSchema.safeParse({
+    const result = RecoveryPasswordSchema.safeParse({
       password: 'short',
       confirmPassword: 'short',
     })

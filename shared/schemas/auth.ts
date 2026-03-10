@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { withPasswordConfirmation } from './common'
 
 export const LoginSchema = z.object({
   email: z.string().email(),
@@ -6,14 +7,12 @@ export const LoginSchema = z.object({
 })
 export type LoginState = z.infer<typeof LoginSchema>
 
-export const SignUpSchema = z.object({
+export const SignUpSchema = withPasswordConfirmation(z.object({
   email: z.string().email('Please enter a valid email address'),
   password: z.string().min(8, 'Password must be at least 8 characters'),
   confirmPassword: z.string().min(8),
-  icaoCode: z.string().optional(),   // optional at signup; required to enter app
-}).refine(d => d.password === d.confirmPassword, {
-  message: 'Passwords do not match', path: ['confirmPassword'],
-})
+  icaoCode: z.string().optional(),
+}))
 export type SignUpState = z.infer<typeof SignUpSchema>
 
 export const SetupProfileSchema = z.object({
@@ -24,13 +23,11 @@ export type SetupProfileState = z.infer<typeof SetupProfileSchema>
 export const ResetPasswordSchema = z.object({ email: z.string().email() })
 export type ResetPasswordState = z.infer<typeof ResetPasswordSchema>
 
-export const UpdatePasswordSchema = z.object({
+export const RecoveryPasswordSchema = withPasswordConfirmation(z.object({
   password: z.string().min(8, 'Password must be at least 8 characters'),
   confirmPassword: z.string().min(8),
-}).refine(d => d.password === d.confirmPassword, {
-  message: 'Passwords do not match', path: ['confirmPassword'],
-})
-export type UpdatePasswordState = z.infer<typeof UpdatePasswordSchema>
+}))
+export type RecoveryPasswordState = z.infer<typeof RecoveryPasswordSchema>
 
 export const ResendEmailSchema = z.object({ email: z.string().email() })
 export type ResendEmailState = z.infer<typeof ResendEmailSchema>

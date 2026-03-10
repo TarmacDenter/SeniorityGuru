@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { withPasswordConfirmation } from './common'
 
 export const UpdateProfileSchema = z.object({
   icaoCode: z.string().min(2, 'Please select your airline'),
@@ -11,13 +12,11 @@ export const UpdatePreferencesSchema = z.object({
 })
 export type UpdatePreferencesState = z.infer<typeof UpdatePreferencesSchema>
 
-export const ChangePasswordSchema = z.object({
+export const ChangePasswordSchema = withPasswordConfirmation(z.object({
   currentPassword: z.string().min(8, 'Password must be at least 8 characters'),
   password: z.string().min(8, 'Password must be at least 8 characters'),
   confirmPassword: z.string().min(8),
-}).refine(d => d.password === d.confirmPassword, {
-  message: 'Passwords do not match', path: ['confirmPassword'],
-})
+}))
 export type ChangePasswordState = z.infer<typeof ChangePasswordSchema>
 
 export const ChangeEmailSchema = z.object({

@@ -3,7 +3,7 @@
     <h1 class="text-2xl font-bold mb-6 text-center">Set new password</h1>
 
     <template v-if="!success">
-      <UForm :schema="UpdatePasswordSchema" :state="state" class="space-y-4" @submit="onSubmit">
+      <UForm :schema="RecoveryPasswordSchema" :state="state" class="space-y-4" @submit="onSubmit">
         <UFormField label="New password" name="password">
           <UInput v-model="state.password" type="password" class="w-full" />
         </UFormField>
@@ -31,8 +31,8 @@
 </template>
 
 <script setup lang="ts">
-import { UpdatePasswordSchema } from '#shared/schemas/auth'
-import type { UpdatePasswordState } from '#shared/schemas/auth'
+import { RecoveryPasswordSchema } from '#shared/schemas/auth'
+import type { RecoveryPasswordState } from '#shared/schemas/auth'
 
 definePageMeta({ layout: 'auth' })
 
@@ -48,7 +48,7 @@ onMounted(() => {
   }
 })
 
-const state = reactive<UpdatePasswordState>({
+const state = reactive<RecoveryPasswordState>({
   password: '',
   confirmPassword: '',
 })

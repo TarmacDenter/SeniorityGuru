@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { uuidField } from './common'
 
 export const UpdateUserRoleSchema = z.object({
   role: z.enum(['user', 'moderator', 'admin']),
@@ -11,11 +12,11 @@ export const InviteUserSchema = z.object({
 export type InviteUser = z.infer<typeof InviteUserSchema>
 
 export const ResetUserPasswordSchema = z.object({
-  userId: z.string().uuid(),
+  userId: uuidField(),
 })
 export type ResetUserPassword = z.infer<typeof ResetUserPasswordSchema>
 
 export const AdminUserIdSchema = z.object({
-  id: z.string().uuid(),
+  id: uuidField(),
 })
 export type AdminUserId = z.infer<typeof AdminUserIdSchema>
