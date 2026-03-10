@@ -186,9 +186,20 @@ SUPABASE_SECRET_KEY=<local service role key>
 
 # .env.prod (remote)
 SUPABASE_URL=https://nrvrybznzekwseprilqt.supabase.co
-SUPABASE_KEY=<remote anon key>
+SUPABASE_KEY=<remote anon/publishable key>
 SUPABASE_SECRET_KEY=<remote service role key>
 ```
+
+### Key format gotcha
+
+Supabase now issues two formats per key type:
+
+| Format | Example prefix | Used by |
+|---|---|---|
+| Legacy JWT | `eyJhbGci...` | Supabase JS client (`createClient`) |
+| New format | `sb_publishable_...` / `sb_secret_...` | Supabase Management API |
+
+**The JS client requires the legacy JWT keys.** The `sb_secret_...` and `sb_publishable_...` keys will cause "Invalid API key" errors with `createClient`. Use the JWT versions from Dashboard → Settings → API.
 
 ---
 
