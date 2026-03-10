@@ -24,6 +24,17 @@ jobs:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
 
+      # One-time repair: remote has different timestamps for two migrations
+      # that were pushed manually before this workflow existed.
+      # Remove this step after the first successful run.
+      - name: Repair migration history (one-time)
+        run: |
+          supabase migration repair --status reverted 20260310014531 20260310014537
+          supabase migration repair --status applied 20260310000001 20260310000002
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+
       - run: supabase db push
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
