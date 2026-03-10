@@ -63,3 +63,4 @@ docs.local/
 # VSCode workspace (user-specific)
 *.code-workspace
 
+.worktrees/
