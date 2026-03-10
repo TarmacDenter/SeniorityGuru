@@ -61,6 +61,13 @@ async function onSave() {
     return
   }
 
+  if (userStore.profile) {
+    userStore.profile = {
+      ...userStore.profile,
+      icao_code: state.icaoCode,
+      employee_number: normalized || null,
+    }
+  }
   await userStore.fetchProfile()
   toast.add({ title: 'Profile saved', color: 'success' })
 }

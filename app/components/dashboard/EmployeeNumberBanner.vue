@@ -77,6 +77,13 @@ async function onSave() {
   }
 
   const userStore = useUserStore()
+
+  // Optimistically update the store so the dashboard reacts immediately.
+  // fetchProfile() syncs the full profile from the server; if it fails the
+  // optimistic value ensures the employee number is still visible.
+  if (userStore.profile) {
+    userStore.profile = { ...userStore.profile, employee_number: normalized }
+  }
   await userStore.fetchProfile()
 
   toast.add({ title: 'Employee number saved', color: 'success' })

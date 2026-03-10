@@ -5,6 +5,10 @@ import { createLogger } from '#shared/utils/logger'
 const log = createLogger('user-store')
 
 export const useUserStore = defineStore('user', () => {
+  // Called at setup time so the reactive ref is always accessible inside async
+  // actions, regardless of Nuxt context propagation timing.
+  const supabaseUser = useSupabaseUser()
+
   const profile = ref<Tables<'profiles'> | null>(null)
   const loading = ref(false)
   const error = ref<string | null>(null)
@@ -13,10 +17,8 @@ export const useUserStore = defineStore('user', () => {
   const isModerator = computed(() => profile.value?.role === 'moderator' || profile.value?.role === 'admin')
 
   async function fetchProfile() {
-    const user = useSupabaseUser()
-
     // useSupabaseUser() returns JWT claims — the user ID is in `sub`, not `id`
-    const userId = user.value?.sub as string | undefined
+    const userId = supabaseUser.value?.sub as string | undefined
     if (!userId) return
 
     loading.value = true

@@ -15,7 +15,7 @@ export default defineEventHandler(async (event) => {
     .from('profiles')
     .select('*')
     .eq('id', user.sub)
-    .single()
+    .maybeSingle()
 
   if (error) {
     log.error('Profile fetch failed', { userId: user.sub, error: error.message })
@@ -23,6 +23,7 @@ export default defineEventHandler(async (event) => {
   }
 
   if (!data) {
+    log.warn('Profile not found', { userId: user.sub })
     throw createError({ statusCode: 404, statusMessage: 'Profile not found' })
   }
 
