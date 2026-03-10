@@ -28,10 +28,5 @@ defineProps<{
 }>()
 
 const user = useSupabaseUser()
-const supabase = useSupabaseClient()
-
-async function signOut() {
-  await supabase.auth.signOut()
-  navigateTo('/auth/login')
-}
+const { signOut } = useSignOut()
 </script>
