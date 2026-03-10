@@ -25,43 +25,47 @@
 - `EXCEL_EPOCH` — replace `Date.UTC(1899, 11, 30)` magic number in `normalizeDate()`
 
 ### `shared/schemas/common.ts` (new)
-- `UUIDSchema` — replaces identical `AdminUserIdSchema` and `ResetUserPasswordSchema`
-- `withPasswordConfirmation(baseSchema)` — reusable refinement for password + confirmPassword match; used by `SignUpSchema`, `RecoveryPasswordSchema`, `ChangePasswordSchema`
+- `uuidField()` — reusable `z.string().uuid()` builder. `AdminUserIdSchema` and `ResetUserPasswordSchema` share the same UUID validation but wrap different field names (`id` vs `userId`), so they each keep their own `z.object()` calling `uuidField()` internally
+- `withPasswordConfirmation<T>(baseSchema)` — generic refinement for password + confirmPassword match; must accept any `ZodObject` whose shape includes `{ password, confirmPassword }`. Used by `SignUpSchema`, `RecoveryPasswordSchema`, `ChangePasswordSchema`
 
 ### Schema renames & merges
 - `UpdatePasswordSchema` (auth.ts) → `RecoveryPasswordSchema` — used in recovery flow, not settings
-- Delete `AdminUserIdSchema`, `ResetUserPasswordSchema` — replaced by `UUIDSchema`
-- Merge `profile.ts` (single `UpdateEmployeeNumberSchema`) into `settings.ts`
+- Simplify `AdminUserIdSchema` and `ResetUserPasswordSchema` to use `uuidField()` (keep both — different field names)
+- Merge `profile.ts` into `settings.ts` — keep `UpdateEmployeeNumberSchema` as a distinct schema (it requires `min(1)` for the inline employee-number form, vs `UpdateProfileSchema.employeeNumber` which allows empty). Merging the file avoids the two-file confusion while preserving both validation rules
 
 ### Tests
-- Co-located tests for `common.ts` (UUIDSchema, withPasswordConfirmation)
+- Co-located tests for `common.ts` (`uuidField`, `withPasswordConfirmation`)
 - Update existing tests for renamed/moved schemas
+- Move `profile.test.ts` assertions into `settings.test.ts`
 
 ---
 
 ## Layer 2: Shared Utils (Pure Logic Extraction)
 
 ### `shared/utils/seniority-math.ts` (new)
-Extracted from `useDashboardStats.ts` (450 lines):
-- `countRetiredAbove(entries, userSeniorityNumber, retireDate)`
-- `generateTimePoints(startDate, endDate, intervalMonths)`
-- `buildTrajectoryPoint(entries, userSeniorityNumber, targetDate)`
-- `computeRank(entries, userSeniorityNumber, filterFn?)`
-- `getProjectionEndDate(entries, retirementAge)`
-- `computePercentile(rank, total)`
+Moved from `useDashboardStats.ts` (450 lines) — these functions already exist at module scope, they just need to move to `shared/utils/` for reusability and testability:
+- `countRetiredAbove(entries, userSeniorityNumber, retireDate)` (already exported)
+- `generateTimePoints(startDate, endDate)` (already exported)
+- `buildTrajectory(entries, userSeniorityNumber, filterFn?)` (already exported — note: NOT `buildTrajectoryPoint`)
+- `computeRank(entries, userSenNum)` (currently private — newly exported)
+- `getProjectionEndDate(retireDate)` (currently private — newly exported)
+- `computeRetirementProjection(entries, filterFn?)` (currently private inside composable — extract)
+- `computeComparativeTrajectory(entries, filterFnA, filterFnB, timePoints)` (currently private inside composable — extract)
 
 ### `shared/utils/seniority-compare.ts` (new)
-Extracted from `useSeniorityCompare.ts` (213 lines):
+Moved from `useSeniorityCompare.ts` (213 lines) — `computeComparison` is already a standalone exported function at module scope, it just needs to move files:
 - `computeComparison(olderEntries, newerEntries)` → `{ retired, departed, qualMoves, rankChanges, newHires }`
-- Interfaces: `RetiredPilot`, `DepartedPilot`, `QualMovePilot`, `RankChangePilot`, `NewHirePilot`
+- Interfaces: `RetiredPilot`, `DepartedPilot`, `QualMove`, `RankChange`, `NewHire`, `CompareResult`
+- Note: `compare.vue` imports these types directly and will need its import path updated
 
 ### `shared/utils/date.ts` (new)
-Decomposed from `normalizeDate()` in `seniority-list.ts`:
-- `parseExcelSerial(serial)` — Excel serial → YYYY-MM-DD
-- `parseSlashDate(dateStr)` — MM/DD/YYYY variants → YYYY-MM-DD
-- `normalizeDate(input)` — orchestrator trying each parser
+Moved from `seniority-list.ts` — `normalizeDate()` is 30 lines with sequential if-blocks (not deeply nested), but grouping all date logic in one utility file improves discoverability:
+- `parseExcelSerial(serial)` — Excel serial → YYYY-MM-DD (extracted from inline block in `normalizeDate`)
+- `parseSlashDate(dateStr)` — MM/DD/YYYY variants → YYYY-MM-DD (extracted from inline block)
+- `normalizeDate(input)` — orchestrator calling each parser
 - `computeRetireDate(dob, retirementAge)` — moved from seniority-list.ts
-- `formatIsoDate(date)` — moved from seniority-list.ts
+- `formatDate(date, utc?)` — moved from seniority-list.ts (currently private, now exported; keeping original name)
+- Note: `useSeniorityUpload.ts` imports `isoDateRegex` from `seniority-list.ts` — after `isoDateRegex` moves to `shared/constants.ts`, that import must be updated
 
 ### Tests
 - Move relevant tests from `useDashboardStats.test.ts` and `useSeniorityCompare.test.ts`
@@ -109,10 +113,10 @@ All 7 API routes updated to use helpers. Each route loses ~15-20 lines of valida
 - Wires reactive data to functions via `computed()`
 - Same public API — no consumer changes
 
-### `useSeniorityCompare.ts` (213 → ~40-50 lines)
-- Imports `computeComparison` from `shared/utils/seniority-compare.ts`
-- Keeps data fetching, calls pure function in `computed()`
-- Same return shape
+### `useSeniorityCompare.ts` (213 → ~75 lines)
+- Imports `computeComparison` and interfaces from `shared/utils/seniority-compare.ts`
+- Keeps data fetching (~72 lines of composable wrapper), calls pure function in `computed()`
+- Same return shape — consumers re-export types from the new location
 
 ### `useSeniorityUpload.ts` (202 → ~120-140 lines)
 - Lighter touch: import date utilities from `shared/utils/date.ts`
@@ -120,7 +124,7 @@ All 7 API routes updated to use helpers. Each route loses ~15-20 lines of valida
 
 ### `useSignOut.ts` (new, ~10 lines)
 - Extracts duplicate sign-out logic from `AppHeader.vue` and `SeniorityNavbar.vue`
-- Calls `supabase.auth.signOut()` + `navigateTo('/welcome')`
+- Calls `supabase.auth.signOut()` + `navigateTo('/auth/login')` (matches current behavior in both components)
 
 ### No changes to
 - `useTableFeatures.ts`, `useScopeFilter.ts`, `useSupabase.ts`, `useAirlineOptions.ts`, `useSeniorityNav.ts`
@@ -145,8 +149,8 @@ All 7 API routes updated to use helpers. Each route loses ~15-20 lines of valida
 - `SettingsPasswordCard.vue` (~40-50 lines) — password change
 - `settings.vue` becomes layout page (~30 lines) rendering 4 cards
 
-### Store fix
-- Move `currentListId` to top of state declarations in `seniority.ts`
+### Store fix (`seniority.ts`)
+- Move `currentListId` declaration above `fetchEntries` — it is currently referenced in `fetchEntries` (line 40) before being declared (line 56), a forward reference that works due to hoisting but harms readability
 
 ---
 
@@ -184,7 +188,7 @@ All 7 API routes updated to use helpers. Each route loses ~15-20 lines of valida
 
 ## Files Modified
 
-All existing schema files, all 7 server routes, 3 composables, `compare.vue`, `settings.vue`, `BaseStatusTable.vue`, `AppHeader.vue`, `SeniorityNavbar.vue`, `seniority.ts` store, plus test file updates.
+All existing schema files, all 7 server routes, 3 composables (`useDashboardStats.ts`, `useSeniorityCompare.ts`, `useSeniorityUpload.ts`), `compare.vue`, `settings.vue`, `app/components/dashboard/BaseStatusTable.vue`, `AppHeader.vue`, `SeniorityNavbar.vue`, `seniority.ts` store, plus test file updates. `useSeniorityUpload.ts` needs import path update for `isoDateRegex` (moving to `shared/constants.ts`).
 
 ---
 
