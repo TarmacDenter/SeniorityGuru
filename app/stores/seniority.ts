@@ -11,6 +11,8 @@ export const useSeniorityStore = defineStore('seniority', () => {
   const entriesLoading = ref(false)
   const listsError = ref<string | null>(null)
   const entriesError = ref<string | null>(null)
+  /** Track which list's entries are currently loaded */
+  const currentListId = ref<string | null>(null)
 
   async function fetchLists() {
     const db = useDb()
@@ -51,9 +53,6 @@ export const useSeniorityStore = defineStore('seniority', () => {
 
     entriesLoading.value = false
   }
-
-  /** Track which list's entries are currently loaded */
-  const currentListId = ref<string | null>(null)
 
   async function updateList(id: string, updates: { airline?: string; effective_date?: string }) {
     const updated = await $fetch<Tables<'seniority_lists'>>(`/api/seniority-lists/${id}`, {
