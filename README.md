@@ -8,31 +8,29 @@ Upload your airline's seniority list (CSV or XLSX), and the app parses it, maps 
 - **Seniority trajectory** — projected rank over time as retirements open slots
 - **Retirement projections** — who's aging out and when, charted by year
 - **Base/seat breakdown** — how you stack up in each domicile
-- **Comparison tools** — side-by-side stats across lists
+- **Comparison tools** — side-by-side diff across two lists with categorized changes
+- **List management** — view, edit, and delete your uploaded lists
 
 Data stays isolated per user. You upload your own lists and only see your own data. No shared pool (yet).
 
-## Roadmap
+## Shipped
 
-### Shipped
-
-- Auth flow (signup, PKCE confirm, profile setup with airline/employee number)
-- CSV/XLSX upload with interactive column mapping
+- Auth flow (invite-only signup, PKCE confirm, profile setup with airline/employee number)
+- CSV/XLSX upload with interactive column mapping and human-readable validation errors
 - Full seniority list viewer with your row highlighted
 - Dashboard with trajectory chart, retirement projections, base breakdown, stats grid
+- Seniority list comparison with diff categories and tabbed UI
+- List management (view, edit, delete your uploaded lists)
 - Settings page (profile, preferences, password)
+- Admin panel with user management, role editing, invite, and password reset
+- Public landing page for unauthenticated visitors
+- Structured logging for Cloudflare Workers
+- Pagination, search, and sorting across all data tables
 
-### Next
-
-- **List management** — view, archive, delete your uploaded lists
-- **Public landing page** — explain what this is to new visitors
-- **Upcoming retirements table** — who above you is retiring in 1-5 years
-
-### Future
+## Roadmap
 
 - Historical trend tracking (your actual rank across multiple lists over time)
 - Data export (CSV/PDF)
-- Admin panel and moderator tools (airline rep list approval)
 - Notifications (new lists, retirement milestones)
 - Saved scenarios / bookmarks
 - Advanced analytics (cohort analysis, attrition forecasting)
@@ -80,15 +78,16 @@ SUPABASE_SECRET_KEY=<service-role-key>   # server-only
 
 ```
 app/
-  pages/              # auth/, seniority/, index.vue, settings.vue
-  composables/        # useSupabase, useDashboardStats, useSeniorityUpload, etc.
+  pages/              # auth/, seniority/, index.vue, settings.vue, welcome.vue
+  composables/        # useSupabase, useDashboardStats, useSeniorityCompare, etc.
   stores/             # Pinia — user.ts, seniority.ts
-  middleware/auth.ts  # Route guard (SSR/CSR aware)
-  components/         # Dashboard cards, upload flow, navbar
-server/api/           # Nitro routes (seniority-lists.post.ts)
+  middleware/          # auth.ts (route guard, SSR/CSR aware), admin.ts
+  components/         # Dashboard cards, upload flow, navbar, comparison UI
+server/api/           # Nitro routes — seniority CRUD, admin endpoints
 shared/
   schemas/            # Zod schemas shared between client + server
   types/database.ts   # Generated Supabase types
+  utils/logger.ts     # Structured logging utility
 supabase/
   migrations/         # SQL migrations (schema source of truth)
   scripts/            # Seed scripts
@@ -99,7 +98,7 @@ e2e/                  # Playwright specs
 
 **Rendering:** Auth pages are SSR. Dashboard and seniority pages are CSR-only (`ssr: false` in route rules). The auth middleware accounts for this — `useSupabaseUser()` is null when middleware runs on CSR routes, so it falls back to `getClaims()`.
 
-**Auth:** Supabase PKCE flow with SSR cookies. The user object from `useSupabaseUser()` / `serverSupabaseUser()` is JWT claims, not a full User — use `user.sub` for the UUID, `user.user_metadata?.email_verified` for verification status.
+**Auth:** Supabase PKCE flow with SSR cookies. Invite-only signup. The user object from `useSupabaseUser()` / `serverSupabaseUser()` is JWT claims, not a full User — use `user.sub` for the UUID, `user.user_metadata?.email_verified` for verification status.
 
 **Database:** Four tables — `airlines`, `profiles`, `seniority_lists`, `seniority_entries`. RLS on everything. Data isolation is by `uploaded_by`. A `get_my_role()` security definer prevents RLS recursion on profile lookups.
 
@@ -109,15 +108,14 @@ e2e/                  # Playwright specs
 
 ## Git Workflow
 
-GitFlow with Conventional Commits enforced by commitlint.
+Linear dev with rebase. Conventional Commits enforced by commitlint.
 
-- `main` — production, auto-tagged by semantic-release
-- `dev` — integration
-- `feature/*` — branch from `dev`, squash-merge back via PR
-- `release/vX.Y.Z` — cut from `dev`, squash into `main`
-- `hotfix/*` — branch from `main` for emergencies
+- `main` — production, protected, auto-tagged by semantic-release
+- `dev` — integration, unprotected (push directly, force-push for history revision)
+- `feature/*` — branch from `dev`, rebase + fast-forward merge back
+- `hotfix/*` — branch from `main` for emergencies, cherry-pick to `dev` after
 
-PR titles follow `type(scope): description`. CI runs typecheck on all PRs.
+Quality gates: pre-push hook runs typecheck + tests. CI runs both on push to `dev` and PRs to `main`.
 
 ## License
 
