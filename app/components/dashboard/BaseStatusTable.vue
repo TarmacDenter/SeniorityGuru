@@ -10,42 +10,12 @@
       </div>
     </template>
 
-    <UTable :data="displayData" :columns="columns">
-      <template #base-cell="{ row }">
-        <span :class="row.original.isUserCurrent ? 'font-bold text-primary' : ''">
-          {{ row.original.base }}
-        </span>
-      </template>
-      <template #seat-cell="{ row }">
-        <span :class="row.original.isUserCurrent ? 'font-bold text-primary' : ''">
-          {{ row.original.seat }}
-        </span>
-      </template>
-      <template #fleet-cell="{ row }">
-        <span :class="row.original.isUserCurrent ? 'font-bold text-primary' : ''">
-          {{ row.original.fleet }}
-        </span>
-      </template>
-      <template #displayRank-cell="{ row }">
-        <span :class="row.original.isUserCurrent ? 'font-bold text-primary' : ''">
-          {{ row.original.displayRank }}
-        </span>
-      </template>
-      <template #displayTotal-cell="{ row }">
-        <span :class="row.original.isUserCurrent ? 'font-bold text-primary' : ''">
-          {{ row.original.displayTotal }}
-        </span>
-      </template>
-      <template #displayPercentile-cell="{ row }">
-        <span :class="row.original.isUserCurrent ? 'font-bold text-primary' : ''">
-          {{ row.original.displayPercentile }}%
-        </span>
-      </template>
-    </UTable>
+    <UTable :data="displayData" :columns="columns" />
   </UCard>
 </template>
 
 <script setup lang="ts">
+import { h } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
 
 type BaseStatusRow = {
@@ -82,12 +52,16 @@ const displayData = computed<DisplayRow[]>(() =>
   })),
 )
 
+function highlightClass(row: DisplayRow): string {
+  return row.isUserCurrent ? 'font-bold text-primary' : ''
+}
+
 const columns: TableColumn<DisplayRow>[] = [
-  { accessorKey: 'base', header: 'Base' },
-  { accessorKey: 'seat', header: 'Seat' },
-  { accessorKey: 'fleet', header: 'Fleet' },
-  { accessorKey: 'displayRank', header: 'Rank' },
-  { accessorKey: 'displayTotal', header: 'Total' },
-  { accessorKey: 'displayPercentile', header: 'TOP %' },
+  { accessorKey: 'base', header: 'Base', cell: ({ row }) => h('span', { class: highlightClass(row.original) }, row.original.base) },
+  { accessorKey: 'seat', header: 'Seat', cell: ({ row }) => h('span', { class: highlightClass(row.original) }, row.original.seat) },
+  { accessorKey: 'fleet', header: 'Fleet', cell: ({ row }) => h('span', { class: highlightClass(row.original) }, row.original.fleet) },
+  { accessorKey: 'displayRank', header: 'Rank', cell: ({ row }) => h('span', { class: highlightClass(row.original) }, row.original.displayRank) },
+  { accessorKey: 'displayTotal', header: 'Total', cell: ({ row }) => h('span', { class: highlightClass(row.original) }, row.original.displayTotal) },
+  { accessorKey: 'displayPercentile', header: 'TOP %', cell: ({ row }) => h('span', { class: highlightClass(row.original) }, `${row.original.displayPercentile}%`) },
 ]
 </script>
