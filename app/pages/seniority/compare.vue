@@ -48,103 +48,19 @@
         <!-- Detail tabs -->
         <UTabs :items="tabs" class="mt-4">
           <template #retired>
-            <div class="space-y-3 pt-3">
-              <UInput v-model="retired.globalFilter.value" icon="i-lucide-search"
-                placeholder="Search retired..." class="max-w-sm" />
-              <UTable ref="retiredTable" :data="comparison.retired" :columns="retiredColumns"
-                v-model:global-filter="retired.globalFilter.value"
-                v-model:pagination="retired.pagination.value"
-                v-model:sorting="retired.sorting.value"
-                :pagination-options="retired.paginationOptions" />
-              <div class="flex items-center justify-between">
-                <p class="text-sm text-(--ui-text-muted)">{{ retired.totalRows.value }} results</p>
-                <UPagination v-if="retired.pageCount.value > 1"
-                  :page="retired.currentPage.value"
-                  :total="retired.totalRows.value"
-                  :items-per-page="retired.pagination.value.pageSize"
-                  @update:page="(p: number) => retired.tableRef.value?.tableApi?.setPageIndex(p - 1)" />
-              </div>
-            </div>
+            <ComparisonTab :data="comparison.retired" :columns="retiredColumns" search-placeholder="Search retired..." />
           </template>
-
           <template #departed>
-            <div class="space-y-3 pt-3">
-              <UInput v-model="departed.globalFilter.value" icon="i-lucide-search"
-                placeholder="Search departed..." class="max-w-sm" />
-              <UTable ref="departedTable" :data="comparison.departed" :columns="departedColumns"
-                v-model:global-filter="departed.globalFilter.value"
-                v-model:pagination="departed.pagination.value"
-                v-model:sorting="departed.sorting.value"
-                :pagination-options="departed.paginationOptions" />
-              <div class="flex items-center justify-between">
-                <p class="text-sm text-(--ui-text-muted)">{{ departed.totalRows.value }} results</p>
-                <UPagination v-if="departed.pageCount.value > 1"
-                  :page="departed.currentPage.value"
-                  :total="departed.totalRows.value"
-                  :items-per-page="departed.pagination.value.pageSize"
-                  @update:page="(p: number) => departed.tableRef.value?.tableApi?.setPageIndex(p - 1)" />
-              </div>
-            </div>
+            <ComparisonTab :data="comparison.departed" :columns="departedColumns" search-placeholder="Search departed..." />
           </template>
-
           <template #qual-moves>
-            <div class="space-y-3 pt-3">
-              <UInput v-model="qualMoves.globalFilter.value" icon="i-lucide-search"
-                placeholder="Search qual moves..." class="max-w-sm" />
-              <UTable ref="qualMovesTable" :data="comparison.qualMoves" :columns="qualMoveColumns"
-                v-model:global-filter="qualMoves.globalFilter.value"
-                v-model:pagination="qualMoves.pagination.value"
-                v-model:sorting="qualMoves.sorting.value"
-                :pagination-options="qualMoves.paginationOptions" />
-              <div class="flex items-center justify-between">
-                <p class="text-sm text-(--ui-text-muted)">{{ qualMoves.totalRows.value }} results</p>
-                <UPagination v-if="qualMoves.pageCount.value > 1"
-                  :page="qualMoves.currentPage.value"
-                  :total="qualMoves.totalRows.value"
-                  :items-per-page="qualMoves.pagination.value.pageSize"
-                  @update:page="(p: number) => qualMoves.tableRef.value?.tableApi?.setPageIndex(p - 1)" />
-              </div>
-            </div>
+            <ComparisonTab :data="comparison.qualMoves" :columns="qualMoveColumns" search-placeholder="Search qual moves..." />
           </template>
-
           <template #rank-changes>
-            <div class="space-y-3 pt-3">
-              <UInput v-model="rankChanges.globalFilter.value" icon="i-lucide-search"
-                placeholder="Search rank changes..." class="max-w-sm" />
-              <UTable ref="rankChangesTable" :data="comparison.rankChanges" :columns="rankChangeColumns"
-                v-model:global-filter="rankChanges.globalFilter.value"
-                v-model:pagination="rankChanges.pagination.value"
-                v-model:sorting="rankChanges.sorting.value"
-                :pagination-options="rankChanges.paginationOptions" />
-              <div class="flex items-center justify-between">
-                <p class="text-sm text-(--ui-text-muted)">{{ rankChanges.totalRows.value }} results</p>
-                <UPagination v-if="rankChanges.pageCount.value > 1"
-                  :page="rankChanges.currentPage.value"
-                  :total="rankChanges.totalRows.value"
-                  :items-per-page="rankChanges.pagination.value.pageSize"
-                  @update:page="(p: number) => rankChanges.tableRef.value?.tableApi?.setPageIndex(p - 1)" />
-              </div>
-            </div>
+            <ComparisonTab :data="comparison.rankChanges" :columns="rankChangeColumns" search-placeholder="Search rank changes..." />
           </template>
-
           <template #new-hires>
-            <div class="space-y-3 pt-3">
-              <UInput v-model="newHires.globalFilter.value" icon="i-lucide-search"
-                placeholder="Search new hires..." class="max-w-sm" />
-              <UTable ref="newHiresTable" :data="comparison.newHires" :columns="newHireColumns"
-                v-model:global-filter="newHires.globalFilter.value"
-                v-model:pagination="newHires.pagination.value"
-                v-model:sorting="newHires.sorting.value"
-                :pagination-options="newHires.paginationOptions" />
-              <div class="flex items-center justify-between">
-                <p class="text-sm text-(--ui-text-muted)">{{ newHires.totalRows.value }} results</p>
-                <UPagination v-if="newHires.pageCount.value > 1"
-                  :page="newHires.currentPage.value"
-                  :total="newHires.totalRows.value"
-                  :items-per-page="newHires.pagination.value.pageSize"
-                  @update:page="(p: number) => newHires.tableRef.value?.tableApi?.setPageIndex(p - 1)" />
-              </div>
-            </div>
+            <ComparisonTab :data="comparison.newHires" :columns="newHireColumns" search-placeholder="Search new hires..." />
           </template>
         </UTabs>
       </template>
@@ -163,10 +79,8 @@
 </template>
 
 <script setup lang="ts">
-import type { TableColumn } from '@nuxt/ui'
 import { useSeniorityStore } from '~/stores/seniority'
-import { sortableHeader } from '~/utils/sortableHeader'
-import type { RetiredPilot, DepartedPilot, QualMove, RankChange, NewHire } from '~/composables/useSeniorityCompare'
+import { retiredColumns, departedColumns, qualMoveColumns, rankChangeColumns, newHireColumns } from '~/utils/column-definitions'
 
 definePageMeta({
   middleware: 'auth',
@@ -180,13 +94,6 @@ const listIdA = ref<string | undefined>((route.query.a as string) || undefined)
 const listIdB = ref<string | undefined>((route.query.b as string) || undefined)
 
 const { loading, error, comparison } = useSeniorityCompare(listIdA, listIdB)
-
-// Table features — one instance per tab
-const retired = useTableFeatures<RetiredPilot>('retiredTable')
-const departed = useTableFeatures<DepartedPilot>('departedTable')
-const qualMoves = useTableFeatures<QualMove>('qualMovesTable')
-const rankChanges = useTableFeatures<RankChange>('rankChangesTable')
-const newHires = useTableFeatures<NewHire>('newHiresTable')
 
 // Keep query params in sync
 watch([listIdA, listIdB], ([a, b]) => {
@@ -234,51 +141,4 @@ const tabs = [
   { label: 'New Hires', slot: 'new-hires' as const },
 ]
 
-const retiredColumns: TableColumn<RetiredPilot>[] = [
-  { accessorKey: 'seniority_number', header: sortableHeader<RetiredPilot>('#') },
-  { accessorKey: 'employee_number', header: sortableHeader<RetiredPilot>('Employee #') },
-  { accessorKey: 'name', header: sortableHeader<RetiredPilot>('Name') },
-  { accessorKey: 'retire_date', header: sortableHeader<RetiredPilot>('Retire Date') },
-]
-
-const departedColumns: TableColumn<DepartedPilot>[] = [
-  { accessorKey: 'seniority_number', header: sortableHeader<DepartedPilot>('#') },
-  { accessorKey: 'employee_number', header: sortableHeader<DepartedPilot>('Employee #') },
-  { accessorKey: 'name', header: sortableHeader<DepartedPilot>('Name') },
-  { accessorKey: 'retire_date', header: sortableHeader<DepartedPilot>('Retire Date') },
-]
-
-const qualMoveColumns: TableColumn<QualMove>[] = [
-  { accessorKey: 'seniority_number', header: sortableHeader<QualMove>('#') },
-  { accessorKey: 'employee_number', header: sortableHeader<QualMove>('Employee #') },
-  { accessorKey: 'name', header: sortableHeader<QualMove>('Name') },
-  { accessorKey: 'old_seat', header: sortableHeader<QualMove>('Old Seat') },
-  { accessorKey: 'new_seat', header: sortableHeader<QualMove>('New Seat') },
-  { accessorKey: 'old_fleet', header: sortableHeader<QualMove>('Old Fleet') },
-  { accessorKey: 'new_fleet', header: sortableHeader<QualMove>('New Fleet') },
-  { accessorKey: 'old_base', header: sortableHeader<QualMove>('Old Base') },
-  { accessorKey: 'new_base', header: sortableHeader<QualMove>('New Base') },
-]
-
-const rankChangeColumns: TableColumn<RankChange>[] = [
-  { accessorKey: 'employee_number', header: sortableHeader<RankChange>('Employee #') },
-  { accessorKey: 'name', header: sortableHeader<RankChange>('Name') },
-  { accessorKey: 'old_rank', header: sortableHeader<RankChange>('Old Rank') },
-  { accessorKey: 'new_rank', header: sortableHeader<RankChange>('New Rank') },
-  {
-    accessorKey: 'delta',
-    header: sortableHeader<RankChange>('Change'),
-    cell: ({ row }) => {
-      const d = row.original.delta
-      return d > 0 ? `+${d}` : `${d}`
-    },
-  },
-]
-
-const newHireColumns: TableColumn<NewHire>[] = [
-  { accessorKey: 'seniority_number', header: sortableHeader<NewHire>('#') },
-  { accessorKey: 'employee_number', header: sortableHeader<NewHire>('Employee #') },
-  { accessorKey: 'name', header: sortableHeader<NewHire>('Name') },
-  { accessorKey: 'hire_date', header: sortableHeader<NewHire>('Hire Date') },
-]
 </script>
