@@ -1,9 +1,18 @@
 import type { Tables } from '#shared/types/database'
+import {
+  countRetiredAbove,
+  generateTimePoints,
+  buildTrajectory,
+  computeRank,
+  getProjectionEndDate,
+  formatDateLabel,
+  formatNumber,
+  type FilterFn,
+} from '#shared/utils/seniority-math'
 import { useSeniorityStore } from '~/stores/seniority'
 import { useUserStore } from '~/stores/user'
 
 type SeniorityEntry = Tables<'seniority_entries'>
-type FilterFn = (entry: SeniorityEntry) => boolean
 
 interface StatCard {
   label: string
@@ -11,103 +20,6 @@ interface StatCard {
   trend?: string
   trendUp?: boolean
   icon: string
-}
-
-/**
- * Count entries senior to user (lower seniority_number) that have retired by asOfDate.
- * Only counts entries matching optional filterFn.
- */
-export function countRetiredAbove(
-  entries: SeniorityEntry[],
-  userSenNum: number,
-  asOfDate: Date,
-  filterFn?: FilterFn,
-): number {
-  let count = 0
-  for (const entry of entries) {
-    if (entry.seniority_number >= userSenNum) continue
-    if (!entry.retire_date) continue
-    if (new Date(entry.retire_date) > asOfDate) continue
-    if (filterFn && !filterFn(entry)) continue
-    count++
-  }
-  return count
-}
-
-/**
- * Generate time points: yearly intervals from startDate until endDate.
- */
-export function generateTimePoints(startDate: Date, endDate: Date): Date[] {
-  const points: Date[] = []
-  const current = new Date(startDate)
-
-  // Always use yearly intervals
-  while (current <= endDate) {
-    points.push(new Date(current))
-    current.setFullYear(current.getFullYear() + 1)
-  }
-
-  return points
-}
-
-/**
- * Build trajectory: for each time point, compute rank within the (optionally filtered) set.
- * Rank = number of non-retired pilots ahead of user in the filtered set + 1.
- */
-export function buildTrajectory(
-  entries: SeniorityEntry[],
-  userSenNum: number,
-  timePoints: Date[],
-  filterFn?: FilterFn,
-): { date: string; rank: number; percentile: number }[] {
-  // Pre-filter entries to the category
-  const filtered = filterFn ? entries.filter(filterFn) : entries
-  const totalInCategory = filtered.length
-  // Count pilots ahead of user in the filtered set (lower seniority_number)
-  const aheadInCategory = filtered.filter((e) => e.seniority_number < userSenNum)
-  const initialRank = aheadInCategory.length + 1
-
-  return timePoints.map((tp) => {
-    // Count how many of those ahead have retired by this time point
-    let retiredAhead = 0
-    for (const e of aheadInCategory) {
-      if (!e.retire_date) continue
-      if (new Date(e.retire_date) <= tp) retiredAhead++
-    }
-    const rank = initialRank - retiredAhead
-    // Use static denominator (initial category size) to avoid wild swings as pool shrinks
-    // Invert: 100% = most senior (#1), 0% = most junior (last)
-    const percentile = totalInCategory > 0
-      ? Math.round(((totalInCategory - rank + 1) / totalInCategory) * 1000) / 10
-      : 0
-    return {
-      date: tp.toISOString().split('T')[0]!,
-      rank,
-      percentile,
-    }
-  })
-}
-
-function computeRank(entries: SeniorityEntry[], userSenNum: number): number {
-  return entries.filter((e) => e.seniority_number < userSenNum).length + 1
-}
-
-function getProjectionEndDate(retireDate: string | null): { today: Date; endDate: Date } {
-  const today = new Date()
-  const endDate = retireDate
-    ? new Date(retireDate)
-    : new Date(today.getFullYear() + 30, today.getMonth(), today.getDate())
-  return { today, endDate }
-}
-
-function formatDate(dateStr: string): string {
-  const d = new Date(dateStr)
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-  return `${months[d.getUTCMonth()]} ${d.getUTCFullYear()}`
-}
-
-function formatNumber(n: number): string {
-  return n.toLocaleString()
 }
 
 export function useDashboardStats() {
@@ -329,7 +241,7 @@ export function useDashboardStats() {
         return rd > bucketStart && rd <= bucketEnd
       }).length
 
-      labels.push(formatDate(bucketEnd.toISOString().split('T')[0]!))
+      labels.push(formatDateLabel(bucketEnd.toISOString().split('T')[0]!))
       data.push(count)
     }
 
@@ -408,7 +320,7 @@ export function useDashboardStats() {
   const recentLists = computed(() => {
     return seniorityStore.lists.map((list) => ({
       id: list.id,
-      title: `${formatDate(list.effective_date)} Seniority List`,
+      title: `${formatDateLabel(list.effective_date)} Seniority List`,
       description: 'Uploaded',
       icon: 'i-lucide-file-text',
       date: list.effective_date,
