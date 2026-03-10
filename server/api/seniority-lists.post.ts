@@ -11,21 +11,12 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 401, statusMessage: 'Unauthorized' })
   }
 
-  const body = await readBody(event)
-  const parsed = CreateSeniorityListSchema.safeParse(body)
-  if (!parsed.success) {
-    log.warn('Validation failed', { userId: user.sub, issues: parsed.error.issues.length })
-    throw createError({
-      statusCode: 422,
-      statusMessage: 'Validation failed',
-      data: parsed.error.issues,
-    })
-  }
+  const { entries, effective_date } = await validateBody(event, CreateSeniorityListSchema)
 
   log.info('Seniority list upload started', {
     userId: user.sub,
-    effectiveDate: parsed.data.effective_date,
-    entryCount: parsed.data.entries.length,
+    effectiveDate: effective_date,
+    entryCount: entries.length,
   })
 
   const client = await serverSupabaseClient(event)
@@ -51,7 +42,7 @@ export default defineEventHandler(async (event) => {
     .from('seniority_lists')
     .insert({
       airline: profile.icao_code,
-      effective_date: parsed.data.effective_date,
+      effective_date,
       uploaded_by: user.sub,
     })
     .select('id')
@@ -63,14 +54,14 @@ export default defineEventHandler(async (event) => {
   }
 
   // Batch insert entries
-  const entries = parsed.data.entries.map((entry) => ({
+  const mappedEntries = entries.map((entry) => ({
     list_id: list.id,
     ...entry,
   }))
 
   const { error: entriesError } = await client
     .from('seniority_entries')
-    .insert(entries)
+    .insert(mappedEntries)
 
   if (entriesError) {
     log.error('Entries insert failed', { userId: user.sub, listId: list.id, error: entriesError.message })

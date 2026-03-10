@@ -11,10 +11,7 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 401, statusMessage: 'Unauthorized' })
   }
 
-  const parsed = SeniorityListIdSchema.safeParse({ id: getRouterParam(event, 'id') })
-  if (!parsed.success) {
-    throw createError({ statusCode: 422, statusMessage: 'Invalid list ID', data: parsed.error.issues })
-  }
+  const { id } = await validateRouteParam(event, 'id', SeniorityListIdSchema)
 
   const client = await serverSupabaseClient(event)
 
@@ -22,12 +19,12 @@ export default defineEventHandler(async (event) => {
   const { data, error } = await client
     .from('seniority_lists')
     .delete()
-    .eq('id', parsed.data.id)
+    .eq('id', id)
     .select('id')
     .single()
 
   if (error || !data) {
-    log.warn('Delete failed or list not found', { userId: user.sub, listId: parsed.data.id, error: error?.message })
+    log.warn('Delete failed or list not found', { userId: user.sub, listId: id, error: error?.message })
     throw createError({ statusCode: 404, statusMessage: 'List not found' })
   }
 
