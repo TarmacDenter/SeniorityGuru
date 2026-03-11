@@ -44,6 +44,7 @@ import {
   Title,
   Tooltip,
   Legend,
+  type ChartOptions,
 } from 'chart.js'
 
 ChartJS.register(
@@ -83,7 +84,7 @@ const waveChartData = computed(() => ({
   ],
 }))
 
-const waveChartOptions = computed(() => ({
+const waveChartOptions = computed<ChartOptions<'bar'>>(() => ({
   ...defaults,
   plugins: {
     ...defaults.plugins,
@@ -106,7 +107,7 @@ const waveChartOptions = computed(() => ({
       ticks: { ...defaults.scales?.y?.ticks, stepSize: 1 },
     },
   },
-}))
+} as ChartOptions<'bar'>))
 
 // --- Trajectory chart ---
 const trajectoryChartData = computed(() => ({
@@ -125,7 +126,7 @@ const trajectoryChartData = computed(() => ({
   ],
 }))
 
-const trajectoryChartOptions = computed(() => ({
+const trajectoryChartOptions = computed<ChartOptions<'line'>>(() => ({
   ...defaults,
   plugins: {
     ...defaults.plugins,
@@ -162,5 +163,5 @@ const trajectoryChartOptions = computed(() => ({
       ticks: { ...defaults.scales?.y?.ticks, callback: (v: any) => `${v}%` },
     },
   },
-}))
+} as ChartOptions<'line'>))
 </script>

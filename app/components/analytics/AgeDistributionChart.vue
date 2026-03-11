@@ -25,6 +25,7 @@ import {
   Title,
   Tooltip,
   Legend,
+  type ChartOptions,
 } from 'chart.js'
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend)
@@ -49,7 +50,7 @@ const chartData = computed(() => ({
   ],
 }))
 
-const chartOptions = computed(() => ({
+const chartOptions = computed<ChartOptions<'bar'>>(() => ({
   ...defaults,
   plugins: {
     ...defaults.plugins,
@@ -66,5 +67,5 @@ const chartOptions = computed(() => ({
       },
     },
   },
-}))
+} as ChartOptions<'bar'>))
 </script>

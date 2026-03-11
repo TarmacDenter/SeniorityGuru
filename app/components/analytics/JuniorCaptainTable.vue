@@ -1,31 +1,25 @@
 <template>
-  <UTable :rows="tableRows" :columns="columns">
-    <template #fleet-cell="{ row }">
-      <div class="flex items-center gap-2">
-        <span>{{ row.fleet }}</span>
-        <span
-          v-if="row.isHoldable"
-          class="inline-block size-2 rounded-full bg-[var(--ui-color-success-500)]"
-          title="You could hold this"
-        />
-      </div>
-    </template>
-    <template #yos-cell="{ row }">
-      {{ row.yos.toFixed(1) }} yrs
-    </template>
-    <template #hireDate-cell="{ row }">
-      {{ row.hireDate }}
-    </template>
-  </UTable>
+  <UTable :data="tableRows" :columns="columns" />
 </template>
 
 <script setup lang="ts">
+import { h } from 'vue'
+import type { TableColumn } from '@nuxt/ui'
+
+interface TableRow {
+  fleet: string
+  seniorityNumber: number
+  hireDate: string
+  yos: number
+  isHoldable: boolean
+}
+
 const props = defineProps<{
   rows: { fleet: string; seniorityNumber: number; hireDate: string; yos: number }[]
   userSeniorityNumber: number | undefined
 }>()
 
-const tableRows = computed(() =>
+const tableRows = computed<TableRow[]>(() =>
   props.rows.map((r) => ({
     ...r,
     isHoldable:
@@ -34,10 +28,27 @@ const tableRows = computed(() =>
   })),
 )
 
-const columns = [
-  { key: 'fleet', label: 'Fleet' },
-  { key: 'seniorityNumber', label: 'Sen #' },
-  { key: 'hireDate', label: 'Hire Date' },
-  { key: 'yos', label: 'YOS' },
+const columns: TableColumn<TableRow>[] = [
+  {
+    accessorKey: 'fleet',
+    header: 'Fleet',
+    cell: ({ row }) =>
+      h('div', { class: 'flex items-center gap-2' }, [
+        h('span', row.original.fleet),
+        row.original.isHoldable
+          ? h('span', {
+              class: 'inline-block size-2 rounded-full bg-[var(--ui-color-success-500)]',
+              title: 'You could hold this today',
+            })
+          : null,
+      ]),
+  },
+  { accessorKey: 'seniorityNumber', header: 'Sen #' },
+  { accessorKey: 'hireDate', header: 'Hire Date' },
+  {
+    accessorKey: 'yos',
+    header: 'YOS',
+    cell: ({ row }) => `${row.original.yos.toFixed(1)} yrs`,
+  },
 ]
 </script>
