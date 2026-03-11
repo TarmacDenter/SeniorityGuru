@@ -34,47 +34,49 @@
         class="max-w-sm"
       />
 
-      <UTable
-        ref="usersTable"
-        :data="users"
-        :columns="columns"
-        :loading="loading"
-        v-model:global-filter="globalFilter"
-        v-model:pagination="pagination"
-        v-model:sorting="sorting"
-        :pagination-options="paginationOptions"
-        :ui="{ tr: 'data-[selected=true]:bg-(--ui-bg-elevated)' }"
-      >
-        <template #role-cell="{ row }">
-          <USelectMenu
-            :model-value="row.original.role"
-            :items="roleOptions"
-            class="w-32"
-            :loading="updatingRole === row.original.id"
-            @update:model-value="(val: string) => updateRole(row.original.id, val)"
-          />
-        </template>
+      <div class="overflow-x-auto">
+        <UTable
+          ref="usersTable"
+          :data="users"
+          :columns="columns"
+          :loading="loading"
+          v-model:global-filter="globalFilter"
+          v-model:pagination="pagination"
+          v-model:sorting="sorting"
+          :pagination-options="paginationOptions"
+          :ui="{ tr: 'data-[selected=true]:bg-(--ui-bg-elevated)' }"
+        >
+          <template #role-cell="{ row }">
+            <USelectMenu
+              :model-value="row.original.role"
+              :items="roleOptions"
+              class="w-32"
+              :loading="updatingRole === row.original.id"
+              @update:model-value="(val: string) => updateRole(row.original.id, val)"
+            />
+          </template>
 
-        <template #actions-cell="{ row }">
-          <div class="flex gap-1">
-            <UButton
-              icon="i-lucide-key-round"
-              variant="ghost"
-              size="xs"
-              label="Reset Password"
-              :loading="resettingPassword === row.original.id"
-              @click="resetPassword(row.original)"
-            />
-            <UButton
-              icon="i-lucide-trash-2"
-              variant="ghost"
-              color="error"
-              size="xs"
-              @click="confirmDelete(row.original)"
-            />
-          </div>
-        </template>
-      </UTable>
+          <template #actions-cell="{ row }">
+            <div class="flex gap-1">
+              <UButton
+                icon="i-lucide-key-round"
+                variant="ghost"
+                size="xs"
+                label="Reset Password"
+                :loading="resettingPassword === row.original.id"
+                @click="resetPassword(row.original)"
+              />
+              <UButton
+                icon="i-lucide-trash-2"
+                variant="ghost"
+                color="error"
+                size="xs"
+                @click="confirmDelete(row.original)"
+              />
+            </div>
+          </template>
+        </UTable>
+      </div>
 
       <UModal v-model:open="deleteOpen" title="Delete User" description="This action cannot be undone.">
         <template #body>

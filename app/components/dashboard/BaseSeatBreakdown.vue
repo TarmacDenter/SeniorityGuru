@@ -6,11 +6,12 @@
 
     <UTabs :items="tabs" class="w-full">
       <template #content="{ item }">
-        <UTable
-          :data="filteredData(item.value as string)"
-          :columns="columns"
-          class="mt-2"
-        />
+        <div class="overflow-x-auto mt-2">
+          <UTable
+            :data="filteredData(item.value as string)"
+            :columns="columns"
+          />
+        </div>
       </template>
     </UTabs>
   </UCard>

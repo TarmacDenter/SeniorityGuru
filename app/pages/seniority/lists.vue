@@ -19,37 +19,39 @@
           class="max-w-sm"
         />
 
-        <UTable
-          ref="listsTable"
-          :data="seniorityStore.lists"
-          :columns="columns"
-          :loading="seniorityStore.listsLoading"
-          v-model:global-filter="globalFilter"
-          v-model:pagination="pagination"
-          v-model:sorting="sorting"
-          :pagination-options="paginationOptions"
-        >
-          <template #actions-cell="{ row }">
-            <div class="flex gap-1">
-              <UButton
-                icon="i-lucide-pencil"
-                variant="ghost"
-                size="xs"
-                label="Edit"
-                @click="openEdit(row.original)"
-              />
-              <UButton
-                icon="i-lucide-trash-2"
-                variant="ghost"
-                size="xs"
-                color="error"
-                label="Delete"
-                :loading="deleting === row.original.id"
-                @click="confirmDelete(row.original)"
-              />
-            </div>
-          </template>
-        </UTable>
+        <div class="overflow-x-auto">
+          <UTable
+            ref="listsTable"
+            :data="seniorityStore.lists"
+            :columns="columns"
+            :loading="seniorityStore.listsLoading"
+            v-model:global-filter="globalFilter"
+            v-model:pagination="pagination"
+            v-model:sorting="sorting"
+            :pagination-options="paginationOptions"
+          >
+            <template #actions-cell="{ row }">
+              <div class="flex gap-1">
+                <UButton
+                  icon="i-lucide-pencil"
+                  variant="ghost"
+                  size="xs"
+                  label="Edit"
+                  @click="openEdit(row.original)"
+                />
+                <UButton
+                  icon="i-lucide-trash-2"
+                  variant="ghost"
+                  size="xs"
+                  color="error"
+                  label="Delete"
+                  :loading="deleting === row.original.id"
+                  @click="confirmDelete(row.original)"
+                />
+              </div>
+            </template>
+          </UTable>
+        </div>
 
         <div class="flex items-center justify-between">
           <p class="text-sm text-muted">{{ totalRows }} lists</p>
