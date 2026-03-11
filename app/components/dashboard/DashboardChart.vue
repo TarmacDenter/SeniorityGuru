@@ -60,7 +60,7 @@ function deepMerge<T extends Record<string, any>>(target: T, source: Partial<T>)
     if (sv && typeof sv === 'object' && !Array.isArray(sv) && tv && typeof tv === 'object' && !Array.isArray(tv)) {
       result[key] = deepMerge(tv, sv)
     } else if (sv !== undefined) {
-      result[key] = sv
+      result[key] = sv as T[Extract<keyof T, string>]
     }
   }
   return result
