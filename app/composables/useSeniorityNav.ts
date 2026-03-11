@@ -10,6 +10,7 @@ export function useSeniorityNav(): ComputedRef<NavigationMenuItem[]> {
       { label: 'My Lists', icon: 'i-lucide-list', to: '/seniority/lists' },
       { label: 'Upload', icon: 'i-lucide-upload', to: '/seniority/upload' },
       { label: 'Compare', icon: 'i-lucide-git-compare-arrows', to: '/seniority/compare' },
+      { label: 'Analytics', icon: 'i-lucide-bar-chart-2', to: '/analytics' },
       { label: 'Settings', icon: 'i-lucide-settings', to: '/settings' },
     ]
     if (userStore.isAdmin) {
