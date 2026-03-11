@@ -3,11 +3,10 @@
     <!-- Search -->
     <div class="px-4 sm:px-6 py-3 border-b border-default">
       <UInput v-model="globalFilter" :fixed=true icon="i-lucide-search"
-        placeholder="Search by name, employee #, base..."
-        class="w-full text-xs sm:text-sm">
+        placeholder="Search by name, employee #, base..." class="w-full text-xs sm:text-sm">
         <template v-if="globalFilter" #trailing>
-          <UButton icon="i-lucide-x" variant="link" color="neutral" size="xs"
-            aria-label="Clear search" @click="globalFilter = ''" />
+          <UButton icon="i-lucide-x" variant="link" color="neutral" size="xs" aria-label="Clear search"
+            @click="globalFilter = ''" />
         </template>
       </UInput>
     </div>
@@ -30,8 +29,8 @@
         <UTable ref="table" :data="tableData" :columns="columns" :loading="loading || seniorityStore.entriesLoading"
           v-model:global-filter="globalFilter" v-model:pagination="pagination" v-model:expanded="expanded"
           v-model:column-visibility="columnVisibility" :expanded-options="{ getRowCanExpand: () => true }"
-          :pagination-options="{ getPaginationRowModel: getPaginationRowModel() }" sticky
-          class="seniority-table w-full touch-pan-y overscroll-contain">
+          :pagination-options="{ getPaginationRowModel: getPaginationRowModel() }" sticky :meta="tableMeta"
+          class="w-full touch-pan-y overscroll-contain">
           <template #expanded="{ row }">
             <div :class="['grid grid-cols-3 gap-3 px-4 py-3 text-sm', row.original._isUser ? 'bg-primary/5' : '']">
               <div>
@@ -57,8 +56,8 @@
             Page {{ currentPage }} of {{ pageCount }}
           </p>
           <UPagination :page="currentPage" :total="totalRows"
-            :items-per-page="table?.tableApi?.getState().pagination.pageSize"
-            :sibling-count="isMobile ? 0 : 2" :size="isMobile ? 'xs' : 'sm'" show-edges
+            :items-per-page="table?.tableApi?.getState().pagination.pageSize" :sibling-count="isMobile ? 0 : 2"
+            :size="isMobile ? 'xs' : 'sm'" show-edges
             @update:page="(p: number) => table?.tableApi?.setPageIndex(p - 1)" />
         </div>
       </template>
@@ -70,7 +69,7 @@
 import { h, resolveComponent } from 'vue';
 import { useMediaQuery } from '@vueuse/core';
 import { getPaginationRowModel } from '@tanstack/vue-table';
-import type { Table } from '@tanstack/vue-table';
+import type { Table, Row } from '@tanstack/vue-table';
 import type { TableColumn } from '@nuxt/ui';
 import type { Tables } from '#shared/types/database';
 import { useSeniorityStore } from '~/stores/seniority';
@@ -81,7 +80,17 @@ defineProps<{
 }>();
 
 type SeniorityEntry = Tables<'seniority_entries'>;
-type SeniorityRow = SeniorityEntry & { _isUser: boolean; };
+type RetirementTimeline = 'past' | 'imminent' | 'soon' | null;
+type SeniorityRow = SeniorityEntry & { _isUser: boolean; _retirementTimeline: RetirementTimeline; };
+
+function retirementTimeline(now: Date, retireDate: Date): RetirementTimeline {
+  const diffMs = retireDate.getTime() - now.getTime();
+  const diffDays = diffMs / (1000 * 60 * 60 * 24);
+  if (diffDays < 0) return 'past';
+  if (diffDays <= 180) return 'imminent';
+  if (diffDays <= 365) return 'soon';
+  return null;
+}
 
 const seniorityStore = useSeniorityStore();
 const userStore = useUserStore();
@@ -135,7 +144,17 @@ const columns: TableColumn<SeniorityRow>[] = [
   { accessorKey: 'base', header: 'Base' },
   { accessorKey: 'fleet', header: 'Fleet' },
   { accessorKey: 'hire_date', header: 'Hire Date' },
-  { accessorKey: 'retire_date', header: 'Retire Date' },
+  {
+    accessorKey: 'retire_date', header: 'Retire Date', cell: ({ row }) => {
+      const timeline = row.original._retirementTimeline;
+      const classes = [
+        timeline === 'past' ? 'text-past/70' : '',
+        timeline === 'imminent' ? 'text-imminent/70' : '',
+        timeline === 'soon' ? 'text-soon' : '',
+      ].join(' ').trim();
+      return h('span', { class: classes }, row.original.retire_date ?? '');
+    }
+  },
 ];
 
 const latestList = computed(() => seniorityStore.lists[0] ?? null);
@@ -146,16 +165,28 @@ const totalRows = computed(() => table.value?.tableApi?.getFilteredRowModel().ro
 
 const userEmployeeNumber = computed(() => userStore.profile?.employee_number ?? null);
 
-const tableData = computed<SeniorityRow[]>(() =>
-  seniorityStore.entries.map(entry => ({
+const tableMeta = {
+  class: {
+    tr: (row: Row<SeniorityRow>) => {
+      const timeline = row.original._retirementTimeline;
+      return [
+        row.original._isUser ? 'bg-primary/10' : '',
+        timeline === 'past' ? 'bg-past/10' : '',
+        timeline === 'imminent' ? 'bg-imminent/10' : '',
+        timeline === 'soon' ? 'bg-soon/10' : '',
+      ].join(' ').trim();
+    },
+  },
+};
+
+const tableData = computed<SeniorityRow[]>(() => {
+  const now = new Date();
+  return seniorityStore.entries.map(entry => ({
     ...entry,
     _isUser: !!userEmployeeNumber.value && entry.employee_number === userEmployeeNumber.value,
-  }))
-);
-</script>
+    _retirementTimeline: entry.retire_date ? retirementTimeline(now, new Date(entry.retire_date)) : null,
+  })
+  );
+});
 
-<style scoped>
-.seniority-table :deep(tr:has(td span.text-primary)) {
-  background-color: color-mix(in srgb, var(--ui-primary) 10%, transparent);
-}
-</style>
+</script>

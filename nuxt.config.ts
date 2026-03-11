@@ -4,6 +4,11 @@ export default defineNuxtConfig({
     compatibilityVersion: 4
   },
   devtools: { enabled: true },
+  ui: {
+    theme: {
+      colors: ['primary', 'secondary', 'success', 'info', 'warning', 'error', 'past', 'imminent', 'soon']
+    }
+  },
   modules: [
     '@nuxt/ui',
     '@nuxtjs/supabase',

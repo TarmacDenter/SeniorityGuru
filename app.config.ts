@@ -3,7 +3,10 @@ export default defineAppConfig({
     colors: {
       primary: 'amber',
       secondary: 'cyan',
-      neutral: 'slate'
+      neutral: 'slate',
+      past: 'red',
+      imminent: 'orange',
+      soon: 'yellow'
     },
     card: {
       defaultVariants: {
