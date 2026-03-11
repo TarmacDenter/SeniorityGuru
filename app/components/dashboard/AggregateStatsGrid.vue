@@ -4,7 +4,9 @@
       <h3 class="font-semibold text-highlighted">Fleet / Base Averages</h3>
     </template>
 
-    <UTable :data="data" :columns="columns" />
+    <div class="overflow-x-auto">
+      <UTable :data="data" :columns="columns" />
+    </div>
   </UCard>
 </template>
 

@@ -1,7 +1,7 @@
 <template>
-  <div class="min-w-0">
-    <!-- Search -->
-    <div class="px-4 sm:px-6 py-3 border-b border-default">
+  <div class="flex flex-col h-full min-h-0 min-w-0">
+    <!-- Search — pinned at top, never scrolls away -->
+    <div class="shrink-0 px-4 sm:px-6 py-3 border-b border-default">
       <UInput v-model="globalFilter" :fixed=true icon="i-lucide-search"
         placeholder="Search by name, employee #, base..." class="w-full text-xs sm:text-sm">
         <template v-if="globalFilter" #trailing>
@@ -11,56 +11,59 @@
       </UInput>
     </div>
 
-    <div class="p-4 sm:p-6">
-      <!-- Empty state -->
-      <UEmpty v-if="!loading && !latestList" icon="i-lucide-list-ordered" title="No Seniority List Yet"
-        description="Upload your airline's seniority list to view your position, track retirements, and project your trajectory."
-        :actions="[{ label: 'Upload Seniority List', icon: 'i-lucide-upload', to: '/seniority/upload', size: 'lg' as const }]"
-        class="py-24" />
+    <!-- Scrollable content area -->
+    <div class="flex-1 overflow-y-auto min-h-0 overscroll-contain">
+      <div class="p-4 sm:p-6">
+        <!-- Empty state -->
+        <UEmpty v-if="!loading && !latestList" icon="i-lucide-list-ordered" title="No Seniority List Yet"
+          description="Upload your airline's seniority list to view your position, track retirements, and project your trajectory."
+          :actions="[{ label: 'Upload Seniority List', icon: 'i-lucide-upload', to: '/seniority/upload', size: 'lg' as const }]"
+          class="py-24" />
 
-      <!-- List viewer -->
-      <template v-else>
-        <!-- Metadata -->
-        <p v-if="latestList" class="text-sm text-muted mb-4">
-          {{ latestList.airline }} &middot; Effective {{ latestList.effective_date }}
-          &middot; {{ seniorityStore.entries.length }} pilots
-        </p>
-
-        <UTable ref="table" :data="tableData" :columns="columns" :loading="loading || seniorityStore.entriesLoading"
-          v-model:global-filter="globalFilter" v-model:pagination="pagination" v-model:expanded="expanded"
-          v-model:column-visibility="columnVisibility" :expanded-options="{ getRowCanExpand: () => true }"
-          :pagination-options="{ getPaginationRowModel: getPaginationRowModel() }" sticky :meta="tableMeta"
-          class="w-full touch-pan-y overscroll-contain">
-          <template #expanded="{ row }">
-            <div :class="['grid grid-cols-3 gap-3 px-4 py-3 text-sm', row.original._isUser ? 'bg-primary/5' : '']">
-              <div>
-                <p class="text-muted text-xs mb-0.5">Name</p>
-                <p :class="row.original._isUser ? 'font-bold text-primary' : 'font-medium'">{{ row.original.name }}
-                </p>
-              </div>
-              <div>
-                <p class="text-muted text-xs mb-0.5">Emp #</p>
-                <p>{{ row.original.employee_number }}</p>
-              </div>
-              <div>
-                <p class="text-muted text-xs mb-0.5">Hire Date</p>
-                <p>{{ row.original.hire_date }}</p>
-              </div>
-            </div>
-          </template>
-        </UTable>
-
-        <!-- Pagination -->
-        <div class="flex items-center justify-between mt-4">
-          <p class="hidden md:block text-sm text-muted">
-            Page {{ currentPage }} of {{ pageCount }}
+        <!-- List viewer -->
+        <template v-else>
+          <!-- Metadata -->
+          <p v-if="latestList" class="text-sm text-muted mb-4">
+            {{ latestList.airline }} &middot; Effective {{ latestList.effective_date }}
+            &middot; {{ seniorityStore.entries.length }} pilots
           </p>
-          <UPagination :page="currentPage" :total="totalRows"
-            :items-per-page="table?.tableApi?.getState().pagination.pageSize" :sibling-count="isMobile ? 0 : 2"
-            :size="isMobile ? 'xs' : 'sm'" show-edges
-            @update:page="(p: number) => table?.tableApi?.setPageIndex(p - 1)" />
-        </div>
-      </template>
+
+          <UTable ref="table" :data="tableData" :columns="columns" :loading="loading || seniorityStore.entriesLoading"
+            v-model:global-filter="globalFilter" v-model:pagination="pagination" v-model:expanded="expanded"
+            v-model:column-visibility="columnVisibility" :expanded-options="{ getRowCanExpand: () => true }"
+            :pagination-options="{ getPaginationRowModel: getPaginationRowModel() }" sticky :meta="tableMeta"
+            class="w-full touch-pan-y overscroll-contain">
+            <template #expanded="{ row }">
+              <div :class="['grid grid-cols-3 gap-3 px-4 py-3 text-sm', row.original._isUser ? 'bg-primary/5' : '']">
+                <div>
+                  <p class="text-muted text-xs mb-0.5">Name</p>
+                  <p :class="row.original._isUser ? 'font-bold text-primary' : 'font-medium'">{{ row.original.name }}
+                  </p>
+                </div>
+                <div>
+                  <p class="text-muted text-xs mb-0.5">Emp #</p>
+                  <p>{{ row.original.employee_number }}</p>
+                </div>
+                <div>
+                  <p class="text-muted text-xs mb-0.5">Hire Date</p>
+                  <p>{{ row.original.hire_date }}</p>
+                </div>
+              </div>
+            </template>
+          </UTable>
+
+          <!-- Pagination — pinned at bottom -->
+          <div class="flex items-center justify-between mt-4 pb-safe">
+            <p class="hidden md:block text-sm text-muted">
+              Page {{ currentPage }} of {{ pageCount }}
+            </p>
+            <UPagination :page="currentPage" :total="totalRows"
+              :items-per-page="table?.tableApi?.getState().pagination.pageSize" :sibling-count="isMobile ? 0 : 2"
+              :size="isMobile ? 'xs' : 'sm'" show-edges
+              @update:page="(p: number) => table?.tableApi?.setPageIndex(p - 1)" />
+          </div>
+        </template>
+      </div>
     </div>
   </div>
 </template>
