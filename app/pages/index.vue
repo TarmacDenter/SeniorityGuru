@@ -129,8 +129,8 @@
         </template>
       </div>
 
-      <!-- Seniority List tab -->
-      <SeniorityListViewer v-else-if="activeTab === 'seniority'" :loading="loading" />
+      <!-- Seniority List tab — fills panel body, manages its own scroll -->
+      <SeniorityListViewer v-else-if="activeTab === 'seniority'" :loading="loading" class="h-full" />
     </template>
   </UDashboardPanel>
 </template>

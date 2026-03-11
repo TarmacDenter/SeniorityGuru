@@ -10,7 +10,9 @@
       </div>
     </template>
 
-    <UTable :data="displayData" :columns="columns" />
+    <div class="overflow-x-auto">
+      <UTable :data="displayData" :columns="columns" />
+    </div>
   </UCard>
 </template>
 
