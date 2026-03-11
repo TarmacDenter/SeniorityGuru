@@ -7,7 +7,7 @@
         <span class="text-sm text-[var(--ui-text-muted)]">Project forward</span>
       </div>
       <template v-if="useProjection">
-        <URange
+        <USlider
           :model-value="projectionYears"
           :min="1"
           :max="10"
@@ -83,12 +83,12 @@
       <!-- Legend -->
       <div class="mt-3 flex flex-wrap gap-3 text-xs text-[var(--ui-text-muted)]">
         <div class="flex items-center gap-1">
-          <UBadge color="success" variant="subtle" size="xs">Hold</UBadge>
-          Hold comfortably
+          <UBadge color="success" variant="subtle" size="xs">P75</UBadge>
+          Your percentile in this qual
         </div>
         <div class="flex items-center gap-1">
-          <UBadge color="success" variant="outline" size="xs">Junior</UBadge>
-          Hold — you'd be most junior
+          <UBadge color="warning" variant="outline" size="xs">Junior</UBadge>
+          Most junior — unlikely to hold
         </div>
         <div class="flex items-center gap-1">
           <UBadge color="warning" variant="subtle" size="xs">N</UBadge>
@@ -118,6 +118,7 @@ const props = defineProps<{
     totalInCell: number
     remainingNeeded: number
     isLowestSeniority: boolean
+    percentile: number
   }[]
   projectionYears: number
   hasEmployeeNumber: boolean
@@ -159,22 +160,21 @@ function badgeColor(state: 'green' | 'amber' | 'red'): 'success' | 'warning' | '
 }
 
 function badgeIcon(cell: typeof props.cells[number]): string {
-  if (cell.state === 'green') return cell.isLowestSeniority ? 'i-lucide-alert-circle' : 'i-lucide-check-circle'
+  if (cell.isLowestSeniority) return 'i-lucide-alert-circle'
+  if (cell.state === 'green') return 'i-lucide-check-circle'
   if (cell.state === 'amber') return 'i-lucide-clock'
   return 'i-lucide-x-circle'
 }
 
 function cellLabel(cell: typeof props.cells[number]): string {
-  if (cell.state === 'green') return cell.isLowestSeniority ? 'Junior' : 'Hold'
+  if (cell.isLowestSeniority) return 'Junior'
+  if (cell.state === 'green') return `P${cell.percentile}`
   return String(cell.remainingNeeded)
 }
 
 function cellTooltip(cell: typeof props.cells[number]): string {
-  if (cell.state === 'green') {
-    return cell.isLowestSeniority
-      ? `You hold — but you'd be the most junior (${cell.retiredCount} retired)`
-      : `You hold comfortably (${cell.retiredCount} retired)`
-  }
+  if (cell.isLowestSeniority) return `You'd be the most junior — unlikely to hold (${cell.retiredCount} retired)`
+  if (cell.state === 'green') return `Top ${100 - cell.percentile}% — more senior than ${cell.percentile}% of pilots in this qual`
   if (cell.state === 'amber') return `${cell.remainingNeeded} pilot(s) still ahead — almost there`
   return `${cell.remainingNeeded} pilot(s) still senior to you`
 }

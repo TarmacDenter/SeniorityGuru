@@ -14,7 +14,7 @@
       <!-- Percentile selector -->
       <div class="flex items-center gap-3">
         <span class="text-sm text-[var(--ui-text-muted)] shrink-0">Target percentile:</span>
-        <UButtonGroup>
+        <UFieldGroup>
           <UButton
             v-for="p in percentileOptions"
             :key="p"
@@ -25,7 +25,7 @@
           >
             Top {{ 100 - p }}%
           </UButton>
-        </UButtonGroup>
+        </UFieldGroup>
       </div>
 
       <!-- Result card -->

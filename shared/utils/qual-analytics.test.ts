@@ -184,15 +184,29 @@ describe('computeYosDistribution', () => {
 
 // ─── computeYosHistogram ──────────────────────────────────────────────────────
 describe('computeYosHistogram', () => {
-  it('returns 8 buckets', () => {
+  it('returns empty array for no entries', () => {
     const result = computeYosHistogram([])
-    expect(result).toHaveLength(8)
+    expect(result).toHaveLength(0)
   })
 
-  it('places pilot hired in 2010 in the 15-19 bucket (2026 - 2010 ≈ 16 yos)', () => {
+  it('places pilot hired in 2010 in the year-16 bucket (2026 - 2010 ≈ 16 yos)', () => {
     const result = computeYosHistogram([makeEntry({ hire_date: '2010-01-01' })])
-    const bucket = result.find((b) => b.label === '15–19')
+    const bucket = result.find((b) => b.label === '16')
     expect(bucket?.count).toBe(1)
+  })
+
+  it('creates one bucket per year up to max YOS', () => {
+    const result = computeYosHistogram([
+      makeEntry({ hire_date: '2020-01-01' }), // ~6 yos
+      makeEntry({ hire_date: '2010-01-01' }), // ~16 yos
+    ])
+    // Buckets span 0 to ceil(maxYos), one per year
+    expect(result[0]!.label).toBe('0')
+    // The 2010 entry has ~16.2 yos → ceil = 17 → buckets 0..17
+    expect(result.length).toBeGreaterThanOrEqual(17)
+    // Each entry lands in exactly one bucket
+    const total = result.reduce((sum, b) => sum + b.count, 0)
+    expect(total).toBe(2)
   })
 
   it('applies filterFn', () => {
@@ -316,9 +330,9 @@ describe('computePowerIndexCells', () => {
       makeEntry({ fleet: '737', seat: 'CA', base: 'JFK', seniority_number: 50, retire_date: null }),
       makeEntry({ fleet: '737', seat: 'CA', base: 'JFK', seniority_number: 100, retire_date: null }),
     ]
-    // User at 100 — they ARE the most junior CA in the cell (tied for most junior spot)
+    // User at 100 — they ARE the most junior CA in the cell → amber (unlikely to hold)
     const cells = computePowerIndexCells(entries, 100, TODAY)
-    expect(cells[0]?.state).toBe('green')
+    expect(cells[0]?.state).toBe('amber')
     expect(cells[0]?.isLowestSeniority).toBe(true)
   })
 

@@ -130,29 +130,25 @@ export interface YosHistogramBucket {
   count: number
 }
 
-const YOS_BUCKETS: { label: string; min: number; max: number }[] = [
-  { label: '0–4', min: 0, max: 4.999 },
-  { label: '5–9', min: 5, max: 9.999 },
-  { label: '10–14', min: 10, max: 14.999 },
-  { label: '15–19', min: 15, max: 19.999 },
-  { label: '20–24', min: 20, max: 24.999 },
-  { label: '25–29', min: 25, max: 29.999 },
-  { label: '30–34', min: 30, max: 34.999 },
-  { label: '35+', min: 35, max: Infinity },
-]
-
 export function computeYosHistogram(
   entries: SeniorityEntry[],
   filterFn?: FilterFn,
 ): YosHistogramBucket[] {
   const filtered = filterFn ? entries.filter(filterFn) : entries
-  const counts = new Array<number>(YOS_BUCKETS.length).fill(0)
-  for (const e of filtered) {
-    const yos = computeYOS(e.hire_date)
-    const idx = YOS_BUCKETS.findIndex((b) => yos >= b.min && yos <= b.max)
-    if (idx >= 0) counts[idx]!++
+  if (filtered.length === 0) return []
+  const yosValues = filtered.map((e) => computeYOS(e.hire_date))
+  const maxYos = Math.ceil(Math.max(...yosValues))
+  const bucketCount = Math.max(maxYos + 1, 1)
+  const counts = new Array<number>(bucketCount).fill(0)
+  for (const yos of yosValues) {
+    const idx = Math.min(Math.floor(yos), bucketCount - 1)
+    counts[idx]!++
   }
-  return YOS_BUCKETS.map((b, i) => ({ label: b.label, minYos: b.min, count: counts[i]! }))
+  return counts.map((count, i) => ({
+    label: String(i),
+    minYos: i,
+    count,
+  }))
 }
 
 function percentileOf(sorted: number[], p: number): number {
@@ -283,7 +279,8 @@ export interface PowerIndexCell {
   retiredCount: number
   totalInCell: number
   remainingNeeded: number
-  isLowestSeniority: boolean  // green cell where user would be the most junior
+  isLowestSeniority: boolean
+  percentile: number  // user's percentile rank within the cell (0–100, higher = more senior)
 }
 
 export function computePowerIndexCells(
@@ -317,12 +314,24 @@ export function computePowerIndexCells(
 
     const isHoldable = remaining.length > 0 && userSenNum <= mostJuniorActiveSenNum
 
+    const moreJunior = remaining.filter((e) => e.seniority_number > userSenNum).length
+    const percentile = remaining.length > 0
+      ? Math.round((moreJunior / remaining.length) * 100)
+      : 0
+
     if (isHoldable) {
-      const moreJunior = remaining.filter((e) => e.seniority_number > userSenNum).length
+      // Most junior in cell → amber (unlikely to actually hold)
+      if (moreJunior === 0) {
+        return {
+          fleet: fleet!, seat: seat!, base: base!,
+          state: 'amber', retiredCount, totalInCell: total, remainingNeeded: 0,
+          isLowestSeniority: true, percentile,
+        }
+      }
       return {
         fleet: fleet!, seat: seat!, base: base!,
         state: 'green', retiredCount, totalInCell: total, remainingNeeded: 0,
-        isLowestSeniority: moreJunior === 0,
+        isLowestSeniority: false, percentile,
       }
     }
 
@@ -330,7 +339,7 @@ export function computePowerIndexCells(
     const amberThreshold = Math.ceil(total * 0.10)
     const state: PowerIndexCellState = stillAhead > 0 && stillAhead <= amberThreshold ? 'amber' : 'red'
 
-    return { fleet: fleet!, seat: seat!, base: base!, state, retiredCount, totalInCell: total, remainingNeeded: stillAhead, isLowestSeniority: false }
+    return { fleet: fleet!, seat: seat!, base: base!, state, retiredCount, totalInCell: total, remainingNeeded: stillAhead, isLowestSeniority: false, percentile }
   })
 }
 

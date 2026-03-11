@@ -64,12 +64,12 @@ const chartData = computed(() => ({
       label: 'Pilots',
       data: props.histogram.map((b) => b.count),
       backgroundColor: props.histogram.map((b) =>
-        props.userYos !== undefined && props.userYos >= b.minYos && props.userYos < b.minYos + 5
+        props.userYos !== undefined && props.userYos >= b.minYos && props.userYos < b.minYos + 1
           ? 'rgba(14, 165, 233, 0.8)'   // sky-500 — user's bucket
           : colors.primaryLight,
       ),
       borderColor: props.histogram.map((b) =>
-        props.userYos !== undefined && props.userYos >= b.minYos && props.userYos < b.minYos + 5
+        props.userYos !== undefined && props.userYos >= b.minYos && props.userYos < b.minYos + 1
           ? '#0ea5e9'
           : colors.primary,
       ),

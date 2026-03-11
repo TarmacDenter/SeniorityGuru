@@ -44,6 +44,7 @@ import {
   Title,
   Tooltip,
   Legend,
+  Filler,
   type ChartOptions,
 } from 'chart.js'
 
@@ -56,6 +57,7 @@ ChartJS.register(
   Title,
   Tooltip,
   Legend,
+  Filler,
 )
 
 const props = defineProps<{
