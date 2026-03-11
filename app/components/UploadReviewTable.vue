@@ -1,5 +1,6 @@
 <template>
   <div class="space-y-4">
+    <div class="overflow-x-auto">
     <UTable
       v-model:pagination="pagination"
       :data="displayEntries"
@@ -65,6 +66,7 @@
         />
       </template>
     </UTable>
+    </div>
 
     <div v-if="pageCount > 1" class="flex justify-center">
       <UPagination

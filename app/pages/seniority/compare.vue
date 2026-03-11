@@ -3,8 +3,8 @@
     <template #header>
       <SeniorityNavbar title="Compare Lists">
         <template #right>
-          <div class="flex items-center gap-3">
-            <UFormField label="Older List" class="w-56">
+          <div class="flex flex-wrap items-center gap-3">
+            <UFormField label="Older List" class="w-full sm:w-56">
               <USelectMenu
                 v-model="listIdA"
                 :items="listOptions"
@@ -12,8 +12,8 @@
                 placeholder="Select list..."
               />
             </UFormField>
-            <UIcon name="i-lucide-arrow-right" class="text-(--ui-text-muted)" />
-            <UFormField label="Newer List" class="w-56">
+            <UIcon name="i-lucide-arrow-right" class="hidden sm:block text-(--ui-text-muted)" />
+            <UFormField label="Newer List" class="w-full sm:w-56">
               <USelectMenu
                 v-model="listIdB"
                 :items="listOptions"

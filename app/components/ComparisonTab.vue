@@ -17,15 +17,17 @@
       :placeholder="searchPlaceholder"
       class="max-w-sm"
     />
-    <UTable
-      ref="comparisonTable"
-      :data="filteredData"
-      :columns="columns"
-      v-model:global-filter="table.globalFilter.value"
-      v-model:pagination="table.pagination.value"
-      v-model:sorting="table.sorting.value"
-      :pagination-options="table.paginationOptions"
-    />
+    <div class="overflow-x-auto">
+      <UTable
+        ref="comparisonTable"
+        :data="filteredData"
+        :columns="columns"
+        v-model:global-filter="table.globalFilter.value"
+        v-model:pagination="table.pagination.value"
+        v-model:sorting="table.sorting.value"
+        :pagination-options="table.paginationOptions"
+      />
+    </div>
     <div class="flex items-center justify-between">
       <p class="text-sm text-muted">{{ table.totalRows.value }} results</p>
       <UPagination
