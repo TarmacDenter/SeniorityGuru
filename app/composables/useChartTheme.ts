@@ -7,43 +7,49 @@ export function useChartTheme() {
     plugins: {
       legend: {
         labels: {
-          color: '#94a3b8', // slate-400
-          font: { family: "'JetBrains Mono', monospace", size: 11 }
+          color: '#64748b', // slate-500 — readable on both light and dark
+          font: { family: "'DM Sans Variable', system-ui, sans-serif", size: 12 }
         }
       },
       tooltip: {
-        backgroundColor: '#162542', // navy-800
+        backgroundColor: '#0f172a', // slate-900
         titleColor: '#f8fafc',
-        bodyColor: '#cbd5e1', // slate-300
-        borderColor: '#1e3055', // navy-700
+        bodyColor: '#cbd5e1',       // slate-300
+        borderColor: '#1e293b',     // slate-800
         borderWidth: 1,
-        titleFont: { family: "'JetBrains Mono', monospace" },
-        bodyFont: { family: "'JetBrains Mono', monospace" }
+        padding: 10,
+        titleFont: { family: "'DM Sans Variable', system-ui, sans-serif", size: 13, weight: 'bold' as const },
+        bodyFont: { family: "'JetBrains Mono', monospace", size: 12 }
       }
     },
     scales: {
       x: {
         ticks: {
-          color: '#94a3b8',
+          color: '#64748b',
           font: { family: "'JetBrains Mono', monospace", size: 10 }
         },
-        grid: { color: 'rgba(30, 48, 85, 0.5)' }
+        grid: { color: 'rgba(51, 65, 85, 0.35)' } // slate-700/35
       },
       y: {
         ticks: {
-          color: '#94a3b8',
+          color: '#64748b',
           font: { family: "'JetBrains Mono', monospace", size: 10 }
         },
-        grid: { color: 'rgba(30, 48, 85, 0.5)' }
+        grid: { color: 'rgba(51, 65, 85, 0.35)' } // slate-700/35
       }
     }
   }
 
   const colors = {
-    amber: '#f59e0b',
-    amberLight: 'rgba(245, 158, 11, 0.3)',
-    cyan: '#06b6d4',
-    cyanLight: 'rgba(6, 182, 212, 0.3)',
+    // Primary series — sky-400 (vibrant on dark, crisp on light)
+    primary: '#38bdf8',
+    primaryLight: 'rgba(56, 189, 248, 0.15)',
+    // Backward-compat aliases used by existing chart components
+    amber: '#38bdf8',
+    amberLight: 'rgba(56, 189, 248, 0.15)',
+    // Secondary series — indigo-400 (matches app secondary color)
+    cyan: '#818cf8',
+    cyanLight: 'rgba(129, 140, 248, 0.15)',
     slate: '#64748b'
   }
 

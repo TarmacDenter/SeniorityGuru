@@ -65,8 +65,8 @@ const chartData = computed<ChartData<'bar'>>(() => {
   const datasets: ChartData<'bar'>['datasets'] = [{
     label: currentScope.value || 'Company-wide',
     data: currentData,
-    backgroundColor: 'rgba(245, 158, 11, 0.6)',
-    borderColor: colors.amber,
+    backgroundColor: 'rgba(56, 189, 248, 0.5)',  // sky-400/50
+    borderColor: colors.primary,
     borderWidth: 1,
     borderRadius: 4,
   }]

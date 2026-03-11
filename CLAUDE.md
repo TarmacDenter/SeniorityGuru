@@ -75,7 +75,13 @@ Both `useSupabaseUser()` (client) and `serverSupabaseUser()` (server) return **J
 
 ## Nuxt UI / Theming
 
-- Use Nuxt UI's `UTheme` and `app.config.ts` for theming — do NOT use raw `--ui-color-*` CSS variables. Consult the Nuxt MCP server for component slot APIs before using them
+- Use Nuxt UI's `UTheme` and `app.config.ts` for theming. Consult the Nuxt UI MCP for component slot APIs before using them
+- **Primary color theming uses THREE separate systems** — all must be set to keep them in sync. See `memory/nuxt-ui-theming.md` for the full pattern:
+  1. `app.config.ts` `ui.colors.primary: 'sky'` — drives Tailwind utility class generation (`bg-primary`, etc.)
+  2. `--ui-primary` in `main.css` — drives `text-primary`, `border-primary` semantic tokens
+  3. `--ui-color-primary-*` (all 11 shades) in `main.css` — drives opacity variants (`bg-primary/10`), palette display, and component internals. **`app.config.ts` cannot update these** — must be set explicitly in `main.css` section 3
+- **Changing primary color**: update all three locations. `main.css` changes hot-reload instantly; `app.config.ts` requires `rm -rf .nuxt && npm run dev`
+- `/dev/theme` — design token playground at `localhost:3000/dev/theme` (dev only)
 - When working with `UTable`, the `ui.tr` prop only accepts static class strings, not functions
 - **Always use `v-model:` for stateful props** on Nuxt UI components (e.g., `v-model:pagination`, `v-model:sorting`). Using `:prop` (one-way binding) means the UI won't update when you mutate the ref
 - **UTable pagination**: use `useTemplateRef('table')` and control via `table.tableApi.setPageIndex()` — do NOT mutate the `v-model:pagination` ref directly

@@ -92,7 +92,7 @@
       </UModal>
 
       <div class="flex items-center justify-between">
-        <p class="text-sm text-(--ui-text-muted)">{{ totalRows }} results</p>
+        <p class="text-sm text-muted">{{ totalRows }} results</p>
         <UPagination
           v-if="pageCount > 1"
           :page="currentPage"

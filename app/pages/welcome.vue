@@ -9,7 +9,7 @@
         <h1 class="text-4xl sm:text-5xl font-bold tracking-tight mb-4">
           SeniorityGuru
         </h1>
-        <p class="text-lg sm:text-xl text-(--ui-text-muted) max-w-2xl mx-auto mb-8">
+        <p class="text-lg sm:text-xl text-muted max-w-2xl mx-auto mb-8">
           Track your airline seniority standing, project your trajectory, and plan your career moves — all in one place.
         </p>
         <div class="flex justify-center gap-3">
@@ -29,7 +29,7 @@
             <div class="flex flex-col items-center text-center gap-3 py-2">
               <UIcon :name="feature.icon" class="size-10 text-primary" />
               <h3 class="font-semibold text-lg">{{ feature.title }}</h3>
-              <p class="text-sm text-(--ui-text-muted)">{{ feature.description }}</p>
+              <p class="text-sm text-muted">{{ feature.description }}</p>
             </div>
           </UCard>
         </div>
@@ -40,7 +40,7 @@
     <section class="py-16 text-center">
       <UContainer>
         <h2 class="text-2xl font-bold mb-4">Ready to track your seniority?</h2>
-        <p class="text-(--ui-text-muted) mb-6">
+        <p class="text-muted mb-6">
           Sign in to upload your seniority list and start exploring.
         </p>
         <UButton to="/auth/login" size="lg">

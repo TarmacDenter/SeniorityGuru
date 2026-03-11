@@ -1,67 +1,124 @@
+/* Fonts — imported here so Vite's CSS module resolver handles node_modules correctly */
+@import "@fontsource-variable/dm-sans/index.css";
+@import "@fontsource-variable/dm-sans/wght-italic.css";
+@import "@fontsource/jetbrains-mono/400.css";
+
 @import "tailwindcss";
 @import "@nuxt/ui";
 
+/* ============================================================
+   1. DESIGN TOKENS
+      Custom palette definitions and typography.
+      Navy palette removed — dark mode now uses Tailwind's slate
+      directly, which sits neutrally with sky-blue accents.
+   ============================================================ */
 @theme {
-  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-sans: 'DM Sans Variable', system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
-
-  /* Custom navy palette for deep cockpit backgrounds */
-  --color-navy-50: #E8EDF5;
-  --color-navy-100: #C5D0E5;
-  --color-navy-200: #9FAED0;
-  --color-navy-300: #7A8DBB;
-  --color-navy-400: #5A70A6;
-  --color-navy-500: #3C5490;
-  --color-navy-600: #2E4173;
-  --color-navy-700: #1E3055;
-  --color-navy-800: #162542;
-  --color-navy-900: #0F1D32;
-  --color-navy-950: #0A1628;
-
 }
 
-/* Aviation instrument dark theme */
-.dark {
-  --ui-bg: var(--color-navy-950);
-  --ui-bg-muted: var(--color-navy-900);
-  --ui-bg-elevated: var(--color-navy-800);
-  --ui-bg-accented: var(--color-navy-700);
-  --ui-border: var(--color-slate-700);
-  --ui-border-muted: color-mix(in srgb, var(--color-slate-700) 50%, transparent);
+/* ============================================================
+   2. SEMANTIC SURFACE OVERRIDES
+      Explicit overrides for both light and dark modes.
+      Light: clean slate-white. Dark: near-black slate.
+      Reference --color-* (Tailwind) not --ui-color-* (NuxtUI).
+   ============================================================ */
+
+/* Light mode — explicit slate-based palette */
+:root {
+  --ui-bg: white;
+  --ui-bg-muted: var(--color-slate-50);
+  --ui-bg-elevated: white;
+  --ui-bg-accented: var(--color-slate-100);
+  --ui-border: var(--color-slate-200);
+  --ui-border-muted: var(--color-slate-100);
+
   --ui-text-dimmed: var(--color-slate-400);
   --ui-text-muted: var(--color-slate-500);
+  --ui-text-toned: var(--color-slate-600);
+  --ui-text: var(--color-slate-800);
+  --ui-text-highlighted: var(--color-slate-950);
+}
+
+/* Dark mode — deep slate, near-black */
+.dark {
+  --ui-bg: var(--color-slate-950);
+  --ui-bg-muted: var(--color-slate-900);
+  --ui-bg-elevated: var(--color-slate-800);
+  --ui-bg-accented: var(--color-slate-700);
+  --ui-border: var(--color-slate-700);
+  --ui-border-muted: color-mix(in srgb, var(--color-slate-700) 50%, transparent);
+
+  --ui-text-dimmed: var(--color-slate-500);
+  --ui-text-muted: var(--color-slate-400);
   --ui-text-toned: var(--color-slate-300);
-  --ui-text: var(--color-slate-200);
+  --ui-text: var(--color-slate-100);
   --ui-text-highlighted: white;
 }
 
+/* ============================================================
+   3. BASE STYLES
+      Global defaults for both light and dark modes.
+   ============================================================ */
 :root {
   --ui-radius: 0.375rem;
 
-  /* Retirement timeline semantic colors (light mode) */
-  --ui-past: oklch(63.7% 0.237 25.331);
-  /* red-500 */
-  --ui-imminent: oklch(70.5% 0.213 47.604);
-  /* orange-500 */
-  --ui-soon: oklch(79.5% 0.184 86.047);
-  /* yellow-500 */
+  /* Light mode primary: sky-600 — better contrast on white than sky-500 */
+  --ui-primary: var(--color-sky-600);
+
+  /* Primary color scale — app.config.ts cannot override --ui-color-primary-* at runtime;
+     these must be set here explicitly. Change sky-* to retheme. */
+  --ui-color-primary-50: var(--color-sky-50);
+  --ui-color-primary-100: var(--color-sky-100);
+  --ui-color-primary-200: var(--color-sky-200);
+  --ui-color-primary-300: var(--color-sky-300);
+  --ui-color-primary-400: var(--color-sky-400);
+  --ui-color-primary-500: var(--color-sky-500);
+  --ui-color-primary-600: var(--color-sky-600);
+  --ui-color-primary-700: var(--color-sky-700);
+  --ui-color-primary-800: var(--color-sky-800);
+  --ui-color-primary-900: var(--color-sky-900);
+  --ui-color-primary-950: var(--color-sky-950);
 }
 
 .dark {
-  /* Retirement timeline semantic colors (dark mode) */
-  --ui-past: oklch(70.4% 0.191 22.216);
-  /* red-400 */
-  --ui-imminent: oklch(75% 0.183 55.934);
-  /* orange-400 */
-  --ui-soon: oklch(85.2% 0.199 91.936);
-  /* yellow-400 */
+  /* Dark mode primary: sky-400 — glows on deep dark background */
+  --ui-primary: var(--color-sky-400);
 }
 
+/* ============================================================
+   4. RETIREMENT TIMELINE COLORS
+      Custom semantic tokens for the seniority list viewer.
+      These color-code pilots by proximity to retirement:
+        past     → already retired / retiring imminently
+        imminent → retiring within ~2 years
+        soon     → retiring within ~5 years
+      Mapped to NuxtUI colors in app.config.ts (past/imminent/soon),
+      but exact shade values are defined here for both modes.
+      Light: shade 600 — Dark: shade 400 (better contrast per mode).
+   ============================================================ */
+:root {
+  --ui-past: oklch(57.7% 0.245 27.325);     /* red-600 */
+  --ui-imminent: oklch(64.6% 0.222 41.116); /* orange-600 */
+  --ui-soon: oklch(68.1% 0.162 75.834);     /* yellow-600 */
+}
+
+.dark {
+  --ui-past: oklch(70.4% 0.191 22.216);     /* red-400 */
+  --ui-imminent: oklch(75% 0.183 55.934);   /* orange-400 */
+  --ui-soon: oklch(85.2% 0.199 91.936);     /* yellow-400 */
+}
+
+/* ============================================================
+   5. UTILITY CLASSES
+   ============================================================ */
 .safe-area-pb {
   padding-bottom: env(safe-area-inset-bottom);
 }
 
-/* Dashboard staggered entrance animation */
+/* ============================================================
+   6. ANIMATIONS
+   ============================================================ */
 @keyframes dashboard-enter {
   from {
     opacity: 0;

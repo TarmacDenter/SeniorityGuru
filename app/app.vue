@@ -9,12 +9,5 @@
 </template>
 
 <script setup lang="ts">
-const appTheme = {
-  card: {
-    root: 'backdrop-blur-sm'
-  },
-  dashboardSidebar: {
-    root: 'bg-muted/80 backdrop-blur-sm'
-  }
-}
+import { appTheme } from '~/theme'
 </script>

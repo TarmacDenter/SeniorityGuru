@@ -1,9 +1,16 @@
 export default defineAppConfig({
   ui: {
     colors: {
-      primary: 'amber',
-      secondary: 'cyan',
+      // Brand
+      primary: 'sky',
+      secondary: 'indigo',
       neutral: 'slate',
+      // UI state — distinct from retirement timeline colors
+      success: 'emerald',
+      info: 'blue',
+      warning: 'amber',
+      error: 'rose',
+      // Retirement timeline proximity
       past: 'red',
       imminent: 'orange',
       soon: 'yellow'
@@ -11,7 +18,7 @@ export default defineAppConfig({
     card: {
       defaultVariants: {
         variant: 'subtle' as const
-      }
+      },
     }
   }
 })

@@ -27,7 +27,7 @@
       :pagination-options="table.paginationOptions"
     />
     <div class="flex items-center justify-between">
-      <p class="text-sm text-(--ui-text-muted)">{{ table.totalRows.value }} results</p>
+      <p class="text-sm text-muted">{{ table.totalRows.value }} results</p>
       <UPagination
         v-if="table.pageCount.value > 1"
         :page="table.currentPage.value"

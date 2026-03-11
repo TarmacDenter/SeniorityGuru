@@ -6,6 +6,7 @@
   "scripts": {
     "build": "nuxt build",
     "dev": "nuxt dev",
+    "dev:debug": "nuxt dev --debug",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
@@ -27,6 +28,8 @@
     "prepare": "husky"
   },
   "dependencies": {
+    "@fontsource-variable/dm-sans": "^5.2.8",
+    "@fontsource/jetbrains-mono": "^5.2.8",
     "@nuxt/ui": "^4.0.0",
     "@nuxthub/core": "latest",
     "@nuxtjs/supabase": "^2.0.4",

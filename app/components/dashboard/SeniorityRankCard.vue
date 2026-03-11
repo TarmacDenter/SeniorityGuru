@@ -1,7 +1,7 @@
 <template>
   <UCard
     :ui="{
-      root: 'border-l-4 border-l-amber-500',
+      root: 'border-l-4 border-l-primary',
     }"
   >
     <div class="flex flex-col sm:flex-row sm:items-center gap-4">
@@ -46,7 +46,7 @@
         :max="100"
         size="sm"
         :ui="{
-          indicator: 'bg-gradient-to-r from-amber-500 to-cyan-500',
+          indicator: 'bg-gradient-to-r from-primary to-secondary',
         }"
       />
     </div>

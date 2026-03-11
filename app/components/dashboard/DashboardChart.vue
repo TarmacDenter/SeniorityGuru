@@ -52,8 +52,21 @@ const { defaults } = useChartTheme()
 const chartComponents = { bar: Bar, line: Line, doughnut: Doughnut } as const
 const chartComponent = computed(() => chartComponents[props.type])
 
-const mergedOptions = computed(() => ({
-  ...defaults,
-  ...props.options
-}))
+function deepMerge<T extends Record<string, any>>(target: T, source: Partial<T>): T {
+  const result = { ...target }
+  for (const key in source) {
+    const sv = source[key]
+    const tv = result[key]
+    if (sv && typeof sv === 'object' && !Array.isArray(sv) && tv && typeof tv === 'object' && !Array.isArray(tv)) {
+      result[key] = deepMerge(tv, sv)
+    } else if (sv !== undefined) {
+      result[key] = sv
+    }
+  }
+  return result
+}
+
+const mergedOptions = computed(() =>
+  deepMerge(defaults as Record<string, any>, (props.options ?? {}) as Record<string, any>)
+)
 </script>

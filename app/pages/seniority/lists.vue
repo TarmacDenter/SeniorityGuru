@@ -52,7 +52,7 @@
         </UTable>
 
         <div class="flex items-center justify-between">
-          <p class="text-sm text-(--ui-text-muted)">{{ totalRows }} lists</p>
+          <p class="text-sm text-muted">{{ totalRows }} lists</p>
           <UPagination
             v-if="pageCount > 1"
             :page="currentPage"
@@ -86,7 +86,7 @@
         <!-- Delete Confirmation Modal -->
         <UModal v-model:open="deleteOpen" title="Delete List" description="This action cannot be undone.">
           <template #body>
-            <p class="text-sm text-(--ui-text-muted) mb-4">
+            <p class="text-sm text-muted mb-4">
               Are you sure you want to delete the list
               <strong>{{ deleteTarget?.airline }} — {{ deleteTarget?.effective_date }}</strong>?
               All entries in this list will be permanently removed.
