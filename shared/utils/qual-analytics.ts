@@ -77,40 +77,82 @@ export function computeAgeDistribution(
   }
 }
 
-// ─── Most junior CA per fleet ─────────────────────────────────────────────────
+// ─── Most junior CA per qual (fleet + seat + base) ───────────────────────────
 
 export interface MostJuniorCARow {
+  qualKey: string       // e.g. "737 CA ATL"
   fleet: string
+  seat: string
+  base: string | null
   seniorityNumber: number
   hireDate: string
   yos: number
 }
 
 export function findMostJuniorCA(entries: SeniorityEntry[]): MostJuniorCARow[] {
-  const byFleet = new Map<string, SeniorityEntry>()
+  const byQual = new Map<string, SeniorityEntry>()
   for (const e of entries) {
     if (e.seat !== 'CA' || !e.fleet) continue
-    const existing = byFleet.get(e.fleet)
+    const key = `${e.fleet}|${e.seat}|${e.base ?? ''}`
+    const existing = byQual.get(key)
     if (!existing || e.seniority_number > existing.seniority_number) {
-      byFleet.set(e.fleet, e)
+      byQual.set(key, e)
     }
   }
-  return Array.from(byFleet.values()).map((e) => ({
-    fleet: e.fleet!,
-    seniorityNumber: e.seniority_number,
-    hireDate: e.hire_date,
-    yos: computeYOS(e.hire_date),
-  }))
+  return Array.from(byQual.values())
+    .map((e) => ({
+      qualKey: [e.fleet, e.seat, e.base].filter(Boolean).join(' '),
+      fleet: e.fleet!,
+      seat: e.seat!,
+      base: e.base,
+      seniorityNumber: e.seniority_number,
+      hireDate: e.hire_date,
+      yos: computeYOS(e.hire_date),
+    }))
+    .sort((a, b) => a.qualKey.localeCompare(b.qualKey))
 }
 
 // ─── YOS distribution ─────────────────────────────────────────────────────────
 
 export interface YosDistribution {
   entryFloor: number
+  p10: number
   p25: number
   median: number
   p75: number
+  p90: number
   max: number
+}
+
+export interface YosHistogramBucket {
+  label: string
+  minYos: number
+  count: number
+}
+
+const YOS_BUCKETS: { label: string; min: number; max: number }[] = [
+  { label: '0–4', min: 0, max: 4.999 },
+  { label: '5–9', min: 5, max: 9.999 },
+  { label: '10–14', min: 10, max: 14.999 },
+  { label: '15–19', min: 15, max: 19.999 },
+  { label: '20–24', min: 20, max: 24.999 },
+  { label: '25–29', min: 25, max: 29.999 },
+  { label: '30–34', min: 30, max: 34.999 },
+  { label: '35+', min: 35, max: Infinity },
+]
+
+export function computeYosHistogram(
+  entries: SeniorityEntry[],
+  filterFn?: FilterFn,
+): YosHistogramBucket[] {
+  const filtered = filterFn ? entries.filter(filterFn) : entries
+  const counts = new Array<number>(YOS_BUCKETS.length).fill(0)
+  for (const e of filtered) {
+    const yos = computeYOS(e.hire_date)
+    const idx = YOS_BUCKETS.findIndex((b) => yos >= b.min && yos <= b.max)
+    if (idx >= 0) counts[idx]!++
+  }
+  return YOS_BUCKETS.map((b, i) => ({ label: b.label, minYos: b.min, count: counts[i]! }))
 }
 
 function percentileOf(sorted: number[], p: number): number {
@@ -124,7 +166,7 @@ export function computeYosDistribution(
   filterFn?: FilterFn,
 ): YosDistribution {
   const filtered = filterFn ? entries.filter(filterFn) : entries
-  if (filtered.length === 0) return { entryFloor: 0, p25: 0, median: 0, p75: 0, max: 0 }
+  if (filtered.length === 0) return { entryFloor: 0, p10: 0, p25: 0, median: 0, p75: 0, p90: 0, max: 0 }
 
   const sorted = filtered
     .map((e) => computeYOS(e.hire_date))
@@ -137,9 +179,11 @@ export function computeYosDistribution(
 
   return {
     entryFloor,
+    p10: percentileOf(sorted, 10),
     p25: percentileOf(sorted, 25),
     median: percentileOf(sorted, 50),
     p75: percentileOf(sorted, 75),
+    p90: percentileOf(sorted, 90),
     max: sorted[sorted.length - 1]!,
   }
 }
@@ -239,6 +283,7 @@ export interface PowerIndexCell {
   retiredCount: number
   totalInCell: number
   remainingNeeded: number
+  isLowestSeniority: boolean  // green cell where user would be the most junior
 }
 
 export function computePowerIndexCells(
@@ -273,14 +318,19 @@ export function computePowerIndexCells(
     const isHoldable = remaining.length > 0 && userSenNum <= mostJuniorActiveSenNum
 
     if (isHoldable) {
-      return { fleet: fleet!, seat: seat!, base: base!, state: 'green', retiredCount, totalInCell: total, remainingNeeded: 0 }
+      const moreJunior = remaining.filter((e) => e.seniority_number > userSenNum).length
+      return {
+        fleet: fleet!, seat: seat!, base: base!,
+        state: 'green', retiredCount, totalInCell: total, remainingNeeded: 0,
+        isLowestSeniority: moreJunior === 0,
+      }
     }
 
     const stillAhead = remaining.filter((e) => e.seniority_number < userSenNum).length
     const amberThreshold = Math.ceil(total * 0.10)
     const state: PowerIndexCellState = stillAhead > 0 && stillAhead <= amberThreshold ? 'amber' : 'red'
 
-    return { fleet: fleet!, seat: seat!, base: base!, state, retiredCount, totalInCell: total, remainingNeeded: stillAhead }
+    return { fleet: fleet!, seat: seat!, base: base!, state, retiredCount, totalInCell: total, remainingNeeded: stillAhead, isLowestSeniority: false }
   })
 }
 

@@ -9,12 +9,15 @@ import {
   buildTrajectory,
   type FilterFn,
 } from '#shared/utils/seniority-math'
+import type { ComputedRef } from 'vue'
 import { useSeniorityStore } from '~/stores/seniority'
 import { useUserStore } from '~/stores/user'
 
 const BANNER_KEY = 'qual-projections-banner-dismissed'
 
-export function useQualProjections() {
+const noFilter: FilterFn = () => true
+
+export function useQualProjections(qualFilterFn: ComputedRef<FilterFn> = computed(() => noFilter)) {
   const seniorityStore = useSeniorityStore()
   const userStore = useUserStore()
 
@@ -55,63 +58,37 @@ export function useQualProjections() {
     )
   })
 
-  // Retirement wave (qual selector)
-  const waveFleet = ref<string | null>(null)
-  const waveSeat = ref<string | null>(null)
-  const waveBase = ref<string | null>(null)
-
-  const retirementWave = computed(() => {
-    const filterFn: FilterFn = (e) => {
-      if (waveFleet.value && e.fleet !== waveFleet.value) return false
-      if (waveSeat.value && e.seat !== waveSeat.value) return false
-      if (waveBase.value && e.base !== waveBase.value) return false
-      return true
-    }
-    return computeRetirementWave(seniorityStore.entries, filterFn)
-  })
+  // Retirement wave — uses the shared qual filter from demographics
+  const retirementWave = computed(() =>
+    computeRetirementWave(seniorityStore.entries, qualFilterFn.value),
+  )
 
   // Trajectory overlay for wave chart — user's percentile within selected qual
   const waveTrajectory = computed(() => {
     if (!userEntry.value) return []
-    const filterFn: FilterFn = (e) => {
-      if (waveFleet.value && e.fleet !== waveFleet.value) return false
-      if (waveSeat.value && e.seat !== waveSeat.value) return false
-      return true
-    }
     const { today } = getProjectionEndDate(userEntry.value.retire_date)
     const end = new Date(today)
     end.setFullYear(end.getFullYear() + 15)
     const timePoints = generateTimePoints(today, end)
-    return buildTrajectory(seniorityStore.entries, userEntry.value.seniority_number, timePoints, filterFn)
+    return buildTrajectory(seniorityStore.entries, userEntry.value.seniority_number, timePoints, qualFilterFn.value)
   })
 
-  // Percentile threshold calculator
-  const thresholdFleet = ref<string | null>(null)
-  const thresholdSeat = ref<string | null>(null)
-  const thresholdBase = ref<string | null>(null)
+  // Percentile threshold calculator — uses the shared qual filter
   const targetPercentile = ref(50) // 50 | 75 | 90
 
   const thresholdResult = computed(() => {
     if (!userEntry.value) return null
 
-    const filterFn: FilterFn = (e) => {
-      if (thresholdFleet.value && e.fleet !== thresholdFleet.value) return false
-      if (thresholdSeat.value && e.seat !== thresholdSeat.value) return false
-      if (thresholdBase.value && e.base !== thresholdBase.value) return false
-      return true
-    }
-
     const { today } = getProjectionEndDate(userEntry.value.retire_date)
     const end = new Date(today)
     end.setFullYear(end.getFullYear() + 15)
     const timePoints = generateTimePoints(today, end)
 
-    // Base trajectory
     const base = buildTrajectory(
       seniorityStore.entries,
       userEntry.value.seniority_number,
       timePoints,
-      filterFn,
+      qualFilterFn.value,
     )
 
     // Optimistic / pessimistic: scale retire dates closer / further
@@ -129,13 +106,13 @@ export function useQualProjections() {
       scaleEntries(0.9),
       userEntry.value.seniority_number,
       timePoints,
-      filterFn,
+      qualFilterFn.value,
     )
     const pessimistic = buildTrajectory(
       scaleEntries(1.1),
       userEntry.value.seniority_number,
       timePoints,
-      filterFn,
+      qualFilterFn.value,
     )
 
     return findThresholdYear(base, optimistic, pessimistic, targetPercentile.value)
@@ -148,14 +125,8 @@ export function useQualProjections() {
     projectionDate,
     userEntry,
     powerIndexCells,
-    waveFleet,
-    waveSeat,
-    waveBase,
     retirementWave,
     waveTrajectory,
-    thresholdFleet,
-    thresholdSeat,
-    thresholdBase,
     targetPercentile,
     thresholdResult,
   }

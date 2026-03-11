@@ -3,6 +3,7 @@ import {
   findMostJuniorCA,
   computeQualComposition,
   computeYosDistribution,
+  computeYosHistogram,
 } from '#shared/utils/qual-analytics'
 import type { FilterFn } from '#shared/utils/seniority-math'
 import { useSeniorityStore } from '~/stores/seniority'
@@ -62,13 +63,10 @@ export function useQualDemographics() {
     computeAgeDistribution(seniorityStore.entries, mandatoryAge.value, qualFilterFn.value),
   )
 
-  // 1.2 Most Junior CA
-  const mostJuniorCAs = computed(() => {
-    const filtered = selectedFleet.value
-      ? seniorityStore.entries.filter((e) => e.fleet === selectedFleet.value)
-      : seniorityStore.entries
-    return findMostJuniorCA(filtered)
-  })
+  // 1.2 Most Junior CA — grouped by qual (fleet+seat+base), filtered by current selection
+  const mostJuniorCAs = computed(() =>
+    findMostJuniorCA(seniorityStore.entries.filter(qualFilterFn.value)),
+  )
 
   // User entry for highlighting "you could hold this"
   const userEntry = computed(() => {
@@ -87,6 +85,10 @@ export function useQualDemographics() {
     computeYosDistribution(seniorityStore.entries, qualFilterFn.value),
   )
 
+  const yosHistogram = computed(() =>
+    computeYosHistogram(seniorityStore.entries, qualFilterFn.value),
+  )
+
   return {
     selectedFleet,
     selectedSeat,
@@ -100,5 +102,6 @@ export function useQualDemographics() {
     userEntry,
     qualComposition,
     yosDistribution,
+    yosHistogram,
   }
 }

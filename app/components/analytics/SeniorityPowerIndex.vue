@@ -1,20 +1,25 @@
 <template>
   <div class="space-y-4">
-    <!-- Slider -->
-    <div class="flex items-center gap-4">
-      <span class="text-sm text-[var(--ui-text-muted)] shrink-0">Now</span>
-      <URange
-        :model-value="projectionYears"
-        :min="0"
-        :max="10"
-        :step="1"
-        class="flex-1"
-        @update:model-value="$emit('yearsChange', $event)"
-      />
-      <span class="text-sm text-[var(--ui-text-muted)] shrink-0">+10 yrs</span>
-      <UBadge color="neutral" variant="subtle" size="sm" class="shrink-0 font-mono">
-        +{{ projectionYears }}yr{{ projectionYears === 1 ? '' : 's' }}
-      </UBadge>
+    <!-- Now / Future toggle -->
+    <div class="flex items-center gap-4 flex-wrap">
+      <div class="flex items-center gap-2">
+        <USwitch v-model="useProjection" />
+        <span class="text-sm text-[var(--ui-text-muted)]">Project forward</span>
+      </div>
+      <template v-if="useProjection">
+        <URange
+          :model-value="projectionYears"
+          :min="1"
+          :max="10"
+          :step="1"
+          class="w-40"
+          @update:model-value="$emit('yearsChange', $event)"
+        />
+        <UBadge color="neutral" variant="subtle" size="sm" class="font-mono">
+          +{{ projectionYears }}yr{{ projectionYears === 1 ? '' : 's' }}
+        </UBadge>
+      </template>
+      <UBadge v-else color="neutral" variant="subtle" size="sm">As of today</UBadge>
     </div>
 
     <!-- No employee number state -->
@@ -29,14 +34,11 @@
 
     <!-- Grid -->
     <div v-else-if="cells.length > 0">
-      <!-- Build grid: rows = fleet+seat combos, columns = unique bases -->
       <div class="overflow-x-auto">
         <table class="w-full text-sm">
           <thead>
             <tr>
-              <th class="py-2 pr-3 text-left text-xs font-medium text-[var(--ui-text-muted)]">
-                Qual
-              </th>
+              <th class="py-2 pr-3 text-left text-xs font-medium text-[var(--ui-text-muted)]">Qual</th>
               <th
                 v-for="base in uniqueBases"
                 :key="base"
@@ -61,14 +63,14 @@
                 <template v-if="cellMap.get(`${qual}|${base}`)">
                   <UBadge
                     :color="badgeColor(cellMap.get(`${qual}|${base}`)!.state)"
-                    variant="subtle"
+                    :variant="cellMap.get(`${qual}|${base}`)!.isLowestSeniority ? 'outline' : 'subtle'"
                     size="sm"
                     class="cursor-pointer"
                     :title="cellTooltip(cellMap.get(`${qual}|${base}`)!)"
                     @click="$emit('cellClick', { fleet: cellMap.get(`${qual}|${base}`)!.fleet, seat: cellMap.get(`${qual}|${base}`)!.seat, base })"
                   >
-                    <UIcon :name="badgeIcon(cellMap.get(`${qual}|${base}`)!.state)" class="size-3 mr-1" />
-                    {{ cellMap.get(`${qual}|${base}`)!.state === 'green' ? 'Hold' : cellMap.get(`${qual}|${base}`)!.remainingNeeded }}
+                    <UIcon :name="badgeIcon(cellMap.get(`${qual}|${base}`)!)" class="size-3 mr-1" />
+                    {{ cellLabel(cellMap.get(`${qual}|${base}`)!) }}
                   </UBadge>
                 </template>
                 <span v-else class="text-[var(--ui-text-muted)]">—</span>
@@ -82,15 +84,19 @@
       <div class="mt-3 flex flex-wrap gap-3 text-xs text-[var(--ui-text-muted)]">
         <div class="flex items-center gap-1">
           <UBadge color="success" variant="subtle" size="xs">Hold</UBadge>
-          You can hold this qual
+          Hold comfortably
+        </div>
+        <div class="flex items-center gap-1">
+          <UBadge color="success" variant="outline" size="xs">Junior</UBadge>
+          Hold — you'd be most junior
         </div>
         <div class="flex items-center gap-1">
           <UBadge color="warning" variant="subtle" size="xs">N</UBadge>
-          Within 10% — almost holdable
+          Within 10% — almost there
         </div>
         <div class="flex items-center gap-1">
           <UBadge color="error" variant="subtle" size="xs">N</UBadge>
-          N pilots ahead of you
+          N pilots still ahead
         </div>
       </div>
     </div>
@@ -111,37 +117,38 @@ const props = defineProps<{
     retiredCount: number
     totalInCell: number
     remainingNeeded: number
+    isLowestSeniority: boolean
   }[]
   projectionYears: number
   hasEmployeeNumber: boolean
 }>()
 
-defineEmits<{
+const emit = defineEmits<{
   cellClick: [{ fleet: string; seat: string; base: string }]
   yearsChange: [number]
 }>()
 
+const useProjection = ref(false)
+
+watch(useProjection, (on) => {
+  if (!on) emit('yearsChange', 0)
+})
+
 const uniqueQuals = computed(() => {
   const seen = new Set<string>()
-  for (const c of props.cells) {
-    seen.add(`${c.fleet} ${c.seat}`)
-  }
+  for (const c of props.cells) seen.add(`${c.fleet} ${c.seat}`)
   return Array.from(seen).sort()
 })
 
 const uniqueBases = computed(() => {
   const seen = new Set<string>()
-  for (const c of props.cells) {
-    seen.add(c.base)
-  }
+  for (const c of props.cells) seen.add(c.base)
   return Array.from(seen).sort()
 })
 
 const cellMap = computed(() => {
   const map = new Map<string, typeof props.cells[number]>()
-  for (const c of props.cells) {
-    map.set(`${c.fleet} ${c.seat}|${c.base}`, c)
-  }
+  for (const c of props.cells) map.set(`${c.fleet} ${c.seat}|${c.base}`, c)
   return map
 })
 
@@ -151,14 +158,23 @@ function badgeColor(state: 'green' | 'amber' | 'red'): 'success' | 'warning' | '
   return 'error'
 }
 
-function badgeIcon(state: 'green' | 'amber' | 'red'): string {
-  if (state === 'green') return 'i-lucide-check-circle'
-  if (state === 'amber') return 'i-lucide-clock'
+function badgeIcon(cell: typeof props.cells[number]): string {
+  if (cell.state === 'green') return cell.isLowestSeniority ? 'i-lucide-alert-circle' : 'i-lucide-check-circle'
+  if (cell.state === 'amber') return 'i-lucide-clock'
   return 'i-lucide-x-circle'
 }
 
+function cellLabel(cell: typeof props.cells[number]): string {
+  if (cell.state === 'green') return cell.isLowestSeniority ? 'Junior' : 'Hold'
+  return String(cell.remainingNeeded)
+}
+
 function cellTooltip(cell: typeof props.cells[number]): string {
-  if (cell.state === 'green') return `You can hold this qual (${cell.retiredCount} retired)`
+  if (cell.state === 'green') {
+    return cell.isLowestSeniority
+      ? `You hold — but you'd be the most junior (${cell.retiredCount} retired)`
+      : `You hold comfortably (${cell.retiredCount} retired)`
+  }
   if (cell.state === 'amber') return `${cell.remainingNeeded} pilot(s) still ahead — almost there`
   return `${cell.remainingNeeded} pilot(s) still senior to you`
 }

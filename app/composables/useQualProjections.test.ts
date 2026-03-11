@@ -188,13 +188,13 @@ describe('useQualProjections', () => {
       }
     })
 
-    it('filters by waveFleet when set', () => {
+    it('filters when a qualFilterFn is passed', () => {
       mockSeniorityStore.entries = [
         makeEntry({ fleet: '737', retire_date: '2026-06-01' }),
         makeEntry({ fleet: '777', retire_date: '2027-06-01' }),
       ]
-      const { retirementWave, waveFleet } = useQualProjections()
-      waveFleet.value = '737'
+      const filterFn = computed(() => (e: ReturnType<typeof makeEntry>) => e.fleet === '737')
+      const { retirementWave } = useQualProjections(filterFn as any)
       const result = retirementWave.value
       // Only the 737 entry should be counted
       const total = result.reduce((sum, b) => sum + b.count, 0)

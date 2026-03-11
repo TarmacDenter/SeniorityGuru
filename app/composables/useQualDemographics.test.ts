@@ -152,23 +152,24 @@ describe('useQualDemographics', () => {
       expect(mostJuniorCAs.value).toEqual([])
     })
 
-    it('returns most junior CA per fleet', () => {
+    it('returns most junior CA per qual (fleet+seat+base)', () => {
       mockSeniorityStore.entries = [
-        makeEntry({ seniority_number: 1, seat: 'CA', fleet: '737', hire_date: '2005-01-01' }),
-        makeEntry({ seniority_number: 5, seat: 'CA', fleet: '737', hire_date: '2015-01-01' }), // most junior
-        makeEntry({ seniority_number: 3, seat: 'CA', fleet: '777', hire_date: '2010-01-01' }),
+        makeEntry({ seniority_number: 1, seat: 'CA', fleet: '737', base: 'JFK', hire_date: '2005-01-01' }),
+        makeEntry({ seniority_number: 5, seat: 'CA', fleet: '737', base: 'JFK', hire_date: '2015-01-01' }), // most junior 737 CA JFK
+        makeEntry({ seniority_number: 3, seat: 'CA', fleet: '777', base: 'LAX', hire_date: '2010-01-01' }),
       ]
       const { mostJuniorCAs } = useQualDemographics()
       const result = mostJuniorCAs.value
       expect(result.length).toBe(2)
       const f737 = result.find((r) => r.fleet === '737')
       expect(f737?.seniorityNumber).toBe(5)
+      expect(f737?.qualKey).toBe('737 CA JFK')
     })
 
     it('filters by selectedFleet when set', () => {
       mockSeniorityStore.entries = [
-        makeEntry({ seniority_number: 5, seat: 'CA', fleet: '737' }),
-        makeEntry({ seniority_number: 3, seat: 'CA', fleet: '777' }),
+        makeEntry({ seniority_number: 5, seat: 'CA', fleet: '737', base: 'JFK' }),
+        makeEntry({ seniority_number: 3, seat: 'CA', fleet: '777', base: 'JFK' }),
       ]
       const { mostJuniorCAs, selectedFleet } = useQualDemographics()
       selectedFleet.value = '737'
@@ -216,7 +217,7 @@ describe('useQualDemographics', () => {
   describe('yosDistribution', () => {
     it('returns zero distribution when no entries', () => {
       const { yosDistribution } = useQualDemographics()
-      expect(yosDistribution.value).toEqual({ entryFloor: 0, p25: 0, median: 0, p75: 0, max: 0 })
+      expect(yosDistribution.value).toEqual({ entryFloor: 0, p10: 0, p25: 0, median: 0, p75: 0, p90: 0, max: 0 })
     })
 
     it('returns correct shape with real entries', () => {
@@ -228,11 +229,24 @@ describe('useQualDemographics', () => {
       const { yosDistribution } = useQualDemographics()
       const result = yosDistribution.value
       expect(result).toHaveProperty('entryFloor')
+      expect(result).toHaveProperty('p10')
       expect(result).toHaveProperty('p25')
       expect(result).toHaveProperty('median')
       expect(result).toHaveProperty('p75')
+      expect(result).toHaveProperty('p90')
       expect(result).toHaveProperty('max')
       expect(result.max).toBeGreaterThan(result.entryFloor)
+    })
+  })
+
+  describe('yosHistogram', () => {
+    it('returns an array of buckets', () => {
+      mockSeniorityStore.entries = [makeEntry({ hire_date: '2010-01-01' })]
+      const { yosHistogram } = useQualDemographics()
+      expect(Array.isArray(yosHistogram.value)).toBe(true)
+      expect(yosHistogram.value.length).toBeGreaterThan(0)
+      expect(yosHistogram.value[0]).toHaveProperty('label')
+      expect(yosHistogram.value[0]).toHaveProperty('count')
     })
   })
 

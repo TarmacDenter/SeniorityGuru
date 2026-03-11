@@ -8,6 +8,7 @@ import {
   computeAgeDistribution,
   findMostJuniorCA,
   computeYosDistribution,
+  computeYosHistogram,
   computeQualComposition,
   computeRetirementWave,
   computePowerIndexCells,
@@ -109,18 +110,30 @@ describe('computeAgeDistribution', () => {
 
 // ─── findMostJuniorCA ─────────────────────────────────────────────────────────
 describe('findMostJuniorCA', () => {
-  it('returns the pilot with highest seniority_number per fleet', () => {
+  it('returns the pilot with highest seniority_number per qual (fleet+seat+base)', () => {
     const entries = [
-      makeEntry({ fleet: '737', seat: 'CA', seniority_number: 100 }),
-      makeEntry({ fleet: '737', seat: 'CA', seniority_number: 500 }),
-      makeEntry({ fleet: '737', seat: 'CA', seniority_number: 300 }),
-      makeEntry({ fleet: '787', seat: 'CA', seniority_number: 50 }),
+      makeEntry({ fleet: '737', seat: 'CA', base: 'JFK', seniority_number: 100 }),
+      makeEntry({ fleet: '737', seat: 'CA', base: 'JFK', seniority_number: 500 }),
+      makeEntry({ fleet: '737', seat: 'CA', base: 'LAX', seniority_number: 300 }),
+      makeEntry({ fleet: '787', seat: 'CA', base: 'JFK', seniority_number: 50 }),
     ]
     const result = findMostJuniorCA(entries)
-    const r737 = result.find((r) => r.fleet === '737')
+    const r737JFK = result.find((r) => r.fleet === '737' && r.base === 'JFK')
+    const r737LAX = result.find((r) => r.fleet === '737' && r.base === 'LAX')
     const r787 = result.find((r) => r.fleet === '787')
-    expect(r737?.seniorityNumber).toBe(500)
+    expect(r737JFK?.seniorityNumber).toBe(500)
+    expect(r737LAX?.seniorityNumber).toBe(300)
     expect(r787?.seniorityNumber).toBe(50)
+  })
+
+  it('includes qualKey, seat, and base in return value', () => {
+    const entries = [
+      makeEntry({ fleet: '737', seat: 'CA', base: 'ATL', seniority_number: 200 }),
+    ]
+    const result = findMostJuniorCA(entries)
+    expect(result[0]?.qualKey).toBe('737 CA ATL')
+    expect(result[0]?.seat).toBe('CA')
+    expect(result[0]?.base).toBe('ATL')
   })
 
   it('ignores FO entries', () => {
@@ -142,7 +155,7 @@ describe('findMostJuniorCA', () => {
 describe('computeYosDistribution', () => {
   it('returns zeros for empty input', () => {
     const result = computeYosDistribution([])
-    expect(result).toEqual({ entryFloor: 0, p25: 0, median: 0, p75: 0, max: 0 })
+    expect(result).toEqual({ entryFloor: 0, p10: 0, p25: 0, median: 0, p75: 0, p90: 0, max: 0 })
   })
 
   it('sets entryFloor to YOS of most junior entry', () => {
@@ -166,6 +179,30 @@ describe('computeYosDistribution', () => {
     // Sorted: [~6, ~16, ~26] — median index 1 → ~16
     expect(result.median).toBeGreaterThan(14)
     expect(result.median).toBeLessThan(18)
+  })
+})
+
+// ─── computeYosHistogram ──────────────────────────────────────────────────────
+describe('computeYosHistogram', () => {
+  it('returns 8 buckets', () => {
+    const result = computeYosHistogram([])
+    expect(result).toHaveLength(8)
+  })
+
+  it('places pilot hired in 2010 in the 15-19 bucket (2026 - 2010 ≈ 16 yos)', () => {
+    const result = computeYosHistogram([makeEntry({ hire_date: '2010-01-01' })])
+    const bucket = result.find((b) => b.label === '15–19')
+    expect(bucket?.count).toBe(1)
+  })
+
+  it('applies filterFn', () => {
+    const entries = [
+      makeEntry({ fleet: '737', hire_date: '2010-01-01' }),
+      makeEntry({ fleet: '777', hire_date: '2010-01-01' }),
+    ]
+    const result = computeYosHistogram(entries, (e) => e.fleet === '737')
+    const total = result.reduce((sum, b) => sum + b.count, 0)
+    expect(total).toBe(1)
   })
 })
 
@@ -271,6 +308,18 @@ describe('computePowerIndexCells', () => {
     const cells = computePowerIndexCells(entries, 50, TODAY)
     expect(cells[0]?.state).toBe('green')
     expect(cells[0]?.remainingNeeded).toBe(0)
+    expect(cells[0]?.isLowestSeniority).toBe(false) // user is NOT the most junior (300 is)
+  })
+
+  it('isLowestSeniority is true when user is the most junior in the cell', () => {
+    const entries = [
+      makeEntry({ fleet: '737', seat: 'CA', base: 'JFK', seniority_number: 50, retire_date: null }),
+      makeEntry({ fleet: '737', seat: 'CA', base: 'JFK', seniority_number: 100, retire_date: null }),
+    ]
+    // User at 100 — they ARE the most junior CA in the cell (tied for most junior spot)
+    const cells = computePowerIndexCells(entries, 100, TODAY)
+    expect(cells[0]?.state).toBe('green')
+    expect(cells[0]?.isLowestSeniority).toBe(true)
   })
 
   it('green after retirements clear the blocking pilots', () => {

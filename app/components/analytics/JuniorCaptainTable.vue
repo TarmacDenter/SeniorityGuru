@@ -7,7 +7,8 @@ import { h } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
 
 interface TableRow {
-  fleet: string
+  qualKey: string
+  base: string | null
   seniorityNumber: number
   hireDate: string
   yos: number
@@ -15,7 +16,7 @@ interface TableRow {
 }
 
 const props = defineProps<{
-  rows: { fleet: string; seniorityNumber: number; hireDate: string; yos: number }[]
+  rows: { qualKey: string; fleet: string; seat: string; base: string | null; seniorityNumber: number; hireDate: string; yos: number }[]
   userSeniorityNumber: number | undefined
 }>()
 
@@ -30,11 +31,11 @@ const tableRows = computed<TableRow[]>(() =>
 
 const columns: TableColumn<TableRow>[] = [
   {
-    accessorKey: 'fleet',
-    header: 'Fleet',
+    accessorKey: 'qualKey',
+    header: 'Qual',
     cell: ({ row }) =>
       h('div', { class: 'flex items-center gap-2' }, [
-        h('span', row.original.fleet),
+        h('span', row.original.qualKey),
         row.original.isHoldable
           ? h('span', {
               class: 'inline-block size-2 rounded-full bg-[var(--ui-color-success-500)]',
