@@ -27,5 +27,5 @@
 
 <script setup lang="ts">
 const navItems = useSeniorityNav()
-const sidebarOpen = useState<boolean>('senioritySidebarOpen', () => false)
+const sidebarOpen = useState<boolean>('dashboardSidebarOpen', () => false)
 </script>

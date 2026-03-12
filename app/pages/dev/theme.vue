@@ -119,7 +119,7 @@
 </template>
 
 <script setup lang="ts">
-definePageMeta({ layout: 'seniority' })
+definePageMeta({ layout: 'dashboard' })
 
 if (!import.meta.dev) {
   await navigateTo('/')

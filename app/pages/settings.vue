@@ -16,5 +16,5 @@
 </template>
 
 <script setup lang="ts">
-definePageMeta({ layout: 'seniority', middleware: 'auth' })
+definePageMeta({ layout: 'dashboard', middleware: 'auth' })
 </script>

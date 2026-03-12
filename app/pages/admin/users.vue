@@ -114,7 +114,7 @@ import { sortableHeader } from '~/utils/sortableHeader'
 
 definePageMeta({
   middleware: ['auth', 'admin'],
-  layout: 'seniority',
+  layout: 'dashboard',
 })
 
 interface AdminUser {

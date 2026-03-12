@@ -13,22 +13,25 @@
           <!-- Qual filter bar — shared across all tabs -->
           <div class="flex gap-3 flex-wrap items-center">
             <USelect
-              v-model="demographics.selectedFleet.value"
+              :model-value="demographics.selectedFleet.value ?? undefined"
               :items="demographics.availableFleets.value"
               placeholder="All Fleets"
               class="w-40"
+              @update:model-value="demographics.selectedFleet.value = $event ?? null"
             />
             <USelect
-              v-model="demographics.selectedSeat.value"
+              :model-value="demographics.selectedSeat.value ?? undefined"
               :items="demographics.availableSeats.value"
               placeholder="All Seats"
               class="w-40"
+              @update:model-value="demographics.selectedSeat.value = $event ?? null"
             />
             <USelect
-              v-model="demographics.selectedBase.value"
+              :model-value="demographics.selectedBase.value ?? undefined"
               :items="demographics.availableBases.value"
               placeholder="All Bases"
               class="w-40"
+              @update:model-value="demographics.selectedBase.value = $event ?? null"
             />
             <UButton
               v-if="demographics.selectedFleet.value || demographics.selectedSeat.value || demographics.selectedBase.value"
@@ -93,22 +96,25 @@
           <!-- Shared qual filter bar (same refs as demographics) -->
           <div class="flex gap-3 flex-wrap items-center">
             <USelect
-              v-model="demographics.selectedFleet.value"
+              :model-value="demographics.selectedFleet.value ?? undefined"
               :items="demographics.availableFleets.value"
               placeholder="All Fleets"
               class="w-40"
+              @update:model-value="demographics.selectedFleet.value = $event ?? null"
             />
             <USelect
-              v-model="demographics.selectedSeat.value"
+              :model-value="demographics.selectedSeat.value ?? undefined"
               :items="demographics.availableSeats.value"
               placeholder="All Seats"
               class="w-40"
+              @update:model-value="demographics.selectedSeat.value = $event ?? null"
             />
             <USelect
-              v-model="demographics.selectedBase.value"
+              :model-value="demographics.selectedBase.value ?? undefined"
               :items="demographics.availableBases.value"
               placeholder="All Bases"
               class="w-40"
+              @update:model-value="demographics.selectedBase.value = $event ?? null"
             />
             <UButton
               v-if="demographics.selectedFleet.value || demographics.selectedSeat.value || demographics.selectedBase.value"
@@ -212,7 +218,7 @@ import { computeYOS } from '#shared/utils/qual-analytics'
 
 definePageMeta({
   middleware: 'auth',
-  layout: 'seniority',
+  layout: 'dashboard',
   ssr: false,
 })
 

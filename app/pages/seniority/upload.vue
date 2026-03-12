@@ -155,7 +155,7 @@
 import type { StepperItem } from '@nuxt/ui'
 import type { DateValue } from '@internationalized/date'
 
-definePageMeta({ middleware: 'auth', layout: 'seniority' })
+definePageMeta({ middleware: 'auth', layout: 'dashboard' })
 
 const upload = useSeniorityUpload()
 const toast = useToast()

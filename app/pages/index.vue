@@ -143,7 +143,7 @@ import { useDashboardStats } from '~/composables/useDashboardStats'
 
 definePageMeta({
   middleware: 'auth',
-  layout: 'seniority',
+  layout: 'dashboard',
 })
 
 const route = useRoute()

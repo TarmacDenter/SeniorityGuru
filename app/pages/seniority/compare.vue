@@ -84,7 +84,7 @@ import { retiredColumns, departedColumns, qualMoveColumns, rankChangeColumns, ne
 
 definePageMeta({
   middleware: 'auth',
-  layout: 'seniority',
+  layout: 'dashboard',
 })
 
 const seniorityStore = useSeniorityStore()

@@ -13,7 +13,7 @@
           :max="10"
           :step="1"
           class="w-40"
-          @update:model-value="$emit('yearsChange', $event)"
+          @update:model-value="$event != null && $emit('yearsChange', $event)"
         />
         <UBadge color="neutral" variant="subtle" size="sm" class="font-mono">
           +{{ projectionYears }}yr{{ projectionYears === 1 ? '' : 's' }}

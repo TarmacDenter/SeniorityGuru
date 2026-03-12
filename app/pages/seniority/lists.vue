@@ -113,7 +113,7 @@ import { useSeniorityStore } from '~/stores/seniority'
 
 definePageMeta({
   middleware: 'auth',
-  layout: 'seniority',
+  layout: 'dashboard',
 })
 
 type SeniorityList = SeniorityListResponse
