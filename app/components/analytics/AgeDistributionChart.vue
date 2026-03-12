@@ -1,7 +1,7 @@
 <template>
   <div>
     <ClientOnly>
-      <div class="h-64">
+      <div class="h-64 relative">
         <Bar :data="chartData" :options="chartOptions" />
       </div>
       <template #fallback>

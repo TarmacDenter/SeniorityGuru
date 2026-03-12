@@ -39,18 +39,20 @@
       </UButton>
     </div>
 
-    <!-- Chart -->
-    <ClientOnly>
-      <DashboardChart
-        type="line"
-        :data="chartData"
-        :height="280"
-        :options="chartOptions"
-      />
-      <template #fallback>
-        <USkeleton class="h-[280px] w-full" />
-      </template>
-    </ClientOnly>
+    <!-- Chart: fill screen on mobile, fixed height on tablet+ -->
+    <div class="h-[calc(100svh-14rem)] md:h-[280px]">
+      <ClientOnly>
+        <DashboardChart
+          type="line"
+          :data="chartData"
+          height="auto"
+          :options="chartOptions"
+        />
+        <template #fallback>
+          <USkeleton class="h-full w-full" />
+        </template>
+      </ClientOnly>
+    </div>
 
     <!-- Summary callout -->
     <div

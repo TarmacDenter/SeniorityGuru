@@ -2,7 +2,7 @@
   <div class="space-y-4">
     <!-- YOS histogram chart -->
     <ClientOnly>
-      <div class="h-48">
+      <div class="h-48 relative">
         <Bar :data="chartData" :options="chartOptions" />
       </div>
       <template #fallback>
