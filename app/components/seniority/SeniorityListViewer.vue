@@ -12,7 +12,7 @@
     </div>
 
     <!-- Scrollable content area -->
-    <div class="flex-1 overflow-y-auto min-h-0 overscroll-contain">
+    <div class="flex-1 overflow-scroll min-h-0 overscroll-auto md:overscroll-contain">
       <div class="p-4 sm:p-6">
         <!-- Empty state -->
         <UEmpty v-if="!loading && !latestList" icon="i-lucide-list-ordered" title="No Seniority List Yet"
