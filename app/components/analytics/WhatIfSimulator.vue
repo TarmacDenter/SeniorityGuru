@@ -15,14 +15,14 @@
     <div class="flex gap-3 flex-wrap mb-4">
       <USelect
         :model-value="targetFleet ?? undefined"
-        :options="availableFleets"
+        :items="availableFleets"
         placeholder="Target Fleet"
         class="w-40"
         @update:model-value="(v) => $emit('update:targetFleet', typeof v === 'string' ? v : null)"
       />
       <USelect
         :model-value="targetSeat ?? undefined"
-        :options="availableSeats"
+        :items="availableSeats"
         placeholder="Target Seat"
         class="w-40"
         @update:model-value="(v) => $emit('update:targetSeat', typeof v === 'string' ? v : null)"
