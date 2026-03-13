@@ -46,6 +46,7 @@ import {
   Legend,
   Filler,
   type ChartOptions,
+  type TooltipItem,
 } from 'chart.js'
 
 ChartJS.register(
@@ -94,7 +95,7 @@ const waveChartOptions = computed<ChartOptions<'bar'>>(() => ({
     tooltip: {
       ...defaults.plugins?.tooltip,
       callbacks: {
-        label: (item: any) =>
+        label: (item: TooltipItem<'bar'>) =>
           `${item.parsed.y} retiree${item.parsed.y === 1 ? '' : 's'}${
             props.waveBuckets[item.dataIndex]?.isWave ? ' ⚠ Wave year' : ''
           }`,
@@ -136,12 +137,12 @@ const trajectoryChartOptions = computed<ChartOptions<'line'>>(() => ({
     tooltip: {
       ...defaults.plugins?.tooltip,
       callbacks: {
-        title: (items: any[]) => {
+        title: (items: TooltipItem<'line'>[]) => {
           const label = items[0]?.label
           if (!label) return ''
           return new Date(label).getFullYear().toString()
         },
-        label: (item: any) => `${item.parsed.y.toFixed(1)}% seniority`,
+        label: (item: TooltipItem<'line'>) => `${item.parsed.y.toFixed(1)}% seniority`,
       },
     },
   },
@@ -151,7 +152,7 @@ const trajectoryChartOptions = computed<ChartOptions<'line'>>(() => ({
       ...defaults.scales?.x,
       ticks: {
         ...defaults.scales?.x?.ticks,
-        callback(_value: any, index: number) {
+        callback(_value: string | number, index: number) {
           const label = props.trajectoryPoints[index]?.date
           if (!label) return ''
           return new Date(label).getFullYear().toString()
@@ -162,7 +163,7 @@ const trajectoryChartOptions = computed<ChartOptions<'line'>>(() => ({
       ...defaults.scales?.y,
       min: 0,
       max: 100,
-      ticks: { ...defaults.scales?.y?.ticks, callback: (v: any) => `${v}%` },
+      ticks: { ...defaults.scales?.y?.ticks, callback: (v: string | number) => `${v}%` },
     },
   },
 } as ChartOptions<'line'>))

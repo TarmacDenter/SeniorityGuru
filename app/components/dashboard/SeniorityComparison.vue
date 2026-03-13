@@ -21,7 +21,7 @@
 </template>
 
 <script setup lang="ts">
-import type { ChartData } from 'chart.js'
+import type { ChartData, TooltipItem } from 'chart.js'
 import type { Tables } from '#shared/types/database'
 
 type SeniorityEntry = Tables<'seniority_entries'>
@@ -92,13 +92,13 @@ const chartOptions = {
   plugins: {
     tooltip: {
       callbacks: {
-        title(items: any[]) {
+        title(items: TooltipItem<'line'>[]) {
           const label = items[0]?.label
           if (!label) return ''
           const d = new Date(label)
           return d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
         },
-        label(item: any) {
+        label(item: TooltipItem<'line'>) {
           return `${item.dataset.label}: ${item.parsed.y}%`
         },
       },
@@ -107,7 +107,7 @@ const chartOptions = {
   scales: {
     x: {
       ticks: {
-        callback(this: any, _value: any, index: number) {
+        callback(_value: string | number, index: number) {
           const labels = chartData.value.labels as string[]
           const label = labels?.[index]
           if (!label) return ''
@@ -119,7 +119,7 @@ const chartOptions = {
       min: 0,
       max: 100,
       title: { display: true, text: 'Seniority %' },
-      ticks: { callback: (v: any) => `${v}%` },
+      ticks: { callback: (v: string | number) => `${v}%` },
     },
   },
 }

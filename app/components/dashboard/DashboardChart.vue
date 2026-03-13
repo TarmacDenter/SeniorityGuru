@@ -48,6 +48,7 @@ const props = withDefaults(defineProps<{
   options?: ChartOptions
   height?: number | 'auto'
 }>(), {
+  options: undefined,
   height: 300
 })
 
@@ -56,6 +57,7 @@ const { defaults } = useChartTheme()
 const chartComponents = { bar: Bar, line: Line, doughnut: Doughnut } as const
 const chartComponent = computed(() => chartComponents[props.type])
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function deepMerge<T extends Record<string, any>>(target: T, source: Partial<T>): T {
   const result = { ...target }
   for (const key in source) {
@@ -71,6 +73,7 @@ function deepMerge<T extends Record<string, any>>(target: T, source: Partial<T>)
 }
 
 const mergedOptions = computed(() =>
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   deepMerge(defaults as Record<string, any>, (props.options ?? {}) as Record<string, any>)
 )
 </script>

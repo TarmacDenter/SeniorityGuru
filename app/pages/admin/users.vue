@@ -37,12 +37,12 @@
       <div class="overflow-x-auto">
         <UTable
           ref="usersTable"
-          :data="users"
-          :columns="columns"
-          :loading="loading"
           v-model:global-filter="globalFilter"
           v-model:pagination="pagination"
           v-model:sorting="sorting"
+          :data="users"
+          :columns="columns"
+          :loading="loading"
           :pagination-options="paginationOptions"
           :ui="{ tr: 'data-[selected=true]:bg-(--ui-bg-elevated)' }"
         >
@@ -110,6 +110,7 @@
 
 <script setup lang="ts">
 import type { TableColumn } from '@nuxt/ui'
+import { FetchError } from 'ofetch'
 import { sortableHeader } from '~/utils/sortableHeader'
 
 definePageMeta({
@@ -173,8 +174,8 @@ async function fetchUsers() {
   try {
     users.value = await $fetch<AdminUser[]>('/api/admin/users')
   }
-  catch (e: any) {
-    fetchError.value = e.data?.message || 'Failed to load users'
+  catch (e: unknown) {
+    fetchError.value = e instanceof FetchError ? (e.data?.message ?? 'Failed to load users') : 'Failed to load users'
   }
   finally {
     loading.value = false
@@ -220,8 +221,8 @@ async function sendInvite() {
     inviteEmail.value = ''
     inviteOpen.value = false
   }
-  catch (e: any) {
-    const message = e.statusCode === 409
+  catch (e: unknown) {
+    const message = e instanceof FetchError && e.statusCode === 409
       ? 'This user is already registered and active'
       : 'Failed to send invite'
     toast.add({ title: message, color: 'error' })
@@ -245,9 +246,9 @@ async function deleteUser() {
     toast.add({ title: 'User deleted', color: 'success' })
     deleteOpen.value = false
   }
-  catch (e: any) {
-    const message = e.statusCode === 400
-      ? e.data?.statusMessage || 'Cannot delete this user'
+  catch (e: unknown) {
+    const message = e instanceof FetchError && e.statusCode === 400
+      ? (e.data?.statusMessage ?? 'Cannot delete this user')
       : 'Failed to delete user'
     toast.add({ title: message, color: 'error' })
   }

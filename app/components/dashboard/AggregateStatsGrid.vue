@@ -13,16 +13,16 @@
 <script setup lang="ts">
 import type { TableColumn } from '@nuxt/ui'
 
-const props = defineProps<{
-  data: Array<{
-    category: string
-    avgSeniority: number
-    avgYearsToRetire: number
-    totalPilots: number
-  }>
-}>()
+interface AggRow {
+  category: string
+  avgSeniority: number
+  avgYearsToRetire: number
+  totalPilots: number
+}
 
-type AggRow = (typeof props.data)[number]
+defineProps<{
+  data: AggRow[]
+}>()
 
 const columns: TableColumn<AggRow>[] = [
   { accessorKey: 'category', header: 'Fleet / Base' },

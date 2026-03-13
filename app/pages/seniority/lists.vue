@@ -22,12 +22,12 @@
         <div class="overflow-x-auto">
           <UTable
             ref="listsTable"
-            :data="seniorityStore.lists"
-            :columns="columns"
-            :loading="seniorityStore.listsLoading"
             v-model:global-filter="globalFilter"
             v-model:pagination="pagination"
             v-model:sorting="sorting"
+            :data="seniorityStore.lists"
+            :columns="columns"
+            :loading="seniorityStore.listsLoading"
             :pagination-options="paginationOptions"
           >
             <template #actions-cell="{ row }">

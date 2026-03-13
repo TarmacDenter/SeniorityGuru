@@ -18,9 +18,10 @@ export function parseExcelSerial(serial: number): string | null {
 
 /** Parse MM/DD/YYYY or MM-DD-YYYY (with 1-2 digit month/day, 2-4 digit year) into YYYY-MM-DD, or null */
 export function parseSlashDate(s: string): string | null {
-  const match = s.match(/^(\d{1,2})[/\-](\d{1,2})[/\-](\d{2,4})$/)
+  const match = s.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{2,4})$/)
   if (!match) return null
-  let [, m, d, y] = match
+  const [, m, d] = match
+  let y = match[3]
   if (y!.length === 2) y = (parseInt(y!, 10) > 50 ? '19' : '20') + y
   return `${y}-${m!.padStart(2, '0')}-${d!.padStart(2, '0')}`
 }

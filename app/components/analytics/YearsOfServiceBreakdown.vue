@@ -36,6 +36,7 @@ import {
   Tooltip,
   Legend,
   type ChartOptions,
+  type TooltipItem,
 } from 'chart.js'
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend)
@@ -86,7 +87,7 @@ const chartOptions = computed<ChartOptions<'bar'>>(() => ({
     tooltip: {
       ...defaults.plugins?.tooltip,
       callbacks: {
-        label: (item: any) => `${item.parsed.y} pilot${item.parsed.y === 1 ? '' : 's'}`,
+        label: (item: TooltipItem<'bar'>) => `${item.parsed.y} pilot${item.parsed.y === 1 ? '' : 's'}`,
       },
     },
   },

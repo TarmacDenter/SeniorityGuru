@@ -1,5 +1,6 @@
 <template>
-  <UCard :ui="{
+  <UCard
+:ui="{
     root: 'transition-all duration-200 hover:scale-[1.02] hover:ring-primary/30',
   }">
     <div class="flex items-start justify-between">

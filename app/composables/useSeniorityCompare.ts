@@ -48,8 +48,8 @@ export function useSeniorityCompare(listIdA: Ref<string | null | undefined>, lis
       listMetaA.value = dataA.meta
       listMetaB.value = dataB.meta
     }
-    catch (e: any) {
-      error.value = e.message
+    catch (e: unknown) {
+      error.value = e instanceof Error ? e.message : 'Failed to load comparison'
     }
     finally {
       loading.value = false

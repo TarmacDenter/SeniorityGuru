@@ -1,6 +1,5 @@
 // @vitest-environment node
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { ref, computed } from 'vue'
 import type { Tables } from '../../shared/types/database'
 
 type SeniorityEntry = Tables<'seniority_entries'>

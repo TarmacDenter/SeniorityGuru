@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach } from 'vitest'
 import { registerEndpoint } from '@nuxt/test-utils/runtime'
 import { useSeniorityStore } from './seniority'
 import type { SeniorityListResponse, SeniorityEntryResponse } from '#shared/schemas/seniority-list'
@@ -110,6 +110,46 @@ describe('seniority store', () => {
       await store.updateList(mockList.id, { title: 'Updated Title' })
 
       expect(store.lists[0]!.title).toBe('Updated Title')
+    })
+  })
+
+  describe('clearStore', () => {
+    it('resets lists and entries to empty arrays', () => {
+      const store = useSeniorityStore()
+      store.lists = [mockList, mockList2]
+      store.entries = [mockEntry]
+      store.currentListId = mockList.id
+
+      store.clearStore()
+
+      expect(store.lists).toHaveLength(0)
+      expect(store.entries).toHaveLength(0)
+      expect(store.currentListId).toBeNull()
+    })
+
+    it('resets all loading and error state', () => {
+      const store = useSeniorityStore()
+      store.listsError = 'some error'
+      store.entriesError = 'another error'
+
+      store.clearStore()
+
+      expect(store.listsLoading).toBe(false)
+      expect(store.entriesLoading).toBe(false)
+      expect(store.listsError).toBeNull()
+      expect(store.entriesError).toBeNull()
+    })
+
+    // Regression: Array.slice() was used instead of reassignment — it's a no-op
+    it('actually empties arrays (not a no-op)', () => {
+      const store = useSeniorityStore()
+      store.lists = [mockList]
+      store.entries = [mockEntry]
+
+      store.clearStore()
+
+      expect(store.lists).toHaveLength(0)
+      expect(store.entries).toHaveLength(0)
     })
   })
 

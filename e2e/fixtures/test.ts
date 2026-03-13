@@ -7,7 +7,7 @@ type Fixtures = {
   adminPage: Page
 }
 
-async function loginAs(page: Page, goto: (url: string, options?: any) => Promise<void>, user: keyof typeof TEST_USERS) {
+async function loginAs(page: Page, goto: (url: string, options?: Record<string, unknown>) => Promise<void>, user: keyof typeof TEST_USERS) {
   const creds = TEST_USERS[user]
   await goto('/auth/login', { waitUntil: 'hydration' })
   await page.getByLabel('Email').fill(creds.email)

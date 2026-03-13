@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { Tables } from '../../shared/types/database'
 
 type SeniorityEntry = Tables<'seniority_entries'>
@@ -58,8 +58,8 @@ const localStorageMock: Record<string, string> = {}
 const localStorageImpl = {
   getItem: (key: string) => localStorageMock[key] ?? null,
   setItem: (key: string, value: string) => { localStorageMock[key] = value },
-  removeItem: (key: string) => { delete localStorageMock[key] },
-  clear: () => { Object.keys(localStorageMock).forEach((k) => delete localStorageMock[k]) },
+  removeItem: (key: string) => { Reflect.deleteProperty(localStorageMock, key) },
+  clear: () => { Object.keys(localStorageMock).forEach((k) => Reflect.deleteProperty(localStorageMock, k)) },
 }
 
 vi.stubGlobal('localStorage', localStorageImpl)
@@ -193,8 +193,8 @@ describe('useQualProjections', () => {
         makeEntry({ fleet: '737', retire_date: '2026-06-01' }),
         makeEntry({ fleet: '777', retire_date: '2027-06-01' }),
       ]
-      const filterFn = computed(() => (e: ReturnType<typeof makeEntry>) => e.fleet === '737')
-      const { retirementWave } = useQualProjections(filterFn as any)
+      const filterFn = computed(() => (e: SeniorityEntry) => e.fleet === '737')
+      const { retirementWave } = useQualProjections(filterFn)
       const result = retirementWave.value
       // Only the 737 entry should be counted
       const total = result.reduce((sum, b) => sum + b.count, 0)

@@ -93,7 +93,7 @@ const chartData = computed<ChartData<'bar'>>(() => {
 const chartOptions = computed(() => ({
   scales: {
     y: showPercentage.value
-      ? { title: { display: true, text: '% of remaining pilots' }, ticks: { callback: (v: any) => `${v}%` } }
+      ? { title: { display: true, text: '% of remaining pilots' }, ticks: { callback: (v: string | number) => `${v}%` } }
       : {},
   },
 }))

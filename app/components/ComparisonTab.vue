@@ -20,11 +20,11 @@
     <div class="overflow-x-auto">
       <UTable
         ref="comparisonTable"
-        :data="filteredData"
-        :columns="columns"
         v-model:global-filter="table.globalFilter.value"
         v-model:pagination="table.pagination.value"
         v-model:sorting="table.sorting.value"
+        :data="filteredData"
+        :columns="columns"
         :pagination-options="table.paginationOptions"
       />
     </div>
@@ -46,8 +46,8 @@ import type { TableColumn } from '@nuxt/ui'
 import type { FilterConfig } from '~/utils/column-definitions'
 
 const props = defineProps<{
-  data: any[]
-  columns: TableColumn<any>[]
+  data: Record<string, unknown>[]
+  columns: TableColumn<Record<string, unknown>>[]
   searchPlaceholder?: string
   filters?: FilterConfig[]
 }>()
@@ -89,4 +89,6 @@ const filteredData = computed(() => {
     return true
   })
 })
+
+defineExpose({ filterOptions, filteredData, activeFilters })
 </script>

@@ -1,4 +1,5 @@
 import { useUserStore } from '~/stores/user'
+import { useSeniorityStore } from '~/stores/seniority'
 import { createLogger } from '#shared/utils/logger'
 
 const log = createLogger('auth-sync')
@@ -13,11 +14,13 @@ const log = createLogger('auth-sync')
 export default defineNuxtPlugin(() => {
   const supabase = useSupabaseClient()
   const userStore = useUserStore()
+  const seniorityStore = useSeniorityStore()
 
   supabase.auth.onAuthStateChange((event) => {
     if (event === 'SIGNED_OUT') {
-      log.info('Auth state: SIGNED_OUT — clearing cached profile')
+      log.info('Auth state: SIGNED_OUT — clearing cached profile and seniority data')
       userStore.clearProfile()
+      seniorityStore.clearStore()
     }
 
     if (event === 'TOKEN_REFRESHED' || event === 'SIGNED_IN') {

@@ -4,6 +4,12 @@ import ComparisonTab from './ComparisonTab.vue'
 import type { TableColumn } from '@nuxt/ui'
 import type { FilterConfig } from '~/utils/column-definitions'
 
+interface ComparisonTabExposed {
+  filterOptions: Record<string, string[]>
+  filteredData: Record<string, unknown>[]
+  activeFilters: Record<string, string[]>
+}
+
 interface TestRow {
   name: string
   old_seat: string
@@ -102,7 +108,7 @@ describe('ComparisonTab', () => {
       })
       // Verify filterOptions are computed correctly via the exposed or internal state
       // The old_seat field should have unique values: CA, FO
-      const vm = wrapper.vm as any
+      const vm = wrapper.vm as unknown as ComparisonTabExposed
       expect(vm.filterOptions).toBeDefined()
       const oldSeatOptions = vm.filterOptions.old_seat
       expect(oldSeatOptions).toHaveLength(2)
@@ -131,7 +137,7 @@ describe('ComparisonTab', () => {
           filters: testFilters,
         },
       })
-      const vm = wrapper.vm as any
+      const vm = wrapper.vm as unknown as ComparisonTabExposed
       // Set filter for old_seat = CA
       vm.activeFilters.old_seat = ['CA']
       await wrapper.vm.$nextTick()
@@ -151,7 +157,7 @@ describe('ComparisonTab', () => {
           filters: testFilters,
         },
       })
-      const vm = wrapper.vm as any
+      const vm = wrapper.vm as unknown as ComparisonTabExposed
       // Set filter old_seat = CA OR FO -> should show all rows
       vm.activeFilters.old_seat = ['CA', 'FO']
       await wrapper.vm.$nextTick()
@@ -167,7 +173,7 @@ describe('ComparisonTab', () => {
           filters: testFilters,
         },
       })
-      const vm = wrapper.vm as any
+      const vm = wrapper.vm as unknown as ComparisonTabExposed
       // old_seat = CA AND new_fleet = A220 -> only Alice matches
       vm.activeFilters.old_seat = ['CA']
       vm.activeFilters.new_fleet = ['A220']
@@ -185,7 +191,7 @@ describe('ComparisonTab', () => {
           filters: testFilters,
         },
       })
-      const vm = wrapper.vm as any
+      const vm = wrapper.vm as unknown as ComparisonTabExposed
       // Apply a filter
       vm.activeFilters.old_seat = ['CA']
       await wrapper.vm.$nextTick()
@@ -205,7 +211,7 @@ describe('ComparisonTab', () => {
           filters: testFilters,
         },
       })
-      const vm = wrapper.vm as any
+      const vm = wrapper.vm as unknown as ComparisonTabExposed
       // Initially all rows
       expect(vm.filteredData).toHaveLength(4)
 

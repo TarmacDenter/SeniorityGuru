@@ -140,6 +140,7 @@ supabase db push        # push local migrations to remote
 **Patterns:**
 - **Schema tests** (`shared/schemas/*.test.ts`): pure Zod validation, `@vitest-environment node`
 - **Middleware tests** (`app/middleware/*.test.ts`): use `mockNuxtImport` for Nuxt composables, `vi.mock` for explicit store imports
+- **Plugin tests** (`app/plugins/__tests__/*.test.ts`): Nuxt only scans top-level files in `app/plugins/` — test files must live in `__tests__/` to avoid being picked up as plugins
 - **Component tests** (`app/pages/**/*.test.ts`): use `@nuxt/test-utils/runtime` mounting helpers
 
 **Rules:**

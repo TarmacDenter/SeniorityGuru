@@ -70,7 +70,7 @@
 </template>
 
 <script setup lang="ts">
-const props = defineProps<{
+defineProps<{
   result: { year: string; optimistic: string | null; pessimistic: string | null } | null
   targetPercentile: number
   selectedQual: string

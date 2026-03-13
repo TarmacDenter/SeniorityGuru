@@ -14,6 +14,17 @@ export const useSeniorityStore = defineStore('seniority', () => {
   /** Track which list's entries are currently loaded */
   const currentListId = ref<string | null>(null)
 
+  function clearStore() {
+    lists.value = []
+    entries.value = []
+    listsLoading.value = false
+    entriesLoading.value = false
+    listsError.value = null
+    entriesError.value = null
+    currentListId.value = null
+    log.info('Seniority store cleared')
+  }
+
   async function fetchLists() {
     listsLoading.value = true
     listsError.value = null
@@ -21,9 +32,10 @@ export const useSeniorityStore = defineStore('seniority', () => {
     try {
       lists.value = await $fetch<SeniorityListResponse[]>('/api/seniority-lists')
       log.debug('Lists fetched', { count: lists.value.length })
-    } catch (e: any) {
-      log.error('Failed to fetch lists', { error: e.message })
-      listsError.value = e.message
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : 'Failed to fetch lists'
+      log.error('Failed to fetch lists', { error: message })
+      listsError.value = message
     }
 
     listsLoading.value = false
@@ -38,9 +50,10 @@ export const useSeniorityStore = defineStore('seniority', () => {
     try {
       entries.value = await $fetch<SeniorityEntryResponse[]>(`/api/seniority-lists/${listId}/entries`)
       log.debug('Entries fetched', { listId, count: entries.value.length })
-    } catch (e: any) {
-      log.error('Failed to fetch entries', { listId, error: e.message })
-      entriesError.value = e.message
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : 'Failed to fetch entries'
+      log.error('Failed to fetch entries', { listId, error: message })
+      entriesError.value = message
     }
 
     entriesLoading.value = false
@@ -74,6 +87,7 @@ export const useSeniorityStore = defineStore('seniority', () => {
     entriesLoading,
     listsError,
     entriesError,
+    clearStore,
     fetchLists,
     fetchEntries,
     updateList,

@@ -28,9 +28,10 @@ export const useUserStore = defineStore('user', () => {
       const data = await $fetch<Tables<'profiles'>>('/api/profile')
       log.debug('Profile loaded', { userId, airline: data?.icao_code })
       profile.value = data
-    } catch (e: any) {
-      log.error('Profile fetch failed', { userId, error: e.message })
-      error.value = e.message
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : 'Failed to load profile'
+      log.error('Profile fetch failed', { userId, error: message })
+      error.value = message
     }
 
     loading.value = false
