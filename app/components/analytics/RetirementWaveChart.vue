@@ -142,7 +142,7 @@ const trajectoryChartOptions = computed<ChartOptions<'line'>>(() => ({
           if (!label) return ''
           return new Date(label).getFullYear().toString()
         },
-        label: (item: TooltipItem<'line'>) => `${item.parsed.y.toFixed(1)}% seniority`,
+        label: (item: TooltipItem<'line'>) => `${(item.parsed.y ?? 0).toFixed(1)}% seniority`,
       },
     },
   },

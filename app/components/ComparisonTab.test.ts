@@ -6,7 +6,7 @@ import type { FilterConfig } from '~/utils/column-definitions'
 
 interface ComparisonTabExposed {
   filterOptions: Record<string, string[]>
-  filteredData: Record<string, unknown>[]
+  filteredData: any[]
   activeFilters: Record<string, string[]>
 }
 

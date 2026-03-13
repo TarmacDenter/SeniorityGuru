@@ -46,8 +46,8 @@ import type { TableColumn } from '@nuxt/ui'
 import type { FilterConfig } from '~/utils/column-definitions'
 
 const props = defineProps<{
-  data: Record<string, unknown>[]
-  columns: TableColumn<Record<string, unknown>>[]
+  data: any[]
+  columns: TableColumn<any>[]
   searchPlaceholder?: string
   filters?: FilterConfig[]
 }>()
