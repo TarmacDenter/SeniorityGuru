@@ -1,7 +1,7 @@
 import { serverSupabaseClient, serverSupabaseUser } from '#supabase/server'
 import { SeniorityListIdSchema } from '#shared/schemas/seniority-list'
 import { createLogger } from '#shared/utils/logger'
-import { invalidateCache, listsKey, listKey, entriesKey } from '../../utils/seniority-cache'
+import type { Database } from '#shared/types/database'
 
 const log = createLogger('seniority-api')
 
@@ -14,9 +14,8 @@ export default defineEventHandler(async (event) => {
 
   const { id } = await validateRouteParam(event, 'id', SeniorityListIdSchema)
 
-  const client = await serverSupabaseClient(event)
+  const client = await serverSupabaseClient<Database>(event)
 
-  // RLS enforces ownership — only the uploader can delete their own lists
   const { data, error } = await client
     .from('seniority_lists')
     .delete()
@@ -28,9 +27,6 @@ export default defineEventHandler(async (event) => {
     log.warn('Delete failed or list not found', { userId: user.sub, listId: id, error: error?.message })
     throw createError({ statusCode: 404, statusMessage: 'List not found' })
   }
-
-  // Invalidate all related caches
-  await invalidateCache(listsKey(user.sub), listKey(id), entriesKey(id))
 
   log.info('Seniority list deleted', { userId: user.sub, listId: data.id })
 

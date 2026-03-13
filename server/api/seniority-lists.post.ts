@@ -1,7 +1,8 @@
 import { serverSupabaseClient, serverSupabaseUser } from '#supabase/server'
-import { CreateSeniorityListSchema } from '#shared/schemas/seniority-list'
+import { CreateSeniorityListSchema, CreateSeniorityListResponseSchema } from '#shared/schemas/seniority-list'
 import { createLogger } from '#shared/utils/logger'
-import { invalidateCache, listsKey } from '../utils/seniority-cache'
+import { parseResponse } from '../utils/validation'
+import type { Database } from '#shared/types/database'
 
 const log = createLogger('seniority-api')
 
@@ -20,9 +21,8 @@ export default defineEventHandler(async (event) => {
     entryCount: entries.length,
   })
 
-  const client = await serverSupabaseClient(event)
+  const client = await serverSupabaseClient<Database>(event)
 
-  // Get the user's airline from their profile
   const { data: profile, error: profileError } = await client
     .from('profiles')
     .select('icao_code')
@@ -38,7 +38,6 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: 'No airline set on profile' })
   }
 
-  // Create the seniority list
   const { data: list, error: listError } = await client
     .from('seniority_lists')
     .insert({
@@ -55,7 +54,6 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 500, statusMessage: 'Internal server error' })
   }
 
-  // Batch insert entries
   const mappedEntries = entries.map((entry) => ({
     list_id: list.id,
     ...entry,
@@ -70,9 +68,6 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 500, statusMessage: 'Internal server error' })
   }
 
-  // Invalidate user's lists cache so next GET returns fresh data
-  await invalidateCache(listsKey(user.sub))
-
   log.info('Seniority list upload completed', {
     userId: user.sub,
     listId: list.id,
@@ -80,5 +75,5 @@ export default defineEventHandler(async (event) => {
     airline: profile.icao_code,
   })
 
-  return { id: list.id, count: entries.length }
+  return parseResponse(CreateSeniorityListResponseSchema, { id: list.id, count: entries.length }, 'seniority-lists.post')
 })

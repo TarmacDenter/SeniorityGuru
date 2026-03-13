@@ -9,15 +9,13 @@ export default defineEventHandler(async (event) => {
 
   const { id } = await validateRouteParam(event, 'id', AdminUserIdSchema)
 
-  // Prevent self-deletion
   if (id === admin.sub) {
     throw createError({ statusCode: 400, statusMessage: 'Cannot delete your own account' })
   }
 
   const client = serverSupabaseServiceRole(event)
 
-  // Delete user's seniority lists first (entries cascade via ON DELETE CASCADE).
-  // uploaded_by FK on seniority_lists has no CASCADE, so this must happen before auth deletion.
+  // uploaded_by FK has no CASCADE — must delete lists before the auth user
   const { error: listsError } = await client
     .from('seniority_lists')
     .delete()
@@ -28,7 +26,6 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 500, statusMessage: 'Failed to delete user' })
   }
 
-  // Delete from auth.users — cascades to profiles
   const { error } = await client.auth.admin.deleteUser(id)
 
   if (error) {

@@ -11,7 +11,6 @@ export default defineEventHandler(async (event) => {
 
   const client = serverSupabaseServiceRole(event)
 
-  // Look up user email from userId
   const { data: userData, error: userError } = await client.auth.admin.getUserById(userId)
   if (userError || !userData?.user?.email) {
     log.error('Failed to find user for password reset', { userId, error: userError?.message })

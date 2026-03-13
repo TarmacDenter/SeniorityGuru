@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import type { Tables } from '#shared/types/database'
+import type { ProfileResponse } from '#shared/schemas/settings'
 import { createLogger } from '#shared/utils/logger'
 
 const log = createLogger('user-store')
@@ -9,7 +9,7 @@ export const useUserStore = defineStore('user', () => {
   // actions, regardless of Nuxt context propagation timing.
   const supabaseUser = useSupabaseUser()
 
-  const profile = ref<Tables<'profiles'> | null>(null)
+  const profile = ref<ProfileResponse | null>(null)
   const loading = ref(false)
   const error = ref<string | null>(null)
 
@@ -25,7 +25,7 @@ export const useUserStore = defineStore('user', () => {
     error.value = null
 
     try {
-      const data = await $fetch<Tables<'profiles'>>('/api/profile')
+      const data = await $fetch<ProfileResponse>('/api/profile')
       log.debug('Profile loaded', { userId, airline: data?.icao_code })
       profile.value = data
     } catch (e: unknown) {

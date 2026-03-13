@@ -1,6 +1,16 @@
 import { z } from 'zod'
 import { withPasswordConfirmation } from './common'
 
+export const ProfileResponseSchema = z.object({
+  id: z.string().uuid(),
+  role: z.enum(['user', 'moderator', 'admin']),
+  icao_code: z.string().nullable(),
+  employee_number: z.string().nullable(),
+  mandatory_retirement_age: z.number(),
+  created_at: z.string(),
+})
+export type ProfileResponse = z.infer<typeof ProfileResponseSchema>
+
 export const UpdateProfileSchema = z.object({
   icaoCode: z.string().min(2, 'Please select your airline'),
   employeeNumber: z.string().max(20, 'Employee number is too long'),

@@ -20,7 +20,6 @@ export default defineEventHandler(async (event) => {
     return { success: true }
   }
 
-  // Seamless re-invite: if user already exists but never signed in, delete and re-invite
   if (error.message.includes('already been registered')) {
     return await handleReinvite(client, email, redirectTo, admin.sub)
   }
@@ -44,13 +43,11 @@ async function handleReinvite(client: SupabaseClient, email: string, redirectTo:
     throw createError({ statusCode: 500, statusMessage: 'Failed to invite user' })
   }
 
-  // User has signed in before — they're active, don't re-invite
   if (existingUser.last_sign_in_at) {
     log.warn('Attempted to invite existing active user', { adminId, email })
     throw createError({ statusCode: 409, statusMessage: 'User is already active' })
   }
 
-  // Never signed in — incomplete invite. Delete and re-invite fresh.
   const { error: deleteError } = await client.auth.admin.deleteUser(existingUser.id)
   if (deleteError) {
     log.error('Failed to delete incomplete user for re-invite', { adminId, email, error: deleteError.message })

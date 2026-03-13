@@ -5,19 +5,16 @@ import { detectUpgradeTransitions } from '#shared/utils/qual-analytics'
 const log = createLogger('upgrade-tracker')
 
 export default defineEventHandler(async (event) => {
-  // 1. Auth check
   const user = await serverSupabaseUser(event)
   if (!user) throw createError({ statusCode: 401, statusMessage: 'Unauthorized' })
 
-  // 2. Get airlineId param
   const query = getQuery(event)
   const airlineId = query.airlineId as string | undefined
   if (!airlineId) throw createError({ statusCode: 400, statusMessage: 'airlineId required' })
 
-  // 3. Service role client — needs to read all lists for airline regardless of uploader
+  // Service role: needs to read all lists for the airline regardless of uploader
   const client = serverSupabaseServiceRole(event)
 
-  // 4. Load all seniority_lists for airline, ordered by effective_date
   const { data: lists, error: listsError } = await client
     .from('seniority_lists')
     .select('id, effective_date, title')
@@ -33,7 +30,6 @@ export default defineEventHandler(async (event) => {
     return { intervals: [], totals: { upgrades: 0, fleetChanges: 0, downgrades: 0 }, hasEnoughData: false }
   }
 
-  // 5. For each consecutive pair, load entries and compute transitions
   const intervals = []
   let totalUpgrades = 0
   let totalFleetChanges = 0
@@ -43,7 +39,6 @@ export default defineEventHandler(async (event) => {
     const olderList = lists[i]!
     const newerList = lists[i + 1]!
 
-    // Load entries for both lists
     const [olderEntries, newerEntries] = await Promise.all([
       client.from('seniority_entries').select('*').eq('list_id', olderList.id),
       client.from('seniority_entries').select('*').eq('list_id', newerList.id),
@@ -57,7 +52,6 @@ export default defineEventHandler(async (event) => {
     const fleetChanges = transitions.filter(t => t.type === 'fleet-change').length
     const downgrades = transitions.filter(t => t.type === 'downgrade').length
 
-    // byFleet breakdown
     const fleetMap = new Map<string, { upgrades: number; fleetChanges: number; downgrades: number }>()
     for (const t of transitions) {
       const f = t.newFleet ?? t.oldFleet ?? 'Unknown'

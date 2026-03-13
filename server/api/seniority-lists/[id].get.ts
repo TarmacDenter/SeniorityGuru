@@ -1,8 +1,8 @@
 import { serverSupabaseClient, serverSupabaseUser } from '#supabase/server'
-import { SeniorityListIdSchema } from '#shared/schemas/seniority-list'
-import type { SeniorityListResponse } from '#shared/schemas/seniority-list'
+import { SeniorityListIdSchema, SeniorityListResponseSchema } from '#shared/schemas/seniority-list'
 import { createLogger } from '#shared/utils/logger'
-import { getCached, setCache, listKey } from '../../utils/seniority-cache'
+import { parseResponse } from '../../utils/validation'
+import type { Database } from '#shared/types/database'
 
 const log = createLogger('seniority-api')
 
@@ -14,13 +14,7 @@ export default defineEventHandler(async (event) => {
 
   const { id } = await validateRouteParam(event, 'id', SeniorityListIdSchema)
 
-  const cached = await getCached<SeniorityListResponse>(listKey(id))
-  if (cached) {
-    log.debug('List cache hit', { listId: id })
-    return cached
-  }
-
-  const client = await serverSupabaseClient(event)
+  const client = await serverSupabaseClient<Database>(event)
 
   const { data, error } = await client
     .from('seniority_lists')
@@ -33,10 +27,5 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 404, statusMessage: 'List not found' })
   }
 
-  const list = data as SeniorityListResponse
-
-  await setCache(listKey(id), list)
-  log.debug('List fetched and cached', { listId: id })
-
-  return list
+  return parseResponse(SeniorityListResponseSchema, data, 'seniority-lists/[id].get')
 })

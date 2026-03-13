@@ -11,17 +11,22 @@ interface RangeQuery<T> {
 export async function fetchAllRows<T>(
   queryBuilder: RangeQuery<T>,
 ): Promise<T[]> {
-  const allRows: T[] = []
-  let from = 0
 
-  while (true) {
-    const { data, error } = await queryBuilder.range(from, from + PAGE_SIZE - 1)
-    if (error) throw error
-    if (!data || data.length === 0) break
-    allRows.push(...data)
-    if (data.length < PAGE_SIZE) break
-    from += PAGE_SIZE
+  const fetchBatch = async (offset: number, acc: T[]): Promise<T[]> => {
+    const { data, error } = await queryBuilder.range(offset, offset + PAGE_SIZE - 1)
+    if (error) {
+      throw new Error(`Failed to fetch rows: ${error.message}`)
+    }
+    if (!Array.isArray(data)) {
+      throw new Error(`Expected data to be an array, got ${typeof data}`)
+    }
+    if (data && data.length > 0) {
+      const next = [...acc, ...data]
+      if (data.length < PAGE_SIZE) return next
+      return fetchBatch(offset + PAGE_SIZE, next)
+    }
+    return acc
   }
-
-  return allRows
+  
+  return fetchBatch(0, [])
 }

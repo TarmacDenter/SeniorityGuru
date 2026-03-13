@@ -5,6 +5,13 @@ export function uuidField(message = 'Invalid UUID') {
   return z.string().uuid(message)
 }
 
+export const AirlineResponseSchema = z.object({
+  icao: z.string(),
+  name: z.string(),
+  alias: z.string().nullable(),
+})
+export type AirlineResponse = z.infer<typeof AirlineResponseSchema>
+
 /**
  * Add password confirmation refinement to any schema that has `password` and `confirmPassword` fields.
  * Returns a ZodEffects that rejects when the two fields don't match.

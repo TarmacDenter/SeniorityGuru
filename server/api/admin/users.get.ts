@@ -8,14 +8,12 @@ export default defineEventHandler(async (event) => {
 
   const client = serverSupabaseServiceRole(event)
 
-  // Fetch auth users
   const { data: authData, error: authError } = await client.auth.admin.listUsers()
   if (authError) {
     log.error('Failed to list auth users', { error: authError.message })
     throw createError({ statusCode: 500, statusMessage: 'Failed to list users' })
   }
 
-  // Fetch all profiles
   const { data: profiles, error: profilesError } = await client
     .from('profiles')
     .select('id, role, icao_code, employee_number, created_at')

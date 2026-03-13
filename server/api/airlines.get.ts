@@ -1,10 +1,10 @@
 import { serverSupabaseClient, serverSupabaseUser } from '#supabase/server'
 import { createLogger } from '#shared/utils/logger'
-import { getCached, setCache } from '../utils/seniority-cache'
+import { AirlineResponseSchema } from '#shared/schemas/common'
+import { parseResponse } from '../utils/validation'
+import type { Database } from '#shared/types/database'
 
 const log = createLogger('airlines-api')
-
-const AIRLINES_CACHE_KEY = 'seniority:airlines:all'
 
 export default defineEventHandler(async (event) => {
   const user = await serverSupabaseUser(event)
@@ -12,13 +12,7 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 401, statusMessage: 'Unauthorized' })
   }
 
-  const cached = await getCached<{ icao: string; name: string; alias: string | null }[]>(AIRLINES_CACHE_KEY)
-  if (cached) {
-    log.debug('Airlines cache hit')
-    return cached
-  }
-
-  const client = await serverSupabaseClient(event)
+  const client = await serverSupabaseClient<Database>(event)
 
   const { data, error } = await client
     .from('airlines')
@@ -30,10 +24,5 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 500, statusMessage: 'Internal server error' })
   }
 
-  const airlines = data ?? []
-
-  await setCache(AIRLINES_CACHE_KEY, airlines)
-  log.debug('Airlines fetched and cached', { count: airlines.length })
-
-  return airlines
+  return parseResponse(AirlineResponseSchema.array(), data ?? [], 'airlines.get')
 })

@@ -1,5 +1,8 @@
 import { serverSupabaseClient, serverSupabaseUser } from '#supabase/server'
 import { createLogger } from '#shared/utils/logger'
+import { ProfileResponseSchema } from '#shared/schemas/settings'
+import { parseResponse } from '../utils/validation'
+import type { Database } from '#shared/types/database'
 
 const log = createLogger('profile-api')
 
@@ -9,11 +12,11 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 401, statusMessage: 'Unauthorized' })
   }
 
-  const client = await serverSupabaseClient(event)
+  const client = await serverSupabaseClient<Database>(event)
 
   const { data, error } = await client
     .from('profiles')
-    .select('*')
+    .select('id, role, icao_code, employee_number, mandatory_retirement_age, created_at')
     .eq('id', user.sub)
     .maybeSingle()
 
@@ -29,5 +32,5 @@ export default defineEventHandler(async (event) => {
 
   log.debug('Profile fetched', { userId: user.sub })
 
-  return data
+  return parseResponse(ProfileResponseSchema, data, 'profile.get')
 })
