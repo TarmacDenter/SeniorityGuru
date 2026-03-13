@@ -1,8 +1,8 @@
 import { serverSupabaseServiceRole } from '#supabase/server'
 import { ResetUserPasswordSchema } from '#shared/schemas/admin'
-import { createLogger } from '#shared/utils/logger'
+import { createAdminLogger } from '#server/api/admin/logger'
 
-const log = createLogger('admin-api')
+const log = createAdminLogger('reset-password')
 
 export default defineEventHandler(async (event) => {
   const admin = await requireAdmin(event)

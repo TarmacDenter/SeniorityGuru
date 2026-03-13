@@ -1,9 +1,9 @@
 import { serverSupabaseServiceRole } from '#supabase/server'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { InviteUserSchema } from '#shared/schemas/admin'
-import { createLogger } from '#shared/utils/logger'
+import { createAdminLogger } from '#server/api/admin/logger'
 
-const log = createLogger('admin-api')
+const log = createAdminLogger('invite')
 
 export default defineEventHandler(async (event) => {
   const admin = await requireAdmin(event)

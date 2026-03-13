@@ -1,7 +1,7 @@
 import { serverSupabaseServiceRole } from '#supabase/server'
-import { createLogger } from '#shared/utils/logger'
+import { createAdminLogger } from '#server/api/admin/logger'
 
-const log = createLogger('admin-api')
+const log = createAdminLogger('users')
 
 export default defineEventHandler(async (event) => {
   await requireAdmin(event)

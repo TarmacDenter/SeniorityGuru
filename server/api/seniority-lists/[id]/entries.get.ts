@@ -23,9 +23,11 @@ export default defineEventHandler(async (event) => {
       .select('id, list_id, seniority_number, employee_number, name, seat, base, fleet, hire_date, retire_date')
       .eq('list_id', id)
       .order('seniority_number', { ascending: true }),
-  )
-
-  log.debug('Entries fetched', { listId: id, count: entries.length })
+    `seniority-lists/${id}/entries`,
+  ).catch((err) => {
+    log.error('Failed to fetch seniority entries', { listId: id, error: err.message })
+    throw createError({ statusCode: 502, statusMessage: 'Failed to fetch seniority entries' })
+  })
 
   return parseResponse(SeniorityEntryResponseSchema.array(), entries, 'seniority-lists/[id]/entries.get')
 })
