@@ -6,7 +6,7 @@
         Retirements per Year{{ selectedQual ? ` — ${selectedQual}` : '' }}
       </p>
       <ClientOnly>
-        <div class="h-48">
+        <div class="h-48 relative">
           <Bar :data="waveChartData" :options="waveChartOptions" />
         </div>
         <template #fallback>
@@ -21,7 +21,7 @@
         Your Percentile Trajectory{{ selectedQual ? ` — ${selectedQual}` : '' }}
       </p>
       <ClientOnly>
-        <div class="h-40">
+        <div class="h-40 relative">
           <Line :data="trajectoryChartData" :options="trajectoryChartOptions" />
         </div>
         <template #fallback>

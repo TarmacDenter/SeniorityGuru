@@ -1,11 +1,15 @@
 <template>
-  <component
-    :is="chartComponent"
-    :data="(data as any)"
-    :options="(mergedOptions as any)"
-    class="w-full"
-    :style="{ height: height + 'px' }"
-  />
+  <div
+    class="w-full relative"
+    :class="height === 'auto' ? 'h-full' : undefined"
+    :style="height !== 'auto' ? { height: height + 'px' } : undefined"
+  >
+    <component
+      :is="chartComponent"
+      :data="(data as any)"
+      :options="(mergedOptions as any)"
+    />
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -42,7 +46,7 @@ const props = withDefaults(defineProps<{
   type: 'bar' | 'line' | 'doughnut'
   data: ChartData
   options?: ChartOptions
-  height?: number
+  height?: number | 'auto'
 }>(), {
   height: 300
 })
