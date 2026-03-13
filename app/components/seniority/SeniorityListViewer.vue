@@ -28,29 +28,31 @@
             &middot; {{ seniorityStore.entries.length }} pilots
           </p>
 
-          <UTable ref="table" :data="tableData" :columns="columns" :loading="loading || seniorityStore.entriesLoading"
-            v-model:global-filter="globalFilter" v-model:pagination="pagination" v-model:expanded="expanded"
-            v-model:column-visibility="columnVisibility" :expanded-options="{ getRowCanExpand: () => true }"
-            :pagination-options="{ getPaginationRowModel: getPaginationRowModel() }" sticky :meta="tableMeta"
-            class="w-full touch-pan-y overscroll-contain">
-            <template #expanded="{ row }">
-              <div :class="['grid grid-cols-3 gap-3 px-4 py-3 text-sm', row.original._isUser ? 'bg-primary/5' : '']">
-                <div>
-                  <p class="text-muted text-xs mb-0.5">Name</p>
-                  <p :class="row.original._isUser ? 'font-bold text-primary' : 'font-medium'">{{ row.original.name }}
-                  </p>
+          <div class="overflow-x-auto">
+            <UTable ref="table" :data="tableData" :columns="columns" :loading="loading || seniorityStore.entriesLoading"
+              v-model:global-filter="globalFilter" v-model:pagination="pagination" v-model:expanded="expanded"
+              v-model:column-visibility="columnVisibility" :expanded-options="{ getRowCanExpand: () => true }"
+              :pagination-options="{ getPaginationRowModel: getPaginationRowModel() }" sticky :meta="tableMeta"
+              class="w-full overscroll-contain">
+              <template #expanded="{ row }">
+                <div :class="['grid grid-cols-3 gap-3 px-4 py-3 text-sm', row.original._isUser ? 'bg-primary/5' : '']">
+                  <div>
+                    <p class="text-muted text-xs mb-0.5">Name</p>
+                    <p :class="row.original._isUser ? 'font-bold text-primary' : 'font-medium'">{{ row.original.name }}
+                    </p>
+                  </div>
+                  <div>
+                    <p class="text-muted text-xs mb-0.5">Emp #</p>
+                    <p>{{ row.original.employee_number }}</p>
+                  </div>
+                  <div>
+                    <p class="text-muted text-xs mb-0.5">Hire Date</p>
+                    <p>{{ row.original.hire_date }}</p>
+                  </div>
                 </div>
-                <div>
-                  <p class="text-muted text-xs mb-0.5">Emp #</p>
-                  <p>{{ row.original.employee_number }}</p>
-                </div>
-                <div>
-                  <p class="text-muted text-xs mb-0.5">Hire Date</p>
-                  <p>{{ row.original.hire_date }}</p>
-                </div>
-              </div>
-            </template>
-          </UTable>
+              </template>
+            </UTable>
+          </div>
 
           <!-- Pagination — pinned at bottom -->
           <div class="flex items-center justify-between mt-4 pb-safe">
