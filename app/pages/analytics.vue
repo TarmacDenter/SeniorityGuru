@@ -186,21 +186,6 @@
               :error="upgrades.upgradeTrackerError.value"
             />
           </UCard>
-          <UCard>
-            <template #header>
-              <h3 class="font-semibold">What-If Simulator</h3>
-            </template>
-            <AnalyticsWhatIfSimulator
-              :trajectory="upgrades.whatIfTrajectory.value"
-              :target-fleet="upgrades.targetFleet.value"
-              :target-seat="upgrades.targetSeat.value"
-              :available-fleets="upgrades.availableFleets.value"
-              :available-seats="upgrades.availableSeats.value"
-              :user-entry="upgrades.userEntry.value ? { fleet: upgrades.userEntry.value.fleet, seat: upgrades.userEntry.value.seat } : undefined"
-              @update:target-fleet="upgrades.targetFleet.value = $event"
-              @update:target-seat="upgrades.targetSeat.value = $event"
-            />
-          </UCard>
         </div>
       </div>
     </template>
