@@ -1,13 +1,11 @@
 <template>
   <div class="flex flex-col h-full min-h-0 min-w-0">
     <!-- Search — pinned at top, never scrolls away -->
-    <div class="shrink-0 px-4 sm:px-6 py-3 border-b border-default">
-      <UInput
-v-model="globalFilter" :fixed=true icon="i-lucide-search"
-        placeholder="Search by name, employee #, base..." class="w-full text-xs sm:text-sm">
+    <div class="shrink-0 border-b border-default">
+      <UInput v-model="globalFilter" :fixed=true icon="i-lucide-search"
+        placeholder="Search by name, employee #, base..." class="w-full text-xs sm:text-sm my-1 md:mb-3">
         <template v-if="globalFilter" #trailing>
-          <UButton
-icon="i-lucide-x" variant="link" color="neutral" size="xs" aria-label="Clear search"
+          <UButton icon="i-lucide-x" variant="link" color="neutral" size="xs" aria-label="Clear search"
             @click="globalFilter = ''" />
         </template>
       </UInput>
@@ -17,8 +15,7 @@ icon="i-lucide-x" variant="link" color="neutral" size="xs" aria-label="Clear sea
     <div class="flex-1 overflow-scroll min-h-0 overscroll-auto md:overscroll-contain">
       <div class="p-4 sm:p-6">
         <!-- Empty state -->
-        <UEmpty
-v-if="!loading && !latestList" icon="i-lucide-list-ordered" title="No Seniority List Yet"
+        <UEmpty v-if="!loading && !latestList" icon="i-lucide-list-ordered" title="No Seniority List Yet"
           description="Upload your airline's seniority list to view your position, track retirements, and project your trajectory."
           :actions="[{ label: 'Upload Seniority List', icon: 'i-lucide-upload', to: '/seniority/upload', size: 'lg' as const }]"
           class="py-24" />
@@ -32,14 +29,14 @@ v-if="!loading && !latestList" icon="i-lucide-list-ordered" title="No Seniority 
           </p>
 
           <div class="overflow-x-auto">
-            <UTable
-ref="table" v-model:global-filter="globalFilter" v-model:pagination="pagination" v-model:expanded="expanded"
-              v-model:column-visibility="columnVisibility" :data="tableData" :columns="columns"
-              :loading="loading || seniorityStore.entriesLoading" :expanded-options="{ getRowCanExpand: () => true }"
+            <UTable ref="table" v-model:global-filter="globalFilter" v-model:pagination="pagination"
+              v-model:expanded="expanded" v-model:column-visibility="columnVisibility" :data="tableData"
+              :columns="columns" :loading="loading || seniorityStore.entriesLoading"
+              :expanded-options="{ getRowCanExpand: () => true }"
               :pagination-options="{ getPaginationRowModel: getPaginationRowModel() }" sticky :meta="tableMeta"
-              class="w-full overscroll-contain">
+              class="w-full overscroll-contain text-xs sm:text-md">
               <template #expanded="{ row }">
-                <div :class="['grid grid-cols-3 gap-3 px-4 py-3 text-sm', row.original._isUser ? 'bg-primary/5' : '']">
+                <div :class="['grid grid-cols-3 gap-3 px-4 py-3 text-xs', row.original._isUser ? 'bg-primary/5' : '']">
                   <div>
                     <p class="text-muted text-xs mb-0.5">Name</p>
                     <p :class="row.original._isUser ? 'font-bold text-primary' : 'font-medium'">{{ row.original.name }}
@@ -57,19 +54,22 @@ ref="table" v-model:global-filter="globalFilter" v-model:pagination="pagination"
               </template>
             </UTable>
           </div>
-
-          <!-- Pagination — pinned at bottom -->
-          <div class="flex items-center justify-between mt-4 pb-safe">
-            <p class="hidden md:block text-sm text-muted">
-              Page {{ currentPage }} of {{ pageCount }}
-            </p>
-            <UPagination
-:page="currentPage" :total="totalRows"
-              :items-per-page="table?.tableApi?.getState().pagination.pageSize" :sibling-count="isMobile ? 0 : 2"
-              :size="isMobile ? 'xs' : 'sm'" show-edges
-              @update:page="(p: number) => table?.tableApi?.setPageIndex(p - 1)" />
-          </div>
         </template>
+      </div>
+    </div>
+
+    <!-- Pagination — floats below scroll area, always visible -->
+    <div v-if="latestList" class="shrink-0 px-4 sm:px-6 py-3 border-t border-default">
+      <div class="flex items-center justify-between gap-4">
+        <p v-if="!isMobile" class="text-sm text-muted shrink-0">
+          Page {{ currentPage }} of {{ pageCount }}
+        </p>
+        <div class="flex-1 flex justify-center">
+          <UPagination :page="currentPage" :total="totalRows"
+            :items-per-page="table?.tableApi?.getState().pagination.pageSize" :sibling-count="isMobile ? 0 : 2"
+            :size="isMobile ? 'xs' : 'sm'" show-edges
+            @update:page="(p: number) => table?.tableApi?.setPageIndex(p - 1)" />
+        </div>
       </div>
     </div>
   </div>
@@ -185,7 +185,7 @@ const tableMeta = {
         timeline === 'soon' ? 'bg-soon/10' : '',
       ].join(' ').trim();
     },
-  },
+  }
 };
 
 const tableData = computed<SeniorityRow[]>(() => {
