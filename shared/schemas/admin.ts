@@ -20,3 +20,10 @@ export const AdminUserIdSchema = z.object({
   id: uuidField(),
 })
 export type AdminUserId = z.infer<typeof AdminUserIdSchema>
+
+export const AdminGetUsersSeniorityListCountResponse = z.array(z.object({
+  count: z.number().int().nonnegative(),
+  userId: uuidField(),
+}));
+
+export type AdminGetUsersSeniorityListCountResponse = z.infer<typeof AdminGetUsersSeniorityListCountResponse>

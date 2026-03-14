@@ -112,6 +112,7 @@
 import type { TableColumn } from '@nuxt/ui'
 import { FetchError } from 'ofetch'
 import { sortableHeader } from '~/utils/sortableHeader'
+import type { AdminGetUsersSeniorityListCountResponseDto } from '~~/server/api/admin/seniority/upload_count.get';
 
 definePageMeta({
   middleware: ['auth', 'admin'],
@@ -126,6 +127,7 @@ interface AdminUser {
   employee_number: string | null
   created_at: string
   last_sign_in_at: string | null
+  upload_count: number
 }
 
 const {
@@ -165,6 +167,7 @@ const columns: TableColumn<AdminUser>[] = [
     header: sortableHeader<AdminUser>('Created'),
     cell: ({ row }) => new Date(row.original.created_at).toLocaleDateString(),
   },
+  { accessorKey: 'upload_count', header: sortableHeader<AdminUser>('Uploads') },
   { id: 'actions', header: '' },
 ]
 
@@ -173,6 +176,9 @@ async function fetchUsers() {
   fetchError.value = null
   try {
     users.value = await $fetch<AdminUser[]>('/api/admin/users')
+    const userUploadCounts = await $fetch<AdminGetUsersSeniorityListCountResponseDto>('/api/admin/seniority/upload_count')
+    const countsMap = new Map(userUploadCounts.map(c => [c.userId, c.count]))
+    users.value.forEach(u => u.upload_count = countsMap.get(u.id) ?? 0)
   }
   catch (e: unknown) {
     fetchError.value = e instanceof FetchError ? (e.data?.message ?? 'Failed to load users') : 'Failed to load users'

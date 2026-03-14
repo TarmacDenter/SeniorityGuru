@@ -177,7 +177,21 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      user_count_uploads: {
+        Row: {
+          count: number | null
+          user_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "seniority_lists_uploaded_by_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       get_my_role: {
