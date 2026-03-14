@@ -31,3 +31,9 @@ export type RecoveryPasswordState = z.infer<typeof RecoveryPasswordSchema>
 
 export const ResendEmailSchema = z.object({ email: z.string().email() })
 export type ResendEmailState = z.infer<typeof ResendEmailSchema>
+
+export const AcceptInviteSchema = z.object({
+  email: z.string().email('Please enter a valid email address'),
+  token: z.string().length(6, 'Invitation code must be 6 digits').regex(/^\d+$/, 'Code must be numeric'),
+})
+export type AcceptInviteState = z.infer<typeof AcceptInviteSchema>

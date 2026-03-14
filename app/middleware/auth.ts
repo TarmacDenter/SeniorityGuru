@@ -36,7 +36,9 @@ export default defineNuxtRouteMiddleware(async (to) => {
 
   // Level 3: verified regular user with no airline selected
   // Admin users bypass this gate — they manage the system, not necessarily a pilot
-  if (emailVerified && to.path !== '/auth/setup-profile') {
+  // Also skip for update-password and accept-invite — invited users set their password before their profile
+  const setupExempt = ['/auth/setup-profile', '/auth/update-password', '/auth/accept-invite']
+  if (emailVerified && !setupExempt.includes(to.path)) {
     const userStore = useUserStore()
     if (!userStore.profile) {
       await userStore.fetchProfile()

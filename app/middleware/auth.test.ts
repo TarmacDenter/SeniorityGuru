@@ -70,6 +70,20 @@ describe('auth middleware', async () => {
       expect(mockNavigateTo).not.toHaveBeenCalledWith('/auth/setup-profile')
     })
 
+    it('does not redirect when navigating to /auth/update-password (invite flow)', async () => {
+      mockUser.value = { user_metadata: { email_verified: true } }
+      mockProfile.value = { role: 'user', icao_code: null }
+      await authMiddleware(routeTo('/auth/update-password'), routeTo('/auth/update-password'))
+      expect(mockNavigateTo).not.toHaveBeenCalledWith('/auth/setup-profile')
+    })
+
+    it('does not redirect when navigating to /auth/accept-invite', async () => {
+      mockUser.value = { user_metadata: { email_verified: true } }
+      mockProfile.value = { role: 'user', icao_code: null }
+      await authMiddleware(routeTo('/auth/accept-invite'), routeTo('/auth/accept-invite'))
+      expect(mockNavigateTo).not.toHaveBeenCalledWith('/auth/setup-profile')
+    })
+
     it('fetches profile when not already loaded', async () => {
       mockUser.value = { user_metadata: { email_verified: true } }
       mockProfile.value = null

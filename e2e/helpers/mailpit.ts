@@ -68,3 +68,10 @@ export function extractLink(html: string): string {
   if (!match) throw new Error('No link found in email HTML')
   return match[1].replace(/&amp;/g, '&')
 }
+
+/** Extract the OTP code rendered inside the monospace code block of the invite email */
+export function extractOtpCode(html: string): string {
+  const match = html.match(/family:monospace[^>]*>\s*([^\s<]+)\s*<\/p>/)
+  if (!match) throw new Error('No OTP code found in email HTML')
+  return match[1].trim()
+}

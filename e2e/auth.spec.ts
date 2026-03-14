@@ -144,3 +144,27 @@ test.describe('Reset password page', () => {
     await expect(page.getByRole('link', { name: /sign in/i })).toBeVisible()
   })
 })
+
+// ---------------------------------------------------------------------------
+// Accept invite page (OTP entry)
+// ---------------------------------------------------------------------------
+
+test.describe('Accept invite page', () => {
+  test('renders email and invitation code form', async ({ page, goto }) => {
+    await goto('/auth/accept-invite', { waitUntil: 'hydration' })
+    await expect(page.getByLabel('Email')).toBeVisible()
+    await expect(page.getByLabel('Invitation code')).toBeVisible()
+    await expect(page.getByRole('button', { name: /verify/i })).toBeVisible()
+  })
+
+  test('shows error for invalid OTP code', async ({ page, goto }) => {
+    await goto('/auth/accept-invite', { waitUntil: 'hydration' })
+    await page.getByLabel('Email').fill('test@example.com')
+    await page.getByLabel('Invitation code').fill('000000')
+    await page.getByRole('button', { name: /verify/i }).click()
+
+    // Should stay on accept-invite and show an error (invalid/expired OTP)
+    await expect(page).toHaveURL(/\/auth\/accept-invite/, { timeout: 10000 })
+    await expect(page.locator('[data-slot="title"]')).toBeVisible({ timeout: 5000 })
+  })
+})

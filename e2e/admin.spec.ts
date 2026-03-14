@@ -1,5 +1,5 @@
 import { test, expect } from './fixtures/test'
-import { waitForEmail, extractLink, purgeAllMessages } from './helpers/mailpit'
+import { waitForEmail, extractLink, extractOtpCode, purgeAllMessages } from './helpers/mailpit'
 import { createClient } from '@supabase/supabase-js'
 
 const SUPABASE_URL = 'http://127.0.0.1:54321'
@@ -66,31 +66,42 @@ test.describe('Invite flow', () => {
     // Should show success toast (target the toast title specifically)
     await expect(page.locator('[data-slot="title"]').filter({ hasText: 'Invite sent' })).toBeVisible({ timeout: 5000 })
 
-    // Step 2: Read invite email from Mailpit
+    // Step 2: Read invite email from Mailpit and extract OTP code + accept-invite link
     const email = await waitForEmail(inviteeEmail, { subject: 'invited' })
     expect(email.Subject).toContain('invited')
     const link = extractLink(email.HTML)
-    expect(link).toBeTruthy()
+    const otpCode = extractOtpCode(email.HTML)
+    expect(link).toContain('/auth/accept-invite')
+    expect(otpCode).toBeTruthy()
 
-    // Step 3: Open link in a fresh context (simulating the invited user's browser)
+    // Step 3: Open the accept-invite page in a fresh context (simulating the invited user's browser)
     const browser = page.context().browser()!
     const userContext = await browser.newContext()
     const userPage = await userContext.newPage()
 
     await userPage.goto(link)
+    await expect(userPage).toHaveURL(/\/auth\/accept-invite/, { timeout: 10000 })
+    // Wait for Nuxt to hydrate before interacting — without this, the form submits
+    // natively (GET) because Vue's @submit handler isn't attached yet
+    await userPage.waitForLoadState('networkidle')
 
-    // Should land on update-password page after Supabase processes the invite token
+    // Step 4: Enter email + OTP code to verify the invitation
+    await userPage.getByLabel('Email').fill(inviteeEmail)
+    await userPage.getByLabel('Invitation code').fill(otpCode)
+    await userPage.getByRole('button', { name: /verify/i }).click()
+
+    // Should land on update-password page after OTP verification
     await expect(userPage).toHaveURL(/\/auth\/update-password/, { timeout: 15000 })
 
-    // Step 4: Set password
+    // Step 5: Set password
     await userPage.getByLabel('New password').fill('newuser1234')
     await userPage.getByLabel('Confirm password').fill('newuser1234')
     await userPage.getByRole('button', { name: /update password/i }).click()
 
-    // Step 5: Should redirect to / → middleware sees no airline → setup-profile
+    // Step 6: Should redirect to / → middleware sees no airline → setup-profile
     await expect(userPage).toHaveURL(/\/auth\/setup-profile/, { timeout: 15000 })
 
-    // Step 6: Select an airline and complete setup
+    // Step 7: Select an airline and complete setup
     // USelectMenu renders a trigger element with placeholder text
     await userPage.getByText('Search airlines...').click()
     // Type in the search input inside the popover
@@ -98,7 +109,7 @@ test.describe('Invite flow', () => {
     await userPage.getByRole('option').first().click()
     await userPage.getByRole('button', { name: /continue/i }).click()
 
-    // Step 7: Should land on the dashboard
+    // Step 8: Should land on the dashboard
     await expect(userPage).toHaveURL('http://localhost:3000/', { timeout: 10000 })
 
     await userContext.close()

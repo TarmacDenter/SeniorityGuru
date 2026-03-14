@@ -11,9 +11,8 @@ export default defineEventHandler(async (event) => {
   const { email } = await validateBody(event, InviteUserSchema)
 
   const client = serverSupabaseServiceRole(event)
-  const redirectTo = `${getRequestURL(event).origin}/auth/confirm`
 
-  const { error } = await client.auth.admin.inviteUserByEmail(email, { redirectTo })
+  const { error } = await client.auth.admin.inviteUserByEmail(email)
 
   if (!error) {
     log.info('User invited', { adminId: admin.sub, email })
@@ -21,14 +20,14 @@ export default defineEventHandler(async (event) => {
   }
 
   if (error.message.includes('already been registered')) {
-    return await handleReinvite(client, email, redirectTo, admin.sub)
+    return await handleReinvite(client, email, admin.sub)
   }
 
   log.error('Failed to invite user', { adminId: admin.sub, email, error: error.message })
   throw createError({ statusCode: 500, statusMessage: 'Failed to invite user' })
 })
 
-async function handleReinvite(client: SupabaseClient, email: string, redirectTo: string, adminId: string) {
+async function handleReinvite(client: SupabaseClient, email: string, adminId: string) {
   const { data: { users }, error: listError } = await client.auth.admin.listUsers({ perPage: 1000 })
 
   if (listError || !users) {
@@ -54,7 +53,7 @@ async function handleReinvite(client: SupabaseClient, email: string, redirectTo:
     throw createError({ statusCode: 500, statusMessage: 'Failed to invite user' })
   }
 
-  const { error: reinviteError } = await client.auth.admin.inviteUserByEmail(email, { redirectTo })
+  const { error: reinviteError } = await client.auth.admin.inviteUserByEmail(email)
   if (reinviteError) {
     log.error('Failed to re-invite user', { adminId, email, error: reinviteError.message })
     throw createError({ statusCode: 500, statusMessage: 'Failed to invite user' })
