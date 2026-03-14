@@ -1,16 +1,14 @@
 import type { Tables } from '#shared/types/database'
 import {
   countRetiredAbove,
-  generateTimePoints,
-  buildTrajectory,
   computeRank,
-  getProjectionEndDate,
-  formatDateLabel,
   formatNumber,
   type FilterFn,
 } from '#shared/utils/seniority-math'
 import { useSeniorityStore } from '~/stores/seniority'
 import { useUserStore } from '~/stores/user'
+import { useUserTrajectory } from './useUserTrajectory'
+import { useCompanyStats } from './useCompanyStats'
 
 type SeniorityEntry = Tables<'seniority_entries'>
 
@@ -85,7 +83,6 @@ export function useDashboardStats() {
     })
     const retirementsThisYear = retiringThisYear.length
 
-    // Count how many retiring this year are senior to (ahead of) the user
     let retiringSeniorToMe = 0
     if (entry) {
       retiringSeniorToMe = retiringThisYear.filter(
@@ -93,7 +90,6 @@ export function useDashboardStats() {
       ).length
     }
 
-    // Compute rank for user's seat/fleet/base combo
     let baseRankValue = '--'
     let baseRankLabel = 'Your Base Rank'
     if (entry && entry.base && entry.seat && entry.fleet) {
@@ -140,7 +136,6 @@ export function useDashboardStats() {
     const entry = userEntry.value
     const today = new Date()
 
-    // Group entries by combo key in a single pass
     const grouped = new Map<string, SeniorityEntry[]>()
     for (const e of entries) {
       if (!e.base || !e.seat || !e.fleet) continue
@@ -154,7 +149,6 @@ export function useDashboardStats() {
       const { base, seat, fleet } = comboEntries[0]!
       const total = comboEntries.length
 
-      // Count already-retired pilots in this combo (retired as of today)
       const retiredInCombo = comboEntries.filter((e) => {
         if (!e.retire_date) return false
         return new Date(e.retire_date) <= today
@@ -191,158 +185,8 @@ export function useDashboardStats() {
     })
   })
 
-  // --- TRAJECTORY ---
-  const trajectoryData = computed(() => {
-    const entry = userEntry.value
-    const entries = seniorityStore.entries
-
-    if (!entry) {
-      return { labels: [] as string[], data: [] as number[] }
-    }
-
-    const { today, endDate } = getProjectionEndDate(entry.retire_date)
-    const timePoints = generateTimePoints(today, endDate)
-    const trajectory = buildTrajectory(entries, entry.seniority_number, timePoints)
-
-    return {
-      labels: trajectory.map((t) => t.date),
-      data: trajectory.map((t) => t.percentile),
-    }
-  })
-
-  // --- RETIREMENT PROJECTIONS ---
-  function computeRetirementProjection(filterFn: FilterFn = () => true): { labels: string[]; data: number[]; filteredTotal: number } {
-    const entry = userEntry.value
-    const entries = seniorityStore.entries
-
-    if (!entry) {
-      return { labels: [], data: [], filteredTotal: 0 }
-    }
-
-    const filteredEntries = entries.filter(filterFn)
-    const filteredTotal = filteredEntries.length
-
-    const { today, endDate } = getProjectionEndDate(entry.retire_date)
-    const timePoints = generateTimePoints(today, endDate)
-    if (timePoints.length === 0) {
-      return { labels: [], data: [], filteredTotal }
-    }
-
-    const labels: string[] = []
-    const data: number[] = []
-
-    for (let i = 0; i < timePoints.length; i++) {
-      const bucketStart = i === 0 ? today : timePoints[i - 1]!
-      const bucketEnd = timePoints[i]!
-
-      const count = filteredEntries.filter((e) => {
-        if (!e.retire_date) return false
-        const rd = new Date(e.retire_date)
-        return rd > bucketStart && rd <= bucketEnd
-      }).length
-
-      labels.push(formatDateLabel(bucketEnd.toISOString().split('T')[0]!))
-      data.push(count)
-    }
-
-    return { labels, data, filteredTotal }
-  }
-
-  // --- COMPARATIVE TRAJECTORY ---
-  function computeComparativeTrajectory(
-    currentFilter: FilterFn,
-    compareFilter: FilterFn,
-  ): { labels: string[]; currentData: number[]; compareData: number[] } {
-    const entry = userEntry.value
-    const allEntries = seniorityStore.entries
-
-    if (!entry) {
-      return { labels: [], currentData: [], compareData: [] }
-    }
-
-    const { endDate } = getProjectionEndDate(entry.retire_date)
-    const today = new Date()
-
-    // Ensure the user's entry is included in the set for hypothetical projections.
-    // If the user selects a category they're not in, their entry won't match the filter,
-    // so buildTrajectory still works — it computes where the user would slot in by
-    // seniority number. We pass all entries so buildTrajectory can filter internally.
-    const timePoints = generateTimePoints(today, endDate)
-    const currentTrajectory = buildTrajectory(allEntries, entry.seniority_number, timePoints, currentFilter)
-    const compareTrajectory = buildTrajectory(allEntries, entry.seniority_number, timePoints, compareFilter)
-
-    return {
-      labels: currentTrajectory.map((t) => t.date),
-      currentData: currentTrajectory.map((t) => t.percentile),
-      compareData: compareTrajectory.map((t) => t.percentile),
-    }
-  }
-
-  // --- AGGREGATE STATS ---
-  const aggregateStats = computed(() => {
-    const entries = seniorityStore.entries
-    const groups = new Map<string, SeniorityEntry[]>()
-
-    for (const e of entries) {
-      if (!e.fleet || !e.base) continue
-      const key = `${e.fleet} / ${e.base}`
-      if (!groups.has(key)) {
-        groups.set(key, [])
-      }
-      groups.get(key)!.push(e)
-    }
-
-    const now = new Date()
-
-    return Array.from(groups.entries()).map(([category, groupEntries]) => {
-      const totalPilots = groupEntries.length
-      const avgSeniority = groupEntries.reduce((sum, e) => sum + e.seniority_number, 0) / totalPilots
-
-      const entriesWithRetireDate = groupEntries.filter((e) => e.retire_date)
-      const avgYearsToRetire = entriesWithRetireDate.length > 0
-        ? entriesWithRetireDate.reduce((sum, e) => {
-            const rd = new Date(e.retire_date!)
-            const years = (rd.getTime() - now.getTime()) / (365.25 * 24 * 60 * 60 * 1000)
-            return sum + years
-          }, 0) / entriesWithRetireDate.length
-        : 0
-
-      return {
-        category,
-        avgSeniority: Math.round(avgSeniority * 10) / 10,
-        avgYearsToRetire: Math.round(avgYearsToRetire * 10) / 10,
-        totalPilots,
-      }
-    })
-  })
-
-  // --- RECENT LISTS ---
-  const recentLists = computed(() => {
-    return seniorityStore.lists.map((list) => ({
-      id: list.id,
-      title: `${formatDateLabel(list.effective_date)} Seniority List`,
-      description: 'Uploaded',
-      icon: 'i-lucide-file-text',
-      date: list.effective_date,
-    }))
-  })
-
-  // --- QUALS (actual seat/fleet/base combos from seniority data) ---
-  const quals = computed(() => {
-    const entries = seniorityStore.entries
-    const seen = new Set<string>()
-    const result: { seat: string; fleet: string; base: string; label: string }[] = []
-
-    for (const e of entries) {
-      if (!e.seat || !e.fleet || !e.base) continue
-      const key = `${e.seat}/${e.fleet}/${e.base}`
-      if (seen.has(key)) continue
-      seen.add(key)
-      result.push({ seat: e.seat, fleet: e.fleet, base: e.base, label: key })
-    }
-
-    return result.sort((a, b) => a.label.localeCompare(b.label))
-  })
+  const { trajectoryData, computeRetirementProjection, computeComparativeTrajectory } = useUserTrajectory()
+  const { aggregateStats, recentLists, quals } = useCompanyStats()
 
   return {
     hasData,

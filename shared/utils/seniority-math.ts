@@ -95,3 +95,64 @@ export function formatDateLabel(dateStr: string): string {
 export function formatNumber(n: number): string {
   return n.toLocaleString()
 }
+
+/**
+ * Bucket retirements into yearly intervals from today to the projection end date.
+ * When retireDate is null, falls back to a 30-year window.
+ */
+export function projectRetirements(
+  entries: SeniorityEntry[],
+  retireDate: string | null,
+  filterFn: FilterFn = () => true,
+): { labels: string[]; data: number[]; filteredTotal: number } {
+  const filteredEntries = entries.filter(filterFn)
+  const filteredTotal = filteredEntries.length
+
+  const { today, endDate } = getProjectionEndDate(retireDate)
+  const timePoints = generateTimePoints(today, endDate)
+  if (timePoints.length === 0) {
+    return { labels: [], data: [], filteredTotal }
+  }
+
+  const labels: string[] = []
+  const data: number[] = []
+
+  for (let i = 0; i < timePoints.length; i++) {
+    const bucketStart = i === 0 ? today : timePoints[i - 1]!
+    const bucketEnd = timePoints[i]!
+
+    const count = filteredEntries.filter((e) => {
+      if (!e.retire_date) return false
+      const rd = new Date(e.retire_date)
+      return rd > bucketStart && rd <= bucketEnd
+    }).length
+
+    labels.push(formatDateLabel(bucketEnd.toISOString().split('T')[0]!))
+    data.push(count)
+  }
+
+  return { labels, data, filteredTotal }
+}
+
+/**
+ * Build two trajectories (current and compare) for a given user seniority number.
+ */
+export function projectComparativeTrajectory(
+  allEntries: SeniorityEntry[],
+  userSenNum: number,
+  retireDate: string | null,
+  currentFilter: FilterFn,
+  compareFilter: FilterFn,
+): { labels: string[]; currentData: number[]; compareData: number[] } {
+  const { endDate } = getProjectionEndDate(retireDate)
+  const today = new Date()
+  const timePoints = generateTimePoints(today, endDate)
+  const currentTrajectory = buildTrajectory(allEntries, userSenNum, timePoints, currentFilter)
+  const compareTrajectory = buildTrajectory(allEntries, userSenNum, timePoints, compareFilter)
+
+  return {
+    labels: currentTrajectory.map((t) => t.date),
+    currentData: currentTrajectory.map((t) => t.percentile),
+    compareData: compareTrajectory.map((t) => t.percentile),
+  }
+}

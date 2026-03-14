@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect } from 'vitest'
-import { countRetiredAbove, generateTimePoints, buildTrajectory, computeRank, getProjectionEndDate, formatDateLabel, formatNumber } from './seniority-math'
+import { countRetiredAbove, generateTimePoints, buildTrajectory, computeRank, getProjectionEndDate, formatDateLabel, formatNumber, projectRetirements, projectComparativeTrajectory } from './seniority-math'
 import type { Tables } from '#shared/types/database'
 
 type SeniorityEntry = Tables<'seniority_entries'>
@@ -187,5 +187,68 @@ describe('formatDateLabel', () => {
 describe('formatNumber', () => {
   it('formats numbers with locale separators', () => {
     expect(typeof formatNumber(1000)).toBe('string')
+  })
+})
+
+describe('projectRetirements', () => {
+  it('buckets retirements into yearly intervals', () => {
+    const now = new Date()
+    const year1 = now.getFullYear() + 1
+    const year2 = now.getFullYear() + 2
+    const entries = [
+      makeEntry({ seniority_number: 1, retire_date: `${year1}-03-15` }),
+      makeEntry({ seniority_number: 2, retire_date: `${year1}-09-15` }),
+      makeEntry({ seniority_number: 3, retire_date: `${year2}-06-01` }),
+      makeEntry({ seniority_number: 5, retire_date: `${now.getFullYear() + 4}-01-01` }),
+    ]
+    const result = projectRetirements(entries, `${now.getFullYear() + 5}-01-01`)
+    expect(result.labels.length).toBeGreaterThan(0)
+    expect(result.data.length).toBe(result.labels.length)
+    expect(result.filteredTotal).toBe(4)
+    const totalRetirements = result.data.reduce((sum, n) => sum + n, 0)
+    expect(totalRetirements).toBeGreaterThanOrEqual(3)
+  })
+
+  it('uses 30-year fallback when retireDate is null', () => {
+    const result = projectRetirements([], null)
+    expect(result.labels.length).toBeGreaterThan(0)
+    expect(result.filteredTotal).toBe(0)
+  })
+
+  it('respects filterFn', () => {
+    const now = new Date()
+    const nextYear = now.getFullYear() + 1
+    const entries = [
+      makeEntry({ seniority_number: 1, base: 'JFK', retire_date: `${nextYear}-06-01` }),
+      makeEntry({ seniority_number: 2, base: 'LAX', retire_date: `${nextYear}-06-01` }),
+    ]
+    const all = projectRetirements(entries, `${now.getFullYear() + 5}-01-01`)
+    const jfk = projectRetirements(entries, `${now.getFullYear() + 5}-01-01`, (e) => e.base === 'JFK')
+    expect(all.filteredTotal).toBe(2)
+    expect(jfk.filteredTotal).toBe(1)
+    expect(jfk.data.reduce((s, n) => s + n, 0)).toBeLessThanOrEqual(all.data.reduce((s, n) => s + n, 0))
+  })
+})
+
+describe('projectComparativeTrajectory', () => {
+  it('returns two separate trajectories for two filters', () => {
+    const now = new Date()
+    const entries = [
+      makeEntry({ seniority_number: 1, seat: 'CA', base: 'JFK', fleet: '737', retire_date: `${now.getFullYear() + 1}-01-01` }),
+      makeEntry({ seniority_number: 2, seat: 'CA', base: 'JFK', fleet: '737', retire_date: `${now.getFullYear() + 2}-01-01` }),
+      makeEntry({ seniority_number: 3, seat: 'FO', base: 'LAX', fleet: '777', retire_date: `${now.getFullYear() + 20}-01-01` }),
+      makeEntry({ seniority_number: 5, seat: 'CA', base: 'JFK', fleet: '737', retire_date: `${now.getFullYear() + 10}-01-01` }),
+    ]
+    const result = projectComparativeTrajectory(
+      entries, 5, `${now.getFullYear() + 10}-01-01`,
+      (e) => e.seat === 'CA' && e.base === 'JFK',
+      (e) => e.seat === 'FO' && e.base === 'LAX',
+    )
+    expect(result.labels.length).toBeGreaterThan(0)
+    expect(result.currentData.length).toBe(result.labels.length)
+    expect(result.compareData.length).toBe(result.labels.length)
+    const lastCurrent = result.currentData[result.currentData.length - 1]!
+    const lastCompare = result.compareData[result.compareData.length - 1]!
+    expect(lastCurrent).toBeGreaterThan(lastCompare)
   })
 })
