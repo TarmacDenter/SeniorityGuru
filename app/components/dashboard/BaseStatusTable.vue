@@ -17,33 +17,33 @@
 </template>
 
 <script setup lang="ts">
-import { h } from 'vue'
-import type { TableColumn } from '@nuxt/ui'
+import { h } from 'vue';
+import type { TableColumn } from '@nuxt/ui';
 
 type BaseStatusRow = {
-  base: string
-  seat: string
-  fleet: string
-  rank: number
-  adjustedRank: number
-  total: number
-  adjustedTotal: number
-  percentile: number
-  adjustedPercentile: number
-  isUserCurrent: boolean
-}
+  base: string;
+  seat: string;
+  fleet: string;
+  rank: number;
+  adjustedRank: number;
+  total: number;
+  adjustedTotal: number;
+  percentile: number;
+  adjustedPercentile: number;
+  isUserCurrent: boolean;
+};
 
 type DisplayRow = BaseStatusRow & {
-  displayRank: number
-  displayTotal: number
-  displayPercentile: number
-}
+  displayRank: number;
+  displayTotal: number;
+  displayPercentile: number;
+};
 
 const props = defineProps<{
-  data: BaseStatusRow[]
-}>()
+  data: BaseStatusRow[];
+}>();
 
-const adjusted = ref(true)
+const adjusted = ref(true);
 
 const displayData = computed<DisplayRow[]>(() =>
   props.data.map((row) => ({
@@ -52,10 +52,17 @@ const displayData = computed<DisplayRow[]>(() =>
     displayTotal: adjusted.value ? row.adjustedTotal : row.total,
     displayPercentile: adjusted.value ? row.adjustedPercentile : row.percentile,
   })),
-)
+);
+
+const userCanHold = (row: DisplayRow): boolean => {
+  return row.displayRank <= row.displayTotal;
+};
 
 function highlightClass(row: DisplayRow): string {
-  return row.isUserCurrent ? 'font-bold text-primary' : ''
+  if (!userCanHold(row)) {
+    return 'text-past';
+  }
+  return row.isUserCurrent ? 'font-bold text-primary' : '';
 }
 
 const columns: TableColumn<DisplayRow>[] = [
@@ -65,5 +72,5 @@ const columns: TableColumn<DisplayRow>[] = [
   { accessorKey: 'displayRank', header: 'Rank', cell: ({ row }) => h('span', { class: highlightClass(row.original) }, row.original.displayRank) },
   { accessorKey: 'displayTotal', header: 'Total', cell: ({ row }) => h('span', { class: highlightClass(row.original) }, row.original.displayTotal) },
   { accessorKey: 'displayPercentile', header: 'TOP %', cell: ({ row }) => h('span', { class: highlightClass(row.original) }, `${row.original.displayPercentile}%`) },
-]
+];
 </script>
