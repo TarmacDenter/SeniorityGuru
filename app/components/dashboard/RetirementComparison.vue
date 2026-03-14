@@ -27,40 +27,37 @@
 </template>
 
 <script setup lang="ts">
-import type { ChartData } from 'chart.js'
-import type { Tables } from '#shared/types/database'
-
-type SeniorityEntry = Tables<'seniority_entries'>
-type FilterFn = (entry: SeniorityEntry) => boolean
-type Qual = { seat: string; fleet: string; base: string; label: string }
+import type { ChartData } from 'chart.js';
+import type { FilterFn } from '#shared/utils/seniority-math';
+type Qual = { seat: string; fleet: string; base: string; label: string; };
 
 const props = defineProps<{
-  quals: Qual[]
-  computeProjection: (filterFn: FilterFn) => { labels: string[]; data: number[]; filteredTotal: number }
-}>()
+  quals: Qual[];
+  computeProjection: (filterFn: FilterFn) => { labels: string[]; data: number[]; filteredTotal: number; };
+}>();
 
-const { colors } = useChartTheme()
-const qualsRef = computed(() => props.quals)
-const { scopeOptions, makeFilter } = useScopeFilter(qualsRef)
+const { colors } = useChartTheme();
+const qualsRef = computed(() => props.quals);
+const { scopeOptions, makeFilter } = useScopeFilter(qualsRef);
 
-const currentScope = ref('Company-wide')
-const compareScope = ref('')
-const showPercentage = ref(false)
+const currentScope = ref('Company-wide');
+const compareScope = ref('');
+const showPercentage = ref(false);
 
 function toPercentages(data: number[], filteredTotal: number): number[] {
-  let remaining = filteredTotal
+  let remaining = filteredTotal;
   return data.map((count) => {
-    const pct = remaining > 0 ? Math.round((count / remaining) * 1000) / 10 : 0
-    remaining -= count
-    return pct
-  })
+    const pct = remaining > 0 ? Math.round((count / remaining) * 1000) / 10 : 0;
+    remaining -= count;
+    return pct;
+  });
 }
 
 const chartData = computed<ChartData<'bar'>>(() => {
-  const current = props.computeProjection(makeFilter(currentScope.value))
+  const current = props.computeProjection(makeFilter(currentScope.value));
   const currentData = showPercentage.value
     ? toPercentages(current.data, current.filteredTotal)
-    : current.data
+    : current.data;
 
   const datasets: ChartData<'bar'>['datasets'] = [{
     label: currentScope.value || 'Company-wide',
@@ -69,13 +66,13 @@ const chartData = computed<ChartData<'bar'>>(() => {
     borderColor: colors.primary,
     borderWidth: 1,
     borderRadius: 4,
-  }]
+  }];
 
   if (compareScope.value && compareScope.value !== currentScope.value) {
-    const compare = props.computeProjection(makeFilter(compareScope.value))
+    const compare = props.computeProjection(makeFilter(compareScope.value));
     const compareData = showPercentage.value
       ? toPercentages(compare.data, compare.filteredTotal)
-      : compare.data
+      : compare.data;
 
     datasets.push({
       label: compareScope.value,
@@ -84,11 +81,11 @@ const chartData = computed<ChartData<'bar'>>(() => {
       borderColor: colors.cyan,
       borderWidth: 1,
       borderRadius: 4,
-    })
+    });
   }
 
-  return { labels: current.labels, datasets }
-})
+  return { labels: current.labels, datasets };
+});
 
 const chartOptions = computed(() => ({
   scales: {
@@ -96,5 +93,5 @@ const chartOptions = computed(() => ({
       ? { title: { display: true, text: '% of remaining pilots' }, ticks: { callback: (v: string | number) => `${v}%` } }
       : {},
   },
-}))
+}));
 </script>

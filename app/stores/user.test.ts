@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { registerEndpoint, mockNuxtImport } from '@nuxt/test-utils/runtime'
-import type { Tables } from '#shared/types/database'
+import type { ProfileResponse } from '#shared/schemas/settings'
 
-type Profile = Tables<'profiles'>
+type Profile = ProfileResponse
 
 // Must be hoisted before any import resolution
 const mockUser = vi.hoisted(() => ({

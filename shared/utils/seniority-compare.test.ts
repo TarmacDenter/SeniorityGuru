@@ -1,9 +1,9 @@
 // @vitest-environment node
 import { describe, it, expect } from 'vitest'
 import { computeComparison } from './seniority-compare'
-import type { Tables } from '#shared/types/database'
+import type { SeniorityEntryResponse } from '#shared/schemas/seniority-list'
 
-type Entry = Tables<'seniority_entries'>
+type Entry = SeniorityEntryResponse
 
 function makeEntry(overrides: Partial<Entry> & { employee_number: string; seniority_number: number }): Entry {
   return {

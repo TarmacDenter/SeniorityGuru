@@ -1,9 +1,9 @@
 // @vitest-environment node
 import { describe, it, expect } from 'vitest'
 import { countRetiredAbove, generateTimePoints, buildTrajectory, computeRank, getProjectionEndDate, formatDateLabel, formatNumber, projectRetirements, projectComparativeTrajectory } from './seniority-math'
-import type { Tables } from '#shared/types/database'
+import type { SeniorityEntryResponse } from '#shared/schemas/seniority-list'
 
-type SeniorityEntry = Tables<'seniority_entries'>
+type SeniorityEntry = SeniorityEntryResponse
 
 function makeEntry(overrides: Partial<SeniorityEntry> = {}): SeniorityEntry {
   return {

@@ -81,7 +81,7 @@ import { useMediaQuery } from '@vueuse/core';
 import { getPaginationRowModel } from '@tanstack/vue-table';
 import type { Table, Row } from '@tanstack/vue-table';
 import type { TableColumn } from '@nuxt/ui';
-import type { Tables } from '#shared/types/database';
+import type { SeniorityEntryResponse } from '#shared/schemas/seniority-list';
 import { useSeniorityStore } from '~/stores/seniority';
 import { useUserStore } from '~/stores/user';
 
@@ -89,9 +89,8 @@ defineProps<{
   loading?: boolean;
 }>();
 
-type SeniorityEntry = Tables<'seniority_entries'>;
 type RetirementTimeline = 'past' | 'imminent' | 'soon' | null;
-type SeniorityRow = SeniorityEntry & { _isUser: boolean; _retirementTimeline: RetirementTimeline; };
+type SeniorityRow = SeniorityEntryResponse & { _isUser: boolean; _retirementTimeline: RetirementTimeline; };
 
 function retirementTimeline(now: Date, retireDate: Date): RetirementTimeline {
   const diffMs = retireDate.getTime() - now.getTime();

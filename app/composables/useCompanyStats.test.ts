@@ -1,9 +1,9 @@
 // @vitest-environment node
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import type { Tables } from '../../shared/types/database'
+import type { SeniorityEntryResponse, SeniorityListResponse } from '../../shared/schemas/seniority-list'
 
-type SeniorityEntry = Tables<'seniority_entries'>
-type SeniorityList = Tables<'seniority_lists'>
+type SeniorityEntry = SeniorityEntryResponse
+type SeniorityList = SeniorityListResponse
 
 function makeEntry(overrides: Partial<SeniorityEntry> = {}): SeniorityEntry {
   return {
@@ -29,7 +29,6 @@ function makeList(overrides: Partial<SeniorityList> = {}): SeniorityList {
     created_at: '2026-01-15T00:00:00Z',
     status: 'active',
     title: null,
-    uploaded_by: 'user-1',
     ...overrides,
   }
 }

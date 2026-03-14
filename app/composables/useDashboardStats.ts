@@ -1,4 +1,4 @@
-import type { Tables } from '#shared/types/database'
+import type { SeniorityEntryResponse } from '#shared/schemas/seniority-list'
 import {
   countRetiredAbove,
   computeRank,
@@ -10,7 +10,7 @@ import { useUserStore } from '~/stores/user'
 import { useUserTrajectory } from './useUserTrajectory'
 import { useCompanyStats } from './useCompanyStats'
 
-type SeniorityEntry = Tables<'seniority_entries'>
+type SeniorityEntry = SeniorityEntryResponse
 
 interface StatCard {
   label: string

@@ -1,7 +1,4 @@
-import type { Tables } from '#shared/types/database'
-
-type SeniorityEntry = Tables<'seniority_entries'>
-type FilterFn = (entry: SeniorityEntry) => boolean
+import type { FilterFn } from '#shared/utils/seniority-math'
 type Qual = { seat: string; fleet: string; base: string; label: string }
 
 export function useScopeFilter(quals: Ref<Qual[]> | ComputedRef<Qual[]>) {

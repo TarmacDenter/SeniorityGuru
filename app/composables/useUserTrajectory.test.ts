@@ -1,9 +1,10 @@
 // @vitest-environment node
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import type { Tables } from '../../shared/types/database'
+import type { SeniorityEntryResponse } from '../../shared/schemas/seniority-list'
+import type { ProfileResponse } from '../../shared/schemas/settings'
 
-type SeniorityEntry = Tables<'seniority_entries'>
-type Profile = Tables<'profiles'>
+type SeniorityEntry = SeniorityEntryResponse
+type Profile = ProfileResponse
 
 function makeEntry(overrides: Partial<SeniorityEntry> = {}): SeniorityEntry {
   return {

@@ -22,10 +22,7 @@
 
 <script setup lang="ts">
 import type { ChartData, TooltipItem } from 'chart.js'
-import type { Tables } from '#shared/types/database'
-
-type SeniorityEntry = Tables<'seniority_entries'>
-type FilterFn = (entry: SeniorityEntry) => boolean
+import type { FilterFn } from '#shared/utils/seniority-math'
 type Qual = { seat: string; fleet: string; base: string; label: string }
 
 const props = defineProps<{

@@ -1,4 +1,4 @@
-import type { Tables } from '#shared/types/database'
+import type { SeniorityEntryResponse } from '#shared/schemas/seniority-list'
 import {
   generateTimePoints,
   buildTrajectory,
@@ -10,13 +10,11 @@ import {
 import { useSeniorityStore } from '~/stores/seniority'
 import { useUserStore } from '~/stores/user'
 
-type SeniorityEntry = Tables<'seniority_entries'>
-
 export function useUserTrajectory() {
   const seniorityStore = useSeniorityStore()
   const userStore = useUserStore()
 
-  const userEntry = computed<SeniorityEntry | undefined>(() => {
+  const userEntry = computed<SeniorityEntryResponse | undefined>(() => {
     const empNum = userStore.profile?.employee_number
     if (!empNum) return undefined
     return seniorityStore.entries.find((e) => e.employee_number === empNum)

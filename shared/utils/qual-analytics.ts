@@ -1,7 +1,7 @@
-import type { Tables } from '#shared/types/database'
+import type { SeniorityEntryResponse } from '#shared/schemas/seniority-list'
 import type { FilterFn } from '#shared/utils/seniority-math'
 
-type SeniorityEntry = Tables<'seniority_entries'>
+type SeniorityEntry = SeniorityEntryResponse
 
 // Re-export TrajectoryPoint for consumers (matches buildTrajectory return shape)
 export interface TrajectoryPoint {

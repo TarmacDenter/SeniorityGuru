@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect } from 'vitest'
-import type { Tables } from '#shared/types/database'
+import type { SeniorityEntryResponse } from '#shared/schemas/seniority-list'
 import {
   qualKey,
   deriveAge,
@@ -16,7 +16,7 @@ import {
   detectUpgradeTransitions,
 } from './qual-analytics'
 
-type SeniorityEntry = Tables<'seniority_entries'>
+type SeniorityEntry = SeniorityEntryResponse
 
 // ─── Test factory ─────────────────────────────────────────────────────────────
 let _nextId = 1

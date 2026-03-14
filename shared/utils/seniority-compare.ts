@@ -1,6 +1,6 @@
-import type { Tables } from '#shared/types/database'
+import type { SeniorityEntryResponse } from '#shared/schemas/seniority-list'
 
-type Entry = Tables<'seniority_entries'>
+type Entry = SeniorityEntryResponse
 
 export interface RetiredPilot {
   employee_number: string

@@ -1,8 +1,8 @@
-import type { Tables } from '#shared/types/database'
+import type { SeniorityEntryResponse } from '#shared/schemas/seniority-list'
 import { formatDateLabel } from '#shared/utils/seniority-math'
 import { useSeniorityStore } from '~/stores/seniority'
 
-type SeniorityEntry = Tables<'seniority_entries'>
+type SeniorityEntry = SeniorityEntryResponse
 
 export function useCompanyStats() {
   const seniorityStore = useSeniorityStore()

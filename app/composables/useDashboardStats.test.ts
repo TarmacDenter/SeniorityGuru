@@ -1,10 +1,11 @@
 // @vitest-environment node
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import type { Tables } from '../../shared/types/database'
+import type { SeniorityEntryResponse, SeniorityListResponse } from '../../shared/schemas/seniority-list'
+import type { ProfileResponse } from '../../shared/schemas/settings'
 
-type SeniorityEntry = Tables<'seniority_entries'>
-type SeniorityList = Tables<'seniority_lists'>
-type Profile = Tables<'profiles'>
+type SeniorityEntry = SeniorityEntryResponse
+type SeniorityList = SeniorityListResponse
+type Profile = ProfileResponse
 
 // --- Helper to create mock entries ---
 function makeEntry(overrides: Partial<SeniorityEntry> = {}): SeniorityEntry {
@@ -31,7 +32,6 @@ function makeList(overrides: Partial<SeniorityList> = {}): SeniorityList {
     created_at: '2026-01-15T00:00:00Z',
     status: 'active',
     title: null,
-    uploaded_by: 'user-1',
     ...overrides,
   }
 }
