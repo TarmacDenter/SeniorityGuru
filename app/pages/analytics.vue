@@ -172,6 +172,15 @@
               </UCard>
             </div>
           </div>
+          <UCard v-if="projections.trajectoryDeltas.value.length > 0">
+            <template #header>
+              <h3 class="font-semibold">Seniority Improvement Rate{{ selectedQualLabel ? ` — ${selectedQualLabel}` : '' }}</h3>
+            </template>
+            <AnalyticsTrajectoryRateOfChange
+              :deltas="projections.trajectoryDeltas.value"
+              :selected-qual="selectedQualLabel"
+            />
+          </UCard>
         </div>
 
         <!-- Upgrades tab -->

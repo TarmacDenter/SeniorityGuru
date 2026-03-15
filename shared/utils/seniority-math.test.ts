@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect } from 'vitest'
-import { countRetiredAbove, generateTimePoints, buildTrajectory, computeRank, getProjectionEndDate, formatDateLabel, formatNumber, projectRetirements, projectComparativeTrajectory } from './seniority-math'
+import { countRetiredAbove, generateTimePoints, buildTrajectory, computeRank, getProjectionEndDate, formatDateLabel, formatNumber, projectRetirements, projectComparativeTrajectory, computeTrajectoryDeltas } from './seniority-math'
 import type { SeniorityEntryResponse } from '#shared/schemas/seniority-list'
 
 type SeniorityEntry = SeniorityEntryResponse
@@ -250,5 +250,60 @@ describe('projectComparativeTrajectory', () => {
     const lastCurrent = result.currentData[result.currentData.length - 1]!
     const lastCompare = result.compareData[result.compareData.length - 1]!
     expect(lastCurrent).toBeGreaterThan(lastCompare)
+  })
+})
+
+describe('computeTrajectoryDeltas', () => {
+  it('returns empty for trajectory with < 2 points', () => {
+    expect(computeTrajectoryDeltas([])).toEqual([])
+    expect(computeTrajectoryDeltas([{ date: '2026-01-01', rank: 5, percentile: 50 }])).toEqual([])
+  })
+
+  it('computes correct YoY deltas', () => {
+    const trajectory = [
+      { date: '2026-01-01', rank: 10, percentile: 20 },
+      { date: '2027-01-01', rank: 8, percentile: 25 },
+      { date: '2028-01-01', rank: 5, percentile: 35 },
+      { date: '2029-01-01', rank: 3, percentile: 40 },
+    ]
+    const deltas = computeTrajectoryDeltas(trajectory)
+    expect(deltas).toHaveLength(3)
+    expect(deltas[0]!.date).toBe('2027-01-01')
+    expect(deltas[0]!.delta).toBe(5)
+    expect(deltas[1]!.date).toBe('2028-01-01')
+    expect(deltas[1]!.delta).toBe(10)
+    expect(deltas[2]!.date).toBe('2029-01-01')
+    expect(deltas[2]!.delta).toBe(5)
+  })
+
+  it('marks peak years correctly', () => {
+    const trajectory = [
+      { date: '2026-01-01', rank: 10, percentile: 20 },
+      { date: '2027-01-01', rank: 8, percentile: 23 },
+      { date: '2028-01-01', rank: 5, percentile: 35 },
+      { date: '2029-01-01', rank: 3, percentile: 40 },
+      { date: '2030-01-01', rank: 2, percentile: 42 },
+    ]
+    const deltas = computeTrajectoryDeltas(trajectory)
+    // deltas: 3, 12, 5, 2
+    // Peak is at index 1 (delta=12 > 3 and > 5)
+    expect(deltas[0]!.isPeak).toBe(false)
+    expect(deltas[1]!.isPeak).toBe(true)
+    expect(deltas[2]!.isPeak).toBe(false)
+    expect(deltas[3]!.isPeak).toBe(false)
+  })
+
+  it('handles flat trajectory (all deltas 0)', () => {
+    const trajectory = [
+      { date: '2026-01-01', rank: 5, percentile: 50 },
+      { date: '2027-01-01', rank: 5, percentile: 50 },
+      { date: '2028-01-01', rank: 5, percentile: 50 },
+    ]
+    const deltas = computeTrajectoryDeltas(trajectory)
+    expect(deltas).toHaveLength(2)
+    expect(deltas[0]!.delta).toBe(0)
+    expect(deltas[1]!.delta).toBe(0)
+    expect(deltas[0]!.isPeak).toBe(false)
+    expect(deltas[1]!.isPeak).toBe(false)
   })
 })
