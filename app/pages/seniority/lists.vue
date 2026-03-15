@@ -33,6 +33,13 @@
             <template #actions-cell="{ row }">
               <div class="flex gap-1">
                 <UButton
+                  icon="i-lucide-layout-dashboard"
+                  variant="ghost"
+                  size="xs"
+                  label="Dashboard"
+                  @click="navigateTo({ path: '/', query: { list: row.original.id } })"
+                />
+                <UButton
                   icon="i-lucide-pencil"
                   variant="ghost"
                   size="xs"
