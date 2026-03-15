@@ -7,8 +7,14 @@
         <UTabs v-model="activeTab" :items="tabs" :content="false" variant="link" />
 
         <template #right>
-          <USelectMenu v-if="listOptions.length > 1" v-model="selectedListId" :items="listOptions" value-key="id"
-            label-key="label" placeholder="Select list..." class="w-48" size="sm" />
+          <div class="flex items-center gap-2">
+            <USelectMenu v-model="selectedListId" :items="listOptions" value-key="id"
+              label-key="label" placeholder="Select list..." class="w-48" size="sm" />
+            <UBadge v-if="isHistorical" color="warning" variant="subtle" size="sm">
+              <UIcon name="i-lucide-alert-triangle" class="size-3 mr-1" />
+              Historical
+            </UBadge>
+          </div>
         </template>
       </UDashboardToolbar>
     </template>
@@ -121,11 +127,17 @@ const loading = ref(true);
 const selectedListId = ref<string | undefined>(undefined);
 
 const listOptions = computed(() =>
-  seniorityStore.lists.map(l => ({
+  seniorityStore.lists.map((l, i) => ({
     id: l.id,
-    label: l.effective_date,
+    label: l.title ? `${l.title} (${l.effective_date})` : l.effective_date,
+    isLatest: i === 0,
   })),
 );
+
+const isHistorical = computed(() => {
+  if (!selectedListId.value || listOptions.value.length === 0) return false;
+  return selectedListId.value !== listOptions.value[0]?.id;
+});
 
 const {
   hasData, hasEmployeeNumber, userFound,
