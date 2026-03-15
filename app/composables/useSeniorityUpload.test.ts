@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi, afterEach } from 'vitest'
 import { useSeniorityUpload } from './useSeniorityUpload'
 import type { SeniorityEntry } from '#shared/schemas/seniority-list'
 
@@ -83,6 +83,69 @@ describe('useSeniorityUpload', () => {
       // Others unchanged
       expect(entries.value[0]!.name).toBe('Alice')
       expect(entries.value[2]!.name).toBe('Charlie')
+    })
+  })
+
+  describe('applyMapping — effective date defaults to today', () => {
+    afterEach(() => {
+      vi.useRealTimers()
+    })
+
+    it('sets effectiveDate to today, not the most recent hire date', () => {
+      vi.useFakeTimers()
+      vi.setSystemTime(new Date('2026-03-15T12:00:00Z'))
+
+      const { rawRows, columnMap, mappingOptions, effectiveDate, applyMapping } = useSeniorityUpload()
+
+      // Set up raw rows with hire dates in the past
+      rawRows.value = [
+        ['1', '100', 'CA', 'LAX', '737', 'Pilot A', '2020-06-15', '2050-01-01'],
+        ['2', '200', 'FO', 'ORD', '737', 'Pilot B', '2023-11-01', '2055-01-01'],
+      ]
+      columnMap.value = {
+        seniority_number: 0,
+        employee_number: 1,
+        seat: 2,
+        base: 3,
+        fleet: 4,
+        name: 5,
+        hire_date: 6,
+        retire_date: 7,
+      }
+      mappingOptions.value = { nameMode: 'single', retireMode: 'direct' }
+
+      applyMapping()
+
+      // Should be today (2026-03-15), NOT the most recent hire date (2023-11-01)
+      expect(effectiveDate.value).not.toBeNull()
+      expect(effectiveDate.value!.toString()).toBe('2026-03-15')
+    })
+
+    it('sets effectiveDate even when no hire dates are present', () => {
+      vi.useFakeTimers()
+      vi.setSystemTime(new Date('2026-03-15T12:00:00Z'))
+
+      const { rawRows, columnMap, mappingOptions, effectiveDate, applyMapping } = useSeniorityUpload()
+
+      rawRows.value = [
+        ['1', '100', 'CA', 'LAX', '737', 'Pilot A', '', '2050-01-01'],
+      ]
+      columnMap.value = {
+        seniority_number: 0,
+        employee_number: 1,
+        seat: 2,
+        base: 3,
+        fleet: 4,
+        name: 5,
+        hire_date: 6,
+        retire_date: 7,
+      }
+      mappingOptions.value = { nameMode: 'single', retireMode: 'direct' }
+
+      applyMapping()
+
+      expect(effectiveDate.value).not.toBeNull()
+      expect(effectiveDate.value!.toString()).toBe('2026-03-15')
     })
   })
 
