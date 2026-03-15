@@ -119,6 +119,7 @@ const props = defineProps<{
     remainingNeeded: number
     isLowestSeniority: boolean
     percentile: number
+    numbersJuniorToPlug: number
   }[]
   projectionYears: number
   hasEmployeeNumber: boolean
@@ -175,7 +176,8 @@ function cellLabel(cell: typeof props.cells[number]): string {
 function cellTooltip(cell: typeof props.cells[number]): string {
   if (cell.isLowestSeniority) return `You'd be the most junior — unlikely to hold (${cell.retiredCount} retired)`
   if (cell.state === 'green') return `Top ${100 - cell.percentile}% — more senior than ${cell.percentile}% of pilots in this qual`
-  if (cell.state === 'amber') return `${cell.remainingNeeded} pilot(s) still ahead — almost there`
-  return `${cell.remainingNeeded} pilot(s) still senior to you`
+  const plugSuffix = cell.numbersJuniorToPlug > 0 ? ` (${cell.numbersJuniorToPlug} numbers behind the plug)` : ''
+  if (cell.state === 'amber') return `${cell.remainingNeeded} pilot(s) still ahead — almost there${plugSuffix}`
+  return `${cell.remainingNeeded} pilot(s) still senior to you${plugSuffix}`
 }
 </script>

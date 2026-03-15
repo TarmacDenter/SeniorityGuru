@@ -281,6 +281,7 @@ export interface PowerIndexCell {
   remainingNeeded: number
   isLowestSeniority: boolean
   percentile: number  // user's percentile rank within the cell (0–100, higher = more senior)
+  numbersJuniorToPlug: number  // how many seniority numbers below the "plug" (most junior active pilot) the user is
 }
 
 export function computePowerIndexCells(
@@ -315,8 +316,12 @@ export function computePowerIndexCells(
     const isHoldable = remaining.length > 0 && userSenNum <= mostJuniorActiveSenNum
 
     const moreJunior = remaining.filter((e) => e.seniority_number > userSenNum).length
-    const percentile = remaining.length > 0
-      ? Math.round((moreJunior / remaining.length) * 100)
+    const percentile = total > 0
+      ? Math.round((moreJunior / total) * 100)
+      : 0
+
+    const numbersJuniorToPlug = !isHoldable && mostJuniorActiveSenNum > 0
+      ? userSenNum - mostJuniorActiveSenNum
       : 0
 
     if (isHoldable) {
@@ -325,13 +330,13 @@ export function computePowerIndexCells(
         return {
           fleet: fleet!, seat: seat!, base: base!,
           state: 'amber', retiredCount, totalInCell: total, remainingNeeded: 0,
-          isLowestSeniority: true, percentile,
+          isLowestSeniority: true, percentile, numbersJuniorToPlug,
         }
       }
       return {
         fleet: fleet!, seat: seat!, base: base!,
         state: 'green', retiredCount, totalInCell: total, remainingNeeded: 0,
-        isLowestSeniority: false, percentile,
+        isLowestSeniority: false, percentile, numbersJuniorToPlug,
       }
     }
 
@@ -339,7 +344,7 @@ export function computePowerIndexCells(
     const amberThreshold = Math.ceil(total * 0.10)
     const state: PowerIndexCellState = stillAhead > 0 && stillAhead <= amberThreshold ? 'amber' : 'red'
 
-    return { fleet: fleet!, seat: seat!, base: base!, state, retiredCount, totalInCell: total, remainingNeeded: stillAhead, isLowestSeniority: false, percentile }
+    return { fleet: fleet!, seat: seat!, base: base!, state, retiredCount, totalInCell: total, remainingNeeded: stillAhead, isLowestSeniority: false, percentile, numbersJuniorToPlug }
   })
 }
 
