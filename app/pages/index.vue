@@ -36,10 +36,10 @@
         <template v-else>
           <!-- Banners (outside bento grid) -->
           <DashboardEmployeeNumberBanner v-if="!hasEmployeeNumber" class="mb-4 lg:mb-6" />
-          <UAlert v-else-if="!userFound" icon="i-lucide-alert-triangle" color="warning" variant="subtle"
-            title="Employee Number Not Found"
-            :description="`Employee number '${userStore.profile?.employee_number}' was not found in the current seniority list. Aggregate data is shown below.`"
-            class="mb-4 lg:mb-6" />
+          <DashboardNewHireModeBanner
+            v-else-if="!userFound || isNewHireMode"
+            class="mb-4 lg:mb-6"
+          />
 
           <div class="grid grid-cols-1 lg:grid-cols-4 gap-4 lg:gap-6">
             <!-- Rank card -->
@@ -122,7 +122,7 @@ const listOptions = computed(() =>
 );
 
 const {
-  hasData, hasEmployeeNumber, userFound,
+  hasData, hasEmployeeNumber, userFound, isNewHireMode,
   rankCard, stats, baseStatusData,
   trajectoryData, computeRetirementProjection, computeComparativeTrajectory,
   aggregateStats, quals,

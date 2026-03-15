@@ -67,6 +67,24 @@ vi.mock('~/stores/user', () => ({
   useUserStore: () => mockUserStore,
 }))
 
+// Mock useNewHireMode to be inactive by default (no synthetic entry)
+const mockNewHireMode = vi.hoisted(() => ({
+  enabled: { value: false },
+  selectedBase: { value: null as string | null },
+  selectedSeat: { value: null as string | null },
+  selectedFleet: { value: null as string | null },
+  availableBases: { value: [] as string[] },
+  availableSeats: { value: [] as string[] },
+  availableFleets: { value: [] as string[] },
+  realUserFound: { value: false },
+  isActive: { value: false },
+  syntheticEntry: { value: null as SeniorityEntry | null },
+}))
+
+vi.mock('./useNewHireMode', () => ({
+  useNewHireMode: () => mockNewHireMode,
+}))
+
 // Mock Vue's computed to work outside component context
 vi.mock('vue', async () => {
   const actual = await vi.importActual<typeof import('vue')>('vue')
@@ -85,6 +103,10 @@ describe('useDashboardStats composable', () => {
     mockSeniorityStore.entries = []
     mockSeniorityStore.lists = []
     mockUserStore.profile = null
+    mockNewHireMode.enabled.value = false
+    mockNewHireMode.isActive.value = false
+    mockNewHireMode.syntheticEntry.value = null
+    mockNewHireMode.realUserFound.value = false
   })
 
   describe('hasData', () => {
@@ -267,6 +289,75 @@ describe('useDashboardStats composable', () => {
       const retirementCard = stats.value[1]!
       expect(retirementCard.trend).toBeUndefined()
       expect(retirementCard.trendUp).toBeUndefined()
+    })
+  })
+
+  describe('new hire mode integration', () => {
+    it('userFound is true when new hire mode provides synthetic entry', () => {
+      mockUserStore.profile = makeProfile({ employee_number: '999' })
+      mockSeniorityStore.entries = [
+        makeEntry({ seniority_number: 1, employee_number: '100' }),
+      ]
+      mockNewHireMode.isActive.value = true
+      mockNewHireMode.syntheticEntry.value = makeEntry({
+        id: 'synthetic-new-hire',
+        seniority_number: 2,
+        employee_number: '999',
+        name: 'You (New Hire)',
+        base: 'JFK',
+        seat: 'CA',
+        fleet: '737',
+        retire_date: null,
+      })
+
+      const { userFound, isNewHireMode } = useDashboardStats()
+      expect(userFound.value).toBe(true)
+      expect(isNewHireMode.value).toBe(true)
+    })
+
+    it('uses synthetic entry for rank card when new hire mode active', () => {
+      mockUserStore.profile = makeProfile({ employee_number: '999' })
+      mockSeniorityStore.entries = [
+        makeEntry({ seniority_number: 1, employee_number: '100' }),
+        makeEntry({ seniority_number: 2, employee_number: '200' }),
+      ]
+      mockNewHireMode.isActive.value = true
+      mockNewHireMode.syntheticEntry.value = makeEntry({
+        id: 'synthetic-new-hire',
+        seniority_number: 3,
+        employee_number: '999',
+        name: 'You (New Hire)',
+        base: 'LAX',
+        seat: 'FO',
+        fleet: '777',
+        retire_date: null,
+      })
+
+      const { rankCard } = useDashboardStats()
+      expect(rankCard.value.seniorityNumber).toBe(3)
+      expect(rankCard.value.base).toBe('LAX')
+      expect(rankCard.value.seat).toBe('FO')
+      expect(rankCard.value.fleet).toBe('777')
+    })
+
+    it('prefers real entry over synthetic when user IS found', () => {
+      mockUserStore.profile = makeProfile({ employee_number: '100' })
+      mockSeniorityStore.entries = [
+        makeEntry({ seniority_number: 1, employee_number: '100', base: 'JFK' }),
+      ]
+      // Even if new hire mode is technically enabled, isActive should be false
+      // because realUserFound is true — but let's test that the real entry wins
+      mockNewHireMode.isActive.value = false
+      mockNewHireMode.syntheticEntry.value = null
+
+      const { rankCard, userFound } = useDashboardStats()
+      expect(userFound.value).toBe(true)
+      expect(rankCard.value.base).toBe('JFK')
+    })
+
+    it('isNewHireMode is false when new hire mode not active', () => {
+      const { isNewHireMode } = useDashboardStats()
+      expect(isNewHireMode.value).toBe(false)
     })
   })
 })

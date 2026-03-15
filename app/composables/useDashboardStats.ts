@@ -7,6 +7,7 @@ import {
 } from '#shared/utils/seniority-math'
 import { useSeniorityStore } from '~/stores/seniority'
 import { useUserStore } from '~/stores/user'
+import { useNewHireMode } from './useNewHireMode'
 import { useUserTrajectory } from './useUserTrajectory'
 import { useCompanyStats } from './useCompanyStats'
 
@@ -23,12 +24,19 @@ interface StatCard {
 export function useDashboardStats() {
   const seniorityStore = useSeniorityStore()
   const userStore = useUserStore()
+  const newHireMode = useNewHireMode()
 
-  // Find user's entry by matching employee_number
+  // Find user's entry by matching employee_number, falling back to synthetic new hire entry
   const userEntry = computed<SeniorityEntry | undefined>(() => {
     const empNum = userStore.profile?.employee_number
     if (!empNum) return undefined
-    return seniorityStore.entries.find((e) => e.employee_number === empNum)
+    const found = seniorityStore.entries.find((e) => e.employee_number === empNum)
+    if (found) return found
+    // New hire mode: use synthetic entry
+    if (newHireMode.isActive.value && newHireMode.syntheticEntry.value) {
+      return newHireMode.syntheticEntry.value
+    }
+    return undefined
   })
 
   // State flags
@@ -192,6 +200,8 @@ export function useDashboardStats() {
     hasData,
     hasEmployeeNumber,
     userFound,
+    isNewHireMode: newHireMode.isActive,
+    newHireMode,
     rankCard,
     stats,
     baseStatusData,
