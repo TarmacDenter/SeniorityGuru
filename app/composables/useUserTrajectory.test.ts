@@ -50,6 +50,22 @@ vi.mock('~/stores/user', () => ({
   useUserStore: () => mockUserStore,
 }))
 
+// Mock useNewHireMode to be inactive by default
+vi.mock('./useNewHireMode', () => ({
+  useNewHireMode: () => ({
+    enabled: { value: false },
+    isActive: { value: false },
+    syntheticEntry: { value: null },
+    realUserFound: { value: false },
+    selectedBase: { value: null },
+    selectedSeat: { value: null },
+    selectedFleet: { value: null },
+    availableBases: { value: [] },
+    availableSeats: { value: [] },
+    availableFleets: { value: [] },
+  }),
+}))
+
 const { useUserTrajectory } = await import('./useUserTrajectory')
 
 describe('useUserTrajectory', () => {
