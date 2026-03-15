@@ -185,7 +185,7 @@ export function useDashboardStats() {
     })
   })
 
-  const { trajectoryData, computeRetirementProjection, computeComparativeTrajectory } = useUserTrajectory()
+  const { trajectoryData, trajectoryDeltas, computeRetirementProjection, computeComparativeTrajectory } = useUserTrajectory()
   const { aggregateStats, recentLists, quals } = useCompanyStats()
 
   return {
@@ -196,6 +196,7 @@ export function useDashboardStats() {
     stats,
     baseStatusData,
     trajectoryData,
+    trajectoryDeltas,
     computeRetirementProjection,
     computeComparativeTrajectory,
     aggregateStats,

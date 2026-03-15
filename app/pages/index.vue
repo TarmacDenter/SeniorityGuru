@@ -59,6 +59,12 @@
               <DashboardSeniorityComparison :quals="quals" :compute-comparative="computeComparativeTrajectory"
                 :user-base="rankCard.base" :user-seat="rankCard.seat" :user-fleet="rankCard.fleet"
                 class="lg:[grid-column:1/-1] dashboard-enter" style="animation-delay: 340ms" />
+              <DashboardTrajectoryDeltaSparkline
+                v-if="trajectoryDeltas.length > 0"
+                :deltas="trajectoryDeltas"
+                class="lg:[grid-column:3/5] dashboard-enter"
+                style="animation-delay: 380ms"
+              />
             </template>
 
             <!-- No user: retirement comparison full width -->
@@ -68,9 +74,9 @@
 
             <!-- Table data at bottom -->
             <DashboardBaseStatusTable v-if="userFound" :data="baseStatusData"
-              class="md:[grid-column:1/3] dashboard-enter" style="animation-delay: 380ms" />
+              class="md:[grid-column:1/3] dashboard-enter" style="animation-delay: 420ms" />
             <DashboardAggregateStatsGrid :data="aggregateStats" class="md:[grid-column:3/-1] dashboard-enter"
-              :style="{ animationDelay: userFound ? '420ms' : '300ms' }" />
+              :style="{ animationDelay: userFound ? '460ms' : '300ms' }" />
 
           </div>
         </template>
@@ -124,7 +130,7 @@ const listOptions = computed(() =>
 const {
   hasData, hasEmployeeNumber, userFound,
   rankCard, stats, baseStatusData,
-  trajectoryData, computeRetirementProjection, computeComparativeTrajectory,
+  trajectoryData, trajectoryDeltas, computeRetirementProjection, computeComparativeTrajectory,
   aggregateStats, quals,
 } = useDashboardStats();
 

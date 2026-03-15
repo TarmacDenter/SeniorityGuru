@@ -155,3 +155,35 @@ export function projectComparativeTrajectory(
     compareData: compareTrajectory.map((t) => t.percentile),
   };
 }
+
+export interface TrajectoryDelta {
+  date: string
+  percentile: number
+  delta: number      // YoY change in percentile points
+  isPeak: boolean    // local maximum delta
+}
+
+export function computeTrajectoryDeltas(
+  trajectory: { date: string; rank: number; percentile: number }[],
+): TrajectoryDelta[] {
+  if (trajectory.length < 2) return []
+  const deltas: TrajectoryDelta[] = []
+  for (let i = 1; i < trajectory.length; i++) {
+    const delta = Math.round((trajectory[i]!.percentile - trajectory[i - 1]!.percentile) * 10) / 10
+    deltas.push({
+      date: trajectory[i]!.date,
+      percentile: trajectory[i]!.percentile,
+      delta,
+      isPeak: false,
+    })
+  }
+  // Mark peaks: delta > both neighbors and > 0
+  for (let i = 0; i < deltas.length; i++) {
+    const prev = i > 0 ? deltas[i - 1]!.delta : -Infinity
+    const next = i < deltas.length - 1 ? deltas[i + 1]!.delta : -Infinity
+    if (deltas[i]!.delta > prev && deltas[i]!.delta > next && deltas[i]!.delta > 0) {
+      deltas[i]!.isPeak = true
+    }
+  }
+  return deltas
+}

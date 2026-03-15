@@ -7,6 +7,7 @@ import {
   getProjectionEndDate,
   generateTimePoints,
   buildTrajectory,
+  computeTrajectoryDeltas,
   type FilterFn,
 } from '#shared/utils/seniority-math'
 import type { ComputedRef } from 'vue'
@@ -118,6 +119,8 @@ export function useQualProjections(qualFilterFn: ComputedRef<FilterFn> = compute
     return findThresholdYear(base, optimistic, pessimistic, targetPercentile.value)
   })
 
+  const trajectoryDeltas = computed(() => computeTrajectoryDeltas(waveTrajectory.value))
+
   return {
     isBannerDismissed,
     dismissBanner,
@@ -127,6 +130,7 @@ export function useQualProjections(qualFilterFn: ComputedRef<FilterFn> = compute
     powerIndexCells,
     retirementWave,
     waveTrajectory,
+    trajectoryDeltas,
     targetPercentile,
     thresholdResult,
   }

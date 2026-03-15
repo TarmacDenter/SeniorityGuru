@@ -5,6 +5,7 @@ import {
   getProjectionEndDate,
   projectRetirements,
   projectComparativeTrajectory,
+  computeTrajectoryDeltas,
   type FilterFn,
 } from '#shared/utils/seniority-math'
 import { useSeniorityStore } from '~/stores/seniority'
@@ -34,6 +35,15 @@ export function useUserTrajectory() {
     }
   })
 
+  const trajectoryDeltas = computed(() => {
+    const entry = userEntry.value
+    if (!entry) return []
+    const { today, endDate } = getProjectionEndDate(entry.retire_date)
+    const timePoints = generateTimePoints(today, endDate)
+    const trajectory = buildTrajectory(seniorityStore.entries, entry.seniority_number, timePoints)
+    return computeTrajectoryDeltas(trajectory)
+  })
+
   function computeRetirementProjection(filterFn: FilterFn = () => true) {
     return projectRetirements(seniorityStore.entries, userEntry.value?.retire_date ?? null, filterFn)
   }
@@ -46,6 +56,7 @@ export function useUserTrajectory() {
 
   return {
     trajectoryData,
+    trajectoryDeltas,
     computeRetirementProjection,
     computeComparativeTrajectory,
   }
