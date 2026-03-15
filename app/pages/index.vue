@@ -58,7 +58,7 @@
 
             <!-- Charts & projections -->
             <template v-if="userFound">
-              <DashboardTrajectoryChart :data="trajectoryData"
+              <DashboardTrajectoryChart :data="trajectoryChartData"
                 class="lg:[grid-column:1/3] lg:[grid-row:span_2] dashboard-enter" style="animation-delay: 260ms" />
               <DashboardRetirementSnapshot v-if="retirementSnapshot" :snapshot="retirementSnapshot"
                 class="lg:[grid-column:3/5] lg:[grid-row:span_2] dashboard-enter" style="animation-delay: 280ms" />
@@ -144,7 +144,7 @@ const isHistorical = computed(() => {
 const {
   hasData, hasEmployeeNumber, userFound, isNewHireMode,
   rankCard, stats, baseStatusData, retirementSnapshot,
-  trajectoryData, trajectoryDeltas, computeRetirementProjection, computeComparativeTrajectory,
+  trajectoryChartData, trajectoryDeltas, computeRetirementProjection, computeComparativeTrajectory,
   aggregateStats, quals,
 } = useDashboardStats();
 

@@ -1,4 +1,5 @@
 import type { SeniorityEntryResponse } from '#shared/schemas/seniority-list'
+import { uniqueEntryValues } from '#shared/utils/entry-filters'
 import { useSeniorityStore } from '~/stores/seniority'
 import { useUserStore } from '~/stores/user'
 
@@ -10,12 +11,10 @@ export function useNewHireMode() {
 
   const enabled = ref(false)
 
-  // Initialize from localStorage
   if (import.meta.client && typeof localStorage !== 'undefined' && localStorage.getItem(STORAGE_KEY) === 'true') {
     enabled.value = true
   }
 
-  // Persist to localStorage
   watch(enabled, (val) => {
     if (import.meta.client && typeof localStorage !== 'undefined') {
       localStorage.setItem(STORAGE_KEY, String(val))
@@ -26,31 +25,10 @@ export function useNewHireMode() {
   const selectedSeat = ref<string | null>(null)
   const selectedFleet = ref<string | null>(null)
 
-  const availableBases = computed(() => {
-    const bases = new Set<string>()
-    for (const e of seniorityStore.entries) {
-      if (e.base) bases.add(e.base)
-    }
-    return Array.from(bases).sort()
-  })
+  const availableBases = computed(() => uniqueEntryValues(seniorityStore.entries, 'base'))
+  const availableSeats = computed(() => uniqueEntryValues(seniorityStore.entries, 'seat'))
+  const availableFleets = computed(() => uniqueEntryValues(seniorityStore.entries, 'fleet'))
 
-  const availableSeats = computed(() => {
-    const seats = new Set<string>()
-    for (const e of seniorityStore.entries) {
-      if (e.seat) seats.add(e.seat)
-    }
-    return Array.from(seats).sort()
-  })
-
-  const availableFleets = computed(() => {
-    const fleets = new Set<string>()
-    for (const e of seniorityStore.entries) {
-      if (e.fleet) fleets.add(e.fleet)
-    }
-    return Array.from(fleets).sort()
-  })
-
-  // Check if the real user is found in the list
   const realUserFound = computed(() => {
     const empNum = userStore.profile?.employee_number
     if (!empNum) return false

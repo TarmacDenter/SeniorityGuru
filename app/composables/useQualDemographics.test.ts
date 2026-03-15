@@ -2,48 +2,14 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { SeniorityEntryResponse } from '../../shared/schemas/seniority-list'
 import type { ProfileResponse } from '../../shared/schemas/settings'
-
-type SeniorityEntry = SeniorityEntryResponse
-type Profile = ProfileResponse
-
-// --- Helpers ---
-
-function makeEntry(overrides: Partial<SeniorityEntry> = {}): SeniorityEntry {
-  return {
-    id: 'entry-1',
-    list_id: 'list-1',
-    seniority_number: 1,
-    employee_number: '100',
-    name: 'Test Pilot',
-    hire_date: '2010-01-15',
-    base: 'JFK',
-    seat: 'CA',
-    fleet: '737',
-    retire_date: '2035-06-15',
-    ...overrides,
-  }
-}
-
-function makeProfile(overrides: Partial<Profile> = {}): Profile {
-  return {
-    id: 'user-1',
-    role: 'user',
-    icao_code: 'DAL',
-    employee_number: '500',
-    created_at: '2026-01-01T00:00:00Z',
-    mandatory_retirement_age: 65,
-    ...overrides,
-  }
-}
-
-// --- Store mocks ---
+import { makeEntry, makeProfile } from '#shared/test-utils/factories'
 
 const mockSeniorityStore = vi.hoisted(() => ({
-  entries: [] as SeniorityEntry[],
+  entries: [] as SeniorityEntryResponse[],
 }))
 
 const mockUserStore = vi.hoisted(() => ({
-  profile: null as Profile | null,
+  profile: null as ProfileResponse | null,
 }))
 
 vi.mock('~/stores/seniority', () => ({

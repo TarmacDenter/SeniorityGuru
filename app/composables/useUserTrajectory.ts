@@ -1,4 +1,3 @@
-import type { SeniorityEntryResponse } from '#shared/schemas/seniority-list'
 import {
   generateTimePoints,
   buildTrajectory,
@@ -9,48 +8,32 @@ import {
   type FilterFn,
 } from '#shared/utils/seniority-math'
 import { useSeniorityStore } from '~/stores/seniority'
-import { useUserStore } from '~/stores/user'
-import { useNewHireMode } from './useNewHireMode'
+import { useUserEntry } from './useUserEntry'
 
 export function useUserTrajectory() {
   const seniorityStore = useSeniorityStore()
-  const userStore = useUserStore()
-  const newHireMode = useNewHireMode()
+  const userEntry = useUserEntry({ withNewHireMode: true })
 
-  const userEntry = computed<SeniorityEntryResponse | undefined>(() => {
-    const empNum = userStore.profile?.employee_number
-    if (!empNum) return undefined
-    const found = seniorityStore.entries.find((e) => e.employee_number === empNum)
-    if (found) return found
-    // New hire mode: use synthetic entry
-    if (newHireMode.isActive.value && newHireMode.syntheticEntry.value) {
-      return newHireMode.syntheticEntry.value
-    }
-    return undefined
-  })
-
-  const trajectoryData = computed(() => {
+  const fullTrajectory = computed(() => {
     const entry = userEntry.value
-    if (!entry) {
-      return { labels: [] as string[], data: [] as number[] }
-    }
+    if (!entry) return []
     const { today, endDate } = getProjectionEndDate(entry.retire_date)
     const timePoints = generateTimePoints(today, endDate)
-    const trajectory = buildTrajectory(seniorityStore.entries, entry.seniority_number, timePoints)
+    return buildTrajectory(seniorityStore.entries, entry.seniority_number, timePoints)
+  })
+
+  const trajectoryChartData = computed(() => {
+    const trajectory = fullTrajectory.value
+    if (trajectory.length === 0) {
+      return { labels: [] as string[], data: [] as number[] }
+    }
     return {
       labels: trajectory.map((t) => t.date),
       data: trajectory.map((t) => t.percentile),
     }
   })
 
-  const trajectoryDeltas = computed(() => {
-    const entry = userEntry.value
-    if (!entry) return []
-    const { today, endDate } = getProjectionEndDate(entry.retire_date)
-    const timePoints = generateTimePoints(today, endDate)
-    const trajectory = buildTrajectory(seniorityStore.entries, entry.seniority_number, timePoints)
-    return computeTrajectoryDeltas(trajectory)
-  })
+  const trajectoryDeltas = computed(() => computeTrajectoryDeltas(fullTrajectory.value))
 
   function computeRetirementProjection(filterFn: FilterFn = () => true) {
     return projectRetirements(seniorityStore.entries, userEntry.value?.retire_date ?? null, filterFn)
@@ -63,7 +46,8 @@ export function useUserTrajectory() {
   }
 
   return {
-    trajectoryData,
+    fullTrajectory,
+    trajectoryChartData,
     trajectoryDeltas,
     computeRetirementProjection,
     computeComparativeTrajectory,

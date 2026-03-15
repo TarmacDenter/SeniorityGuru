@@ -77,10 +77,10 @@ const waveChartData = computed(() => ({
       label: 'Retirements',
       data: props.waveBuckets.map((b) => b.count),
       backgroundColor: props.waveBuckets.map((b) =>
-        b.isWave ? 'rgba(251, 191, 36, 0.7)' : colors.primaryLight,
+        b.isWave ? colors.peakHighlight : colors.primaryLight,
       ),
       borderColor: props.waveBuckets.map((b) =>
-        b.isWave ? '#f59e0b' : colors.primary,
+        b.isWave ? colors.peakBorder : colors.primary,
       ),
       borderWidth: 1,
     },

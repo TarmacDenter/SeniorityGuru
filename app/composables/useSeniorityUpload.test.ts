@@ -1,20 +1,6 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import { useSeniorityUpload } from './useSeniorityUpload'
-import type { SeniorityEntry } from '#shared/schemas/seniority-list'
-
-function makeEntry(overrides: Partial<SeniorityEntry> = {}): Partial<SeniorityEntry> {
-  return {
-    seniority_number: 1,
-    employee_number: '100',
-    name: 'Pilot A',
-    seat: 'CA',
-    base: 'LAX',
-    fleet: '737',
-    hire_date: '2020-01-01',
-    retire_date: '2050-01-01',
-    ...overrides,
-  }
-}
+import { makePartialEntry } from '#shared/test-utils/factories'
 
 describe('useSeniorityUpload', () => {
   describe('deleteRow — uses original index, not filtered index', () => {
@@ -23,11 +9,11 @@ describe('useSeniorityUpload', () => {
 
       // Set up 5 entries: indices 0..4
       entries.value = [
-        makeEntry({ seniority_number: 1, employee_number: '100' }),
-        makeEntry({ seniority_number: 2, employee_number: '200' }),
-        makeEntry({ seniority_number: 3, employee_number: '300' }),
-        makeEntry({ seniority_number: 4, employee_number: '400' }),
-        makeEntry({ seniority_number: 5, employee_number: '500' }),
+        makePartialEntry({ seniority_number: 1, employee_number: '100' }),
+        makePartialEntry({ seniority_number: 2, employee_number: '200' }),
+        makePartialEntry({ seniority_number: 3, employee_number: '300' }),
+        makePartialEntry({ seniority_number: 4, employee_number: '400' }),
+        makePartialEntry({ seniority_number: 5, employee_number: '500' }),
       ]
       // Row 1 and 3 have errors
       rowErrors.value = new Map([
@@ -46,10 +32,10 @@ describe('useSeniorityUpload', () => {
       const { entries, rowErrors, deleteRow } = useSeniorityUpload()
 
       entries.value = [
-        makeEntry({ seniority_number: 1 }),
-        makeEntry({ seniority_number: 2 }),
-        makeEntry({ seniority_number: 3 }),
-        makeEntry({ seniority_number: 4 }),
+        makePartialEntry({ seniority_number: 1 }),
+        makePartialEntry({ seniority_number: 2 }),
+        makePartialEntry({ seniority_number: 3 }),
+        makePartialEntry({ seniority_number: 4 }),
       ]
       rowErrors.value = new Map([
         [0, ['error on 0']],
@@ -72,9 +58,9 @@ describe('useSeniorityUpload', () => {
       const { entries, updateCell } = useSeniorityUpload()
 
       entries.value = [
-        makeEntry({ seniority_number: 1, name: 'Alice' }),
-        makeEntry({ seniority_number: 2, name: 'Bob' }),
-        makeEntry({ seniority_number: 3, name: 'Charlie' }),
+        makePartialEntry({ seniority_number: 1, name: 'Alice' }),
+        makePartialEntry({ seniority_number: 2, name: 'Bob' }),
+        makePartialEntry({ seniority_number: 3, name: 'Charlie' }),
       ]
 
       updateCell(1, 'name', 'Robert')
@@ -155,9 +141,9 @@ describe('useSeniorityUpload', () => {
 
       // 1, 2, 4 — gap at 3
       entries.value = [
-        makeEntry({ seniority_number: 1 }),
-        makeEntry({ seniority_number: 2 }),
-        makeEntry({ seniority_number: 4 }),
+        makePartialEntry({ seniority_number: 1 }),
+        makePartialEntry({ seniority_number: 2 }),
+        makePartialEntry({ seniority_number: 4 }),
       ]
 
       validate()
@@ -172,9 +158,9 @@ describe('useSeniorityUpload', () => {
       const { entries, rowErrors, validate } = useSeniorityUpload()
 
       entries.value = [
-        makeEntry({ seniority_number: 1, employee_number: '100' }),
-        makeEntry({ seniority_number: 2, employee_number: '200' }),
-        makeEntry({ seniority_number: 2, employee_number: '300' }),
+        makePartialEntry({ seniority_number: 1, employee_number: '100' }),
+        makePartialEntry({ seniority_number: 2, employee_number: '200' }),
+        makePartialEntry({ seniority_number: 2, employee_number: '300' }),
       ]
 
       validate()
@@ -188,9 +174,9 @@ describe('useSeniorityUpload', () => {
       const { entries, rowErrors, validate } = useSeniorityUpload()
 
       entries.value = [
-        makeEntry({ seniority_number: 1 }),
-        makeEntry({ seniority_number: 2 }),
-        makeEntry({ seniority_number: 3 }),
+        makePartialEntry({ seniority_number: 1 }),
+        makePartialEntry({ seniority_number: 2 }),
+        makePartialEntry({ seniority_number: 3 }),
       ]
 
       validate()

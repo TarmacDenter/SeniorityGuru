@@ -1,41 +1,11 @@
 // @vitest-environment node
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { SeniorityEntryResponse, SeniorityListResponse } from '../../shared/schemas/seniority-list'
-
-type SeniorityEntry = SeniorityEntryResponse
-type SeniorityList = SeniorityListResponse
-
-function makeEntry(overrides: Partial<SeniorityEntry> = {}): SeniorityEntry {
-  return {
-    id: 'entry-1',
-    list_id: 'list-1',
-    seniority_number: 1,
-    employee_number: '100',
-    name: 'Test Pilot',
-    hire_date: '2010-01-15',
-    base: 'JFK',
-    seat: 'CA',
-    fleet: '737',
-    retire_date: '2035-06-15',
-    ...overrides,
-  }
-}
-
-function makeList(overrides: Partial<SeniorityList> = {}): SeniorityList {
-  return {
-    id: 'list-1',
-    airline: 'DAL',
-    effective_date: '2026-01-15',
-    created_at: '2026-01-15T00:00:00Z',
-    status: 'active',
-    title: null,
-    ...overrides,
-  }
-}
+import { makeEntry, makeList } from '#shared/test-utils/factories'
 
 const mockSeniorityStore = vi.hoisted(() => ({
-  entries: [] as SeniorityEntry[],
-  lists: [] as SeniorityList[],
+  entries: [] as SeniorityEntryResponse[],
+  lists: [] as SeniorityListResponse[],
 }))
 
 vi.mock('~/stores/seniority', () => ({

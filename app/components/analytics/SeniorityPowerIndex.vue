@@ -116,7 +116,7 @@ const props = defineProps<{
     state: 'green' | 'amber' | 'red'
     retiredCount: number
     totalInCell: number
-    remainingNeeded: number
+    pilotsAhead: number
     isLowestSeniority: boolean
     percentile: number
     numbersJuniorToPlug: number
@@ -170,14 +170,14 @@ function badgeIcon(cell: typeof props.cells[number]): string {
 function cellLabel(cell: typeof props.cells[number]): string {
   if (cell.isLowestSeniority) return 'Junior'
   if (cell.state === 'green') return `P${cell.percentile}`
-  return String(cell.remainingNeeded)
+  return String(cell.pilotsAhead)
 }
 
 function cellTooltip(cell: typeof props.cells[number]): string {
   if (cell.isLowestSeniority) return `You'd be the most junior — unlikely to hold (${cell.retiredCount} retired)`
   if (cell.state === 'green') return `Top ${100 - cell.percentile}% — more senior than ${cell.percentile}% of pilots in this qual`
   const plugSuffix = cell.numbersJuniorToPlug > 0 ? ` (${cell.numbersJuniorToPlug} numbers behind the plug)` : ''
-  if (cell.state === 'amber') return `${cell.remainingNeeded} pilot(s) still ahead — almost there${plugSuffix}`
-  return `${cell.remainingNeeded} pilot(s) still senior to you${plugSuffix}`
+  if (cell.state === 'amber') return `${cell.pilotsAhead} pilot(s) still ahead — almost there${plugSuffix}`
+  return `${cell.pilotsAhead} pilot(s) still senior to you${plugSuffix}`
 }
 </script>

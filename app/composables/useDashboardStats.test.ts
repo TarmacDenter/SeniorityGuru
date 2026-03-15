@@ -2,61 +2,15 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { SeniorityEntryResponse, SeniorityListResponse } from '../../shared/schemas/seniority-list'
 import type { ProfileResponse } from '../../shared/schemas/settings'
-
-type SeniorityEntry = SeniorityEntryResponse
-type SeniorityList = SeniorityListResponse
-type Profile = ProfileResponse
-
-// --- Helper to create mock entries ---
-function makeEntry(overrides: Partial<SeniorityEntry> = {}): SeniorityEntry {
-  return {
-    id: 'entry-1',
-    list_id: 'list-1',
-    seniority_number: 1,
-    employee_number: '100',
-    name: 'Test Pilot',
-    hire_date: '2010-01-15',
-    base: 'JFK',
-    seat: 'CA',
-    fleet: '737',
-    retire_date: '2035-06-15',
-    ...overrides,
-  }
-}
-
-function makeList(overrides: Partial<SeniorityList> = {}): SeniorityList {
-  return {
-    id: 'list-1',
-    airline: 'DAL',
-    effective_date: '2026-01-15',
-    created_at: '2026-01-15T00:00:00Z',
-    status: 'active',
-    title: null,
-    ...overrides,
-  }
-}
-
-function makeProfile(overrides: Partial<Profile> = {}): Profile {
-  return {
-    id: 'user-1',
-    role: 'user',
-    icao_code: 'DAL',
-    employee_number: '500',
-    created_at: '2026-01-01T00:00:00Z',
-    mandatory_retirement_age: 65,
-    ...overrides,
-  }
-}
-
-// --- Tests for the composable (mocked stores) ---
+import { makeEntry, makeList, makeProfile } from '#shared/test-utils/factories'
 
 const mockSeniorityStore = vi.hoisted(() => ({
-  entries: [] as SeniorityEntry[],
-  lists: [] as SeniorityList[],
+  entries: [] as SeniorityEntryResponse[],
+  lists: [] as SeniorityListResponse[],
 }))
 
 const mockUserStore = vi.hoisted(() => ({
-  profile: null as Profile | null,
+  profile: null as ProfileResponse | null,
 }))
 
 vi.mock('~/stores/seniority', () => ({
@@ -78,7 +32,7 @@ const mockNewHireMode = vi.hoisted(() => ({
   availableFleets: { value: [] as string[] },
   realUserFound: { value: false },
   isActive: { value: false },
-  syntheticEntry: { value: null as SeniorityEntry | null },
+  syntheticEntry: { value: null as SeniorityEntryResponse | null },
 }))
 
 vi.mock('./useNewHireMode', () => ({

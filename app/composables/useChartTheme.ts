@@ -50,6 +50,8 @@ export function useChartTheme() {
     // Secondary series — indigo-400 (matches app secondary color)
     cyan: '#818cf8',
     cyanLight: 'rgba(129, 140, 248, 0.15)',
+    peakHighlight: 'rgba(251, 191, 36, 0.7)',
+    peakBorder: '#f59e0b',
     slate: '#64748b'
   }
 

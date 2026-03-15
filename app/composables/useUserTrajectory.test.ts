@@ -2,44 +2,14 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { SeniorityEntryResponse } from '../../shared/schemas/seniority-list'
 import type { ProfileResponse } from '../../shared/schemas/settings'
-
-type SeniorityEntry = SeniorityEntryResponse
-type Profile = ProfileResponse
-
-function makeEntry(overrides: Partial<SeniorityEntry> = {}): SeniorityEntry {
-  return {
-    id: 'entry-1',
-    list_id: 'list-1',
-    seniority_number: 1,
-    employee_number: '100',
-    name: 'Test Pilot',
-    hire_date: '2010-01-15',
-    base: 'JFK',
-    seat: 'CA',
-    fleet: '737',
-    retire_date: '2035-06-15',
-    ...overrides,
-  }
-}
-
-function makeProfile(overrides: Partial<Profile> = {}): Profile {
-  return {
-    id: 'user-1',
-    role: 'user',
-    icao_code: 'DAL',
-    employee_number: '500',
-    created_at: '2026-01-01T00:00:00Z',
-    mandatory_retirement_age: 65,
-    ...overrides,
-  }
-}
+import { makeEntry, makeProfile } from '#shared/test-utils/factories'
 
 const mockSeniorityStore = vi.hoisted(() => ({
-  entries: [] as SeniorityEntry[],
+  entries: [] as SeniorityEntryResponse[],
 }))
 
 const mockUserStore = vi.hoisted(() => ({
-  profile: null as Profile | null,
+  profile: null as ProfileResponse | null,
 }))
 
 vi.mock('~/stores/seniority', () => ({
@@ -74,11 +44,11 @@ describe('useUserTrajectory', () => {
     mockUserStore.profile = null
   })
 
-  describe('trajectoryData', () => {
+  describe('trajectoryChartData', () => {
     it('returns empty data when no user entry', () => {
-      const { trajectoryData } = useUserTrajectory()
-      expect(trajectoryData.value.labels).toEqual([])
-      expect(trajectoryData.value.data).toEqual([])
+      const { trajectoryChartData } = useUserTrajectory()
+      expect(trajectoryChartData.value.labels).toEqual([])
+      expect(trajectoryChartData.value.data).toEqual([])
     })
 
     it('returns trajectory data when user entry exists', () => {
@@ -87,11 +57,11 @@ describe('useUserTrajectory', () => {
         makeEntry({ seniority_number: 1, employee_number: '100', retire_date: '2026-06-01' }),
         makeEntry({ seniority_number: 5, employee_number: '500', retire_date: '2040-01-01' }),
       ]
-      const { trajectoryData } = useUserTrajectory()
-      expect(trajectoryData.value.labels.length).toBeGreaterThan(0)
-      expect(trajectoryData.value.data.length).toBeGreaterThan(0)
-      expect(trajectoryData.value.data[trajectoryData.value.data.length - 1]!).toBeGreaterThanOrEqual(
-        trajectoryData.value.data[0]!,
+      const { trajectoryChartData } = useUserTrajectory()
+      expect(trajectoryChartData.value.labels.length).toBeGreaterThan(0)
+      expect(trajectoryChartData.value.data.length).toBeGreaterThan(0)
+      expect(trajectoryChartData.value.data[trajectoryChartData.value.data.length - 1]!).toBeGreaterThanOrEqual(
+        trajectoryChartData.value.data[0]!,
       )
     })
   })

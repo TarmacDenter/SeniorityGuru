@@ -321,7 +321,7 @@ describe('computePowerIndexCells', () => {
     ]
     const cells = computePowerIndexCells(entries, 50, TODAY)
     expect(cells[0]?.state).toBe('green')
-    expect(cells[0]?.remainingNeeded).toBe(0)
+    expect(cells[0]?.pilotsAhead).toBe(0)
     expect(cells[0]?.isLowestSeniority).toBe(false) // user is NOT the most junior (300 is)
     expect(cells[0]?.numbersJuniorToPlug).toBe(0) // holdable → always 0
   })
@@ -360,7 +360,7 @@ describe('computePowerIndexCells', () => {
     entries.push(makeEntry({ fleet: '737', seat: 'CA', base: 'JFK', seniority_number: 50, retire_date: null }))
     const cells = computePowerIndexCells(entries, 100, TODAY)
     expect(cells[0]?.state).toBe('amber')
-    expect(cells[0]?.remainingNeeded).toBe(1)
+    expect(cells[0]?.pilotsAhead).toBe(1)
     // user=100, mostJuniorActive=50, numbersJuniorToPlug = 100-50 = 50
     expect(cells[0]?.numbersJuniorToPlug).toBe(50)
   })

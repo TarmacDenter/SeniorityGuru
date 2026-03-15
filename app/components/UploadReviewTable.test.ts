@@ -4,20 +4,7 @@ import { defineComponent, h } from 'vue'
 import { TooltipProvider } from 'reka-ui'
 import UploadReviewTable from './UploadReviewTable.vue'
 import type { SeniorityEntry } from '#shared/schemas/seniority-list'
-
-function makeEntry(overrides: Partial<SeniorityEntry> = {}): Partial<SeniorityEntry> {
-  return {
-    seniority_number: 1,
-    employee_number: '100',
-    name: 'Pilot A',
-    seat: 'CA',
-    base: 'LAX',
-    fleet: '737',
-    hire_date: '2020-01-01',
-    retire_date: '2050-01-01',
-    ...overrides,
-  }
-}
+import { makePartialEntry } from '#shared/test-utils/factories'
 
 /**
  * Mount UploadReviewTable wrapped in TooltipProvider (required by UTooltip).
@@ -46,11 +33,11 @@ async function mountTable(props: {
 describe('UploadReviewTable', () => {
   // 5 entries, errors at indices 2 and 4.
   const entries: Partial<SeniorityEntry>[] = [
-    makeEntry({ seniority_number: 1, employee_number: '100', name: 'Alice' }),
-    makeEntry({ seniority_number: 2, employee_number: '200', name: 'Bob' }),
-    makeEntry({ seniority_number: 3, employee_number: '300', name: 'Charlie' }),
-    makeEntry({ seniority_number: 4, employee_number: '400', name: 'Diana' }),
-    makeEntry({ seniority_number: 5, employee_number: '500', name: 'Eve' }),
+    makePartialEntry({ seniority_number: 1, employee_number: '100', name: 'Alice' }),
+    makePartialEntry({ seniority_number: 2, employee_number: '200', name: 'Bob' }),
+    makePartialEntry({ seniority_number: 3, employee_number: '300', name: 'Charlie' }),
+    makePartialEntry({ seniority_number: 4, employee_number: '400', name: 'Diana' }),
+    makePartialEntry({ seniority_number: 5, employee_number: '500', name: 'Eve' }),
   ]
 
   const rowErrors = new Map<number, string[]>([

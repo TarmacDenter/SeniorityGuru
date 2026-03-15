@@ -278,7 +278,7 @@ export interface PowerIndexCell {
   state: PowerIndexCellState
   retiredCount: number
   totalInCell: number
-  remainingNeeded: number
+  pilotsAhead: number
   isLowestSeniority: boolean
   percentile: number  // user's percentile rank within the cell (0–100, higher = more senior)
   numbersJuniorToPlug: number  // how many seniority numbers below the "plug" (most junior active pilot) the user is
@@ -329,13 +329,13 @@ export function computePowerIndexCells(
       if (moreJunior === 0) {
         return {
           fleet: fleet!, seat: seat!, base: base!,
-          state: 'amber', retiredCount, totalInCell: total, remainingNeeded: 0,
+          state: 'amber', retiredCount, totalInCell: total, pilotsAhead: 0,
           isLowestSeniority: true, percentile, numbersJuniorToPlug,
         }
       }
       return {
         fleet: fleet!, seat: seat!, base: base!,
-        state: 'green', retiredCount, totalInCell: total, remainingNeeded: 0,
+        state: 'green', retiredCount, totalInCell: total, pilotsAhead: 0,
         isLowestSeniority: false, percentile, numbersJuniorToPlug,
       }
     }
@@ -344,7 +344,7 @@ export function computePowerIndexCells(
     const amberThreshold = Math.ceil(total * 0.10)
     const state: PowerIndexCellState = stillAhead > 0 && stillAhead <= amberThreshold ? 'amber' : 'red'
 
-    return { fleet: fleet!, seat: seat!, base: base!, state, retiredCount, totalInCell: total, remainingNeeded: stillAhead, isLowestSeniority: false, percentile, numbersJuniorToPlug }
+    return { fleet: fleet!, seat: seat!, base: base!, state, retiredCount, totalInCell: total, pilotsAhead: stillAhead, isLowestSeniority: false, percentile, numbersJuniorToPlug }
   })
 }
 

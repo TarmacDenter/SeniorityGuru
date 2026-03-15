@@ -12,7 +12,7 @@ import {
 } from '#shared/utils/seniority-math'
 import type { ComputedRef } from 'vue'
 import { useSeniorityStore } from '~/stores/seniority'
-import { useUserStore } from '~/stores/user'
+import { useUserEntry } from './useUserEntry'
 
 const BANNER_KEY = 'qual-projections-banner-dismissed'
 
@@ -20,9 +20,8 @@ const noFilter: FilterFn = () => true
 
 export function useQualProjections(qualFilterFn: ComputedRef<FilterFn> = computed(() => noFilter)) {
   const seniorityStore = useSeniorityStore()
-  const userStore = useUserStore()
+  const userEntry = useUserEntry()
 
-  // Assumptions banner dismiss state (localStorage)
   const isBannerDismissed = ref(
     typeof localStorage !== 'undefined' ? localStorage.getItem(BANNER_KEY) === 'true' : false,
   )
@@ -34,14 +33,6 @@ export function useQualProjections(qualFilterFn: ComputedRef<FilterFn> = compute
     }
   }
 
-  // User entry
-  const userEntry = computed(() => {
-    const empNum = userStore.profile?.employee_number
-    if (!empNum) return undefined
-    return seniorityStore.entries.find((e) => e.employee_number === empNum)
-  })
-
-  // Power Index
   const projectionYears = ref(0) // 0–10 slider
 
   const projectionDate = computed(() => {
@@ -59,12 +50,10 @@ export function useQualProjections(qualFilterFn: ComputedRef<FilterFn> = compute
     )
   })
 
-  // Retirement wave — uses the shared qual filter from demographics
   const retirementWave = computed(() =>
     computeRetirementWave(seniorityStore.entries, qualFilterFn.value),
   )
 
-  // Trajectory overlay for wave chart — user's percentile within selected qual
   const waveTrajectory = computed(() => {
     if (!userEntry.value) return []
     const { today } = getProjectionEndDate(userEntry.value.retire_date)
@@ -74,7 +63,6 @@ export function useQualProjections(qualFilterFn: ComputedRef<FilterFn> = compute
     return buildTrajectory(seniorityStore.entries, userEntry.value.seniority_number, timePoints, qualFilterFn.value)
   })
 
-  // Percentile threshold calculator — uses the shared qual filter
   const targetPercentile = ref(50) // 50 | 75 | 90
 
   const thresholdResult = computed(() => {
@@ -92,7 +80,6 @@ export function useQualProjections(qualFilterFn: ComputedRef<FilterFn> = compute
       qualFilterFn.value,
     )
 
-    // Optimistic / pessimistic: scale retire dates closer / further
     const scaleEntries = (mult: number) =>
       seniorityStore.entries.map((e) => {
         if (!e.retire_date) return e

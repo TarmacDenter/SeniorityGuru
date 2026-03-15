@@ -3,18 +3,14 @@ import {
   countRetiredAbove,
   computeRank,
   formatNumber,
-  getProjectionEndDate,
-  generateTimePoints,
-  buildTrajectory,
   type FilterFn,
 } from '#shared/utils/seniority-math'
 import { useSeniorityStore } from '~/stores/seniority'
 import { useUserStore } from '~/stores/user'
 import { useNewHireMode } from './useNewHireMode'
+import { useUserEntry } from './useUserEntry'
 import { useUserTrajectory } from './useUserTrajectory'
 import { useCompanyStats } from './useCompanyStats'
-
-type SeniorityEntry = SeniorityEntryResponse
 
 interface StatCard {
   label: string
@@ -28,26 +24,12 @@ export function useDashboardStats() {
   const seniorityStore = useSeniorityStore()
   const userStore = useUserStore()
   const newHireMode = useNewHireMode()
+  const userEntry = useUserEntry({ withNewHireMode: true })
 
-  // Find user's entry by matching employee_number, falling back to synthetic new hire entry
-  const userEntry = computed<SeniorityEntry | undefined>(() => {
-    const empNum = userStore.profile?.employee_number
-    if (!empNum) return undefined
-    const found = seniorityStore.entries.find((e) => e.employee_number === empNum)
-    if (found) return found
-    // New hire mode: use synthetic entry
-    if (newHireMode.isActive.value && newHireMode.syntheticEntry.value) {
-      return newHireMode.syntheticEntry.value
-    }
-    return undefined
-  })
-
-  // State flags
   const hasData = computed(() => seniorityStore.entries.length > 0)
   const hasEmployeeNumber = computed(() => !!userStore.profile?.employee_number)
   const userFound = computed(() => !!userEntry.value)
 
-  // --- RANK CARD ---
   const rankCard = computed(() => {
     const entry = userEntry.value
     if (!entry) {
@@ -80,7 +62,6 @@ export function useDashboardStats() {
     }
   })
 
-  // --- STATS GRID (4 cards) ---
   const stats = computed(() => {
     const entries = seniorityStore.entries
     const lists = seniorityStore.lists
@@ -124,7 +105,7 @@ export function useDashboardStats() {
         label: 'Retirements This Year',
         value: formatNumber(retirementsThisYear),
         trend: entry ? `${formatNumber(retiringSeniorToMe)} senior to you` : undefined,
-        trendUp: retiringSeniorToMe > 0 ? true : undefined,
+        trendUp: retiringSeniorToMe > 0 || undefined,
         icon: 'i-lucide-calendar-clock',
       },
       {
@@ -141,13 +122,12 @@ export function useDashboardStats() {
     return cards
   })
 
-  // --- BASE/SEAT/FLEET STATUS ---
   const baseStatusData = computed(() => {
     const entries = seniorityStore.entries
     const entry = userEntry.value
     const today = new Date()
 
-    const grouped = new Map<string, SeniorityEntry[]>()
+    const grouped = new Map<string, SeniorityEntryResponse[]>()
     for (const e of entries) {
       if (!e.base || !e.seat || !e.fleet) continue
       const key = `${e.base}|${e.seat}|${e.fleet}`
@@ -196,13 +176,12 @@ export function useDashboardStats() {
     })
   })
 
-  // --- RETIREMENT SNAPSHOT ---
+  const { fullTrajectory, trajectoryChartData, trajectoryDeltas, computeRetirementProjection, computeComparativeTrajectory } = useUserTrajectory()
+
   const retirementSnapshot = computed(() => {
     const entry = userEntry.value
     if (!entry?.retire_date) return null
-    const { today, endDate } = getProjectionEndDate(entry.retire_date)
-    const timePoints = generateTimePoints(today, endDate)
-    const trajectory = buildTrajectory(seniorityStore.entries, entry.seniority_number, timePoints)
+    const trajectory = fullTrajectory.value
     if (trajectory.length === 0) return null
     const atRetirement = trajectory[trajectory.length - 1]!
     return {
@@ -212,7 +191,6 @@ export function useDashboardStats() {
     }
   })
 
-  const { trajectoryData, trajectoryDeltas, computeRetirementProjection, computeComparativeTrajectory } = useUserTrajectory()
   const { aggregateStats, recentLists, quals } = useCompanyStats()
 
   return {
@@ -225,7 +203,7 @@ export function useDashboardStats() {
     stats,
     baseStatusData,
     retirementSnapshot,
-    trajectoryData,
+    trajectoryChartData,
     trajectoryDeltas,
     computeRetirementProjection,
     computeComparativeTrajectory,

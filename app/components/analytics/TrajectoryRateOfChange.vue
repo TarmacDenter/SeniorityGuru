@@ -54,10 +54,10 @@ const chartData = computed(() => ({
       label: 'Percentile Change (pp/yr)',
       data: props.deltas.map((d) => d.delta),
       backgroundColor: props.deltas.map((d) =>
-        d.isPeak ? 'rgba(251, 191, 36, 0.7)' : colors.primaryLight,
+        d.isPeak ? colors.peakHighlight : colors.primaryLight,
       ),
       borderColor: props.deltas.map((d) =>
-        d.isPeak ? '#f59e0b' : colors.primary,
+        d.isPeak ? colors.peakBorder : colors.primary,
       ),
       borderWidth: 1,
     },

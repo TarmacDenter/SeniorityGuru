@@ -1,25 +1,7 @@
 // @vitest-environment node
 import { describe, it, expect } from 'vitest'
 import { countRetiredAbove, generateTimePoints, buildTrajectory, computeRank, getProjectionEndDate, formatDateLabel, formatNumber, projectRetirements, projectComparativeTrajectory, computeTrajectoryDeltas } from './seniority-math'
-import type { SeniorityEntryResponse } from '#shared/schemas/seniority-list'
-
-type SeniorityEntry = SeniorityEntryResponse
-
-function makeEntry(overrides: Partial<SeniorityEntry> = {}): SeniorityEntry {
-  return {
-    id: 'entry-1',
-    list_id: 'list-1',
-    seniority_number: 1,
-    employee_number: '100',
-    name: 'Test Pilot',
-    hire_date: '2010-01-15',
-    base: 'JFK',
-    seat: 'CA',
-    fleet: '737',
-    retire_date: '2035-06-15',
-    ...overrides,
-  }
-}
+import { makeEntry } from '#shared/test-utils/factories'
 
 describe('countRetiredAbove', () => {
   it('returns 0 when no entries have retired', () => {

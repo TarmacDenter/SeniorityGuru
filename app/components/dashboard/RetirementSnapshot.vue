@@ -14,7 +14,6 @@
       </div>
     </template>
 
-    <!-- Summary row -->
     <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
       <div class="text-center">
         <p class="text-xs text-[var(--ui-text-muted)]">Retire Date</p>
@@ -36,14 +35,12 @@
 
     <USeparator class="mb-4" />
 
-    <!-- Slider -->
     <div class="flex items-center gap-4 mb-4">
       <label class="text-sm text-[var(--ui-text-muted)] whitespace-nowrap">Final years to show</label>
       <USlider v-model="yearsToShow" :min="3" :max="maxYears" :step="1" size="sm" class="flex-1" />
       <span class="text-sm font-mono font-semibold text-highlighted w-6 text-right">{{ yearsToShow }}</span>
     </div>
 
-    <!-- Table -->
     <div class="overflow-x-auto">
       <UTable :data="tableData" :columns="columns" />
     </div>
@@ -53,6 +50,7 @@
 <script setup lang="ts">
 import { h } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
+import { formatRankDelta } from '#shared/utils/seniority-math'
 
 interface TrajectoryPoint {
   date: string
@@ -88,31 +86,30 @@ interface TableRow {
   year: string
   rank: number
   percentile: number
-  change: string
+  rankDelta: string
 }
 
 const tableData = computed<TableRow[]>(() => {
   const trajectory = props.snapshot.fullTrajectory
   const sliced = trajectory.slice(-yearsToShow.value)
 
-  return sliced.map((point, index) => {
+  return sliced.map((point) => {
     const prevIndex = trajectory.indexOf(point) - 1
     const prev = prevIndex >= 0 ? trajectory[prevIndex] : null
     const delta = prev ? point.rank - prev.rank : 0
-    const changeStr = delta === 0 ? '--' : delta < 0 ? `${delta}` : `+${delta}`
 
     return {
       year: new Date(point.date).getFullYear().toString(),
       rank: point.rank,
       percentile: point.percentile,
-      change: changeStr,
+      rankDelta: formatRankDelta(delta),
     }
   })
 })
 
-function changeClass(change: string): string {
-  if (change.startsWith('-')) return 'text-[var(--ui-color-success-500)]'
-  if (change.startsWith('+')) return 'text-[var(--ui-color-error-500)]'
+function rankDeltaColorClass(rankDelta: string): string {
+  if (rankDelta.startsWith('-')) return 'text-[var(--ui-color-success-500)]'
+  if (rankDelta.startsWith('+')) return 'text-[var(--ui-color-error-500)]'
   return 'text-[var(--ui-text-muted)]'
 }
 
@@ -129,9 +126,9 @@ const columns: TableColumn<TableRow>[] = [
     cell: ({ row }) => h('span', { class: 'font-mono' }, `${row.original.percentile}%`),
   },
   {
-    accessorKey: 'change',
+    accessorKey: 'rankDelta',
     header: 'Change',
-    cell: ({ row }) => h('span', { class: `font-mono ${changeClass(row.original.change)}` }, row.original.change),
+    cell: ({ row }) => h('span', { class: `font-mono ${rankDeltaColorClass(row.original.rankDelta)}` }, row.original.rankDelta),
   },
 ]
 

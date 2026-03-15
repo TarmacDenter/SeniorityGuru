@@ -187,3 +187,8 @@ export function computeTrajectoryDeltas(
   }
   return deltas
 }
+
+export function formatRankDelta(delta: number): string {
+  if (delta === 0) return '--'
+  return delta > 0 ? `+${delta}` : `${delta}`
+}
