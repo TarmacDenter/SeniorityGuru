@@ -60,8 +60,10 @@
             <template v-if="userFound">
               <DashboardTrajectoryChart :data="trajectoryData"
                 class="lg:[grid-column:1/3] lg:[grid-row:span_2] dashboard-enter" style="animation-delay: 260ms" />
+              <DashboardRetirementSnapshot v-if="retirementSnapshot" :snapshot="retirementSnapshot"
+                class="lg:[grid-column:3/5] lg:[grid-row:span_2] dashboard-enter" style="animation-delay: 280ms" />
               <DashboardRetirementComparison :quals="quals" :compute-projection="computeRetirementProjection"
-                class="lg:[grid-column:3/5] lg:[grid-row:span_2] dashboard-enter" style="animation-delay: 300ms" />
+                class="lg:[grid-column:1/3] lg:[grid-row:span_2] dashboard-enter" style="animation-delay: 300ms" />
               <DashboardSeniorityComparison :quals="quals" :compute-comparative="computeComparativeTrajectory"
                 :user-base="rankCard.base" :user-seat="rankCard.seat" :user-fleet="rankCard.fleet"
                 class="lg:[grid-column:1/-1] dashboard-enter" style="animation-delay: 340ms" />
@@ -141,7 +143,7 @@ const isHistorical = computed(() => {
 
 const {
   hasData, hasEmployeeNumber, userFound,
-  rankCard, stats, baseStatusData,
+  rankCard, stats, baseStatusData, retirementSnapshot,
   trajectoryData, trajectoryDeltas, computeRetirementProjection, computeComparativeTrajectory,
   aggregateStats, quals,
 } = useDashboardStats();
