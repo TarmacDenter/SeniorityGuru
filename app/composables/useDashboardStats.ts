@@ -3,6 +3,9 @@ import {
   countRetiredAbove,
   computeRank,
   formatNumber,
+  getProjectionEndDate,
+  generateTimePoints,
+  buildTrajectory,
   type FilterFn,
 } from '#shared/utils/seniority-math'
 import { useSeniorityStore } from '~/stores/seniority'
@@ -185,6 +188,22 @@ export function useDashboardStats() {
     })
   })
 
+  // --- RETIREMENT SNAPSHOT ---
+  const retirementSnapshot = computed(() => {
+    const entry = userEntry.value
+    if (!entry?.retire_date) return null
+    const { today, endDate } = getProjectionEndDate(entry.retire_date)
+    const timePoints = generateTimePoints(today, endDate)
+    const trajectory = buildTrajectory(seniorityStore.entries, entry.seniority_number, timePoints)
+    if (trajectory.length === 0) return null
+    const atRetirement = trajectory[trajectory.length - 1]!
+    return {
+      atRetirement,
+      fullTrajectory: trajectory,
+      retireDate: entry.retire_date,
+    }
+  })
+
   const { trajectoryData, computeRetirementProjection, computeComparativeTrajectory } = useUserTrajectory()
   const { aggregateStats, recentLists, quals } = useCompanyStats()
 
@@ -195,6 +214,7 @@ export function useDashboardStats() {
     rankCard,
     stats,
     baseStatusData,
+    retirementSnapshot,
     trajectoryData,
     computeRetirementProjection,
     computeComparativeTrajectory,
