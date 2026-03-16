@@ -4,7 +4,8 @@
       <div class="flex items-center justify-between">
         <h3 class="font-semibold text-highlighted">Status by Base / Seat / Fleet</h3>
         <div class="flex items-center gap-2">
-          <span class="text-xs text-muted">Adjust for retirements</span>
+          <span class="text-xs text-muted">Adjusted</span>
+          <InfoIcon text="Adjusted rank and total exclude retired pilots. Raw rank includes everyone on the original list." size="xs" />
           <USwitch v-model="adjusted" size="xs" />
         </div>
       </div>

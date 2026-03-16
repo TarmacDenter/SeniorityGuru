@@ -22,6 +22,7 @@
         <div class="flex items-center gap-2 ml-4 pl-4 border-l border-[var(--ui-border)]">
           <USwitch v-model="growthEnabled" size="xs" />
           <span class="text-sm text-[var(--ui-text-muted)]">Hiring growth</span>
+          <InfoIcon text="Growth adds simulated new hires each year, diluting everyone's percentile. Has no effect on your raw rank." size="xs" />
           <template v-if="growthEnabled">
             <USlider
               v-model="growthSliderValue"
@@ -41,6 +42,25 @@
 
     <!-- Scrollable content -->
     <div class="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
+      <!-- About this view collapsible -->
+      <UCollapsible class="flex flex-col gap-2">
+        <UButton
+          label="About this view"
+          color="neutral"
+          variant="ghost"
+          size="sm"
+          trailing-icon="i-lucide-chevron-down"
+          class="w-fit text-[var(--ui-text-muted)]"
+        />
+        <template #content>
+          <div class="rounded-lg border border-[var(--ui-border)] bg-[var(--ui-bg-muted)] p-4 space-y-2 text-sm text-[var(--ui-text-muted)]">
+            <p>The position view shows your standing within specific qualifications (fleet + seat combinations).</p>
+            <p>Holdable means your projected seniority is senior to the plug — the most junior pilot currently active in that qualification. This is a projection based on scheduled retirements, not a vacancy.</p>
+            <NuxtLink to="/how-it-works#holdability" class="text-primary text-sm underline">Learn more about holdability →</NuxtLink>
+          </div>
+        </template>
+      </UCollapsible>
+
       <!-- Qual Seniority Scale -->
       <UCard v-if="projections.qualScales.value.length > 0">
         <template #header>

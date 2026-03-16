@@ -4,6 +4,7 @@
       <div class="flex items-center justify-between">
         <div class="flex items-center">
           <h3 class="font-semibold text-highlighted">Company Seniority Trajectory</h3>
+          <InfoIcon text="Shows how your seniority percentile changes as pilots senior to you retire. Percentile: 100% = most senior, 0% = most junior." size="sm" class="ml-1.5" />
           <slot name="badge" />
         </div>
         <UBadge color="primary" variant="subtle" size="sm">Projected</UBadge>

@@ -2,6 +2,26 @@
   <div class="p-4 sm:p-6 space-y-6">
     <!-- Section A: Company-wide trajectory (unfiltered) -->
 
+    <!-- About this view collapsible -->
+    <UCollapsible class="flex flex-col gap-2">
+      <UButton
+        label="About this view"
+        color="neutral"
+        variant="ghost"
+        size="sm"
+        trailing-icon="i-lucide-chevron-down"
+        class="w-fit text-[var(--ui-text-muted)]"
+      />
+      <template #content>
+        <div class="rounded-lg border border-[var(--ui-border)] bg-[var(--ui-bg-muted)] p-4 space-y-2 text-sm text-[var(--ui-text-muted)]">
+          <p>The trajectory chart projects your seniority percentile over time as pilots ahead of you on the list reach mandatory retirement age.</p>
+          <p>Growth modeling (optional): enabling a growth rate adds simulated new hires each year. This dilutes your percentile but does not affect your raw rank.</p>
+          <p>Projections are based on scheduled retirements only. New hires, furloughs, and other attrition are not modeled.</p>
+          <NuxtLink to="/how-it-works" class="text-primary text-sm underline">Full methodology →</NuxtLink>
+        </div>
+      </template>
+    </UCollapsible>
+
     <!-- Full Trajectory Chart -->
     <DashboardTrajectoryChart
       v-if="userFound"
@@ -30,6 +50,7 @@
 
     <AnalyticsAssumptionsBanner
       :is-banner-dismissed="projections.isBannerDismissed.value"
+      context="trajectory"
       @dismiss="projections.dismissBanner()"
     />
 
