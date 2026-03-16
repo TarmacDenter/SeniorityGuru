@@ -76,6 +76,17 @@
           clear
         />
       </div>
+
+      <div class="flex flex-col gap-1 min-w-[140px]">
+        <label class="text-xs font-medium text-muted">Retire Date</label>
+        <UInput
+          :model-value="newHireMode.retireDate.value ?? undefined"
+          type="date"
+          class="w-44"
+          size="sm"
+          @update:model-value="newHireMode.retireDate.value = $event || null"
+        />
+      </div>
     </div>
   </div>
 </template>

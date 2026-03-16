@@ -28,6 +28,12 @@ describe('useNewHireMode', () => {
     mockSeniorityStore.entries = []
     mockSeniorityStore.currentListId = null
     mockUserStore.profile = null
+    const mode = useNewHireMode()
+    mode.enabled.value = false
+    mode.selectedBase.value = null
+    mode.selectedSeat.value = null
+    mode.selectedFleet.value = null
+    mode.retireDate.value = null
   })
 
   describe('realUserFound', () => {
@@ -176,6 +182,25 @@ describe('useNewHireMode', () => {
       expect(availableBases.value).toEqual(['JFK'])
       expect(availableSeats.value).toEqual(['CA'])
       expect(availableFleets.value).toEqual(['737'])
+    })
+  })
+
+  describe('retireDate', () => {
+    it('includes retireDate in synthetic entry when set', () => {
+      mockUserStore.profile = makeProfile({ employee_number: '999' })
+      mockSeniorityStore.entries = [makeEntry({ employee_number: '100' })]
+      const { enabled, retireDate, syntheticEntry } = useNewHireMode()
+      enabled.value = true
+      retireDate.value = '2055-06-15'
+      expect(syntheticEntry.value?.retire_date).toBe('2055-06-15')
+    })
+
+    it('sets retire_date to null when retireDate is not provided', () => {
+      mockUserStore.profile = makeProfile({ employee_number: '999' })
+      mockSeniorityStore.entries = [makeEntry({ employee_number: '100' })]
+      const { enabled, syntheticEntry } = useNewHireMode()
+      enabled.value = true
+      expect(syntheticEntry.value?.retire_date).toBeNull()
     })
   })
 })

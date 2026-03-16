@@ -54,22 +54,33 @@
               :key="qual"
               class="border-t border-[var(--ui-border)]"
             >
-              <td class="py-2 pr-3 font-medium">{{ qual }}</td>
+              <td class="py-2 pr-3 font-medium whitespace-nowrap">
+                <span>{{ qual }}</span>
+                <UBadge
+                  v-if="qualPercentile(qual) !== null"
+                  :color="qualPercentileColor(qualPercentile(qual)!)"
+                  variant="subtle"
+                  size="xs"
+                  class="ml-2 font-mono"
+                >
+                  P{{ qualPercentile(qual) }}
+                </UBadge>
+              </td>
               <td
                 v-for="base in uniqueBases"
                 :key="base"
-                class="px-2 py-2 text-center"
+                class="px-3 py-3 text-center"
               >
                 <template v-if="cellMap.get(`${qual}|${base}`)">
                   <UBadge
                     :color="badgeColor(cellMap.get(`${qual}|${base}`)!.state)"
                     :variant="cellMap.get(`${qual}|${base}`)!.isLowestSeniority ? 'outline' : 'subtle'"
-                    size="sm"
-                    class="cursor-pointer"
+                    size="md"
+                    class="cursor-pointer min-w-[4.5rem] justify-center font-mono"
                     :title="cellTooltip(cellMap.get(`${qual}|${base}`)!)"
                     @click="$emit('cellClick', { fleet: cellMap.get(`${qual}|${base}`)!.fleet, seat: cellMap.get(`${qual}|${base}`)!.seat, base })"
                   >
-                    <UIcon :name="badgeIcon(cellMap.get(`${qual}|${base}`)!)" class="size-3 mr-1" />
+                    <UIcon :name="badgeIcon(cellMap.get(`${qual}|${base}`)!)" class="size-4 mr-1" />
                     {{ cellLabel(cellMap.get(`${qual}|${base}`)!) }}
                   </UBadge>
                 </template>
@@ -83,20 +94,16 @@
       <!-- Legend -->
       <div class="mt-3 flex flex-wrap gap-3 text-xs text-[var(--ui-text-muted)]">
         <div class="flex items-center gap-1">
-          <UBadge color="success" variant="subtle" size="xs">P75</UBadge>
-          Your percentile in this qual
+          <UBadge color="success" variant="subtle" size="xs">P82</UBadge>
+          Can hold — your percentile in base
         </div>
         <div class="flex items-center gap-1">
-          <UBadge color="warning" variant="outline" size="xs">Junior</UBadge>
-          Most junior — unlikely to hold
+          <UBadge color="warning" variant="subtle" size="xs">&minus;3</UBadge>
+          Close — percentile points to plug
         </div>
         <div class="flex items-center gap-1">
-          <UBadge color="warning" variant="subtle" size="xs">N</UBadge>
-          Within 10% — almost there
-        </div>
-        <div class="flex items-center gap-1">
-          <UBadge color="error" variant="subtle" size="xs">N</UBadge>
-          N pilots still ahead
+          <UBadge color="error" variant="subtle" size="xs">&minus;15</UBadge>
+          Cannot hold — gap to plug percentile
         </div>
       </div>
     </div>
@@ -119,7 +126,10 @@ const props = defineProps<{
     pilotsAhead: number
     isLowestSeniority: boolean
     percentile: number
+    cellPercentile: number
     numbersJuniorToPlug: number
+    plugPercentile: number
+    userPercentile: number
   }[]
   projectionYears: number
   hasEmployeeNumber: boolean
@@ -136,10 +146,18 @@ watch(useProjection, (on) => {
   if (!on) emit('yearsChange', 0)
 })
 
+const SEAT_ORDER: Record<string, number> = { CA: 0, FO: 1 }
+
 const uniqueQuals = computed(() => {
   const seen = new Set<string>()
   for (const c of props.cells) seen.add(`${c.fleet} ${c.seat}`)
-  return Array.from(seen).sort()
+  return Array.from(seen).sort((a, b) => {
+    const seatA = a.split(' ').pop() ?? ''
+    const seatB = b.split(' ').pop() ?? ''
+    const orderDiff = (SEAT_ORDER[seatA] ?? 99) - (SEAT_ORDER[seatB] ?? 99)
+    if (orderDiff !== 0) return orderDiff
+    return a.localeCompare(b)
+  })
 })
 
 const uniqueBases = computed(() => {
@@ -167,17 +185,29 @@ function badgeIcon(cell: typeof props.cells[number]): string {
   return 'i-lucide-x-circle'
 }
 
+function qualPercentile(qual: string): number | null {
+  const cell = props.cells.find((c) => `${c.fleet} ${c.seat}` === qual)
+  if (!cell) return null
+  return cell.userPercentile
+}
+
+function qualPercentileColor(pct: number): 'success' | 'warning' | 'error' {
+  if (pct >= 50) return 'success'
+  if (pct >= 25) return 'warning'
+  return 'error'
+}
+
 function cellLabel(cell: typeof props.cells[number]): string {
   if (cell.isLowestSeniority) return 'Junior'
-  if (cell.state === 'green') return `P${cell.percentile}`
-  return String(cell.pilotsAhead)
+  if (cell.state === 'green') return `P${cell.cellPercentile}`
+  const gap = Math.round(cell.plugPercentile - cell.userPercentile)
+  return gap > 0 ? `−${gap}` : `P${cell.cellPercentile}`
 }
 
 function cellTooltip(cell: typeof props.cells[number]): string {
-  if (cell.isLowestSeniority) return `You'd be the most junior — unlikely to hold (${cell.retiredCount} retired)`
-  if (cell.state === 'green') return `Top ${100 - cell.percentile}% — more senior than ${cell.percentile}% of pilots in this qual`
-  const plugSuffix = cell.numbersJuniorToPlug > 0 ? ` (${cell.numbersJuniorToPlug} numbers behind the plug)` : ''
-  if (cell.state === 'amber') return `${cell.pilotsAhead} pilot(s) still ahead — almost there${plugSuffix}`
-  return `${cell.pilotsAhead} pilot(s) still senior to you${plugSuffix}`
+  if (cell.isLowestSeniority) return `Most junior — unlikely to hold (${cell.retiredCount} retired)`
+  const plugLine = `Plug at P${cell.plugPercentile} · You at P${cell.userPercentile}`
+  if (cell.state === 'green') return `Holdable · ${plugLine} · ${cell.retiredCount} of ${cell.totalInCell} retired`
+  return `Need P${cell.plugPercentile} to hold · ${plugLine} · +${cell.numbersJuniorToPlug} behind plug`
 }
 </script>

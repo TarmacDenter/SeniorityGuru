@@ -1,6 +1,8 @@
 import {
   computePowerIndexCells,
   computeRetirementWave,
+  computeQualSnapshots,
+  applyProjectionToSnapshots,
   findThresholdYear,
 } from '#shared/utils/qual-analytics'
 import {
@@ -20,7 +22,7 @@ const noFilter: FilterFn = () => true
 
 export function useQualProjections(qualFilterFn: ComputedRef<FilterFn> = computed(() => noFilter)) {
   const seniorityStore = useSeniorityStore()
-  const userEntry = useUserEntry()
+  const userEntry = useUserEntry({ withNewHireMode: true })
 
   const isBannerDismissed = ref(
     typeof localStorage !== 'undefined' ? localStorage.getItem(BANNER_KEY) === 'true' : false,
@@ -56,10 +58,8 @@ export function useQualProjections(qualFilterFn: ComputedRef<FilterFn> = compute
 
   const waveTrajectory = computed(() => {
     if (!userEntry.value) return []
-    const { today } = getProjectionEndDate(userEntry.value.retire_date)
-    const end = new Date(today)
-    end.setFullYear(end.getFullYear() + 15)
-    const timePoints = generateTimePoints(today, end)
+    const { today, endDate } = getProjectionEndDate(userEntry.value.retire_date)
+    const timePoints = generateTimePoints(today, endDate)
     return buildTrajectory(seniorityStore.entries, userEntry.value.seniority_number, timePoints, qualFilterFn.value)
   })
 
@@ -68,10 +68,8 @@ export function useQualProjections(qualFilterFn: ComputedRef<FilterFn> = compute
   const thresholdResult = computed(() => {
     if (!userEntry.value) return null
 
-    const { today } = getProjectionEndDate(userEntry.value.retire_date)
-    const end = new Date(today)
-    end.setFullYear(end.getFullYear() + 15)
-    const timePoints = generateTimePoints(today, end)
+    const { today, endDate } = getProjectionEndDate(userEntry.value.retire_date)
+    const timePoints = generateTimePoints(today, endDate)
 
     const base = buildTrajectory(
       seniorityStore.entries,
@@ -108,6 +106,13 @@ export function useQualProjections(qualFilterFn: ComputedRef<FilterFn> = compute
 
   const trajectoryDeltas = computed(() => computeTrajectoryDeltas(waveTrajectory.value))
 
+  const qualSnapshots = computed(() => computeQualSnapshots(seniorityStore.entries))
+
+  const qualScales = computed(() => {
+    if (!userEntry.value || qualSnapshots.value.length === 0) return []
+    return applyProjectionToSnapshots(qualSnapshots.value, seniorityStore.entries, userEntry.value.seniority_number, projectionDate.value)
+  })
+
   return {
     isBannerDismissed,
     dismissBanner,
@@ -115,6 +120,7 @@ export function useQualProjections(qualFilterFn: ComputedRef<FilterFn> = compute
     projectionDate,
     userEntry,
     powerIndexCells,
+    qualScales,
     retirementWave,
     waveTrajectory,
     trajectoryDeltas,

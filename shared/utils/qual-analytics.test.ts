@@ -350,18 +350,17 @@ describe('computePowerIndexCells', () => {
     expect(cells[0]?.numbersJuniorToPlug).toBe(0) // holdable → 0
   })
 
-  it('amber when remaining pilots ahead <= 10% of total cell size', () => {
-    // 20-pilot cell, user is blocked by 1 active pilot (5% of 20 → amber)
+  it('not holdable when user senNum > plug — shows plug distance', () => {
+    // 20-pilot CA cell, 19 retired, 1 active (#50). User at #100 (not in list).
+    // userSenNum 100 > plug 50 → not holdable. numbersJuniorToPlug = 50.
+    // 50 > 10% of 20 (2) → red.
     const entries: SeniorityEntry[] = []
     for (let i = 1; i <= 19; i++) {
       entries.push(makeEntry({ fleet: '737', seat: 'CA', base: 'JFK', seniority_number: i, retire_date: '2025-01-01' }))
     }
-    // 1 pilot more senior than user still active
     entries.push(makeEntry({ fleet: '737', seat: 'CA', base: 'JFK', seniority_number: 50, retire_date: null }))
     const cells = computePowerIndexCells(entries, 100, TODAY)
-    expect(cells[0]?.state).toBe('amber')
-    expect(cells[0]?.pilotsAhead).toBe(1)
-    // user=100, mostJuniorActive=50, numbersJuniorToPlug = 100-50 = 50
+    expect(cells[0]?.state).toBe('red')
     expect(cells[0]?.numbersJuniorToPlug).toBe(50)
   })
 
@@ -377,25 +376,21 @@ describe('computePowerIndexCells', () => {
     expect(cells[0]?.numbersJuniorToPlug).toBe(9996)
   })
 
-  it('uses total cell size as percentile denominator, not remaining active pilots', () => {
-    // 10-pilot cell: 5 retired + 5 active, user is more senior than 3 of the 5 remaining
-    // Old formula: 3/5 = 60%
-    // Fixed formula: 3/10 = 30% (uses total cell size)
+  it('holdable when userSenNum <= plug — shows cell percentile', () => {
+    // 10-pilot cell: 5 retired + 5 active (#6-#10), user at #7
+    // userSenNum 7 <= plug 10 → holdable (green)
+    // cellPercentile = (10-1)/10 = 90%
     const entries: SeniorityEntry[] = []
-    // 5 retired pilots (sen_nums 1-5)
     for (let i = 1; i <= 5; i++) {
       entries.push(makeEntry({ fleet: '737', seat: 'CA', base: 'JFK', seniority_number: i, retire_date: '2025-01-01' }))
     }
-    // 5 active pilots (sen_nums 6-10)
     for (let i = 6; i <= 10; i++) {
       entries.push(makeEntry({ fleet: '737', seat: 'CA', base: 'JFK', seniority_number: i, retire_date: null }))
     }
-    // User at sen_num 7: more senior than 8, 9, 10 (3 pilots) out of 5 remaining
-    // Percentile should be 3/10 = 30% (total), NOT 3/5 = 60% (remaining)
     const cells = computePowerIndexCells(entries, 7, TODAY)
     expect(cells[0]?.state).toBe('green')
-    expect(cells[0]?.percentile).toBe(30) // 3/10 = 30%
-    expect(cells[0]?.numbersJuniorToPlug).toBe(0) // holdable → 0
+    expect(cells[0]?.cellPercentile).toBe(90)
+    expect(cells[0]?.numbersJuniorToPlug).toBe(0)
   })
 })
 

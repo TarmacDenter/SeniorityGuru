@@ -132,18 +132,6 @@
             :is-banner-dismissed="projections.isBannerDismissed.value"
             @dismiss="projections.dismissBanner()"
           />
-          <UCard>
-            <template #header>
-              <h3 class="font-semibold">Seniority Power Index</h3>
-            </template>
-            <AnalyticsSeniorityPowerIndex
-              :cells="projections.powerIndexCells.value"
-              :projection-years="projections.projectionYears.value"
-              :has-employee-number="!!userStore.profile?.employee_number"
-              @years-change="projections.projectionYears.value = $event"
-              @cell-click="onPowerIndexCellClick"
-            />
-          </UCard>
           <div class="grid grid-cols-11 gap-6">
             <div class="col-span-6">
               <UCard>
@@ -181,6 +169,45 @@
               :selected-qual="selectedQualLabel"
             />
           </UCard>
+        </div>
+
+        <!-- Position tab -->
+        <div v-else-if="activeTab === 'position'" class="space-y-6 py-4">
+          <div class="flex items-center gap-4 flex-wrap">
+            <div class="flex items-center gap-2">
+              <USwitch v-model="usePositionProjection" />
+              <span class="text-sm text-[var(--ui-text-muted)]">Project forward</span>
+            </div>
+            <template v-if="usePositionProjection">
+              <USlider
+                v-model="positionYearsInput"
+                :min="1"
+                :max="positionSliderMax"
+                :step="1"
+                class="w-48"
+              />
+              <UBadge color="neutral" variant="subtle" size="sm" class="font-mono">
+                +{{ positionYearsInput }}yr{{ positionYearsInput === 1 ? '' : 's' }}
+              </UBadge>
+            </template>
+            <UBadge v-else color="neutral" variant="subtle" size="sm">As of today</UBadge>
+          </div>
+
+          <UCard v-if="projections.qualScales.value.length > 0">
+            <template #header>
+              <h3 class="font-semibold">Seniority Position by Qual</h3>
+            </template>
+            <AnalyticsQualSeniorityScale :scales="projections.qualScales.value" />
+          </UCard>
+
+          <UAlert
+            v-else-if="!userStore.profile?.employee_number"
+            icon="i-lucide-user-search"
+            color="warning"
+            variant="subtle"
+            title="Employee Number Required"
+            description="Set your employee number in Settings to see your position across quals."
+          />
         </div>
 
         <!-- Upgrades tab -->
@@ -253,16 +280,35 @@ function clearQualFilter() {
   demographics.selectedBase.value = null
 }
 
-// Clicking a power index cell pre-populates the shared filter
-function onPowerIndexCellClick(cell: { fleet: string; seat: string; base: string }) {
-  demographics.selectedFleet.value = cell.fleet
-  demographics.selectedSeat.value = cell.seat
-  demographics.selectedBase.value = cell.base
-}
+const usePositionProjection = ref(false)
+const positionYearsInput = ref(1)
+let positionDebounceTimer: ReturnType<typeof setTimeout> | null = null
+
+const positionSliderMax = computed(() => {
+  const retireDate = projections.userEntry.value?.retire_date
+  if (!retireDate) return 30
+  const years = Math.ceil((new Date(retireDate).getTime() - Date.now()) / (365.25 * 24 * 60 * 60 * 1000))
+  return Math.max(1, years)
+})
+
+watch(usePositionProjection, (on) => {
+  if (!on) {
+    positionYearsInput.value = 1
+    projections.projectionYears.value = 0
+  }
+})
+
+watch(positionYearsInput, (val) => {
+  if (positionDebounceTimer) clearTimeout(positionDebounceTimer)
+  positionDebounceTimer = setTimeout(() => {
+    projections.projectionYears.value = val
+  }, 500)
+})
 
 const activeTab = ref('demographics')
 const tabItems: TabsItem[] = [
   { label: 'Demographics', value: 'demographics' },
+  { label: 'Position', value: 'position' },
   { label: 'Projections', value: 'projections' },
   { label: 'Upgrades', value: 'upgrades' },
 ]

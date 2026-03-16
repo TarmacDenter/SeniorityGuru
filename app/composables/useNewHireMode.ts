@@ -5,25 +5,27 @@ import { useUserStore } from '~/stores/user'
 
 const STORAGE_KEY = 'seniority-guru-new-hire-mode'
 
+const enabled = ref(false)
+const selectedBase = ref<string | null>(null)
+const selectedSeat = ref<string | null>(null)
+const selectedFleet = ref<string | null>(null)
+const retireDate = ref<string | null>(null)
+
+let _localStorageInitialized = false
+
 export function useNewHireMode() {
   const seniorityStore = useSeniorityStore()
   const userStore = useUserStore()
 
-  const enabled = ref(false)
-
-  if (import.meta.client && typeof localStorage !== 'undefined' && localStorage.getItem(STORAGE_KEY) === 'true') {
-    enabled.value = true
-  }
-
-  watch(enabled, (val) => {
-    if (import.meta.client && typeof localStorage !== 'undefined') {
-      localStorage.setItem(STORAGE_KEY, String(val))
+  if (!_localStorageInitialized && import.meta.client && typeof localStorage !== 'undefined') {
+    _localStorageInitialized = true
+    if (localStorage.getItem(STORAGE_KEY) === 'true') {
+      enabled.value = true
     }
-  })
-
-  const selectedBase = ref<string | null>(null)
-  const selectedSeat = ref<string | null>(null)
-  const selectedFleet = ref<string | null>(null)
+    watch(enabled, (val) => {
+      localStorage.setItem(STORAGE_KEY, String(val))
+    })
+  }
 
   const availableBases = computed(() => uniqueEntryValues(seniorityStore.entries, 'base'))
   const availableSeats = computed(() => uniqueEntryValues(seniorityStore.entries, 'seat'))
@@ -55,7 +57,7 @@ export function useNewHireMode() {
       base: selectedBase.value,
       fleet: selectedFleet.value,
       hire_date: new Date().toISOString().split('T')[0]!,
-      retire_date: null,
+      retire_date: retireDate.value,
     }
   })
 
@@ -64,6 +66,7 @@ export function useNewHireMode() {
     selectedBase,
     selectedSeat,
     selectedFleet,
+    retireDate,
     availableBases,
     availableSeats,
     availableFleets,

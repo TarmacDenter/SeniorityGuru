@@ -280,8 +280,23 @@ export interface PowerIndexCell {
   totalInCell: number
   pilotsAhead: number
   isLowestSeniority: boolean
-  percentile: number  // user's percentile rank within the cell (0–100, higher = more senior)
-  numbersJuniorToPlug: number  // how many seniority numbers below the "plug" (most junior active pilot) the user is
+  percentile: number
+  cellPercentile: number
+  numbersJuniorToPlug: number
+  plugPercentile: number
+  userPercentile: number
+}
+
+function isActiveAt(e: SeniorityEntry, projectionDate: Date): boolean {
+  if (!e.retire_date) return true
+  return new Date(e.retire_date) > projectionDate
+}
+
+function companyPercentile(senNum: number, entries: SeniorityEntry[], totalCompany: number): number {
+  const rank = entries.filter((e) => e.seniority_number < senNum).length + 1
+  return totalCompany > 0
+    ? Math.round(((totalCompany - rank + 1) / totalCompany) * 100 * 10) / 10
+    : 0
 }
 
 export function computePowerIndexCells(
@@ -289,10 +304,13 @@ export function computePowerIndexCells(
   userSenNum: number,
   projectionDate: Date,
 ): PowerIndexCell[] {
-  // Group by fleet+seat+base
+  const withQual = entries.filter((e) => e.fleet && e.seat && e.base)
+  const activeCompany = entries.filter((e) => isActiveAt(e, projectionDate))
+  const totalCompany = activeCompany.length
+  const userPctl = companyPercentile(userSenNum, activeCompany, totalCompany)
+
   const byCellKey = new Map<string, SeniorityEntry[]>()
-  for (const e of entries) {
-    if (!e.fleet || !e.seat || !e.base) continue
+  for (const e of withQual) {
     const key = `${e.fleet}|${e.seat}|${e.base}`
     let group = byCellKey.get(key)
     if (!group) { group = []; byCellKey.set(key, group) }
@@ -302,50 +320,148 @@ export function computePowerIndexCells(
   return Array.from(byCellKey.values()).map((cellEntries) => {
     const { fleet, seat, base } = cellEntries[0]!
     const total = cellEntries.length
-
-    const remaining = cellEntries.filter((e) => {
-      if (!e.retire_date) return true
-      return new Date(e.retire_date) > projectionDate
-    })
+    const remaining = cellEntries.filter((e) => isActiveAt(e, projectionDate))
     const retiredCount = total - remaining.length
 
     const mostJuniorActiveSenNum = remaining.length > 0
       ? Math.max(...remaining.map((e) => e.seniority_number))
       : 0
 
+    const plugPctl = mostJuniorActiveSenNum > 0
+      ? companyPercentile(mostJuniorActiveSenNum, activeCompany, totalCompany)
+      : 100
+
     const isHoldable = remaining.length > 0 && userSenNum <= mostJuniorActiveSenNum
-
-    const moreJunior = remaining.filter((e) => e.seniority_number > userSenNum).length
-    const percentile = total > 0
-      ? Math.round((moreJunior / total) * 100)
-      : 0
-
-    const numbersJuniorToPlug = !isHoldable && mostJuniorActiveSenNum > 0
+    const numbersJuniorToPlug = mostJuniorActiveSenNum > 0 && userSenNum > mostJuniorActiveSenNum
       ? userSenNum - mostJuniorActiveSenNum
       : 0
 
+    const aheadInCell = remaining.filter((e) => e.seniority_number < userSenNum).length
+    const cellPercentile = total > 0
+      ? Math.max(0, Math.round(((total - aheadInCell) / total) * 100))
+      : 0
+
+    const isLowestSeniority = isHoldable && remaining.length > 0
+      && remaining.every((e) => e.seniority_number <= userSenNum)
+
+    let state: PowerIndexCellState
     if (isHoldable) {
-      // Most junior in cell → amber (unlikely to actually hold)
-      if (moreJunior === 0) {
-        return {
-          fleet: fleet!, seat: seat!, base: base!,
-          state: 'amber', retiredCount, totalInCell: total, pilotsAhead: 0,
-          isLowestSeniority: true, percentile, numbersJuniorToPlug,
-        }
-      }
-      return {
-        fleet: fleet!, seat: seat!, base: base!,
-        state: 'green', retiredCount, totalInCell: total, pilotsAhead: 0,
-        isLowestSeniority: false, percentile, numbersJuniorToPlug,
-      }
+      state = isLowestSeniority ? 'amber' : 'green'
+    } else {
+      state = numbersJuniorToPlug <= Math.ceil(total * 0.10) ? 'amber' : 'red'
     }
 
-    const stillAhead = remaining.filter((e) => e.seniority_number < userSenNum).length
-    const amberThreshold = Math.ceil(total * 0.10)
-    const state: PowerIndexCellState = stillAhead > 0 && stillAhead <= amberThreshold ? 'amber' : 'red'
-
-    return { fleet: fleet!, seat: seat!, base: base!, state, retiredCount, totalInCell: total, pilotsAhead: stillAhead, isLowestSeniority: false, percentile, numbersJuniorToPlug }
+    return {
+      fleet: fleet!, seat: seat!, base: base!, state,
+      retiredCount, totalInCell: total,
+      pilotsAhead: aheadInCell,
+      isLowestSeniority,
+      percentile: userPctl,
+      cellPercentile,
+      numbersJuniorToPlug,
+      plugPercentile: plugPctl,
+      userPercentile: userPctl,
+    }
   })
+}
+
+// ─── Qual demographic scale ──────────────────────────────────────────────────
+
+export interface DensityBucket {
+  start: number
+  count: number
+}
+
+export interface QualDemographicSnapshot {
+  fleet: string
+  seat: string
+  base: string
+  activeCount: number
+  plugPercentile: number
+  plugSenNum: number
+  p25: number
+  median: number
+  p75: number
+  max: number
+  density: DensityBucket[]
+}
+
+export interface QualDemographicScale extends QualDemographicSnapshot {
+  userPercentile: number
+  isHoldable: boolean
+}
+
+function percentileAt(sorted: number[], p: number): number {
+  if (sorted.length === 0) return 0
+  const idx = Math.floor((p / 100) * (sorted.length - 1))
+  return sorted[idx]!
+}
+
+export function computeQualSnapshots(entries: SeniorityEntry[]): QualDemographicSnapshot[] {
+  const today = new Date()
+  const todayActive = entries.filter((e) => isActiveAt(e, today))
+  if (todayActive.length === 0) return []
+
+  const withQual = todayActive.filter((e) => e.fleet && e.seat && e.base)
+  const byCellKey = new Map<string, SeniorityEntry[]>()
+  for (const e of withQual) {
+    const key = `${e.fleet}|${e.seat}|${e.base}`
+    let group = byCellKey.get(key)
+    if (!group) { group = []; byCellKey.set(key, group) }
+    group.push(e)
+  }
+
+  return Array.from(byCellKey.values()).map((cellEntries) => {
+    const { fleet, seat, base } = cellEntries[0]!
+    const pctls = cellEntries
+      .map((e) => companyPercentile(e.seniority_number, todayActive, todayActive.length))
+      .sort((a, b) => a - b)
+
+    const plugSenNum = Math.max(...cellEntries.map((e) => e.seniority_number))
+
+    const BUCKET_SIZE = 5
+    const bucketCounts = new Array<number>(Math.ceil(100 / BUCKET_SIZE)).fill(0)
+    for (const p of pctls) {
+      const idx = Math.min(Math.floor(p / BUCKET_SIZE), bucketCounts.length - 1)
+      bucketCounts[idx]!++
+    }
+    const density: DensityBucket[] = bucketCounts.map((count, i) => ({
+      start: i * BUCKET_SIZE,
+      count,
+    }))
+
+    return {
+      fleet: fleet!,
+      seat: seat!,
+      base: base!,
+      activeCount: cellEntries.length,
+      plugPercentile: pctls[0] ?? 0,
+      plugSenNum,
+      p25: percentileAt(pctls, 25),
+      median: percentileAt(pctls, 50),
+      p75: percentileAt(pctls, 75),
+      max: pctls[pctls.length - 1] ?? 0,
+      density,
+    }
+  })
+}
+
+export function applyProjectionToSnapshots(
+  snapshots: QualDemographicSnapshot[],
+  entries: SeniorityEntry[],
+  userSenNum: number,
+  projectionDate: Date,
+): QualDemographicScale[] {
+  const projectedActive = entries.filter((e) => isActiveAt(e, projectionDate))
+  const userPctl = projectedActive.length > 0
+    ? companyPercentile(userSenNum, projectedActive, projectedActive.length)
+    : 0
+
+  return snapshots.map((snap) => ({
+    ...snap,
+    userPercentile: userPctl,
+    isHoldable: userPctl >= snap.plugPercentile,
+  }))
 }
 
 // ─── Percentile threshold calculator ─────────────────────────────────────────
