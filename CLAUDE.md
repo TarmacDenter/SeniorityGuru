@@ -32,6 +32,7 @@ A web app for airline pilots to track and project their seniority standing over 
 - **No Docker** — Supabase CLI handles local DB via its own Docker internals; NuxtHub handles runtime
 - **SSR auth via cookies** — `@nuxtjs/supabase` with `useSsrCookies: true` (default); PKCE flow required
 - **RLS everywhere** — all tables have Row Level Security; use a `get_my_role()` security definer helper for role checks
+- **Greenfield — no production users** — the app has not been released publicly. There are no existing users, no live data, and no backwards-compatibility obligations. DB schema changes, Zod schema changes, and TypeScript type changes carry zero migration risk. Propose and implement schema improvements freely.
 
 ---
 
