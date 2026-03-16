@@ -24,6 +24,6 @@
 </template>
 
 <script setup lang="ts">
-defineProps<{ isBannerDismissed: boolean }>()
+defineProps<{ isBannerDismissed: boolean; context?: string }>()
 defineEmits<{ dismiss: [] }>()
 </script>

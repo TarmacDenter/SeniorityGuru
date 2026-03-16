@@ -47,11 +47,12 @@
               <span>Base estimate: </span>
               <span class="font-mono font-medium text-highlighted">{{ result.year }}</span>
             </div>
-            <div v-if="result.optimistic">
+            <div v-if="result.optimistic" class="flex items-center gap-1">
               <span>Optimistic (faster retirements): </span>
               <span class="font-mono font-medium text-[var(--ui-color-success-500)]">{{ result.optimistic }}</span>
+              <InfoIcon text="Optimistic assumes retirements happen 10% sooner (dates scaled ×0.9). Pessimistic assumes 10% later (×1.1). ±10% is a modeling convention." size="xs" />
             </div>
-            <div v-if="result.pessimistic">
+            <div v-if="result.pessimistic" class="flex items-center gap-1">
               <span>Pessimistic (slower retirements): </span>
               <span class="font-mono font-medium text-[var(--ui-color-error-500)]">{{ result.pessimistic }}</span>
             </div>
@@ -64,6 +65,7 @@
           <UIcon name="i-lucide-clock" class="size-4" />
           Based on current data, this threshold is not projected to be reached within 15 years.
         </div>
+        <p class="mt-1 text-xs text-[var(--ui-text-muted)]">Projection horizon is capped at 15 years.</p>
       </UCard>
     </template>
   </div>

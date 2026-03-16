@@ -83,6 +83,7 @@
           <div class="w-3 h-3 rounded-full bg-[var(--ui-color-primary-500)]" />
         </div>
         <span>Your position (<span class="text-[var(--ui-color-success-500)]">holdable</span> / <span class="text-[var(--ui-color-primary-500)]">not yet</span>)</span>
+        <InfoIcon text="Holdable means your projected seniority number is ≤ the plug — the most junior pilot currently active in this qualification." size="xs" />
       </div>
       <div class="flex items-center gap-1.5">
         <div class="flex gap-0.5">
@@ -90,6 +91,7 @@
           <div class="w-0.5 h-4 border-l-2 border-dashed border-[var(--ui-color-error-500)]" />
         </div>
         <span>Plug — most junior pilot holding</span>
+        <InfoIcon text="The plug is the most junior pilot currently holding this qualification. Being senior to the plug means you can hold the position." size="xs" />
       </div>
       <div v-if="hasProjection" class="flex items-center gap-1.5">
         <div class="w-3 h-3 rounded-full bg-[var(--ui-text-muted)] opacity-40" />
