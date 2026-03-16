@@ -43,7 +43,7 @@ const user = useSupabaseUser()
 // the Supabase client will exchange it and update the user. Watch for that and redirect.
 watchEffect(() => {
   if (user.value?.user_metadata?.email_verified) {
-    navigateTo('/')
+    navigateTo('/dashboard')
   }
 })
 const loading = ref(false)

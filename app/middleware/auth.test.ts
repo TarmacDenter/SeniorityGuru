@@ -34,17 +34,17 @@ describe('auth middleware', async () => {
   })
 
   describe('Level 1 — unauthenticated', () => {
-    it('redirects to /welcome when no user', async () => {
+    it('redirects to / when no user', async () => {
       mockUser.value = null
-      await authMiddleware(routeTo('/'), routeTo('/'))
-      expect(mockNavigateTo).toHaveBeenCalledWith('/welcome')
+      await authMiddleware(routeTo('/dashboard'), routeTo('/dashboard'))
+      expect(mockNavigateTo).toHaveBeenCalledWith('/')
     })
   })
 
   describe('Level 2 — authenticated but unverified email', () => {
     it('redirects to /auth/resend-email when email not confirmed', async () => {
       mockUser.value = { user_metadata: { email_verified: false } }
-      await authMiddleware(routeTo('/'), routeTo('/'))
+      await authMiddleware(routeTo('/dashboard'), routeTo('/dashboard'))
       expect(mockNavigateTo).toHaveBeenCalledWith('/auth/resend-email')
     })
 
@@ -59,7 +59,7 @@ describe('auth middleware', async () => {
     it('redirects to /auth/setup-profile when icao_code is null', async () => {
       mockUser.value = { user_metadata: { email_verified: true } }
       mockProfile.value = { role: 'user', icao_code: null }
-      await authMiddleware(routeTo('/'), routeTo('/'))
+      await authMiddleware(routeTo('/dashboard'), routeTo('/dashboard'))
       expect(mockNavigateTo).toHaveBeenCalledWith('/auth/setup-profile')
     })
 
@@ -88,21 +88,21 @@ describe('auth middleware', async () => {
       mockUser.value = { user_metadata: { email_verified: true } }
       mockProfile.value = null
       mockFetchProfile.mockImplementation(() => { mockProfile.value = { role: 'user', icao_code: 'UAL' } })
-      await authMiddleware(routeTo('/'), routeTo('/'))
+      await authMiddleware(routeTo('/dashboard'), routeTo('/dashboard'))
       expect(mockFetchProfile).toHaveBeenCalledOnce()
     })
 
     it('allows admin users through even without icao_code', async () => {
       mockUser.value = { user_metadata: { email_verified: true } }
       mockProfile.value = { role: 'admin', icao_code: null }
-      await authMiddleware(routeTo('/'), routeTo('/'))
+      await authMiddleware(routeTo('/dashboard'), routeTo('/dashboard'))
       expect(mockNavigateTo).not.toHaveBeenCalledWith('/auth/setup-profile')
     })
 
     it('allows verified users with icao_code through without redirecting', async () => {
       mockUser.value = { user_metadata: { email_verified: true } }
       mockProfile.value = { role: 'user', icao_code: 'UAL' }
-      await authMiddleware(routeTo('/'), routeTo('/'))
+      await authMiddleware(routeTo('/dashboard'), routeTo('/dashboard'))
       expect(mockNavigateTo).not.toHaveBeenCalled()
     })
   })

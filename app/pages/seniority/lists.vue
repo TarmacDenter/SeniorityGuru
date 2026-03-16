@@ -37,7 +37,7 @@
                   variant="ghost"
                   size="xs"
                   label="Dashboard"
-                  @click="navigateTo({ path: '/', query: { list: row.original.id } })"
+                  @click="navigateTo({ path: '/dashboard', query: { list: row.original.id } })"
                 />
                 <UButton
                   icon="i-lucide-pencil"

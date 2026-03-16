@@ -122,7 +122,7 @@
 definePageMeta({ layout: 'dashboard' })
 
 if (!import.meta.dev) {
-  await navigateTo('/')
+  await navigateTo('/dashboard')
 }
 
 const semanticColors = ['primary', 'secondary', 'success', 'info', 'warning', 'error', 'neutral'] as const

@@ -47,6 +47,6 @@ async function onSubmit() {
   }
 
   toast.add({ title: 'Password updated successfully', color: 'success' })
-  navigateTo('/')
+  navigateTo('/dashboard')
 }
 </script>

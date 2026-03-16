@@ -61,6 +61,6 @@ async function onSubmit() {
   const userStore = useUserStore()
   await userStore.fetchProfile()
 
-  navigateTo('/')
+  navigateTo('/dashboard')
 }
 </script>

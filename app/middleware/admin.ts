@@ -8,6 +8,6 @@ export default defineNuxtRouteMiddleware(async () => {
   }
 
   if (!userStore.isAdmin) {
-    return navigateTo('/')
+    return navigateTo('/dashboard')
   }
 })

@@ -21,8 +21,8 @@ export default defineNuxtRouteMiddleware(async (to) => {
 
   // Level 1: not authenticated
   if (!user.value) {
-    log.info('Unauthenticated access, redirecting to welcome', { path: to.path })
-    return navigateTo('/welcome')
+    log.info('Unauthenticated access, redirecting to landing page', { path: to.path })
+    return navigateTo('/')
   }
 
   // Level 2: authenticated but email not verified
