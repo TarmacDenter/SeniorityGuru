@@ -12,6 +12,14 @@ describe('dashboard-tabs', () => {
       expect(resolveTab('overview')).toBe('status')
     })
 
+    it('maps "retirements" to "trajectory" for backward compatibility', () => {
+      expect(resolveTab('retirements')).toBe('trajectory')
+    })
+
+    it('maps "projections" to "trajectory" for backward compatibility', () => {
+      expect(resolveTab('projections')).toBe('trajectory')
+    })
+
     it('returns valid tab names unchanged', () => {
       for (const tab of VALID_TABS) {
         expect(resolveTab(tab)).toBe(tab)
@@ -26,14 +34,18 @@ describe('dashboard-tabs', () => {
   })
 
   describe('VALID_TABS', () => {
-    it('contains all 6 dashboard tabs', () => {
-      expect(VALID_TABS).toHaveLength(6)
+    it('contains all 5 dashboard tabs', () => {
+      expect(VALID_TABS).toHaveLength(5)
       expect(VALID_TABS).toContain('status')
       expect(VALID_TABS).toContain('demographics')
       expect(VALID_TABS).toContain('position')
-      expect(VALID_TABS).toContain('retirements')
-      expect(VALID_TABS).toContain('projections')
+      expect(VALID_TABS).toContain('trajectory')
       expect(VALID_TABS).toContain('seniority')
+    })
+
+    it('does not contain retired tab names', () => {
+      expect(VALID_TABS).not.toContain('retirements')
+      expect(VALID_TABS).not.toContain('projections')
     })
   })
 })

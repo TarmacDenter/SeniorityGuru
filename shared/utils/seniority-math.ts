@@ -1,4 +1,6 @@
 import type { SeniorityEntryResponse } from '#shared/schemas/seniority-list';
+import type { GrowthConfig } from '#shared/types/growth-config';
+import { computeAdditionalPilots } from '#shared/types/growth-config';
 
 type FilterFn = (entry: SeniorityEntryResponse) => boolean;
 
@@ -45,11 +47,13 @@ export function buildTrajectory(
   userSenNum: number,
   timePoints: Date[],
   filterFn?: FilterFn,
+  growthConfig?: GrowthConfig,
 ): { date: string; rank: number; percentile: number; }[] {
   const filtered = filterFn ? entries.filter(filterFn) : entries;
   const totalInCategory = filtered.length;
   const aheadInCategory = filtered.filter((e) => e.seniority_number < userSenNum);
   const initialRank = aheadInCategory.length + 1;
+  const baseDate = timePoints[0];
 
   return timePoints.map((tp) => {
     let retiredAhead = 0;
@@ -58,8 +62,12 @@ export function buildTrajectory(
       if (new Date(e.retire_date) <= tp) retiredAhead++;
     }
     const rank = initialRank - retiredAhead;
-    const percentile = totalInCategory > 0
-      ? Math.round(((totalInCategory - rank + 1) / totalInCategory) * 1000) / 10
+    const additional = growthConfig?.enabled && baseDate
+      ? computeAdditionalPilots(totalInCategory, growthConfig.annualRate, baseDate, tp)
+      : 0;
+    const projectedTotal = totalInCategory + additional;
+    const percentile = projectedTotal > 0
+      ? Math.round(((projectedTotal - rank + 1) / projectedTotal) * 1000) / 10
       : 0;
     return {
       date: tp.toISOString().split('T')[0]!,
@@ -142,12 +150,13 @@ export function projectComparativeTrajectory(
   retireDate: string | null,
   currentFilter: FilterFn,
   compareFilter: FilterFn,
+  growthConfig?: GrowthConfig,
 ): { labels: string[]; currentData: number[]; compareData: number[]; } {
   const { endDate } = getProjectionEndDate(retireDate);
   const today = new Date();
   const timePoints = generateTimePoints(today, endDate);
-  const currentTrajectory = buildTrajectory(allEntries, userSenNum, timePoints, currentFilter);
-  const compareTrajectory = buildTrajectory(allEntries, userSenNum, timePoints, compareFilter);
+  const currentTrajectory = buildTrajectory(allEntries, userSenNum, timePoints, currentFilter, growthConfig);
+  const compareTrajectory = buildTrajectory(allEntries, userSenNum, timePoints, compareFilter, growthConfig);
 
   return {
     labels: currentTrajectory.map((t) => t.date),

@@ -12,9 +12,12 @@ import {
   computeQualComposition,
   computeRetirementWave,
   computePowerIndexCells,
+  applyProjectionToSnapshots,
+  computeQualSnapshots,
   findThresholdYear,
   detectUpgradeTransitions,
 } from './qual-analytics'
+import type { GrowthConfig } from '#shared/types/growth-config'
 
 type SeniorityEntry = SeniorityEntryResponse
 
@@ -391,6 +394,59 @@ describe('computePowerIndexCells', () => {
     expect(cells[0]?.state).toBe('green')
     expect(cells[0]?.cellPercentile).toBe(90)
     expect(cells[0]?.numbersJuniorToPlug).toBe(0)
+  })
+})
+
+// ─── computePowerIndexCells with growth ──────────────────────────────────────
+describe('computePowerIndexCells with growthConfig', () => {
+  const FUTURE = new Date('2029-01-01')
+  const growthEnabled: GrowthConfig = { enabled: true, annualRate: 0.05 }
+
+  it('growth increases userPercentile compared to no growth', () => {
+    const entries = Array.from({ length: 20 }, (_, i) => makeEntry({
+      seniority_number: i + 1,
+      employee_number: `EMP${String(i + 1).padStart(4, '0')}`,
+      fleet: '737', seat: 'CA', base: 'JFK',
+      retire_date: i < 5 ? '2028-01-01' : '2045-01-01',
+    }))
+    const cellsNoGrowth = computePowerIndexCells(entries, 10, FUTURE)
+    const cellsWithGrowth = computePowerIndexCells(entries, 10, FUTURE, growthEnabled)
+    expect(cellsWithGrowth[0]!.userPercentile).toBeGreaterThan(cellsNoGrowth[0]!.userPercentile)
+  })
+
+  it('disabled growth matches no-growth behavior', () => {
+    const entries = [
+      makeEntry({ fleet: '737', seat: 'CA', base: 'JFK', seniority_number: 1, retire_date: null }),
+      makeEntry({ fleet: '737', seat: 'CA', base: 'JFK', seniority_number: 2, retire_date: null }),
+    ]
+    const disabled: GrowthConfig = { enabled: false, annualRate: 0.05 }
+    const cellsNone = computePowerIndexCells(entries, 1, FUTURE)
+    const cellsDisabled = computePowerIndexCells(entries, 1, FUTURE, disabled)
+    expect(cellsDisabled[0]!.userPercentile).toBe(cellsNone[0]!.userPercentile)
+  })
+})
+
+// ─── applyProjectionToSnapshots with growth ─────────────────────────────────
+describe('applyProjectionToSnapshots with growthConfig', () => {
+  it('growth increases projected userPercentile but not currentUserPercentile', () => {
+    // Create entries with qual data (fleet+seat+base) so snapshots are generated
+    const entries = Array.from({ length: 20 }, (_, i) => makeEntry({
+      seniority_number: i + 1,
+      employee_number: `EMP${String(i + 1).padStart(4, '0')}`,
+      fleet: '737', seat: 'CA', base: 'JFK',
+      retire_date: `${2030 + i}-01-01`,
+    }))
+    const snapshots = computeQualSnapshots(entries)
+    const projectionDate = new Date('2035-01-01')
+    const growthEnabled: GrowthConfig = { enabled: true, annualRate: 0.05 }
+
+    const withoutGrowth = applyProjectionToSnapshots(snapshots, entries, 10, projectionDate)
+    const withGrowth = applyProjectionToSnapshots(snapshots, entries, 10, projectionDate, growthEnabled)
+
+    // currentUserPercentile should be the same (no growth at today's date)
+    expect(withGrowth[0]!.currentUserPercentile).toBe(withoutGrowth[0]!.currentUserPercentile)
+    // projected userPercentile should be higher with growth
+    expect(withGrowth[0]!.userPercentile).toBeGreaterThan(withoutGrowth[0]!.userPercentile)
   })
 })
 

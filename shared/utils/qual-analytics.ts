@@ -1,5 +1,7 @@
 import type { SeniorityEntryResponse } from '#shared/schemas/seniority-list'
 import type { FilterFn } from '#shared/utils/seniority-math'
+import type { GrowthConfig } from '#shared/types/growth-config'
+import { computeAdditionalPilots } from '#shared/types/growth-config'
 
 type SeniorityEntry = SeniorityEntryResponse
 
@@ -320,12 +322,17 @@ export function computePowerIndexCells(
   entries: SeniorityEntry[],
   userSenNum: number,
   projectionDate: Date,
+  growthConfig?: GrowthConfig,
 ): PowerIndexCell[] {
   const withQual = entries.filter((e) => e.fleet && e.seat && e.base)
   const activeCompany = entries.filter((e) => isActiveAt(e, projectionDate))
   const activeSorted = sortedSenNums(activeCompany)
   const totalCompany = activeCompany.length
-  const userPctl = companyPercentile(userSenNum, activeSorted, totalCompany)
+  const additional = growthConfig?.enabled
+    ? computeAdditionalPilots(entries.length, growthConfig.annualRate, new Date(), projectionDate)
+    : 0
+  const projectedTotalCompany = totalCompany + additional
+  const userPctl = companyPercentile(userSenNum, activeSorted, projectedTotalCompany)
 
   const byCellKey = new Map<string, SeniorityEntry[]>()
   for (const e of withQual) {
@@ -346,7 +353,7 @@ export function computePowerIndexCells(
       : 0
 
     const plugPctl = mostJuniorActiveSenNum > 0
-      ? companyPercentile(mostJuniorActiveSenNum, activeSorted, totalCompany)
+      ? companyPercentile(mostJuniorActiveSenNum, activeSorted, projectedTotalCompany)
       : 100
 
     const isHoldable = remaining.length > 0 && userSenNum <= mostJuniorActiveSenNum
@@ -466,6 +473,7 @@ export function applyProjectionToSnapshots(
   entries: SeniorityEntry[],
   userSenNum: number,
   projectionDate: Date,
+  growthConfig?: GrowthConfig,
 ): QualDemographicScale[] {
   const today = new Date()
   const todayActive = entries.filter((e) => isActiveAt(e, today))
@@ -476,8 +484,12 @@ export function applyProjectionToSnapshots(
 
   const projectedActive = entries.filter((e) => isActiveAt(e, projectionDate))
   const projectedSorted = sortedSenNums(projectedActive)
-  const userPctl = projectedActive.length > 0
-    ? companyPercentile(userSenNum, projectedSorted, projectedActive.length)
+  const additional = growthConfig?.enabled
+    ? computeAdditionalPilots(entries.length, growthConfig.annualRate, today, projectionDate)
+    : 0
+  const projectedTotal = projectedActive.length + additional
+  const userPctl = projectedTotal > 0
+    ? companyPercentile(userSenNum, projectedSorted, projectedTotal)
     : 0
 
   return snapshots.map((snap) => ({

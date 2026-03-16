@@ -2,7 +2,10 @@
   <UCard>
     <template #header>
       <div class="flex items-center justify-between">
-        <h3 class="font-semibold text-highlighted">Company Seniority Trajectory</h3>
+        <div class="flex items-center">
+          <h3 class="font-semibold text-highlighted">Company Seniority Trajectory</h3>
+          <slot name="badge" />
+        </div>
         <UBadge color="primary" variant="subtle" size="sm">Projected</UBadge>
       </div>
     </template>

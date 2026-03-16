@@ -191,7 +191,7 @@ export function useDashboardStats() {
     }
   })
 
-  const { aggregateStats, recentLists, quals } = useCompanyStats()
+  const { recentLists, quals } = useCompanyStats()
 
   return {
     hasData,
@@ -207,7 +207,6 @@ export function useDashboardStats() {
     trajectoryDeltas,
     computeRetirementProjection,
     computeComparativeTrajectory,
-    aggregateStats,
     recentLists,
     quals,
   }

@@ -2,6 +2,7 @@
 import { describe, it, expect } from 'vitest'
 import { countRetiredAbove, generateTimePoints, buildTrajectory, computeRank, getProjectionEndDate, formatDateLabel, formatNumber, projectRetirements, projectComparativeTrajectory, computeTrajectoryDeltas } from './seniority-math'
 import { makeEntry } from '#shared/test-utils/factories'
+import type { GrowthConfig } from '#shared/types/growth-config'
 
 describe('countRetiredAbove', () => {
   it('returns 0 when no entries have retired', () => {
@@ -126,6 +127,74 @@ describe('buildTrajectory', () => {
       { date: '2030-01-01', rank: 3, percentile: 33.3 },
       { date: '2035-01-01', rank: 3, percentile: 33.3 },
     ])
+  })
+})
+
+describe('buildTrajectory with growthConfig', () => {
+  const growthEnabled: GrowthConfig = { enabled: true, annualRate: 0.03 }
+  const growthDisabled: GrowthConfig = { enabled: false, annualRate: 0.03 }
+
+  it('growth produces higher percentile than no growth', () => {
+    // 10 entries: user at #10, 2 retire before 2031, rest stay
+    const entries = Array.from({ length: 9 }, (_, i) => makeEntry({
+      seniority_number: i + 1,
+      employee_number: String(i + 1),
+      retire_date: i < 2 ? '2028-06-01' : '2045-01-01',
+    }))
+    entries.push(makeEntry({ seniority_number: 10, employee_number: '500', retire_date: '2050-01-01' }))
+
+    const timePoints = [
+      new Date('2026-01-01'),
+      new Date('2031-01-01'),
+    ]
+    const withoutGrowth = buildTrajectory(entries, 10, timePoints)
+    const withGrowth = buildTrajectory(entries, 10, timePoints, undefined, growthEnabled)
+
+    // At first time point (base date), no growth has occurred so percentile is the same
+    expect(withGrowth[0]!.percentile).toBe(withoutGrowth[0]!.percentile)
+    // At later time points, growth increases the denominator → higher percentile
+    expect(withGrowth[1]!.percentile).toBeGreaterThan(withoutGrowth[1]!.percentile)
+  })
+
+  it('disabled growth config matches no-config behavior', () => {
+    const entries = [
+      makeEntry({ seniority_number: 1, retire_date: '2028-06-01' }),
+      makeEntry({ seniority_number: 5, employee_number: '500', retire_date: '2040-01-01' }),
+    ]
+    const timePoints = [new Date('2026-01-01'), new Date('2031-01-01')]
+    const noConfig = buildTrajectory(entries, 5, timePoints)
+    const disabled = buildTrajectory(entries, 5, timePoints, undefined, growthDisabled)
+    expect(disabled).toEqual(noConfig)
+  })
+
+  it('computes exact growth-adjusted percentile', () => {
+    // 4 pilots, user is #5 (rank 4 at first time point, rank 3 after 1 retirement)
+    // At +5 years with 3% growth: additionalPilots = round(4 * ((1.03)^5 - 1)) = round(4 * 0.1593) = round(0.637) = 1
+    // projectedTotal = 4 + 1 = 5, rank = 3 → percentile = ((5 - 3 + 1) / 5) * 100 = 60%
+    const entries = [
+      makeEntry({ seniority_number: 1, retire_date: '2028-06-01' }),
+      makeEntry({ seniority_number: 2, retire_date: '2035-06-01' }),
+      makeEntry({ seniority_number: 3, retire_date: '2040-06-01' }),
+      makeEntry({ seniority_number: 5, employee_number: '500', retire_date: '2045-01-01' }),
+    ]
+    const timePoints = [new Date('2026-01-01'), new Date('2031-01-01')]
+    const result = buildTrajectory(entries, 5, timePoints, undefined, growthEnabled)
+    // At t=0: rank=4, total=4, percentile = ((4-4+1)/4)*100 = 25
+    expect(result[0]!.percentile).toBe(25)
+    // At t=+5yr: 1 retired (sen#1), rank=3, projectedTotal=5, pctl = ((5-3+1)/5)*100 = 60
+    expect(result[1]!.percentile).toBe(60)
+  })
+
+  it('rank is unchanged by growth (only denominator changes)', () => {
+    const entries = [
+      makeEntry({ seniority_number: 1, retire_date: '2028-06-01' }),
+      makeEntry({ seniority_number: 5, employee_number: '500', retire_date: '2040-01-01' }),
+    ]
+    const timePoints = [new Date('2026-01-01'), new Date('2031-01-01')]
+    const withGrowth = buildTrajectory(entries, 5, timePoints, undefined, growthEnabled)
+    const withoutGrowth = buildTrajectory(entries, 5, timePoints)
+    expect(withGrowth[0]!.rank).toBe(withoutGrowth[0]!.rank)
+    expect(withGrowth[1]!.rank).toBe(withoutGrowth[1]!.rank)
   })
 })
 

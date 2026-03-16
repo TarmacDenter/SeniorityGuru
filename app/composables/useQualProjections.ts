@@ -15,6 +15,7 @@ import {
 import type { ComputedRef } from 'vue'
 import { useSeniorityStore } from '~/stores/seniority'
 import { useUserEntry } from './useUserEntry'
+import { useGrowthConfig } from './useGrowthConfig'
 
 const BANNER_KEY = 'qual-projections-banner-dismissed'
 
@@ -23,6 +24,7 @@ const noFilter: FilterFn = () => true
 export function useQualProjections(qualFilterFn: ComputedRef<FilterFn> = computed(() => noFilter)) {
   const seniorityStore = useSeniorityStore()
   const userEntry = useUserEntry({ withNewHireMode: true })
+  const { growthConfig } = useGrowthConfig()
 
   const isBannerDismissed = ref(
     typeof localStorage !== 'undefined' ? localStorage.getItem(BANNER_KEY) === 'true' : false,
@@ -49,6 +51,7 @@ export function useQualProjections(qualFilterFn: ComputedRef<FilterFn> = compute
       seniorityStore.entries,
       userEntry.value.seniority_number,
       projectionDate.value,
+      growthConfig.value,
     )
   })
 
@@ -60,7 +63,7 @@ export function useQualProjections(qualFilterFn: ComputedRef<FilterFn> = compute
     if (!userEntry.value) return []
     const { today, endDate } = getProjectionEndDate(userEntry.value.retire_date)
     const timePoints = generateTimePoints(today, endDate)
-    return buildTrajectory(seniorityStore.entries, userEntry.value.seniority_number, timePoints, qualFilterFn.value)
+    return buildTrajectory(seniorityStore.entries, userEntry.value.seniority_number, timePoints, qualFilterFn.value, growthConfig.value)
   })
 
   const targetPercentile = ref(50) // 50 | 75 | 90
@@ -71,11 +74,14 @@ export function useQualProjections(qualFilterFn: ComputedRef<FilterFn> = compute
     const { today, endDate } = getProjectionEndDate(userEntry.value.retire_date)
     const timePoints = generateTimePoints(today, endDate)
 
+    const gc = growthConfig.value
+
     const base = buildTrajectory(
       seniorityStore.entries,
       userEntry.value.seniority_number,
       timePoints,
       qualFilterFn.value,
+      gc,
     )
 
     const scaleEntries = (mult: number) =>
@@ -93,12 +99,14 @@ export function useQualProjections(qualFilterFn: ComputedRef<FilterFn> = compute
       userEntry.value.seniority_number,
       timePoints,
       qualFilterFn.value,
+      gc,
     )
     const pessimistic = buildTrajectory(
       scaleEntries(1.1),
       userEntry.value.seniority_number,
       timePoints,
       qualFilterFn.value,
+      gc,
     )
 
     return findThresholdYear(base, optimistic, pessimistic, targetPercentile.value)
@@ -110,7 +118,7 @@ export function useQualProjections(qualFilterFn: ComputedRef<FilterFn> = compute
 
   const qualScales = computed(() => {
     if (!userEntry.value || qualSnapshots.value.length === 0) return []
-    return applyProjectionToSnapshots(qualSnapshots.value, seniorityStore.entries, userEntry.value.seniority_number, projectionDate.value)
+    return applyProjectionToSnapshots(qualSnapshots.value, seniorityStore.entries, userEntry.value.seniority_number, projectionDate.value, growthConfig.value)
   })
 
   return {
@@ -126,5 +134,6 @@ export function useQualProjections(qualFilterFn: ComputedRef<FilterFn> = compute
     trajectoryDeltas,
     targetPercentile,
     thresholdResult,
+    growthConfig,
   }
 }

@@ -40,11 +40,8 @@
       <!-- Position tab -->
       <DashboardTabsPositionTab v-else-if="activeTab === 'position'" />
 
-      <!-- Retirements tab -->
-      <DashboardTabsRetirementsTab v-else-if="activeTab === 'retirements'" />
-
-      <!-- Projections tab -->
-      <DashboardTabsProjectionsTab v-else-if="activeTab === 'projections'" />
+      <!-- Trajectory tab -->
+      <DashboardTabsTrajectoryTab v-else-if="activeTab === 'trajectory'" />
 
       <!-- Seniority List tab — fills panel body, manages its own scroll -->
       <DashboardTabsSeniorityListTab v-else-if="activeTab === 'seniority'" :loading="loading" />
@@ -70,8 +67,7 @@ const tabs: TabsItem[] = [
   { label: 'My Status', icon: 'i-lucide-user', value: 'status' },
   { label: 'Demographics', icon: 'i-lucide-users', value: 'demographics' },
   { label: 'Position', icon: 'i-lucide-map-pin', value: 'position' },
-  { label: 'Retirements', icon: 'i-lucide-calendar-clock', value: 'retirements' },
-  { label: 'Projections', icon: 'i-lucide-trending-up', value: 'projections' },
+  { label: 'Trajectory', icon: 'i-lucide-trending-up', value: 'trajectory' },
   { label: 'Seniority List', icon: 'i-lucide-list-ordered', value: 'seniority' },
 ];
 
