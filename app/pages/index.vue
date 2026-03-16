@@ -1,7 +1,7 @@
 <template>
   <UDashboardPanel>
     <template #header>
-      <SeniorityNavbar title="Dashboard" />
+      <SeniorityNavbar title="Dashboard" :description="navbarDescription" />
 
       <UDashboardToolbar>
         <UTabs v-model="activeTab" :items="tabs" :content="false" variant="link" />
@@ -100,6 +100,17 @@ const listOptions = computed(() =>
 const isHistorical = computed(() => {
   if (!selectedListId.value || listOptions.value.length === 0) return false;
   return selectedListId.value !== listOptions.value[0]?.id;
+});
+
+const selectedList = computed(() =>
+  seniorityStore.lists.find(l => l.id === selectedListId.value),
+);
+
+const navbarDescription = computed(() => {
+  const list = selectedList.value;
+  if (!list) return undefined;
+  const base = list.title ? `${list.title}` : 'Seniority List';
+  return `${base} · effective ${list.effective_date}`;
 });
 
 const {
