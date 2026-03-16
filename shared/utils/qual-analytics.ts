@@ -267,6 +267,10 @@ export function computeRetirementWave(
     .map(([year, count]) => ({ year, count, isWave: count >= waveThreshold }))
 }
 
+// ─── Shared constants ─────────────────────────────────────────────────────────
+
+export const SEAT_ORDER: Record<string, number> = { CA: 0, FO: 1 }
+
 // ─── Power Index ──────────────────────────────────────────────────────────────
 
 export type PowerIndexCellState = 'green' | 'amber' | 'red'
@@ -280,7 +284,6 @@ export interface PowerIndexCell {
   totalInCell: number
   pilotsAhead: number
   isLowestSeniority: boolean
-  percentile: number
   cellPercentile: number
   numbersJuniorToPlug: number
   plugPercentile: number
@@ -292,11 +295,25 @@ function isActiveAt(e: SeniorityEntry, projectionDate: Date): boolean {
   return new Date(e.retire_date) > projectionDate
 }
 
-function companyPercentile(senNum: number, entries: SeniorityEntry[], totalCompany: number): number {
-  const rank = entries.filter((e) => e.seniority_number < senNum).length + 1
-  return totalCompany > 0
-    ? Math.round(((totalCompany - rank + 1) / totalCompany) * 100 * 10) / 10
-    : 0
+function lowerBound(sorted: number[], target: number): number {
+  let lo = 0
+  let hi = sorted.length
+  while (lo < hi) {
+    const mid = (lo + hi) >>> 1
+    if (sorted[mid]! < target) lo = mid + 1
+    else hi = mid
+  }
+  return lo
+}
+
+function sortedSenNums(entries: SeniorityEntry[]): number[] {
+  return entries.map((e) => e.seniority_number).sort((a, b) => a - b)
+}
+
+function companyPercentile(senNum: number, sortedNums: number[], total: number): number {
+  if (total === 0) return 0
+  const rank = lowerBound(sortedNums, senNum) + 1
+  return Math.round(((total - rank + 1) / total) * 100 * 10) / 10
 }
 
 export function computePowerIndexCells(
@@ -306,8 +323,9 @@ export function computePowerIndexCells(
 ): PowerIndexCell[] {
   const withQual = entries.filter((e) => e.fleet && e.seat && e.base)
   const activeCompany = entries.filter((e) => isActiveAt(e, projectionDate))
+  const activeSorted = sortedSenNums(activeCompany)
   const totalCompany = activeCompany.length
-  const userPctl = companyPercentile(userSenNum, activeCompany, totalCompany)
+  const userPctl = companyPercentile(userSenNum, activeSorted, totalCompany)
 
   const byCellKey = new Map<string, SeniorityEntry[]>()
   for (const e of withQual) {
@@ -328,7 +346,7 @@ export function computePowerIndexCells(
       : 0
 
     const plugPctl = mostJuniorActiveSenNum > 0
-      ? companyPercentile(mostJuniorActiveSenNum, activeCompany, totalCompany)
+      ? companyPercentile(mostJuniorActiveSenNum, activeSorted, totalCompany)
       : 100
 
     const isHoldable = remaining.length > 0 && userSenNum <= mostJuniorActiveSenNum
@@ -356,7 +374,6 @@ export function computePowerIndexCells(
       retiredCount, totalInCell: total,
       pilotsAhead: aheadInCell,
       isLowestSeniority,
-      percentile: userPctl,
       cellPercentile,
       numbersJuniorToPlug,
       plugPercentile: plugPctl,
@@ -391,16 +408,13 @@ export interface QualDemographicScale extends QualDemographicSnapshot {
   isHoldable: boolean
 }
 
-function percentileAt(sorted: number[], p: number): number {
-  if (sorted.length === 0) return 0
-  const idx = Math.floor((p / 100) * (sorted.length - 1))
-  return sorted[idx]!
-}
-
 export function computeQualSnapshots(entries: SeniorityEntry[]): QualDemographicSnapshot[] {
   const today = new Date()
   const todayActive = entries.filter((e) => isActiveAt(e, today))
   if (todayActive.length === 0) return []
+
+  const activeSorted = sortedSenNums(todayActive)
+  const totalActive = todayActive.length
 
   const withQual = todayActive.filter((e) => e.fleet && e.seat && e.base)
   const byCellKey = new Map<string, SeniorityEntry[]>()
@@ -414,7 +428,7 @@ export function computeQualSnapshots(entries: SeniorityEntry[]): QualDemographic
   return Array.from(byCellKey.values()).map((cellEntries) => {
     const { fleet, seat, base } = cellEntries[0]!
     const pctls = cellEntries
-      .map((e) => companyPercentile(e.seniority_number, todayActive, todayActive.length))
+      .map((e) => companyPercentile(e.seniority_number, activeSorted, totalActive))
       .sort((a, b) => a - b)
 
     const plugSenNum = Math.max(...cellEntries.map((e) => e.seniority_number))
@@ -437,9 +451,9 @@ export function computeQualSnapshots(entries: SeniorityEntry[]): QualDemographic
       activeCount: cellEntries.length,
       plugPercentile: pctls[0] ?? 0,
       plugSenNum,
-      p25: percentileAt(pctls, 25),
-      median: percentileAt(pctls, 50),
-      p75: percentileAt(pctls, 75),
+      p25: percentileOf(pctls, 25),
+      median: percentileOf(pctls, 50),
+      p75: percentileOf(pctls, 75),
       max: pctls[pctls.length - 1] ?? 0,
       density,
     }
@@ -453,8 +467,9 @@ export function applyProjectionToSnapshots(
   projectionDate: Date,
 ): QualDemographicScale[] {
   const projectedActive = entries.filter((e) => isActiveAt(e, projectionDate))
+  const projectedSorted = sortedSenNums(projectedActive)
   const userPctl = projectedActive.length > 0
-    ? companyPercentile(userSenNum, projectedActive, projectedActive.length)
+    ? companyPercentile(userSenNum, projectedSorted, projectedActive.length)
     : 0
 
   return snapshots.map((snap) => ({

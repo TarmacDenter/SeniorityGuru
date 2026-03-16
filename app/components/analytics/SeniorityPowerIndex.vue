@@ -115,6 +115,8 @@
 </template>
 
 <script setup lang="ts">
+import { SEAT_ORDER } from '#shared/utils/qual-analytics'
+
 const props = defineProps<{
   cells: {
     fleet: string
@@ -125,7 +127,6 @@ const props = defineProps<{
     totalInCell: number
     pilotsAhead: number
     isLowestSeniority: boolean
-    percentile: number
     cellPercentile: number
     numbersJuniorToPlug: number
     plugPercentile: number
@@ -145,8 +146,6 @@ const useProjection = ref(false)
 watch(useProjection, (on) => {
   if (!on) emit('yearsChange', 0)
 })
-
-const SEAT_ORDER: Record<string, number> = { CA: 0, FO: 1 }
 
 const uniqueQuals = computed(() => {
   const seen = new Set<string>()

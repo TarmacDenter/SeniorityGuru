@@ -305,6 +305,10 @@ watch(positionYearsInput, (val) => {
   }, 500)
 })
 
+onUnmounted(() => {
+  if (positionDebounceTimer) clearTimeout(positionDebounceTimer)
+})
+
 const activeTab = ref('demographics')
 const tabItems: TabsItem[] = [
   { label: 'Demographics', value: 'demographics' },

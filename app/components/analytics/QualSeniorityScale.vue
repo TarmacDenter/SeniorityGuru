@@ -92,23 +92,13 @@
 
 <script setup lang="ts">
 import type { QualDemographicScale, DensityBucket } from '#shared/utils/qual-analytics'
+import { SEAT_ORDER } from '#shared/utils/qual-analytics'
 
-const SEAT_ORDER: Record<string, number> = { CA: 0, FO: 1 }
 const BUCKET_WIDTH_PCT = 5
 
 const props = defineProps<{
   scales: QualDemographicScale[]
 }>()
-
-const globalMaxCount = computed(() => {
-  let max = 0
-  for (const scale of props.scales) {
-    for (const b of scale.density) {
-      if (b.count > max) max = b.count
-    }
-  }
-  return max || 1
-})
 
 const sortedScales = computed(() =>
   [...props.scales].sort((a, b) => {
@@ -120,9 +110,19 @@ const sortedScales = computed(() =>
   }),
 )
 
+const rowMaxCounts = computed(() => {
+  const map = new Map<string, number>()
+  for (const scale of props.scales) {
+    const key = `${scale.fleet} ${scale.seat} ${scale.base}`
+    map.set(key, Math.max(...scale.density.map((b) => b.count), 1))
+  }
+  return map
+})
+
 function densityBarStyle(scale: QualDemographicScale, bucket: DensityBucket) {
   if (bucket.count === 0) return { display: 'none' }
-  const maxInRow = Math.max(...scale.density.map((b) => b.count), 1)
+  const key = `${scale.fleet} ${scale.seat} ${scale.base}`
+  const maxInRow = rowMaxCounts.value.get(key) ?? 1
   const heightPct = (bucket.count / maxInRow) * 100
   return {
     left: `${bucket.start}%`,
@@ -132,14 +132,7 @@ function densityBarStyle(scale: QualDemographicScale, bucket: DensityBucket) {
   }
 }
 
-function gap(scale: QualDemographicScale) {
-  return Math.round(scale.plugPercentile - scale.userPercentile)
-}
-
 function clamp(value: number) {
   return Math.max(0, Math.min(100, value))
 }
-
-// suppress unused warning — globalMaxCount available for cross-row normalization if needed
-void globalMaxCount
 </script>
