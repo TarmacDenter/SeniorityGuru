@@ -46,7 +46,7 @@
         </div>
 
         <!-- Detail tabs -->
-        <UTabs :items="tabs" class="mt-4">
+        <UTabs :items="tabs" class="mt-4" @update:model-value="$event === 'upgrades' && onUpgradesTabActivated()">
           <template #retired>
             <ComparisonTab :data="comparison.retired" :columns="retiredColumns" search-placeholder="Search retired..." />
           </template>
@@ -61,6 +61,18 @@
           </template>
           <template #new-hires>
             <ComparisonTab :data="comparison.newHires" :columns="newHireColumns" search-placeholder="Search new hires..." />
+          </template>
+          <template #upgrades>
+            <UCard>
+              <template #header>
+                <h3 class="font-semibold">Upgrade Tracker</h3>
+              </template>
+              <AnalyticsUpgradeTracker
+                :data="upgrades.upgradeTrackerData.value"
+                :loading="upgrades.upgradeTrackerLoading.value"
+                :error="upgrades.upgradeTrackerError.value"
+              />
+            </UCard>
           </template>
         </UTabs>
       </template>
@@ -80,6 +92,7 @@
 
 <script setup lang="ts">
 import { useSeniorityStore } from '~/stores/seniority'
+import { useQualUpgrades } from '~/composables/useQualUpgrades'
 import { retiredColumns, departedColumns, qualMoveColumns, rankChangeColumns, newHireColumns, qualMoveFilters } from '~/utils/column-definitions'
 
 definePageMeta({
@@ -94,6 +107,15 @@ const listIdA = ref<string | undefined>((route.query.a as string) || undefined)
 const listIdB = ref<string | undefined>((route.query.b as string) || undefined)
 
 const { loading, error, comparison } = useSeniorityCompare(listIdA, listIdB)
+const upgrades = useQualUpgrades({ lazy: true })
+const upgradesFetched = ref(false)
+
+function onUpgradesTabActivated() {
+  if (!upgradesFetched.value) {
+    upgradesFetched.value = true
+    upgrades.fetchUpgradeTracker()
+  }
+}
 
 // Keep query params in sync
 watch([listIdA, listIdB], ([a, b]) => {
@@ -139,6 +161,7 @@ const tabs = [
   { label: 'Qual Moves', slot: 'qual-moves' as const },
   { label: 'Rank Changes', slot: 'rank-changes' as const },
   { label: 'New Hires', slot: 'new-hires' as const },
+  { label: 'Upgrades', slot: 'upgrades' as const },
 ]
 
 </script>

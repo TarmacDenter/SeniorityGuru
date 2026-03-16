@@ -18,8 +18,8 @@ Data stays isolated per user. You upload your own lists and only see your own da
 - Auth flow (invite-only signup, PKCE confirm, profile setup with airline/employee number)
 - CSV/XLSX upload with interactive column mapping and human-readable validation errors
 - Full seniority list viewer with your row highlighted
-- Dashboard with trajectory chart, retirement projections, base breakdown, stats grid
-- Seniority list comparison with diff categories and tabbed UI
+- 6-tab dashboard: My Status, Demographics, Position, Retirements, Projections, Seniority List
+- Seniority list comparison with diff categories, tabbed UI, and upgrade tracking
 - List management (view, edit, delete your uploaded lists)
 - Settings page (profile, preferences, password)
 - Admin panel with user management, role editing, invite, and password reset
@@ -33,7 +33,7 @@ Data stays isolated per user. You upload your own lists and only see your own da
 - Data export (CSV/PDF)
 - Notifications (new lists, retirement milestones)
 - Saved scenarios / bookmarks
-- Advanced analytics (cohort analysis, attrition forecasting)
+- Advanced analytics (cohort analysis, attrition forecasting, cross-list trend tracking)
 
 ## Stack
 

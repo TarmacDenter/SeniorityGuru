@@ -62,6 +62,20 @@ export function useQualDemographics() {
     computeYosHistogram(seniorityStore.entries, qualFilterFn.value),
   )
 
+  const qualLabel = computed(() => {
+    const parts: string[] = []
+    if (selectedFleet.value) parts.push(selectedFleet.value)
+    if (selectedSeat.value) parts.push(selectedSeat.value)
+    if (selectedBase.value) parts.push(selectedBase.value)
+    return parts.join(' ')
+  })
+
+  function clearFilter() {
+    selectedFleet.value = null
+    selectedSeat.value = null
+    selectedBase.value = null
+  }
+
   return {
     selectedFleet,
     selectedSeat,
@@ -70,6 +84,8 @@ export function useQualDemographics() {
     availableSeats,
     availableBases,
     qualFilterFn,
+    qualLabel,
+    clearFilter,
     ageDistribution,
     mostJuniorCAs,
     userEntry,

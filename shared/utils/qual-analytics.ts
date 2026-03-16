@@ -405,6 +405,7 @@ export interface QualDemographicSnapshot {
 
 export interface QualDemographicScale extends QualDemographicSnapshot {
   userPercentile: number
+  currentUserPercentile: number
   isHoldable: boolean
 }
 
@@ -466,6 +467,13 @@ export function applyProjectionToSnapshots(
   userSenNum: number,
   projectionDate: Date,
 ): QualDemographicScale[] {
+  const today = new Date()
+  const todayActive = entries.filter((e) => isActiveAt(e, today))
+  const todaySorted = sortedSenNums(todayActive)
+  const currentPctl = todayActive.length > 0
+    ? companyPercentile(userSenNum, todaySorted, todayActive.length)
+    : 0
+
   const projectedActive = entries.filter((e) => isActiveAt(e, projectionDate))
   const projectedSorted = sortedSenNums(projectedActive)
   const userPctl = projectedActive.length > 0
@@ -475,6 +483,7 @@ export function applyProjectionToSnapshots(
   return snapshots.map((snap) => ({
     ...snap,
     userPercentile: userPctl,
+    currentUserPercentile: currentPctl,
     isHoldable: userPctl >= snap.plugPercentile,
   }))
 }

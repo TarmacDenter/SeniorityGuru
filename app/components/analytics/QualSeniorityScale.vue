@@ -37,6 +37,19 @@
           :style="{ left: `${scale.plugPercentile}%`, height: '100%' }"
         />
 
+        <!-- Current position ghost (only shown when projecting forward) -->
+        <template v-if="isProjecting(scale)">
+          <div
+            class="absolute bottom-0 w-0.5 z-5 bg-[var(--ui-text-muted)] opacity-30"
+            :style="{ left: `${clamp(scale.currentUserPercentile)}%`, height: '100%', transform: 'translateX(-50%)' }"
+          />
+          <div
+            class="absolute w-3 h-3 rounded-full border-2 border-[var(--ui-bg)] z-5 bg-[var(--ui-text-muted)] opacity-40"
+            :style="{ left: `${clamp(scale.currentUserPercentile)}%`, top: '0', transform: 'translate(-50%, -25%)' }"
+          />
+        </template>
+
+        <!-- Projected (or current) user position -->
         <div
           class="absolute bottom-0 w-0.5 z-10"
           :class="scale.isHoldable ? 'bg-[var(--ui-color-success-500)]' : 'bg-[var(--ui-color-primary-500)]'"
@@ -77,6 +90,10 @@
           <div class="w-0.5 h-4 border-l-2 border-dashed border-[var(--ui-color-error-500)]" />
         </div>
         <span>Plug — most junior pilot holding</span>
+      </div>
+      <div v-if="hasProjection" class="flex items-center gap-1.5">
+        <div class="w-3 h-3 rounded-full bg-[var(--ui-text-muted)] opacity-40" />
+        <span>Current position</span>
       </div>
       <div class="flex items-center gap-1.5">
         <div class="w-0.5 h-3 bg-[var(--ui-text-muted)] opacity-50" />
@@ -135,4 +152,10 @@ function densityBarStyle(scale: QualDemographicScale, bucket: DensityBucket) {
 function clamp(value: number) {
   return Math.max(0, Math.min(100, value))
 }
+
+function isProjecting(scale: QualDemographicScale) {
+  return Math.abs(scale.userPercentile - scale.currentUserPercentile) > 0.1
+}
+
+const hasProjection = computed(() => sortedScales.value.some(isProjecting))
 </script>

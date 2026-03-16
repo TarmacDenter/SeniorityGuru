@@ -15,8 +15,9 @@ export interface UpgradeTrackerResponse {
   hasEnoughData: boolean
 }
 
-export function useQualUpgrades() {
+export function useQualUpgrades(options?: { lazy?: boolean }) {
   const userStore = useUserStore()
+  const lazy = options?.lazy ?? false
 
   // ─── Upgrade Tracker (server-side) ───
   const airlineId = computed(() => userStore.profile?.icao_code ?? null)
@@ -41,7 +42,9 @@ export function useQualUpgrades() {
     }
   }
 
-  watch(airlineId, (id) => { if (id) fetchUpgradeTracker() }, { immediate: true })
+  if (!lazy) {
+    watch(airlineId, (id) => { if (id) fetchUpgradeTracker() }, { immediate: true })
+  }
 
   return {
     upgradeTrackerData,
