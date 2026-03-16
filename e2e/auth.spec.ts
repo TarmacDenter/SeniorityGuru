@@ -12,7 +12,7 @@ const SUPABASE_SECRET_KEY = process.env.SUPABASE_SECRET_KEY ?? ''
 
 test.describe('Login', () => {
   test('valid credentials → dashboard', async ({ authenticatedPage: page }) => {
-    await expect(page).toHaveURL('http://localhost:3000/')
+    await expect(page).toHaveURL('http://localhost:3000/dashboard')
     await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible()
   })
 
@@ -33,24 +33,24 @@ test.describe('Login', () => {
 // ---------------------------------------------------------------------------
 
 test.describe('Auth gates', () => {
-  test('unauthenticated → /welcome', async ({ page, goto }) => {
-    await goto('/', { waitUntil: 'hydration' })
-    await expect(page).toHaveURL(/\/welcome/)
+  test('unauthenticated → /dashboard redirects to /', async ({ page, goto }) => {
+    await goto('/dashboard', { waitUntil: 'hydration' })
+    await expect(page).toHaveURL(/^\/$|http:\/\/localhost:3000\/$/)
   })
 
-  test('unauthenticated → /seniority redirects to /welcome', async ({ page, goto }) => {
+  test('unauthenticated → /seniority redirects to /', async ({ page, goto }) => {
     await goto('/seniority', { waitUntil: 'hydration' })
-    await expect(page).toHaveURL(/\/welcome/)
+    await expect(page).toHaveURL(/^\/$|http:\/\/localhost:3000\/$/)
   })
 
-  test('unauthenticated → /admin redirects to /welcome', async ({ page, goto }) => {
+  test('unauthenticated → /admin redirects to /', async ({ page, goto }) => {
     await goto('/admin/users', { waitUntil: 'hydration' })
-    await expect(page).toHaveURL(/\/welcome/)
+    await expect(page).toHaveURL(/^\/$|http:\/\/localhost:3000\/$/)
   })
 
-  test('non-admin → /admin redirects to /', async ({ authenticatedPage: page }) => {
+  test('non-admin → /admin redirects to /dashboard', async ({ authenticatedPage: page }) => {
     await page.goto('http://localhost:3000/admin/users')
-    await expect(page).toHaveURL('http://localhost:3000/')
+    await expect(page).toHaveURL('http://localhost:3000/dashboard')
   })
 })
 
@@ -74,8 +74,8 @@ test.describe('Logout', () => {
     // Use first visible "Sign out" button (may exist in sidebar and navbar)
     await page.getByRole('button', { name: 'Sign out' }).first().click()
 
-    // Should redirect to login or welcome
-    await expect(page).toHaveURL(/\/auth\/login|\/welcome/, { timeout: 5000 })
+    // Should redirect to login or landing page
+    await expect(page).toHaveURL(/\/auth\/login/, { timeout: 5000 })
   })
 })
 
@@ -117,7 +117,7 @@ test.describe('Password recovery', () => {
     await page.getByRole('button', { name: /update password/i }).click()
 
     // Step 5: Should redirect to dashboard
-    await expect(page).toHaveURL('http://localhost:3000/', { timeout: 15000 })
+    await expect(page).toHaveURL('http://localhost:3000/dashboard', { timeout: 15000 })
 
     // Restore original password so future test runs work
     const client = createClient(SUPABASE_URL, SUPABASE_SECRET_KEY)

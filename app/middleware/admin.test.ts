@@ -32,11 +32,11 @@ describe('admin middleware', async () => {
     mockNavigateTo.mockReset()
   })
 
-  it('redirects non-admin users to /', async () => {
+  it('redirects non-admin users to /dashboard', async () => {
     mockProfile.value = { role: 'user' }
     mockIsAdmin.value = false
-    await adminMiddleware(routeTo('/admin/users'), routeTo('/'))
-    expect(mockNavigateTo).toHaveBeenCalledWith('/')
+    await adminMiddleware(routeTo('/admin/users'), routeTo('/dashboard'))
+    expect(mockNavigateTo).toHaveBeenCalledWith('/dashboard')
   })
 
   it('allows admin users through', async () => {

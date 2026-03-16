@@ -1,0 +1,148 @@
+<template>
+  <UDashboardPanel>
+    <template #header>
+      <SeniorityNavbar title="Dashboard" :description="navbarDescription" />
+
+      <UDashboardToolbar>
+        <UTabs v-model="activeTab" :items="tabs" :content="false" variant="link" />
+
+        <template #right>
+          <div class="flex items-center gap-2">
+            <USelectMenu v-model="selectedListId" :items="listOptions" value-key="id"
+              label-key="label" placeholder="Select list..." class="w-48" size="sm" />
+            <UBadge v-if="isHistorical" color="warning" variant="subtle" size="sm">
+              <UIcon name="i-lucide-alert-triangle" class="size-3 mr-1" />
+              Historical
+            </UBadge>
+          </div>
+        </template>
+      </UDashboardToolbar>
+    </template>
+
+    <template #body>
+      <!-- My Status tab (quick hits) -->
+      <DashboardTabsMyStatusTab
+        v-if="activeTab === 'status'"
+        :loading="loading"
+        :has-data="hasData"
+        :has-employee-number="hasEmployeeNumber"
+        :user-found="userFound"
+        :is-new-hire-mode="isNewHireMode"
+        :rank-card="rankCard"
+        :stats="stats"
+        :retirement-snapshot="retirementSnapshot"
+        :trajectory-deltas="trajectoryDeltas"
+        :base-status-data="baseStatusData"
+        :trajectory-chart-data="trajectoryChartData"
+      />
+
+      <!-- Demographics tab -->
+      <DashboardTabsDemographicsTab v-else-if="activeTab === 'demographics'" />
+
+      <!-- Position tab -->
+      <DashboardTabsPositionTab v-else-if="activeTab === 'position'" />
+
+      <!-- Trajectory tab -->
+      <DashboardTabsTrajectoryTab v-else-if="activeTab === 'trajectory'" />
+
+      <!-- Seniority List tab — fills panel body, manages its own scroll -->
+      <DashboardTabsSeniorityListTab v-else-if="activeTab === 'seniority'" :loading="loading" />
+    </template>
+  </UDashboardPanel>
+</template>
+
+<script setup lang="ts">
+import type { TabsItem } from '@nuxt/ui';
+import { useSeniorityStore } from '~/stores/seniority';
+import { useUserStore } from '~/stores/user';
+import { useDashboardStats } from '~/composables/useDashboardStats';
+import { resolveTab, DEFAULT_TAB } from '~/utils/dashboard-tabs';
+
+definePageMeta({
+  middleware: 'auth',
+  layout: 'dashboard',
+});
+
+const route = useRoute();
+
+const tabs: TabsItem[] = [
+  { label: 'My Status', icon: 'i-lucide-user', value: 'status' },
+  { label: 'Demographics', icon: 'i-lucide-users', value: 'demographics' },
+  { label: 'Position', icon: 'i-lucide-map-pin', value: 'position' },
+  { label: 'Trajectory', icon: 'i-lucide-trending-up', value: 'trajectory' },
+  { label: 'Seniority List', icon: 'i-lucide-list-ordered', value: 'seniority' },
+];
+
+const activeTab = ref(resolveTab(route.query.tab as string | undefined));
+
+watch(activeTab, (tab) => {
+  const query: Record<string, string> = {};
+  if (tab !== DEFAULT_TAB) query.tab = tab;
+  if (selectedListId.value) query.list = selectedListId.value;
+  navigateTo({ path: '/dashboard', query }, { replace: true });
+});
+
+const seniorityStore = useSeniorityStore();
+const userStore = useUserStore();
+const loading = ref(true);
+const selectedListId = ref<string | undefined>(undefined);
+
+const listOptions = computed(() =>
+  seniorityStore.lists.map((l, i) => ({
+    id: l.id,
+    label: l.title ? `${l.title} (${l.effective_date})` : l.effective_date,
+    isLatest: i === 0,
+  })),
+);
+
+const isHistorical = computed(() => {
+  if (!selectedListId.value || listOptions.value.length === 0) return false;
+  return selectedListId.value !== listOptions.value[0]?.id;
+});
+
+const selectedList = computed(() =>
+  seniorityStore.lists.find(l => l.id === selectedListId.value),
+);
+
+const navbarDescription = computed(() => {
+  const list = selectedList.value;
+  if (!list) return undefined;
+  const base = list.title ? `${list.title}` : 'Seniority List';
+  return `${base} · effective ${list.effective_date}`;
+});
+
+const {
+  hasData, hasEmployeeNumber, userFound, isNewHireMode,
+  rankCard, stats,
+  retirementSnapshot, trajectoryDeltas,
+  baseStatusData, trajectoryChartData,
+} = useDashboardStats();
+
+watch(selectedListId, async (id) => {
+  if (!id || id === seniorityStore.currentListId) return;
+  loading.value = true;
+  await seniorityStore.fetchEntries(id);
+  const query: Record<string, string> = { list: id };
+  if (activeTab.value !== DEFAULT_TAB) query.tab = activeTab.value;
+  navigateTo({ path: '/dashboard', query }, { replace: true });
+  loading.value = false;
+});
+
+onMounted(async () => {
+  if (!userStore.profile) {
+    await userStore.fetchProfile();
+  }
+
+  await seniorityStore.fetchLists();
+
+  const listFromQuery = route.query.list as string | undefined;
+  const validList = listFromQuery && seniorityStore.lists.some(l => l.id === listFromQuery);
+  selectedListId.value = validList ? listFromQuery : (seniorityStore.lists[0]?.id ?? undefined);
+
+  if (selectedListId.value) {
+    await seniorityStore.fetchEntries(selectedListId.value);
+  }
+
+  loading.value = false;
+});
+</script>

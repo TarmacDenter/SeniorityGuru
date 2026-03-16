@@ -47,6 +47,6 @@ async function onSubmit() {
     return
   }
 
-  navigateTo('/')
+  navigateTo('/dashboard')
 }
 </script>

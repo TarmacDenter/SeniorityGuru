@@ -34,8 +34,10 @@ export default defineNuxtConfig({
     supabaseSecretKey: process.env.SUPABASE_SECRET_KEY
   },
   routeRules: {
+    // Redirect old /welcome URL to / (landing page)
+    '/welcome': { redirect: '/' },
     // Auth-protected dashboard pages: no SSR needed (user-specific, not indexable)
-    '/': { ssr: false },
+    '/dashboard': { ssr: false },
     '/seniority': { ssr: false },
     '/seniority/**': { ssr: false },
     '/settings': { ssr: false },

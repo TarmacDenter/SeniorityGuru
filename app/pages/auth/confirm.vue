@@ -50,7 +50,7 @@ const errorDescription = computed(() => {
 watchEffect(() => {
   if (user.value) {
     const type = route.query.type as string | undefined
-    navigateTo(type === 'recovery' ? '/auth/update-password' : '/')
+    navigateTo(type === 'recovery' ? '/auth/update-password' : '/dashboard')
   }
 })
 </script>
