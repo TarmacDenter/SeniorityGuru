@@ -44,6 +44,17 @@
             class="lg:[grid-column:3/5] lg:[grid-row:span_2] dashboard-enter" style="animation-delay: 280ms" />
         </template>
       </div>
+
+      <!-- Base/Seat/Fleet Status -->
+      <div v-if="userFound" class="mt-6">
+        <h2 class="text-sm font-semibold text-[var(--ui-text-muted)] uppercase tracking-wide mb-3">How Do I Look Today?</h2>
+        <DashboardBaseStatusTable :data="baseStatusData" />
+      </div>
+
+      <!-- Career Trajectory -->
+      <div v-if="userFound" class="mt-6">
+        <DashboardTrajectoryChart :data="trajectoryChartData" />
+      </div>
     </template>
   </div>
 </template>
@@ -63,5 +74,7 @@ defineProps<{
   stats: DashboardStatsReturn['stats']['value']
   retirementSnapshot: DashboardStatsReturn['retirementSnapshot']['value']
   trajectoryDeltas: DashboardStatsReturn['trajectoryDeltas']['value']
+  baseStatusData: DashboardStatsReturn['baseStatusData']['value']
+  trajectoryChartData: DashboardStatsReturn['trajectoryChartData']['value']
 }>()
 </script>

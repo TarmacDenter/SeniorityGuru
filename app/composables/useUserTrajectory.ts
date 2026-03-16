@@ -7,14 +7,14 @@ import {
   computeTrajectoryDeltas,
   type FilterFn,
 } from '#shared/utils/seniority-math'
+import { DEFAULT_GROWTH_CONFIG, type GrowthConfig } from '#shared/types/growth-config'
+import type { Ref } from 'vue'
 import { useSeniorityStore } from '~/stores/seniority'
 import { useUserEntry } from './useUserEntry'
-import { useGrowthConfig } from './useGrowthConfig'
 
-export function useUserTrajectory() {
+export function useUserTrajectory(growthConfig: Ref<GrowthConfig> = ref({ ...DEFAULT_GROWTH_CONFIG })) {
   const seniorityStore = useSeniorityStore()
   const userEntry = useUserEntry({ withNewHireMode: true })
-  const { growthConfig } = useGrowthConfig()
 
   const fullTrajectory = computed(() => {
     const entry = userEntry.value

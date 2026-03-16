@@ -32,6 +32,8 @@
         :stats="stats"
         :retirement-snapshot="retirementSnapshot"
         :trajectory-deltas="trajectoryDeltas"
+        :base-status-data="baseStatusData"
+        :trajectory-chart-data="trajectoryChartData"
       />
 
       <!-- Demographics tab -->
@@ -113,6 +115,7 @@ const {
   hasData, hasEmployeeNumber, userFound, isNewHireMode,
   rankCard, stats,
   retirementSnapshot, trajectoryDeltas,
+  baseStatusData, trajectoryChartData,
 } = useDashboardStats();
 
 watch(selectedListId, async (id) => {

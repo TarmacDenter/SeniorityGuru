@@ -193,7 +193,7 @@
               variant="subtle"
               icon="i-lucide-info"
               title="Modeling convention"
-              description="The ±10% scaling is a modeling convention. If the threshold isn't crossed within 15 years, the calculator shows "not projected within 15 years.""
+              description="The ±10% scaling is a modeling convention. If the threshold isn't crossed within 15 years, the calculator shows &quot;not projected within 15 years.&quot;"
             />
           </div>
         </section>

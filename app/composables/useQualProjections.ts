@@ -12,19 +12,21 @@ import {
   computeTrajectoryDeltas,
   type FilterFn,
 } from '#shared/utils/seniority-math'
-import type { ComputedRef } from 'vue'
+import { DEFAULT_GROWTH_CONFIG, type GrowthConfig } from '#shared/types/growth-config'
+import type { ComputedRef, Ref } from 'vue'
 import { useSeniorityStore } from '~/stores/seniority'
 import { useUserEntry } from './useUserEntry'
-import { useGrowthConfig } from './useGrowthConfig'
 
 const BANNER_KEY = 'qual-projections-banner-dismissed'
 
 const noFilter: FilterFn = () => true
 
-export function useQualProjections(qualFilterFn: ComputedRef<FilterFn> = computed(() => noFilter)) {
+export function useQualProjections(
+  qualFilterFn: ComputedRef<FilterFn> = computed(() => noFilter),
+  growthConfig: Ref<GrowthConfig> = ref({ ...DEFAULT_GROWTH_CONFIG }),
+) {
   const seniorityStore = useSeniorityStore()
   const userEntry = useUserEntry({ withNewHireMode: true })
-  const { growthConfig } = useGrowthConfig()
 
   const isBannerDismissed = ref(
     typeof localStorage !== 'undefined' ? localStorage.getItem(BANNER_KEY) === 'true' : false,
