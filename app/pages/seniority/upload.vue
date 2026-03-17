@@ -223,6 +223,8 @@ function prevStep() {
   }
 }
 
+defineExpose({ onSave })
+
 async function onSave() {
   try {
     const count = await upload.save()

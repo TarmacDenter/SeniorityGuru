@@ -34,6 +34,8 @@ const state = reactive<RecoveryPasswordState>({
   confirmPassword: '',
 })
 
+defineExpose({ state, onSubmit })
+
 async function onSubmit() {
   loading.value = true
   const { error } = await supabase.auth.updateUser({ password: state.password })

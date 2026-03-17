@@ -41,6 +41,8 @@ const state = reactive<SetupProfileState>({
 const { options: airlineOptions, loading: airlinesLoading, load: loadAirlines } = useAirlineOptions()
 await loadAirlines()
 
+defineExpose({ state, onSubmit })
+
 async function onSubmit() {
   const userId = user.value?.sub as string | undefined
   if (!userId) return

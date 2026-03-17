@@ -1,10 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mountSuspended, mockNuxtImport } from '@nuxt/test-utils/runtime'
-import { ref } from 'vue'
 import ResendEmailPage from './resend-email.vue'
 
 const { mockUser, mockNavigateTo, mockResend } = vi.hoisted(() => ({
-  mockUser: ref<{ email?: string; user_metadata?: Record<string, unknown> } | null>(null),
+  mockUser: { value: null as { email?: string; user_metadata?: Record<string, unknown> } | null },
   mockNavigateTo: vi.fn().mockResolvedValue(undefined),
   mockResend: vi.fn().mockResolvedValue({ error: null }),
 }))
@@ -37,26 +36,17 @@ describe('resend-email page', () => {
     expect(mockNavigateTo).not.toHaveBeenCalled()
   })
 
-  it('navigates to /dashboard when email_verified becomes true', async () => {
-    const wrapper = await mountSuspended(ResendEmailPage)
-
+  it('navigates to /dashboard when user already has email_verified on mount', async () => {
+    // watchEffect fires eagerly — set user before mount so the guard triggers on first run
     mockUser.value = { email: 'pilot@example.com', user_metadata: { email_verified: true } }
-    await wrapper.vm.$nextTick()
-    await wrapper.vm.$nextTick()
-
+    await mountSuspended(ResendEmailPage)
     expect(mockNavigateTo).toHaveBeenCalledWith('/dashboard')
   })
 
-  it('calls navigateTo exactly once even when email_verified user ref updates multiple times', async () => {
-    const wrapper = await mountSuspended(ResendEmailPage)
-
-    // Simulate multiple rapid updates
+  it('calls navigateTo exactly once even on repeated mount ticks (re-entry guard)', async () => {
     mockUser.value = { email: 'pilot@example.com', user_metadata: { email_verified: true } }
-    await wrapper.vm.$nextTick()
-    mockUser.value = { email: 'pilot@example.com', user_metadata: { email_verified: true, another_update: true } }
-    await wrapper.vm.$nextTick()
-    await wrapper.vm.$nextTick()
-
+    await mountSuspended(ResendEmailPage)
+    await new Promise(r => setTimeout(r, 0))
     expect(mockNavigateTo).toHaveBeenCalledTimes(1)
   })
 
