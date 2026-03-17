@@ -85,7 +85,12 @@ watch(activeTab, (tab) => {
 const seniorityStore = useSeniorityStore();
 const userStore = useUserStore();
 const loading = ref(true);
-const selectedListId = ref<string | undefined>(undefined);
+
+// Initialize synchronously from the URL so the watcher never sees this as a
+// "change" — the watcher is lazy by default and won't fire on the initial value.
+const selectedListId = ref<string | undefined>(
+  route.query.list as string | undefined,
+);
 
 const listOptions = computed(() =>
   seniorityStore.lists.map((l, i) => ({
@@ -118,13 +123,15 @@ const {
   baseStatusData, trajectoryChartData,
 } = useDashboardStats();
 
-watch(selectedListId, async (id) => {
-  if (!id || id === seniorityStore.currentListId) return;
+// Watcher fires ONLY for user-initiated dropdown changes after mount.
+// When onMounted sets the default value, oldId is undefined → guard skips it.
+watch(selectedListId, async (id, oldId) => {
+  if (!id || !oldId) return;
   loading.value = true;
   await seniorityStore.fetchEntries(id);
   const query: Record<string, string> = { list: id };
   if (activeTab.value !== DEFAULT_TAB) query.tab = activeTab.value;
-  navigateTo({ path: '/dashboard', query }, { replace: true });
+  await navigateTo({ path: '/dashboard', query }, { replace: true });
   loading.value = false;
 });
 
@@ -135,10 +142,13 @@ onMounted(async () => {
 
   await seniorityStore.fetchLists();
 
-  const listFromQuery = route.query.list as string | undefined;
-  const validList = listFromQuery && seniorityStore.lists.some(l => l.id === listFromQuery);
-  selectedListId.value = validList ? listFromQuery : (seniorityStore.lists[0]?.id ?? undefined);
+  // Set a default if the URL had no ?list= param.
+  // This fires the watcher but oldId=undefined → the guard catches it.
+  if (!selectedListId.value) {
+    selectedListId.value = seniorityStore.lists[0]?.id ?? undefined;
+  }
 
+  // Single authoritative fetch — always runs on mount regardless of URL state.
   if (selectedListId.value) {
     await seniorityStore.fetchEntries(selectedListId.value);
   }

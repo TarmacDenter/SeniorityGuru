@@ -228,7 +228,7 @@ async function onSave() {
     const count = await upload.save()
     toast.add({ title: `Uploaded ${count} entries`, color: 'success' })
     upload.reset()
-    navigateTo({ path: '/dashboard', query: { tab: 'seniority' } })
+    await navigateTo({ path: '/dashboard', query: { tab: 'seniority' } })
   } catch {
     toast.add({ title: upload.saveError.value ?? 'Upload failed', color: 'error' })
   }

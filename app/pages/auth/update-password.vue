@@ -21,14 +21,12 @@ import type { RecoveryPasswordState } from '#shared/schemas/auth'
 definePageMeta({ layout: 'auth' })
 
 const supabase = useSupabaseClient()
-const user = useSupabaseUser()
 const toast = useToast()
 const loading = ref(false)
 
-onMounted(() => {
-  if (!user.value) {
-    navigateTo('/auth/reset-password')
-  }
+onMounted(async () => {
+  const { data } = await supabase.auth.getSession()
+  if (!data.session) await navigateTo('/auth/reset-password')
 })
 
 const state = reactive<RecoveryPasswordState>({
@@ -47,6 +45,6 @@ async function onSubmit() {
   }
 
   toast.add({ title: 'Password updated successfully', color: 'success' })
-  navigateTo('/dashboard')
+  await navigateTo('/dashboard')
 }
 </script>

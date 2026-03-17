@@ -117,12 +117,14 @@ function onUpgradesTabActivated() {
   }
 }
 
-// Keep query params in sync
-watch([listIdA, listIdB], ([a, b]) => {
+// Keep query params in sync — only for user-initiated changes after mount.
+// When onMounted sets defaults, oldA and oldB are both undefined → guard skips.
+watch([listIdA, listIdB], async ([a, b], [oldA, oldB]) => {
+  if (!oldA && !oldB) return
   const query: Record<string, string> = {}
   if (a) query.a = a
   if (b) query.b = b
-  navigateTo({ path: '/seniority/compare', query }, { replace: true })
+  await navigateTo({ path: '/seniority/compare', query }, { replace: true })
 })
 
 // Load lists for the selectors
@@ -130,7 +132,8 @@ onMounted(async () => {
   if (!seniorityStore.lists.length) {
     await seniorityStore.fetchLists()
   }
-  // Auto-select most recent two if not already set
+  // Auto-select most recent two if not already set.
+  // Fires watcher but oldA/oldB are both undefined → guard catches it.
   if (!listIdA.value && !listIdB.value && seniorityStore.lists.length >= 2) {
     listIdA.value = seniorityStore.lists[1]!.id // second most recent = older
     listIdB.value = seniorityStore.lists[0]!.id // most recent = newer

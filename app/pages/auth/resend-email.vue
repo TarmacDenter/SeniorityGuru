@@ -41,9 +41,12 @@ const user = useSupabaseUser()
 
 // If the user lands here with a confirmation token in the hash (redirect from GoTrue),
 // the Supabase client will exchange it and update the user. Watch for that and redirect.
-watchEffect(() => {
+const redirected = ref(false)
+watchEffect(async () => {
+  if (redirected.value) return
   if (user.value?.user_metadata?.email_verified) {
-    navigateTo('/dashboard')
+    redirected.value = true
+    await navigateTo('/dashboard')
   }
 })
 const loading = ref(false)

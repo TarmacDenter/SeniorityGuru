@@ -47,10 +47,13 @@ const errorDescription = computed(() => {
   return params.get('error_description')?.replace(/\+/g, ' ') ?? 'Something went wrong.'
 })
 
-watchEffect(() => {
+const redirected = ref(false)
+watchEffect(async () => {
+  if (redirected.value) return
   if (user.value) {
+    redirected.value = true
     const type = route.query.type as string | undefined
-    navigateTo(type === 'recovery' ? '/auth/update-password' : '/dashboard')
+    await navigateTo(type === 'recovery' ? '/auth/update-password' : '/dashboard')
   }
 })
 </script>
