@@ -15,7 +15,7 @@ A web app for airline pilots to track and project their seniority standing over 
 | State | Pinia |
 | Backend / DB | Supabase |
 | Auth | `@nuxtjs/supabase` module (SSR cookies / PKCE) |
-| Deployment | NuxtHub (Cloudflare Workers) |
+| Deployment | Vercel |
 | Language | TypeScript throughout |
 
 ---
@@ -28,8 +28,8 @@ A web app for airline pilots to track and project their seniority standing over 
 
 ## Key Architecture Decisions
 
-- **Single Supabase project** for dev and prod initially; split before going live with real users
-- **No Docker** — Supabase CLI handles local DB via its own Docker internals; NuxtHub handles runtime
+- **Two Supabase projects**: `dev` (ref `nrvrybznzekwseprilqt`) for local/preview, `prod` for production (wired to `main` branch via Vercel + GitHub Actions)
+- **No Docker** — Supabase CLI handles local DB via its own Docker internals; Vercel handles runtime
 - **SSR auth via cookies** — `@nuxtjs/supabase` with `useSsrCookies: true` (default); PKCE flow required
 - **RLS everywhere** — all tables have Row Level Security; use a `get_my_role()` security definer helper for role checks
 - **Greenfield — no production users** — the app has not been released publicly. There are no existing users, no live data, and no backwards-compatibility obligations. DB schema changes, Zod schema changes, and TypeScript type changes carry zero migration risk. Propose and implement schema improvements freely.

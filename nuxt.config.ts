@@ -28,6 +28,9 @@ export default defineNuxtConfig({
   runtimeConfig: {
     supabaseSecretKey: process.env.SUPABASE_SECRET_KEY
   },
+  nitro: {
+    preset: 'vercel'
+  },
   routeRules: {
     // Redirect old /welcome URL to / (landing page)
     '/welcome': { redirect: '/' },
