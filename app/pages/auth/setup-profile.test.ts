@@ -10,6 +10,7 @@ const { mockSupabaseUpdate, mockNavigateTo, mockFetchProfile, mockUser } = vi.ho
 }))
 
 mockNuxtImport('useSupabaseClient', () => () => ({
+  auth: { onAuthStateChange: vi.fn() },
   from: () => ({
     update: () => ({
       eq: mockSupabaseUpdate,

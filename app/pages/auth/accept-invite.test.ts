@@ -9,7 +9,7 @@ const { mockVerifyOtp, mockRoute, mockNavigateTo } = vi.hoisted(() => ({
 }))
 
 mockNuxtImport('useSupabaseClient', () => () => ({
-  auth: { verifyOtp: mockVerifyOtp },
+  auth: { verifyOtp: mockVerifyOtp, onAuthStateChange: vi.fn() },
 }))
 
 mockNuxtImport('useRoute', () => () => mockRoute.value)

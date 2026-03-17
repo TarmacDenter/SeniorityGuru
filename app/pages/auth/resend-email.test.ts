@@ -10,7 +10,7 @@ const { mockUser, mockNavigateTo, mockResend } = vi.hoisted(() => ({
 
 mockNuxtImport('useSupabaseUser', () => () => mockUser)
 mockNuxtImport('useSupabaseClient', () => () => ({
-  auth: { resend: mockResend },
+  auth: { resend: mockResend, onAuthStateChange: vi.fn() },
 }))
 mockNuxtImport('navigateTo', () => mockNavigateTo)
 

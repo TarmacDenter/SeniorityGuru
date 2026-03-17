@@ -13,6 +13,7 @@ mockNuxtImport('useSupabaseClient', () => () => ({
   auth: {
     getSession: mockGetSession,
     updateUser: mockUpdateUser,
+    onAuthStateChange: vi.fn(),
   },
 }))
 mockNuxtImport('navigateTo', () => mockNavigateTo)
