@@ -2,13 +2,20 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mountSuspended, mockNuxtImport } from '@nuxt/test-utils/runtime'
 import ConfirmPage from './confirm.vue'
 
-const { mockUser, mockRoute, mockNavigateTo } = vi.hoisted(() => ({
+const { mockUser, mockRoute, mockNavigateTo, mockOnAuthStateChange, mockUnsubscribe } = vi.hoisted(() => ({
   mockUser: { value: null as { user_metadata?: Record<string, unknown> } | null },
   mockRoute: { value: { query: {} as Record<string, string>, hash: '' } },
   mockNavigateTo: vi.fn().mockResolvedValue(undefined),
+  mockOnAuthStateChange: vi.fn(),
+  mockUnsubscribe: vi.fn(),
 }))
 
 mockNuxtImport('useSupabaseUser', () => () => mockUser)
+mockNuxtImport('useSupabaseClient', () => () => ({
+  auth: {
+    onAuthStateChange: mockOnAuthStateChange,
+  },
+}))
 mockNuxtImport('useRoute', () => () => mockRoute.value)
 mockNuxtImport('navigateTo', () => mockNavigateTo)
 
@@ -18,6 +25,8 @@ describe('confirm page', () => {
     mockRoute.value = { query: {}, hash: '' }
     mockNavigateTo.mockReset()
     mockNavigateTo.mockResolvedValue(undefined)
+    mockOnAuthStateChange.mockReset()
+    mockOnAuthStateChange.mockReturnValue({ data: { subscription: { unsubscribe: mockUnsubscribe } } })
   })
 
   it('renders the loading spinner when there is no error', async () => {
@@ -57,5 +66,18 @@ describe('confirm page', () => {
     const wrapper = await mountSuspended(ConfirmPage)
     await wrapper.vm.$nextTick()
     expect(mockNavigateTo).not.toHaveBeenCalled()
+  })
+
+  it('navigates to /auth/update-password when PASSWORD_RECOVERY event fires', async () => {
+    // Simulate PASSWORD_RECOVERY event firing synchronously during setup
+    // (before watchEffect evaluates), with user already authenticated.
+    mockOnAuthStateChange.mockImplementation((cb: (event: string) => void) => {
+      cb('PASSWORD_RECOVERY')
+      return { data: { subscription: { unsubscribe: mockUnsubscribe } } }
+    })
+    mockUser.value = { user_metadata: {} }
+
+    await mountSuspended(ConfirmPage)
+    expect(mockNavigateTo).toHaveBeenCalledWith('/auth/update-password')
   })
 })

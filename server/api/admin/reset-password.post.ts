@@ -18,14 +18,12 @@ export default defineEventHandler(async (event) => {
   }
 
   const origin = getRequestURL(event).origin
-  const { error } = await client.auth.admin.generateLink({
-    type: 'recovery',
-    email: userData.user.email,
-    options: { redirectTo: `${origin}/auth/confirm` },
+  const { error } = await client.auth.resetPasswordForEmail(userData.user.email, {
+    redirectTo: `${origin}/auth/confirm?type=recovery`,
   })
 
   if (error) {
-    log.error('Failed to generate recovery link', { userId, error: error.message })
+    log.error('Failed to send recovery email', { userId, error: error.message })
     throw createError({ statusCode: 500, statusMessage: 'Failed to send reset email' })
   }
 

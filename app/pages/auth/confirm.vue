@@ -18,12 +18,13 @@
 </template>
 
 <script setup lang="ts">
-// Auth callback — handles PKCE flow (?code= query param) from password recovery emails.
-// Invites use /auth/accept-invite instead (token_hash OTP flow).
+// Auth callback — handles PKCE flow (?code= query param) from email confirmations
+// and password recovery emails. Invites use /auth/accept-invite instead (token_hash OTP flow).
 
 definePageMeta({ layout: 'auth' })
 
 const user = useSupabaseUser()
+const supabase = useSupabaseClient()
 const route = useRoute()
 
 const errorCode = computed(() => {
@@ -47,13 +48,27 @@ const errorDescription = computed(() => {
   return params.get('error_description')?.replace(/\+/g, ' ') ?? 'Something went wrong.'
 })
 
+// Track whether this is a password recovery flow.
+// Primary signal: ?type=recovery query param set by resetPasswordForEmail redirectTo.
+// Fallback: Supabase PASSWORD_RECOVERY auth event (fires when recovery token is exchanged).
+const isRecovery = ref(route.query.type === 'recovery')
+
+const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+  if (event === 'PASSWORD_RECOVERY') {
+    isRecovery.value = true
+  }
+})
+
+onBeforeUnmount(() => {
+  subscription.unsubscribe()
+})
+
 const redirected = ref(false)
 watchEffect(async () => {
   if (redirected.value) return
   if (user.value) {
     redirected.value = true
-    const type = route.query.type as string | undefined
-    await navigateTo(type === 'recovery' ? '/auth/update-password' : '/dashboard')
+    await navigateTo(isRecovery.value ? '/auth/update-password' : '/dashboard')
   }
 })
 </script>

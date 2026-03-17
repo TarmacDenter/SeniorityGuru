@@ -31,7 +31,10 @@ additional_redirect_urls = [
   "http://localhost:3000/auth/update-password",
   "http://127.0.0.1:3000/auth/update-password",
   "http://localhost:3000/auth/accept-invite",
-  "http://127.0.0.1:3000/auth/accept-invite"
+  "http://127.0.0.1:3000/auth/accept-invite",
+  "https://seniorityguru.com/auth/confirm",
+  "https://seniorityguru.com/auth/update-password",
+  "https://seniorityguru.com/auth/accept-invite"
 ]
 jwt_expiry = 3600
 
