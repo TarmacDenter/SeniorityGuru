@@ -13,7 +13,6 @@ export default defineNuxtConfig({
     '@nuxt/eslint',
     '@nuxt/ui',
     '@nuxtjs/supabase',
-    '@nuxthub/core',
     '@pinia/nuxt'
   ],
   css: ['~/assets/css/main.css'],
@@ -25,10 +24,6 @@ export default defineNuxtConfig({
   },
   colorMode: {
     preference: 'dark'
-  },
-  hub: {
-    // Compute-only deploy — all data lives in Supabase
-    // D1/KV/Blob/Cache all default to false; no CF primitives needed
   },
   runtimeConfig: {
     supabaseSecretKey: process.env.SUPABASE_SECRET_KEY

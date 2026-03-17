@@ -1,29 +1,38 @@
 // @vitest-environment node
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { nextTick } from 'vue'
 import type { SeniorityEntryResponse } from '../../shared/schemas/seniority-list'
 import type { ProfileResponse } from '../../shared/schemas/settings'
 import { makeEntry, makeProfile } from '#shared/test-utils/factories'
 
-const mockSeniorityStore = vi.hoisted(() => ({
-  entries: [] as SeniorityEntryResponse[],
+// Container populated by the mock factories — holds reactive instances
+const mockInstances = vi.hoisted(() => ({
+  seniority: null as { entries: SeniorityEntryResponse[] } | null,
+  user: null as { profile: ProfileResponse | null } | null,
 }))
 
-const mockUserStore = vi.hoisted(() => ({
-  profile: null as ProfileResponse | null,
-}))
+vi.mock('~/stores/seniority', async () => {
+  const { reactive } = await import('vue')
+  mockInstances.seniority = reactive({ entries: [] as SeniorityEntryResponse[] })
+  return { useSeniorityStore: () => mockInstances.seniority }
+})
 
-vi.mock('~/stores/seniority', () => ({
-  useSeniorityStore: () => mockSeniorityStore,
-}))
-
-vi.mock('~/stores/user', () => ({
-  useUserStore: () => mockUserStore,
-}))
+vi.mock('~/stores/user', async () => {
+  const { reactive } = await import('vue')
+  mockInstances.user = reactive({ profile: null as ProfileResponse | null })
+  return { useUserStore: () => mockInstances.user }
+})
 
 const { useQualDemographics } = await import('./useQualDemographics')
 
+// Convenience aliases — point at the reactive objects created by the mock factories
+let mockSeniorityStore: { entries: SeniorityEntryResponse[] }
+let mockUserStore: { profile: ProfileResponse | null }
+
 describe('useQualDemographics', () => {
   beforeEach(() => {
+    mockSeniorityStore = mockInstances.seniority!
+    mockUserStore = mockInstances.user!
     mockSeniorityStore.entries = []
     mockUserStore.profile = null
   })
@@ -213,6 +222,52 @@ describe('useQualDemographics', () => {
       expect(yosHistogram.value.length).toBeGreaterThan(0)
       expect(yosHistogram.value[0]).toHaveProperty('label')
       expect(yosHistogram.value[0]).toHaveProperty('count')
+    })
+  })
+
+  describe('auto-clear on list switch', () => {
+    it('clears selectedFleet when the new list does not contain that fleet', async () => {
+      mockSeniorityStore.entries = [makeEntry({ fleet: '777' })]
+      const { selectedFleet } = useQualDemographics()
+      selectedFleet.value = '777'
+
+      mockSeniorityStore.entries = [makeEntry({ fleet: '737' })]
+      await nextTick()
+
+      expect(selectedFleet.value).toBeNull()
+    })
+
+    it('clears selectedSeat when the new list does not contain that seat', async () => {
+      mockSeniorityStore.entries = [makeEntry({ seat: 'CA' })]
+      const { selectedSeat } = useQualDemographics()
+      selectedSeat.value = 'CA'
+
+      mockSeniorityStore.entries = [makeEntry({ seat: 'FO' })]
+      await nextTick()
+
+      expect(selectedSeat.value).toBeNull()
+    })
+
+    it('clears selectedBase when the new list does not contain that base', async () => {
+      mockSeniorityStore.entries = [makeEntry({ base: 'JFK' })]
+      const { selectedBase } = useQualDemographics()
+      selectedBase.value = 'JFK'
+
+      mockSeniorityStore.entries = [makeEntry({ base: 'LAX' })]
+      await nextTick()
+
+      expect(selectedBase.value).toBeNull()
+    })
+
+    it('preserves selectedFleet when the new list still contains that fleet', async () => {
+      mockSeniorityStore.entries = [makeEntry({ fleet: '737' })]
+      const { selectedFleet } = useQualDemographics()
+      selectedFleet.value = '737'
+
+      mockSeniorityStore.entries = [makeEntry({ fleet: '737' }), makeEntry({ fleet: '777' })]
+      await nextTick()
+
+      expect(selectedFleet.value).toBe('737')
     })
   })
 

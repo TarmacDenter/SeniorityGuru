@@ -70,6 +70,20 @@ export function useQualDemographics() {
     return parts.join(' ')
   })
 
+  // Auto-clear stale selections when the active list changes
+  watch(availableFleets, (fleets) => {
+    if (selectedFleet.value && !fleets.includes(selectedFleet.value))
+      selectedFleet.value = null
+  })
+  watch(availableSeats, (seats) => {
+    if (selectedSeat.value && !seats.includes(selectedSeat.value))
+      selectedSeat.value = null
+  })
+  watch(availableBases, (bases) => {
+    if (selectedBase.value && !bases.includes(selectedBase.value))
+      selectedBase.value = null
+  })
+
   function clearFilter() {
     selectedFleet.value = null
     selectedSeat.value = null
