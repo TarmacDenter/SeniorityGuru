@@ -18,7 +18,16 @@
         <!-- Profile Card -->
         <UCard v-if="user">
           <template #header>
-            <h2 class="text-base font-semibold">Profile</h2>
+            <div class="flex items-center justify-between">
+              <h2 class="text-base font-semibold">Profile</h2>
+              <UButton
+                icon="i-lucide-pencil"
+                size="sm"
+                variant="ghost"
+                label="Edit Profile"
+                @click="openEditProfile"
+              />
+            </div>
           </template>
           <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm">
             <div>
@@ -139,6 +148,45 @@
           </div>
         </template>
       </UModal>
+
+      <!-- Edit Profile Modal -->
+      <UModal v-model:open="editProfileOpen" title="Edit Profile">
+        <template #body>
+          <div class="space-y-4">
+            <UFormField label="Airline">
+              <USelectMenu
+                v-model="editProfileForm.icaoCode"
+                :items="airlineOptions"
+                value-key="value"
+                :loading="airlinesLoading"
+                placeholder="Select airline"
+                class="w-full"
+              />
+            </UFormField>
+            <UFormField label="Employee Number">
+              <UInput
+                v-model="editProfileForm.employeeNumber"
+                placeholder="e.g. 12345"
+                class="w-full"
+              />
+            </UFormField>
+            <UFormField label="Mandatory Retirement Age">
+              <UInputNumber
+                v-model="editProfileForm.mandatoryRetirementAge"
+                :min="55"
+                :max="75"
+                class="w-full"
+              />
+            </UFormField>
+          </div>
+        </template>
+        <template #footer>
+          <div class="flex justify-end gap-2">
+            <UButton label="Cancel" color="neutral" variant="ghost" @click="editProfileOpen = false" />
+            <UButton label="Save" :loading="editProfileLoading" @click="saveProfile()" />
+          </div>
+        </template>
+      </UModal>
     </template>
   </UDashboardPanel>
 </template>
@@ -209,6 +257,59 @@ async function resetPassword() {
   }
 }
 
+// Airline options for the edit modal
+const { options: airlineOptions, loading: airlinesLoading, load: loadAirlines } = useAirlineOptions()
+
+// Edit profile modal state
+const editProfileOpen = ref(false)
+const editProfileLoading = ref(false)
+const editProfileForm = ref<{
+  icaoCode: string | undefined
+  employeeNumber: string | undefined
+  mandatoryRetirementAge: number
+}>({
+  icaoCode: user.value?.icao_code ?? undefined,
+  employeeNumber: user.value?.employee_number ?? undefined,
+  mandatoryRetirementAge: user.value?.mandatory_retirement_age ?? 65,
+})
+
+function openEditProfile() {
+  editProfileForm.value = {
+    icaoCode: user.value?.icao_code ?? undefined,
+    employeeNumber: user.value?.employee_number ?? undefined,
+    mandatoryRetirementAge: user.value?.mandatory_retirement_age ?? 65,
+  }
+  loadAirlines()
+  editProfileOpen.value = true
+}
+
+async function saveProfile(overrides?: Record<string, unknown>) {
+  const payload = overrides ?? editProfileForm.value
+  editProfileLoading.value = true
+  try {
+    const updated = await $fetch<{
+      id: string
+      icao_code: string | null
+      employee_number: string | null
+      mandatory_retirement_age: number
+    }>(`/api/admin/users/${userId}/profile`, {
+      method: 'PATCH',
+      body: payload,
+    })
+    if (user.value) {
+      user.value.icao_code = updated.icao_code
+      user.value.employee_number = updated.employee_number
+      user.value.mandatory_retirement_age = updated.mandatory_retirement_age
+    }
+    editProfileOpen.value = false
+    toast.add({ title: 'Profile updated', color: 'success' })
+  } catch {
+    toast.add({ title: 'Failed to update profile', color: 'error' })
+  } finally {
+    editProfileLoading.value = false
+  }
+}
+
 // Delete List
 const deleteListOpen = ref(false)
 const deleteListTarget = ref<AdminSeniorityListResponse | null>(null)
@@ -234,5 +335,5 @@ async function doDeleteList() {
   }
 }
 
-defineExpose({ confirmDelete, deleteOpen })
+defineExpose({ confirmDelete, deleteOpen, saveProfile })
 </script>
