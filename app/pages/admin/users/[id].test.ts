@@ -144,4 +144,25 @@ describe('admin/users/[id].vue', () => {
 
     expect(wrapper.text()).toContain('UAL')
   })
+
+  it('saveProfile shows error toast and keeps modal open when fetch fails', async () => {
+    mockFetch.mockRejectedValueOnce(new Error('Server error'))
+
+    const UserDetailPage = await import('./[id].vue')
+    const wrapper = await mountSuspended(UserDetailPage.default)
+    const vm = wrapper.vm as unknown as {
+      saveProfile: (p: Record<string, unknown>) => Promise<void>
+      editProfileOpen: boolean
+    }
+
+    // Open the modal first
+    vm.editProfileOpen = true
+    await nextTick()
+
+    await vm.saveProfile({ icaoCode: 'UAL' })
+    await nextTick()
+
+    // Modal should remain open after error
+    expect(vm.editProfileOpen).toBe(true)
+  })
 })

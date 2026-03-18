@@ -54,6 +54,10 @@
               <p class="text-muted">Last Sign-in</p>
               <p class="font-medium">{{ user.last_sign_in_at ? new Date(user.last_sign_in_at).toLocaleDateString() : 'Never' }}</p>
             </div>
+            <div>
+              <p class="text-muted">Retirement Age</p>
+              <p class="font-medium">{{ user.mandatory_retirement_age }}</p>
+            </div>
           </div>
         </UCard>
 
@@ -155,7 +159,7 @@
           <div class="space-y-4">
             <UFormField label="Airline">
               <USelectMenu
-                v-model="(editProfileForm.icaoCode as string | undefined)"
+                v-model="icaoCodeModel"
                 :items="airlineOptions"
                 value-key="value"
                 :loading="airlinesLoading"
@@ -165,7 +169,7 @@
             </UFormField>
             <UFormField label="Employee Number">
               <UInput
-                v-model="(editProfileForm.employeeNumber as string | undefined)"
+                v-model="employeeNumberModel"
                 placeholder="e.g. 12345"
                 class="w-full"
               />
@@ -273,6 +277,16 @@ const editProfileForm = ref<{
   mandatoryRetirementAge: user.value?.mandatory_retirement_age ?? 65,
 })
 
+const icaoCodeModel = computed({
+  get: () => editProfileForm.value.icaoCode ?? undefined,
+  set: (val: string | undefined) => { editProfileForm.value.icaoCode = val ?? null },
+})
+
+const employeeNumberModel = computed({
+  get: () => editProfileForm.value.employeeNumber ?? undefined,
+  set: (val: string | undefined) => { editProfileForm.value.employeeNumber = val ?? null },
+})
+
 function openEditProfile() {
   editProfileForm.value = {
     icaoCode: user.value?.icao_code ?? null,
@@ -303,8 +317,11 @@ async function saveProfile(overrides?: Record<string, unknown>) {
     }
     editProfileOpen.value = false
     toast.add({ title: 'Profile updated', color: 'success' })
-  } catch {
-    toast.add({ title: 'Failed to update profile', color: 'error' })
+  } catch (e: unknown) {
+    const message = e instanceof FetchError && (e.statusCode === 400 || e.statusCode === 422)
+      ? (e.data?.statusMessage ?? 'Invalid profile data')
+      : 'Failed to update profile'
+    toast.add({ title: message, color: 'error' })
   } finally {
     editProfileLoading.value = false
   }
@@ -335,5 +352,5 @@ async function doDeleteList() {
   }
 }
 
-defineExpose({ confirmDelete, deleteOpen, saveProfile })
+defineExpose({ confirmDelete, deleteOpen, saveProfile, editProfileOpen })
 </script>
