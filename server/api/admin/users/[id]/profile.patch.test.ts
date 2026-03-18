@@ -15,7 +15,7 @@ const { mocks, mockLogger } = vi.hoisted(() => {
 })
 
 Object.assign(globalThis, {
-  defineEventHandler: (fn: Function) => fn,
+  defineEventHandler: (fn: (event: unknown) => unknown) => fn,
   createError: (opts: { statusCode: number; statusMessage: string }) =>
     Object.assign(new Error(opts.statusMessage), opts),
   requireAdmin: mocks.requireAdmin,

@@ -198,14 +198,20 @@
 <script setup lang="ts">
 import type { TableColumn } from '@nuxt/ui'
 import { FetchError } from 'ofetch'
-import type { AdminUserDetail } from '#shared/schemas/admin'
-import type { AdminSeniorityListResponse } from '#shared/schemas/admin'
+import type { AdminUserDetail, AdminSeniorityListResponse } from '#shared/schemas/admin'
 
 definePageMeta({ layout: 'dashboard', middleware: ['auth', 'admin'] })
 
 const route = useRoute()
 const userId = route.params.id as string
 const toast = useToast()
+
+// Refs declared before awaits so defineExpose can reference them (vue/no-expose-after-await)
+const deleteOpen = ref(false)
+const editProfileOpen = ref(false)
+
+// defineExpose must precede any top-level awaits; function declarations are hoisted
+defineExpose({ confirmDelete, deleteOpen, saveProfile, editProfileOpen })
 
 const { data: user, pending: userPending } = await useFetch<AdminUserDetail>(`/api/admin/users/${userId}`)
 const { data: listsData, pending: listsPending, refresh: refreshLists } = await useFetch<AdminSeniorityListResponse[]>('/api/admin/seniority/lists')
@@ -222,7 +228,6 @@ const listColumns: TableColumn<AdminSeniorityListResponse>[] = [
 ]
 
 // Delete User
-const deleteOpen = ref(false)
 const deleteLoading = ref(false)
 
 function confirmDelete() {
@@ -265,7 +270,6 @@ async function resetPassword() {
 const { options: airlineOptions, loading: airlinesLoading, load: loadAirlines } = useAirlineOptions()
 
 // Edit profile modal state
-const editProfileOpen = ref(false)
 const editProfileLoading = ref(false)
 const editProfileForm = ref<{
   icaoCode: string | null
@@ -352,5 +356,4 @@ async function doDeleteList() {
   }
 }
 
-defineExpose({ confirmDelete, deleteOpen, saveProfile, editProfileOpen })
 </script>
