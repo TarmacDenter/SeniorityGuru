@@ -44,7 +44,7 @@ File: `shared/schemas/admin.ts` (add alongside existing schemas)
 export const UpdateUserProfileSchema = z.object({
   icaoCode: z.string().min(2).max(4).nullable().optional(),
   employeeNumber: z.string().max(20).nullable().optional(),
-  mandatoryRetirementAge: z.number().int().min(55).max(70).optional(),
+  mandatoryRetirementAge: z.number().int().min(55).max(75).optional(),
 })
 export type UpdateUserProfile = z.infer<typeof UpdateUserProfileSchema>
 ```
@@ -59,7 +59,7 @@ File: `app/pages/admin/users/[id].vue`
 - Clicking opens a `UModal` containing:
   - **Airline** — `USelectMenu` populated via `useAirlineOptions()` (same composable as `setup-profile.vue`)
   - **Employee Number** — `UInput`
-  - **Mandatory Retirement Age** — `UInputNumber` (integer, min 55, max 70)
+  - **Mandatory Retirement Age** — `UInputNumber` (integer, min 55, max 75 — matches existing `UpdatePreferencesSchema`)
 - Modal pre-fills from the current `user` ref values
 - On save: calls `PATCH /api/admin/users/[id]/profile` with only changed fields, closes modal, shows success toast, patches the local `user` ref so the profile card updates without reload
 - On error: shows error toast, keeps modal open
@@ -122,4 +122,4 @@ Admin clicks "Edit Profile"
 | `app/pages/admin/users/[id].vue` | Add "Edit Profile" button + modal |
 | `shared/schemas/admin.test.ts` | Schema unit tests |
 | `server/api/admin/users/[id]/profile.patch.test.ts` | Endpoint tests |
-| `app/pages/admin/users/__tests__/[id].test.ts` | Component tests |
+| `app/pages/admin/users/[id].test.ts` | Component tests (add to existing co-located file) |
