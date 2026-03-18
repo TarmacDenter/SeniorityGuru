@@ -4,6 +4,7 @@ node_modules
 # Nuxt build output
 .nuxt
 .output
+.vercel
 dist
 
 # NuxtHub local state
