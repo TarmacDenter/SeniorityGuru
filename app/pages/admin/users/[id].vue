@@ -56,7 +56,7 @@
             </div>
             <div>
               <p class="text-muted">Retirement Age</p>
-              <p class="font-medium">{{ user.mandatory_retirement_age }}</p>
+              <p class="font-medium">{{ user.mandatory_retirement_age ?? '—' }}</p>
             </div>
           </div>
         </UCard>
@@ -319,7 +319,7 @@ async function saveProfile(overrides?: Record<string, unknown>) {
     toast.add({ title: 'Profile updated', color: 'success' })
   } catch (e: unknown) {
     const message = e instanceof FetchError && (e.statusCode === 400 || e.statusCode === 422)
-      ? (e.data?.statusMessage ?? 'Invalid profile data')
+      ? (e.statusMessage ?? 'Invalid profile data')
       : 'Failed to update profile'
     toast.add({ title: message, color: 'error' })
   } finally {

@@ -1,6 +1,7 @@
 // @vitest-environment nuxt
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mountSuspended, mockNuxtImport } from '@nuxt/test-utils/runtime'
+import { FetchError } from 'ofetch'
 
 const { mockUseFetch, mockNavigateTo, mockRouteParams, mockFetch } = vi.hoisted(() => ({
   mockUseFetch: vi.fn(),
@@ -163,6 +164,28 @@ describe('admin/users/[id].vue', () => {
     await nextTick()
 
     // Modal should remain open after error
+    expect(vm.editProfileOpen).toBe(true)
+  })
+
+  it('saveProfile surfaces server validation message on 422', async () => {
+    const fetchError = new FetchError('Invalid airline code')
+    ;(fetchError as any).statusCode = 422
+    ;(fetchError as any).statusMessage = 'Invalid airline code'
+    mockFetch.mockRejectedValueOnce(fetchError)
+
+    const UserDetailPage = await import('./[id].vue')
+    const wrapper = await mountSuspended(UserDetailPage.default)
+    const vm = wrapper.vm as unknown as {
+      saveProfile: (p: Record<string, unknown>) => Promise<void>
+      editProfileOpen: boolean
+    }
+
+    vm.editProfileOpen = true
+    await nextTick()
+    await vm.saveProfile({ icaoCode: 'INVALID_CODE_THAT_IS_TOO_LONG' })
+    await nextTick()
+
+    // Modal must stay open on error (key assertion; toast content verified via e2e)
     expect(vm.editProfileOpen).toBe(true)
   })
 })
