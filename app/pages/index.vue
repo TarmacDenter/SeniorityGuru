@@ -17,7 +17,7 @@
           </div>
 
           <p class="text-lg sm:text-xl text-muted max-w-2xl">
-            Upload any airline seniority list, enter your hire date — get instant rank, percentile, and a projection to your retirement. No airline partnership required.
+            Your rank, percentile, and career trajectory — all in one place. Bring your list, we do the rest.
           </p>
 
           <div class="flex flex-wrap justify-center gap-3">
@@ -31,6 +31,8 @@
 
           <!-- Stat strip -->
           <div class="flex flex-wrap justify-center items-center gap-x-3 gap-y-1 text-sm text-muted mt-2">
+            <span>Any airline</span>
+            <span class="text-(--ui-border)" aria-hidden="true">•</span>
             <span>Your number</span>
             <span class="text-(--ui-border)" aria-hidden="true">•</span>
             <span>Your trajectory</span>
@@ -46,10 +48,10 @@
       <UContainer>
         <div class="text-center mb-10">
           <h2 class="text-2xl sm:text-3xl font-bold tracking-tight mb-3">
-            Your seniority, projected forward
+            Your number, from every angle
           </h2>
           <p class="text-muted max-w-xl mx-auto">
-            See how your percentile climbs as retirements happen — try the slider.
+            Your company rank is one number. Your qual rank is another. Both matter.
           </p>
         </div>
 
@@ -122,6 +124,10 @@
 
             <div class="space-y-4 py-1">
               <div>
+                <div class="text-xs text-muted mb-1">Seniority #</div>
+                <div class="font-mono text-xl font-bold">4892</div>
+              </div>
+              <div>
                 <div class="text-xs text-muted mb-1">Rank</div>
                 <div class="font-mono text-xl font-bold">4,892 <span class="text-sm font-normal text-muted">/ 4,892 pilots</span></div>
               </div>
@@ -173,16 +179,33 @@
     <!-- ── Section 5b: Analytics Demo ────────────────────────────────────── -->
     <section class="py-16 sm:py-20 bg-(--ui-bg-elevated)">
       <UContainer>
-        <div class="text-center mb-10">
+        <div class="text-center mb-8">
           <h2 class="text-2xl sm:text-3xl font-bold tracking-tight mb-3">
             The retirement wave is already in the data
           </h2>
           <p class="text-muted max-w-xl mx-auto">
-            Your airline's age curve tells you everything about where your number is going — and when.
+            Toggle between seat categories to see how the math changes.
           </p>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-5xl mx-auto">
+        <!-- Qual toggle -->
+        <div class="flex justify-center mb-8">
+          <div class="flex rounded-lg border border-(--ui-border) overflow-hidden text-sm font-medium">
+            <button
+              v-for="opt in demoQualOptions"
+              :key="opt.key"
+              class="px-4 py-1.5 transition-colors"
+              :class="demoQual === opt.key
+                ? 'bg-primary text-white'
+                : 'text-muted hover:bg-(--ui-bg)'"
+              @click="demoQual = opt.key"
+            >
+              {{ opt.label }}
+            </button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-5xl mx-auto mb-6">
           <!-- Age Distribution -->
           <UCard>
             <template #header>
@@ -190,7 +213,7 @@
             </template>
             <div class="space-y-3">
               <p class="text-sm text-muted">
-                A lot of pilots are about to retire. Here's how the age curve looks — and why your number is moving faster than you think.
+                Every bar past 55 is a pilot ahead of you leaving this decade.
               </p>
               <AnalyticsAgeDistributionChart :buckets="demoAgeBuckets" :null-count="0" />
             </div>
@@ -203,13 +226,43 @@
             </template>
             <div class="space-y-3">
               <p class="text-sm text-muted">
-                The retirement wave is coming. See which years accelerate your climb.
+                Most retirements concentrate between 2028 and 2033.
               </p>
               <AnalyticsRetirementWaveChart
                 :wave-buckets="demoWaveBuckets"
                 :trajectory-points="[]"
                 selected-qual=""
               />
+            </div>
+          </UCard>
+        </div>
+
+        <!-- Qual Position Scale — full width -->
+        <div class="max-w-5xl mx-auto">
+          <UCard>
+            <template #header>
+              <div class="flex items-center gap-4 flex-wrap">
+                <h3 class="font-semibold text-sm">Your Position by Qual</h3>
+                <div class="flex items-center gap-3 ml-auto flex-wrap">
+                  <div class="flex items-center gap-2">
+                    <USwitch v-model="demoProjection" size="sm" />
+                    <span class="text-sm text-muted">Project forward</span>
+                  </div>
+                  <template v-if="demoProjection">
+                    <USlider v-model="demoProjectionYears" :min="1" :max="20" :step="1" class="w-32" />
+                    <UBadge color="neutral" variant="subtle" size="sm" class="font-mono shrink-0">
+                      +{{ demoProjectionYears }}yr{{ demoProjectionYears === 1 ? '' : 's' }}
+                    </UBadge>
+                  </template>
+                  <UBadge v-else color="neutral" variant="subtle" size="sm">Today</UBadge>
+                </div>
+              </div>
+            </template>
+            <div class="space-y-3">
+              <p class="text-sm text-muted">
+                Each row shows where your seniority number lands within that qual. The dot turns green when you're senior enough to hold it.
+              </p>
+              <AnalyticsQualSeniorityScale :scales="demoQualScales" />
             </div>
           </UCard>
         </div>
@@ -221,7 +274,7 @@
       <UContainer>
         <div class="text-center mb-12">
           <h2 class="text-2xl sm:text-3xl font-bold tracking-tight mb-3">
-            Your data, never locked in
+            No subscription. Pay when it matters.
           </h2>
         </div>
 
@@ -267,43 +320,80 @@
       </UContainer>
     </section>
 
-    <!-- ── Section 7b: Coming Soon — The Pilot Wiki ───────────────────────── -->
+    <!-- ── Section 7b: Coming Soon ───────────────────────────────────────── -->
     <section class="py-16 sm:py-20 bg-(--ui-bg)">
       <UContainer>
         <div class="text-center mb-10">
           <UBadge color="warning" variant="subtle" class="mb-4">Coming Soon</UBadge>
           <h2 class="text-2xl sm:text-3xl font-bold tracking-tight mb-3">
-            Coming soon — The Pilot Wiki
+            What's coming next
           </h2>
-          <p class="text-muted max-w-xl mx-auto">
-            A shared, anonymous view into career trajectories across hundreds of airlines.
-          </p>
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-8 max-w-3xl mx-auto mb-10">
-          <div
-            v-for="item in wikiItems"
-            :key="item.title"
-            class="flex gap-4"
-          >
-            <div class="shrink-0 size-10 rounded-lg bg-(--ui-bg-elevated) flex items-center justify-center">
-              <UIcon :name="item.icon" class="size-5 text-muted" />
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-4xl mx-auto">
+          <!-- The Pilot Wiki -->
+          <UCard>
+            <template #header>
+              <div class="flex items-center gap-2">
+                <UIcon name="i-lucide-bar-chart-2" class="size-5 text-muted" />
+                <h3 class="font-semibold">The Pilot Wiki</h3>
+              </div>
+            </template>
+            <div class="space-y-4">
+              <p class="text-sm text-muted">
+                A shared, anonymous view into career trajectories across hundreds of airlines.
+              </p>
+              <div class="space-y-3">
+                <div
+                  v-for="item in wikiItems"
+                  :key="item.title"
+                  class="flex gap-3"
+                >
+                  <UIcon :name="item.icon" class="size-4 text-muted shrink-0 mt-0.5" />
+                  <div>
+                    <span class="text-sm font-medium">{{ item.title }}</span>
+                    <span class="text-sm text-muted"> — {{ item.description }}</span>
+                  </div>
+                </div>
+              </div>
+              <UButton disabled variant="outline" size="sm" icon="i-lucide-bar-chart-2">
+                Browse the Wiki
+              </UButton>
             </div>
-            <div>
-              <h3 class="font-semibold mb-1">{{ item.title }}</h3>
-              <p class="text-sm text-muted">{{ item.description }}</p>
-            </div>
-          </div>
-        </div>
+          </UCard>
 
-        <!-- Teaser stat strip -->
-        <div class="flex flex-col items-center gap-4">
-          <p class="text-sm text-muted italic">
-            47 airlines · 312 lists contributed · See how your trajectory compares →
-          </p>
-          <UButton disabled variant="outline" icon="i-lucide-bar-chart-2">
-            Browse the Wiki
-          </UButton>
+          <!-- Talk to the Seniority Guru -->
+          <UCard>
+            <template #header>
+              <div class="flex items-center gap-2">
+                <UIcon name="i-lucide-message-circle" class="size-5 text-muted" />
+                <h3 class="font-semibold">Talk to the Seniority Guru</h3>
+                <UBadge color="primary" variant="subtle" size="xs" class="ml-auto">Paid</UBadge>
+              </div>
+            </template>
+            <div class="space-y-4">
+              <p class="text-sm text-muted">
+                Ask questions about your seniority data and run hypotheticals — powered by your actual list.
+              </p>
+              <div class="space-y-3">
+                <div class="flex gap-3">
+                  <UIcon name="i-lucide-brain" class="size-4 text-muted shrink-0 mt-0.5" />
+                  <span class="text-sm text-muted">Knows your rank, base, seat, and trajectory</span>
+                </div>
+                <div class="flex gap-3">
+                  <UIcon name="i-lucide-flask-conical" class="size-4 text-muted shrink-0 mt-0.5" />
+                  <span class="text-sm text-muted">Run scenarios: "What if 50 CAs retire early?"</span>
+                </div>
+                <div class="flex gap-3">
+                  <UIcon name="i-lucide-lock" class="size-4 text-muted shrink-0 mt-0.5" />
+                  <span class="text-sm text-muted">Your data stays private — never used for training</span>
+                </div>
+              </div>
+              <UButton disabled variant="outline" size="sm" icon="i-lucide-message-circle">
+                Coming Soon
+              </UButton>
+            </div>
+          </UCard>
         </div>
       </UContainer>
     </section>
@@ -341,18 +431,20 @@
 </template>
 
 <script setup lang="ts">
+import type { QualDemographicScale } from '#shared/utils/qual-analytics'
+
 definePageMeta({ layout: 'default' })
 
 const howItWorksSteps = [
   {
     icon: 'i-lucide-upload',
     title: 'Upload your list',
-    description: 'CSV or Excel, any format. We need Employee #, Hire Date, Base, Seat, and Fleet — column names don\'t matter, we\'ll map them for you.',
+    description: 'CSV or Excel. We need Seniority Number, Employee Number, Hire Date, Retire Date, Base, Seat, and Fleet — column names don\'t matter, we\'ll map them.',
   },
   {
     icon: 'i-lucide-user-check',
     title: 'Confirm your entry',
-    description: 'Enter your employee number or hire date. We find you automatically.',
+    description: 'Enter your employee number. We find your row automatically.',
   },
   {
     icon: 'i-lucide-trending-up',
@@ -363,19 +455,19 @@ const howItWorksSteps = [
 
 const dataOwnershipItems = [
   {
-    icon: 'i-lucide-lock-open',
-    title: 'Bring your own list',
-    description: 'No airline partnerships. Upload any exported spreadsheet — CSV or Excel.',
+    icon: 'i-lucide-plane',
+    title: 'Works with your airline\'s data',
+    description: 'If they gave you a spreadsheet, you\'re in. No special access needed.',
   },
   {
-    icon: 'i-lucide-layers',
-    title: 'Multi-list history',
-    description: 'Upload lists from multiple dates to track changes across quarters.',
+    icon: 'i-lucide-folder-open',
+    title: 'See it whenever',
+    description: 'Your data stays live. No expiry, no gates.',
   },
   {
-    icon: 'i-lucide-briefcase',
-    title: 'Career-portable',
-    description: 'Track across bases, seats, and fleets as your career evolves.',
+    icon: 'i-lucide-credit-card',
+    title: 'Pay when you want a refresh',
+    description: 'Upload a new list when you want a fresh look at your data. Not on a monthly clock.',
   },
 ]
 
@@ -430,38 +522,177 @@ const wikiItems = [
   },
 ]
 
+// ── Qual scale demo data ──────────────────────────────────────────────────────
+
+// Demo pilot: ~3 years in, 35th percentile company-wide.
+// FO quals: density starts near 0% → plug at first bar (~2%) → holdable immediately.
+// CA quals: density starts above 40% → plug at first bar → not yet holdable, reachable via projection.
+const BASE_QUAL_SCALES = [
+  {
+    fleet: 'E175', seat: 'FO', base: 'DEN', activeCount: 142,
+    plugPercentile: 2, plugSenNum: 4780, p25: 18, median: 32, p75: 51, max: 62,
+    density: [
+      { start: 0,  count: 4  }, { start: 5,  count: 8  }, { start: 10, count: 14 },
+      { start: 15, count: 19 }, { start: 20, count: 22 }, { start: 25, count: 20 },
+      { start: 30, count: 16 }, { start: 35, count: 13 }, { start: 40, count: 10 },
+      { start: 45, count: 8  }, { start: 50, count: 5  }, { start: 55, count: 2  },
+      { start: 60, count: 1  }, { start: 65, count: 0  }, { start: 70, count: 0  },
+      { start: 75, count: 0  }, { start: 80, count: 0  }, { start: 85, count: 0  },
+      { start: 90, count: 0  }, { start: 95, count: 0  },
+    ],
+  },
+  {
+    fleet: 'E175', seat: 'CA', base: 'DEN', activeCount: 68,
+    plugPercentile: 41, plugSenNum: 2950, p25: 52, median: 64, p75: 76, max: 91,
+    density: [
+      { start: 0,  count: 0  }, { start: 5,  count: 0  }, { start: 10, count: 0  },
+      { start: 15, count: 0  }, { start: 20, count: 0  }, { start: 25, count: 0  },
+      { start: 30, count: 0  }, { start: 35, count: 0  }, { start: 40, count: 3  },
+      { start: 45, count: 7  }, { start: 50, count: 12 }, { start: 55, count: 14 },
+      { start: 60, count: 13 }, { start: 65, count: 9  }, { start: 70, count: 6  },
+      { start: 75, count: 3  }, { start: 80, count: 1  }, { start: 85, count: 0  },
+      { start: 90, count: 0  }, { start: 95, count: 0  },
+    ],
+  },
+  {
+    fleet: 'A320', seat: 'FO', base: 'ORD', activeCount: 198,
+    plugPercentile: 2, plugSenNum: 4820, p25: 12, median: 26, p75: 44, max: 58,
+    density: [
+      { start: 0,  count: 8  }, { start: 5,  count: 16 }, { start: 10, count: 24 },
+      { start: 15, count: 28 }, { start: 20, count: 26 }, { start: 25, count: 22 },
+      { start: 30, count: 18 }, { start: 35, count: 14 }, { start: 40, count: 10 },
+      { start: 45, count: 7  }, { start: 50, count: 4  }, { start: 55, count: 3  },
+      { start: 60, count: 0  }, { start: 65, count: 0  }, { start: 70, count: 0  },
+      { start: 75, count: 0  }, { start: 80, count: 0  }, { start: 85, count: 0  },
+      { start: 90, count: 0  }, { start: 95, count: 0  },
+    ],
+  },
+  {
+    fleet: 'A320', seat: 'CA', base: 'ORD', activeCount: 94,
+    plugPercentile: 46, plugSenNum: 2700, p25: 55, median: 67, p75: 79, max: 92,
+    density: [
+      { start: 0,  count: 0  }, { start: 5,  count: 0  }, { start: 10, count: 0  },
+      { start: 15, count: 0  }, { start: 20, count: 0  }, { start: 25, count: 0  },
+      { start: 30, count: 0  }, { start: 35, count: 0  }, { start: 40, count: 0  },
+      { start: 45, count: 4  }, { start: 50, count: 10 }, { start: 55, count: 16 },
+      { start: 60, count: 18 }, { start: 65, count: 14 }, { start: 70, count: 10 },
+      { start: 75, count: 6  }, { start: 80, count: 3  }, { start: 85, count: 1  },
+      { start: 90, count: 0  }, { start: 95, count: 0  },
+    ],
+  },
+]
+
+const DEMO_CURRENT_PCT = 35
+const demoProjection = useState('landing-demo-projection', () => false)
+const demoProjectionYears = useState('landing-demo-projection-years', () => 5)
+
+const demoQualScales = computed<QualDemographicScale[]>(() => {
+  const years = demoProjection.value ? demoProjectionYears.value : 0
+  const projectedPct = Math.min(99, DEMO_CURRENT_PCT + years * 3.2)
+  return BASE_QUAL_SCALES.map(scale => ({
+    ...scale,
+    userPercentile: projectedPct,
+    currentUserPercentile: DEMO_CURRENT_PCT,
+    isHoldable: projectedPct >= scale.plugPercentile,
+  }))
+})
+
 // ── Analytics demo data ───────────────────────────────────────────────────────
 
-const demoAgeBuckets = [
-  { label: '25–30', count: 187 },
-  { label: '30–35', count: 423 },
-  { label: '35–40', count: 612 },
-  { label: '40–45', count: 748 },
-  { label: '45–50', count: 831 },
-  { label: '50–55', count: 796 },
-  { label: '55–60', count: 724 },
-  { label: '60–65', count: 571 },
+type DemoQual = 'all' | 'fo' | 'ca'
+const demoQual = useState<DemoQual>('landing-demo-qual', () => 'all')
+
+const demoAgeData: Record<DemoQual, { label: string; count: number }[]> = {
+  all: [
+    { label: '25–30', count: 187 },
+    { label: '30–35', count: 423 },
+    { label: '35–40', count: 612 },
+    { label: '40–45', count: 748 },
+    { label: '45–50', count: 831 },
+    { label: '50–55', count: 796 },
+    { label: '55–60', count: 724 },
+    { label: '60–65', count: 571 },
+  ],
+  fo: [
+    { label: '25–30', count: 165 },
+    { label: '30–35', count: 380 },
+    { label: '35–40', count: 520 },
+    { label: '40–45', count: 610 },
+    { label: '45–50', count: 540 },
+    { label: '50–55', count: 380 },
+    { label: '55–60', count: 280 },
+    { label: '60–65', count: 125 },
+  ],
+  ca: [
+    { label: '25–30', count: 22  },
+    { label: '30–35', count: 43  },
+    { label: '35–40', count: 92  },
+    { label: '40–45', count: 138 },
+    { label: '45–50', count: 291 },
+    { label: '50–55', count: 416 },
+    { label: '55–60', count: 444 },
+    { label: '60–65', count: 446 },
+  ],
+}
+
+const demoWaveData: Record<DemoQual, { year: number; count: number; isWave: boolean }[]> = {
+  all: [
+    { year: 2026, count: 95,  isWave: false },
+    { year: 2027, count: 112, isWave: false },
+    { year: 2028, count: 143, isWave: true  },
+    { year: 2029, count: 178, isWave: true  },
+    { year: 2030, count: 194, isWave: true  },
+    { year: 2031, count: 185, isWave: true  },
+    { year: 2032, count: 168, isWave: true  },
+    { year: 2033, count: 142, isWave: true  },
+    { year: 2034, count: 118, isWave: false },
+    { year: 2035, count: 98,  isWave: false },
+    { year: 2036, count: 84,  isWave: false },
+    { year: 2037, count: 71,  isWave: false },
+    { year: 2038, count: 63,  isWave: false },
+    { year: 2039, count: 58,  isWave: false },
+    { year: 2040, count: 52,  isWave: false },
+    { year: 2041, count: 48,  isWave: false },
+    { year: 2042, count: 44,  isWave: false },
+    { year: 2043, count: 41,  isWave: false },
+    { year: 2044, count: 38,  isWave: false },
+  ],
+  fo: [
+    { year: 2026, count: 52,  isWave: false },
+    { year: 2027, count: 61,  isWave: false },
+    { year: 2028, count: 78,  isWave: true  },
+    { year: 2029, count: 95,  isWave: true  },
+    { year: 2030, count: 104, isWave: true  },
+    { year: 2031, count: 98,  isWave: true  },
+    { year: 2032, count: 87,  isWave: true  },
+    { year: 2033, count: 71,  isWave: true  },
+    { year: 2034, count: 58,  isWave: false },
+    { year: 2035, count: 46,  isWave: false },
+    { year: 2036, count: 38,  isWave: false },
+    { year: 2037, count: 32,  isWave: false },
+  ],
+  ca: [
+    { year: 2026, count: 43,  isWave: true  },
+    { year: 2027, count: 51,  isWave: true  },
+    { year: 2028, count: 65,  isWave: true  },
+    { year: 2029, count: 83,  isWave: true  },
+    { year: 2030, count: 90,  isWave: true  },
+    { year: 2031, count: 87,  isWave: true  },
+    { year: 2032, count: 81,  isWave: true  },
+    { year: 2033, count: 71,  isWave: true  },
+    { year: 2034, count: 60,  isWave: false },
+    { year: 2035, count: 52,  isWave: false },
+    { year: 2036, count: 46,  isWave: false },
+    { year: 2037, count: 39,  isWave: false },
+  ],
+}
+
+const demoQualOptions: { key: DemoQual; label: string }[] = [
+  { key: 'all', label: 'All Pilots' },
+  { key: 'fo',  label: 'FO' },
+  { key: 'ca',  label: 'CA' },
 ]
 
-const demoWaveBuckets = [
-  { year: 2026, count: 95,  isWave: false },
-  { year: 2027, count: 112, isWave: false },
-  { year: 2028, count: 143, isWave: true },
-  { year: 2029, count: 178, isWave: true },
-  { year: 2030, count: 194, isWave: true },
-  { year: 2031, count: 185, isWave: true },
-  { year: 2032, count: 168, isWave: true },
-  { year: 2033, count: 142, isWave: true },
-  { year: 2034, count: 118, isWave: false },
-  { year: 2035, count: 98,  isWave: false },
-  { year: 2036, count: 84,  isWave: false },
-  { year: 2037, count: 71,  isWave: false },
-  { year: 2038, count: 63,  isWave: false },
-  { year: 2039, count: 58,  isWave: false },
-  { year: 2040, count: 52,  isWave: false },
-  { year: 2041, count: 48,  isWave: false },
-  { year: 2042, count: 44,  isWave: false },
-  { year: 2043, count: 41,  isWave: false },
-  { year: 2044, count: 38,  isWave: false },
-]
+const demoAgeBuckets = computed(() => demoAgeData[demoQual.value])
+const demoWaveBuckets = computed(() => demoWaveData[demoQual.value])
 </script>
