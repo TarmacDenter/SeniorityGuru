@@ -19,6 +19,9 @@
       title="Check your email"
       description="If an account exists for that address, we sent a password reset link."
     />
+    <p v-if="sent" class="mt-3 text-center text-sm text-muted">
+      Don't see it? Check your junk or spam folder.
+    </p>
 
     <p class="mt-4 text-center text-sm">
       <ULink to="/auth/login" class="text-primary hover:underline">Back to sign in</ULink>

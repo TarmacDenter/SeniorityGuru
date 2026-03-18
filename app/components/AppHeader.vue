@@ -1,5 +1,5 @@
 <template>
-  <UHeader to="/">
+  <UHeader :to="user ? '/dashboard' : '/'">
     <template #title>
       <span class="inline-flex items-center gap-2">
         <UIcon name="i-lucide-plane" class="size-5 text-primary" />
