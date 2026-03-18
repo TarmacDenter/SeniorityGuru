@@ -83,15 +83,15 @@ import type { ChartData, ChartOptions, TooltipItem } from 'chart.js'
 
 // ── Qual presets ──────────────────────────────────────────────────────────────
 
-type QualKey = 'fo_narrow' | 'fo_wide' | 'ca_narrow'
+type QualKey = 'company' | 'fleet' | 'qual'
 
 const qualPresets: { key: QualKey; label: string; startPct: number; yearsToRetirement: number; thresholdLabel: string }[] = [
-  { key: 'fo_narrow', label: 'FO · Narrow', startPct: 22, yearsToRetirement: 37, thresholdLabel: 'CA eligibility' },
-  { key: 'fo_wide',   label: 'FO · Wide',   startPct: 50, yearsToRetirement: 22, thresholdLabel: 'Widebody CA' },
-  { key: 'ca_narrow', label: 'CA · Narrow', startPct: 73, yearsToRetirement: 15, thresholdLabel: 'Widebody CA' },
+  { key: 'company', label: 'All Pilots',     startPct: 8,  yearsToRetirement: 37, thresholdLabel: 'Top 25%' },
+  { key: 'fleet',   label: 'E175 · FOs',     startPct: 16, yearsToRetirement: 37, thresholdLabel: 'Top 25%' },
+  { key: 'qual',    label: 'DEN · FO · E175', startPct: 28, yearsToRetirement: 37, thresholdLabel: 'Top 25%' },
 ]
 
-const selectedQual = ref<QualKey>('fo_narrow')
+const selectedQual = ref<QualKey>('company')
 
 const activePreset = computed(() => qualPresets.find((q) => q.key === selectedQual.value)!)
 
@@ -157,8 +157,6 @@ const years = computed(() => {
 const chartData = computed<ChartData>(() => {
   const { startPct, yearsToRetirement, thresholdLabel } = activePreset.value
   const base = generateTrajectory(3.5, growthRate.value, startPct, yearsToRetirement)
-  const optimistic = generateTrajectory(4.5, growthRate.value, startPct, yearsToRetirement)
-  const pessimistic = generateTrajectory(2.5, growthRate.value, startPct, yearsToRetirement)
   const n = yearsToRetirement + 1
 
   return {
@@ -170,30 +168,6 @@ const chartData = computed<ChartData>(() => {
         borderColor: '#38bdf8',
         backgroundColor: 'rgba(56, 189, 248, 0.08)',
         borderWidth: 2.5,
-        pointRadius: 0,
-        pointHoverRadius: 4,
-        tension: 0.4,
-        fill: false,
-      },
-      {
-        label: 'Optimistic (+10% retirements)',
-        data: optimistic,
-        borderColor: '#34d399',
-        backgroundColor: 'transparent',
-        borderWidth: 2,
-        borderDash: [6, 4],
-        pointRadius: 0,
-        pointHoverRadius: 4,
-        tension: 0.4,
-        fill: false,
-      },
-      {
-        label: 'Pessimistic (−10% retirements)',
-        data: pessimistic,
-        borderColor: '#fb7185',
-        backgroundColor: 'transparent',
-        borderWidth: 2,
-        borderDash: [6, 4],
         pointRadius: 0,
         pointHoverRadius: 4,
         tension: 0.4,
@@ -285,7 +259,5 @@ const chartOptions = computed<ChartOptions>(() => ({
 
 const legendItems = [
   { label: 'Base scenario', color: '#38bdf8', dashed: false },
-  { label: 'Optimistic (+10% retirements)', color: '#34d399', dashed: true },
-  { label: 'Pessimistic (−10% retirements)', color: '#fb7185', dashed: true },
 ]
 </script>

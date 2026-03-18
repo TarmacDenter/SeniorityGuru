@@ -27,6 +27,11 @@ export default defineVitestConfig({
     environmentOptions: {
       nuxt: {
         domEnvironment: 'happy-dom',
+        overrides: {
+          experimental: {
+            appManifest: false,
+          },
+        },
       },
     },
     envFile: '.env.test',
