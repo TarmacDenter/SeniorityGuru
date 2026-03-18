@@ -157,8 +157,6 @@ const years = computed(() => {
 const chartData = computed<ChartData>(() => {
   const { startPct, yearsToRetirement, thresholdLabel } = activePreset.value
   const base = generateTrajectory(3.5, growthRate.value, startPct, yearsToRetirement)
-  const optimistic = generateTrajectory(4.5, growthRate.value, startPct, yearsToRetirement)
-  const pessimistic = generateTrajectory(2.5, growthRate.value, startPct, yearsToRetirement)
   const n = yearsToRetirement + 1
 
   return {
@@ -170,30 +168,6 @@ const chartData = computed<ChartData>(() => {
         borderColor: '#38bdf8',
         backgroundColor: 'rgba(56, 189, 248, 0.08)',
         borderWidth: 2.5,
-        pointRadius: 0,
-        pointHoverRadius: 4,
-        tension: 0.4,
-        fill: false,
-      },
-      {
-        label: 'Optimistic (+10% retirements)',
-        data: optimistic,
-        borderColor: '#34d399',
-        backgroundColor: 'transparent',
-        borderWidth: 2,
-        borderDash: [6, 4],
-        pointRadius: 0,
-        pointHoverRadius: 4,
-        tension: 0.4,
-        fill: false,
-      },
-      {
-        label: 'Pessimistic (−10% retirements)',
-        data: pessimistic,
-        borderColor: '#fb7185',
-        backgroundColor: 'transparent',
-        borderWidth: 2,
-        borderDash: [6, 4],
         pointRadius: 0,
         pointHoverRadius: 4,
         tension: 0.4,
@@ -285,7 +259,5 @@ const chartOptions = computed<ChartOptions>(() => ({
 
 const legendItems = [
   { label: 'Base scenario', color: '#38bdf8', dashed: false },
-  { label: 'Optimistic (+10% retirements)', color: '#34d399', dashed: true },
-  { label: 'Pessimistic (−10% retirements)', color: '#fb7185', dashed: true },
 ]
 </script>

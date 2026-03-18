@@ -124,6 +124,10 @@
 
             <div class="space-y-4 py-1">
               <div>
+                <div class="text-xs text-muted mb-1">Seniority #</div>
+                <div class="font-mono text-xl font-bold">4892</div>
+              </div>
+              <div>
                 <div class="text-xs text-muted mb-1">Rank</div>
                 <div class="font-mono text-xl font-bold">4,892 <span class="text-sm font-normal text-muted">/ 4,892 pilots</span></div>
               </div>
@@ -201,7 +205,7 @@
           </div>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-5xl mx-auto">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-5xl mx-auto mb-6">
           <!-- Age Distribution -->
           <UCard>
             <template #header>
@@ -229,6 +233,36 @@
                 :trajectory-points="[]"
                 selected-qual=""
               />
+            </div>
+          </UCard>
+        </div>
+
+        <!-- Qual Position Scale — full width -->
+        <div class="max-w-5xl mx-auto">
+          <UCard>
+            <template #header>
+              <div class="flex items-center gap-4 flex-wrap">
+                <h3 class="font-semibold text-sm">Your Position by Qual</h3>
+                <div class="flex items-center gap-3 ml-auto flex-wrap">
+                  <div class="flex items-center gap-2">
+                    <USwitch v-model="demoProjection" size="sm" />
+                    <span class="text-sm text-muted">Project forward</span>
+                  </div>
+                  <template v-if="demoProjection">
+                    <USlider v-model="demoProjectionYears" :min="1" :max="20" :step="1" class="w-32" />
+                    <UBadge color="neutral" variant="subtle" size="sm" class="font-mono shrink-0">
+                      +{{ demoProjectionYears }}yr{{ demoProjectionYears === 1 ? '' : 's' }}
+                    </UBadge>
+                  </template>
+                  <UBadge v-else color="neutral" variant="subtle" size="sm">Today</UBadge>
+                </div>
+              </div>
+            </template>
+            <div class="space-y-3">
+              <p class="text-sm text-muted">
+                Each row shows where your seniority number lands within that qual. The dot turns green when you're senior enough to hold it.
+              </p>
+              <AnalyticsQualSeniorityScale :scales="demoQualScales" />
             </div>
           </UCard>
         </div>
@@ -286,39 +320,80 @@
       </UContainer>
     </section>
 
-    <!-- ── Section 7b: Coming Soon — The Pilot Wiki ───────────────────────── -->
+    <!-- ── Section 7b: Coming Soon ───────────────────────────────────────── -->
     <section class="py-16 sm:py-20 bg-(--ui-bg)">
       <UContainer>
         <div class="text-center mb-10">
           <UBadge color="warning" variant="subtle" class="mb-4">Coming Soon</UBadge>
           <h2 class="text-2xl sm:text-3xl font-bold tracking-tight mb-3">
-            Coming soon — The Pilot Wiki
+            What's coming next
           </h2>
-          <p class="text-muted max-w-xl mx-auto">
-            A shared, anonymous view into career trajectories across hundreds of airlines.
-          </p>
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-8 max-w-3xl mx-auto mb-10">
-          <div
-            v-for="item in wikiItems"
-            :key="item.title"
-            class="flex gap-4"
-          >
-            <div class="shrink-0 size-10 rounded-lg bg-(--ui-bg-elevated) flex items-center justify-center">
-              <UIcon :name="item.icon" class="size-5 text-muted" />
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-4xl mx-auto">
+          <!-- The Pilot Wiki -->
+          <UCard>
+            <template #header>
+              <div class="flex items-center gap-2">
+                <UIcon name="i-lucide-bar-chart-2" class="size-5 text-muted" />
+                <h3 class="font-semibold">The Pilot Wiki</h3>
+              </div>
+            </template>
+            <div class="space-y-4">
+              <p class="text-sm text-muted">
+                A shared, anonymous view into career trajectories across hundreds of airlines.
+              </p>
+              <div class="space-y-3">
+                <div
+                  v-for="item in wikiItems"
+                  :key="item.title"
+                  class="flex gap-3"
+                >
+                  <UIcon :name="item.icon" class="size-4 text-muted shrink-0 mt-0.5" />
+                  <div>
+                    <span class="text-sm font-medium">{{ item.title }}</span>
+                    <span class="text-sm text-muted"> — {{ item.description }}</span>
+                  </div>
+                </div>
+              </div>
+              <UButton disabled variant="outline" size="sm" icon="i-lucide-bar-chart-2">
+                Browse the Wiki
+              </UButton>
             </div>
-            <div>
-              <h3 class="font-semibold mb-1">{{ item.title }}</h3>
-              <p class="text-sm text-muted">{{ item.description }}</p>
-            </div>
-          </div>
-        </div>
+          </UCard>
 
-        <div class="flex flex-col items-center gap-4">
-          <UButton disabled variant="outline" icon="i-lucide-bar-chart-2">
-            Browse the Wiki
-          </UButton>
+          <!-- Talk to the Seniority Guru -->
+          <UCard>
+            <template #header>
+              <div class="flex items-center gap-2">
+                <UIcon name="i-lucide-message-circle" class="size-5 text-muted" />
+                <h3 class="font-semibold">Talk to the Seniority Guru</h3>
+                <UBadge color="primary" variant="subtle" size="xs" class="ml-auto">Paid</UBadge>
+              </div>
+            </template>
+            <div class="space-y-4">
+              <p class="text-sm text-muted">
+                Ask questions about your seniority data and run hypotheticals — powered by your actual list.
+              </p>
+              <div class="space-y-3">
+                <div class="flex gap-3">
+                  <UIcon name="i-lucide-brain" class="size-4 text-muted shrink-0 mt-0.5" />
+                  <span class="text-sm text-muted">Knows your rank, base, seat, and trajectory</span>
+                </div>
+                <div class="flex gap-3">
+                  <UIcon name="i-lucide-flask-conical" class="size-4 text-muted shrink-0 mt-0.5" />
+                  <span class="text-sm text-muted">Run scenarios: "What if 50 CAs retire early?"</span>
+                </div>
+                <div class="flex gap-3">
+                  <UIcon name="i-lucide-lock" class="size-4 text-muted shrink-0 mt-0.5" />
+                  <span class="text-sm text-muted">Your data stays private — never used for training</span>
+                </div>
+              </div>
+              <UButton disabled variant="outline" size="sm" icon="i-lucide-message-circle">
+                Coming Soon
+              </UButton>
+            </div>
+          </UCard>
         </div>
       </UContainer>
     </section>
@@ -356,18 +431,20 @@
 </template>
 
 <script setup lang="ts">
+import type { QualDemographicScale } from '#shared/utils/qual-analytics'
+
 definePageMeta({ layout: 'default' })
 
 const howItWorksSteps = [
   {
     icon: 'i-lucide-upload',
     title: 'Upload your list',
-    description: 'CSV or Excel, any format. We need Employee #, Hire Date, Base, Seat, and Fleet — column names don\'t matter, we\'ll map them for you.',
+    description: 'CSV or Excel. We need Seniority Number, Employee Number, Hire Date, Retire Date, Base, Seat, and Fleet — column names don\'t matter, we\'ll map them.',
   },
   {
     icon: 'i-lucide-user-check',
     title: 'Confirm your entry',
-    description: 'Enter your employee number or hire date. We find you automatically.',
+    description: 'Enter your employee number. We find your row automatically.',
   },
   {
     icon: 'i-lucide-trending-up',
@@ -389,8 +466,8 @@ const dataOwnershipItems = [
   },
   {
     icon: 'i-lucide-credit-card',
-    title: 'Pay when you make a move',
-    description: 'Upload a new list when something changes. Not every month by default.',
+    title: 'Pay when you want a refresh',
+    description: 'Upload a new list when you want a fresh look at your data. Not on a monthly clock.',
   },
 ]
 
@@ -445,10 +522,85 @@ const wikiItems = [
   },
 ]
 
+// ── Qual scale demo data ──────────────────────────────────────────────────────
+
+// Demo pilot: ~3 years in, 35th percentile company-wide.
+// FO quals: density starts near 0% → plug at first bar (~2%) → holdable immediately.
+// CA quals: density starts above 40% → plug at first bar → not yet holdable, reachable via projection.
+const BASE_QUAL_SCALES = [
+  {
+    fleet: 'E175', seat: 'FO', base: 'DEN', activeCount: 142,
+    plugPercentile: 2, plugSenNum: 4780, p25: 18, median: 32, p75: 51, max: 62,
+    density: [
+      { start: 0,  count: 4  }, { start: 5,  count: 8  }, { start: 10, count: 14 },
+      { start: 15, count: 19 }, { start: 20, count: 22 }, { start: 25, count: 20 },
+      { start: 30, count: 16 }, { start: 35, count: 13 }, { start: 40, count: 10 },
+      { start: 45, count: 8  }, { start: 50, count: 5  }, { start: 55, count: 2  },
+      { start: 60, count: 1  }, { start: 65, count: 0  }, { start: 70, count: 0  },
+      { start: 75, count: 0  }, { start: 80, count: 0  }, { start: 85, count: 0  },
+      { start: 90, count: 0  }, { start: 95, count: 0  },
+    ],
+  },
+  {
+    fleet: 'E175', seat: 'CA', base: 'DEN', activeCount: 68,
+    plugPercentile: 41, plugSenNum: 2950, p25: 52, median: 64, p75: 76, max: 91,
+    density: [
+      { start: 0,  count: 0  }, { start: 5,  count: 0  }, { start: 10, count: 0  },
+      { start: 15, count: 0  }, { start: 20, count: 0  }, { start: 25, count: 0  },
+      { start: 30, count: 0  }, { start: 35, count: 0  }, { start: 40, count: 3  },
+      { start: 45, count: 7  }, { start: 50, count: 12 }, { start: 55, count: 14 },
+      { start: 60, count: 13 }, { start: 65, count: 9  }, { start: 70, count: 6  },
+      { start: 75, count: 3  }, { start: 80, count: 1  }, { start: 85, count: 0  },
+      { start: 90, count: 0  }, { start: 95, count: 0  },
+    ],
+  },
+  {
+    fleet: 'A320', seat: 'FO', base: 'ORD', activeCount: 198,
+    plugPercentile: 2, plugSenNum: 4820, p25: 12, median: 26, p75: 44, max: 58,
+    density: [
+      { start: 0,  count: 8  }, { start: 5,  count: 16 }, { start: 10, count: 24 },
+      { start: 15, count: 28 }, { start: 20, count: 26 }, { start: 25, count: 22 },
+      { start: 30, count: 18 }, { start: 35, count: 14 }, { start: 40, count: 10 },
+      { start: 45, count: 7  }, { start: 50, count: 4  }, { start: 55, count: 3  },
+      { start: 60, count: 0  }, { start: 65, count: 0  }, { start: 70, count: 0  },
+      { start: 75, count: 0  }, { start: 80, count: 0  }, { start: 85, count: 0  },
+      { start: 90, count: 0  }, { start: 95, count: 0  },
+    ],
+  },
+  {
+    fleet: 'A320', seat: 'CA', base: 'ORD', activeCount: 94,
+    plugPercentile: 46, plugSenNum: 2700, p25: 55, median: 67, p75: 79, max: 92,
+    density: [
+      { start: 0,  count: 0  }, { start: 5,  count: 0  }, { start: 10, count: 0  },
+      { start: 15, count: 0  }, { start: 20, count: 0  }, { start: 25, count: 0  },
+      { start: 30, count: 0  }, { start: 35, count: 0  }, { start: 40, count: 0  },
+      { start: 45, count: 4  }, { start: 50, count: 10 }, { start: 55, count: 16 },
+      { start: 60, count: 18 }, { start: 65, count: 14 }, { start: 70, count: 10 },
+      { start: 75, count: 6  }, { start: 80, count: 3  }, { start: 85, count: 1  },
+      { start: 90, count: 0  }, { start: 95, count: 0  },
+    ],
+  },
+]
+
+const DEMO_CURRENT_PCT = 35
+const demoProjection = useState('landing-demo-projection', () => false)
+const demoProjectionYears = useState('landing-demo-projection-years', () => 5)
+
+const demoQualScales = computed<QualDemographicScale[]>(() => {
+  const years = demoProjection.value ? demoProjectionYears.value : 0
+  const projectedPct = Math.min(99, DEMO_CURRENT_PCT + years * 3.2)
+  return BASE_QUAL_SCALES.map(scale => ({
+    ...scale,
+    userPercentile: projectedPct,
+    currentUserPercentile: DEMO_CURRENT_PCT,
+    isHoldable: projectedPct >= scale.plugPercentile,
+  }))
+})
+
 // ── Analytics demo data ───────────────────────────────────────────────────────
 
 type DemoQual = 'all' | 'fo' | 'ca'
-const demoQual = ref<DemoQual>('all')
+const demoQual = useState<DemoQual>('landing-demo-qual', () => 'all')
 
 const demoAgeData: Record<DemoQual, { label: string; count: number }[]> = {
   all: [
