@@ -1,3 +1,26 @@
+<script setup lang="ts">
+import { ResetPasswordSchema } from '#shared/schemas/auth'
+import type { ResetPasswordState } from '#shared/schemas/auth'
+
+definePageMeta({ layout: 'auth' })
+
+const supabase = useSupabaseClient()
+const loading = ref(false)
+const sent = ref(false)
+
+const state = reactive<ResetPasswordState>({ email: '' })
+
+async function onSubmit() {
+  loading.value = true
+  await supabase.auth.resetPasswordForEmail(state.email, {
+    redirectTo: `${window.location.origin}/auth/confirm?type=recovery`,
+  })
+  loading.value = false
+  // Always show success to prevent email enumeration
+  sent.value = true
+}
+</script>
+
 <template>
   <div>
     <h1 class="text-2xl font-bold mb-6 text-center">Reset password</h1>
@@ -28,26 +51,3 @@
     </p>
   </div>
 </template>
-
-<script setup lang="ts">
-import { ResetPasswordSchema } from '#shared/schemas/auth'
-import type { ResetPasswordState } from '#shared/schemas/auth'
-
-definePageMeta({ layout: 'auth' })
-
-const supabase = useSupabaseClient()
-const loading = ref(false)
-const sent = ref(false)
-
-const state = reactive<ResetPasswordState>({ email: '' })
-
-async function onSubmit() {
-  loading.value = true
-  await supabase.auth.resetPasswordForEmail(state.email, {
-    redirectTo: `${window.location.origin}/auth/confirm?type=recovery`,
-  })
-  loading.value = false
-  // Always show success to prevent email enumeration
-  sent.value = true
-}
-</script>

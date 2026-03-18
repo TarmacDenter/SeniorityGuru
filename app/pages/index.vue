@@ -1,3 +1,270 @@
+<script setup lang="ts">
+import type { QualDemographicScale } from '#shared/utils/qual-analytics'
+
+definePageMeta({ layout: 'default' })
+
+const howItWorksSteps = [
+  {
+    icon: 'i-lucide-upload',
+    title: 'Upload your list',
+    description: 'CSV or Excel. We need Seniority Number, Employee Number, Hire Date, Retire Date, Base, Seat, and Fleet — column names don\'t matter, we\'ll map them.',
+  },
+  {
+    icon: 'i-lucide-user-check',
+    title: 'Confirm your entry',
+    description: 'Enter your employee number. We find your row automatically.',
+  },
+  {
+    icon: 'i-lucide-trending-up',
+    title: 'Explore your trajectory',
+    description: 'Instant dashboard: rank, percentile, career-length projections, and retirement forecast.',
+  },
+]
+
+const dataOwnershipItems = [
+  {
+    icon: 'i-lucide-plane',
+    title: 'Works with your airline\'s data',
+    description: 'If they gave you a spreadsheet, you\'re in. No special access needed.',
+  },
+  {
+    icon: 'i-lucide-folder-open',
+    title: 'See it whenever',
+    description: 'Your data stays live. No expiry, no gates.',
+  },
+  {
+    icon: 'i-lucide-credit-card',
+    title: 'Pay when you want a refresh',
+    description: 'Upload a new list when you want a fresh look at your data. Not on a monthly clock.',
+  },
+]
+
+const featureCards = [
+  {
+    icon: 'i-lucide-trending-up',
+    title: 'Trajectory Projections',
+    description: 'Career-length percentile forecast under base, optimistic, and pessimistic retirement scenarios.',
+  },
+  {
+    icon: 'i-lucide-calendar-clock',
+    title: 'Retirement Forecasting',
+    description: 'See how many pilots senior to you are projected to retire in the next 1, 5, and 10 years.',
+  },
+  {
+    icon: 'i-lucide-map-pin',
+    title: 'Position by Base & Seat',
+    description: 'Drill into your rank within your base, seat category, and fleet — not just company-wide.',
+  },
+  {
+    icon: 'i-lucide-git-compare-arrows',
+    title: 'List Comparison',
+    description: 'Diff any two lists: retirements, departures, qual moves, and your rank change at a glance.',
+  },
+  {
+    icon: 'i-lucide-bar-chart-3',
+    title: 'Demographics Breakdown',
+    description: 'Age distribution, years of service, and cohort data for the whole airline.',
+  },
+  {
+    icon: 'i-lucide-upload',
+    title: 'Smart Upload',
+    description: 'CSV or Excel, any column order. Auto-detects employee numbers, hire dates, and seat data.',
+  },
+]
+
+const wikiItems = [
+  {
+    icon: 'i-lucide-eye-off',
+    title: 'Private by default',
+    description: 'Your data never leaves your account unless you choose to share it.',
+  },
+  {
+    icon: 'i-lucide-users',
+    title: 'Opt-in to contribute',
+    description: 'Choose to add your airline\'s trajectory data to the wiki anonymously.',
+  },
+  {
+    icon: 'i-lucide-bar-chart-2',
+    title: 'Opt-in to view',
+    description: 'Only pilots who contribute can see cross-airline trajectory plots.',
+  },
+]
+
+// ── Qual scale demo data ──────────────────────────────────────────────────────
+
+// Demo pilot: ~3 years in, 35th percentile company-wide.
+// FO quals: density starts near 0% → plug at first bar (~2%) → holdable immediately.
+// CA quals: density starts above 40% → plug at first bar → not yet holdable, reachable via projection.
+const BASE_QUAL_SCALES = [
+  {
+    fleet: 'E175', seat: 'FO', base: 'DEN', activeCount: 142,
+    plugPercentile: 2, plugSenNum: 4780, p25: 18, median: 32, p75: 51, max: 62,
+    density: [
+      { start: 0,  count: 4  }, { start: 5,  count: 8  }, { start: 10, count: 14 },
+      { start: 15, count: 19 }, { start: 20, count: 22 }, { start: 25, count: 20 },
+      { start: 30, count: 16 }, { start: 35, count: 13 }, { start: 40, count: 10 },
+      { start: 45, count: 8  }, { start: 50, count: 5  }, { start: 55, count: 2  },
+      { start: 60, count: 1  }, { start: 65, count: 0  }, { start: 70, count: 0  },
+      { start: 75, count: 0  }, { start: 80, count: 0  }, { start: 85, count: 0  },
+      { start: 90, count: 0  }, { start: 95, count: 0  },
+    ],
+  },
+  {
+    fleet: 'E175', seat: 'CA', base: 'DEN', activeCount: 68,
+    plugPercentile: 41, plugSenNum: 2950, p25: 52, median: 64, p75: 76, max: 91,
+    density: [
+      { start: 0,  count: 0  }, { start: 5,  count: 0  }, { start: 10, count: 0  },
+      { start: 15, count: 0  }, { start: 20, count: 0  }, { start: 25, count: 0  },
+      { start: 30, count: 0  }, { start: 35, count: 0  }, { start: 40, count: 3  },
+      { start: 45, count: 7  }, { start: 50, count: 12 }, { start: 55, count: 14 },
+      { start: 60, count: 13 }, { start: 65, count: 9  }, { start: 70, count: 6  },
+      { start: 75, count: 3  }, { start: 80, count: 1  }, { start: 85, count: 0  },
+      { start: 90, count: 0  }, { start: 95, count: 0  },
+    ],
+  },
+  {
+    fleet: 'A320', seat: 'FO', base: 'ORD', activeCount: 198,
+    plugPercentile: 2, plugSenNum: 4820, p25: 12, median: 26, p75: 44, max: 58,
+    density: [
+      { start: 0,  count: 8  }, { start: 5,  count: 16 }, { start: 10, count: 24 },
+      { start: 15, count: 28 }, { start: 20, count: 26 }, { start: 25, count: 22 },
+      { start: 30, count: 18 }, { start: 35, count: 14 }, { start: 40, count: 10 },
+      { start: 45, count: 7  }, { start: 50, count: 4  }, { start: 55, count: 3  },
+      { start: 60, count: 0  }, { start: 65, count: 0  }, { start: 70, count: 0  },
+      { start: 75, count: 0  }, { start: 80, count: 0  }, { start: 85, count: 0  },
+      { start: 90, count: 0  }, { start: 95, count: 0  },
+    ],
+  },
+  {
+    fleet: 'A320', seat: 'CA', base: 'ORD', activeCount: 94,
+    plugPercentile: 46, plugSenNum: 2700, p25: 55, median: 67, p75: 79, max: 92,
+    density: [
+      { start: 0,  count: 0  }, { start: 5,  count: 0  }, { start: 10, count: 0  },
+      { start: 15, count: 0  }, { start: 20, count: 0  }, { start: 25, count: 0  },
+      { start: 30, count: 0  }, { start: 35, count: 0  }, { start: 40, count: 0  },
+      { start: 45, count: 4  }, { start: 50, count: 10 }, { start: 55, count: 16 },
+      { start: 60, count: 18 }, { start: 65, count: 14 }, { start: 70, count: 10 },
+      { start: 75, count: 6  }, { start: 80, count: 3  }, { start: 85, count: 1  },
+      { start: 90, count: 0  }, { start: 95, count: 0  },
+    ],
+  },
+]
+
+const DEMO_CURRENT_PCT = 35
+const demoProjection = useState('landing-demo-projection', () => false)
+const demoProjectionYears = useState('landing-demo-projection-years', () => 5)
+
+const demoQualScales = computed<QualDemographicScale[]>(() => {
+  const years = demoProjection.value ? demoProjectionYears.value : 0
+  const projectedPct = Math.min(99, DEMO_CURRENT_PCT + years * 3.2)
+  return BASE_QUAL_SCALES.map(scale => ({
+    ...scale,
+    userPercentile: projectedPct,
+    currentUserPercentile: DEMO_CURRENT_PCT,
+    isHoldable: projectedPct >= scale.plugPercentile,
+  }))
+})
+
+// ── Analytics demo data ───────────────────────────────────────────────────────
+
+type DemoQual = 'all' | 'fo' | 'ca'
+const demoQual = useState<DemoQual>('landing-demo-qual', () => 'all')
+
+const demoAgeData: Record<DemoQual, { label: string; count: number }[]> = {
+  all: [
+    { label: '25–30', count: 187 },
+    { label: '30–35', count: 423 },
+    { label: '35–40', count: 612 },
+    { label: '40–45', count: 748 },
+    { label: '45–50', count: 831 },
+    { label: '50–55', count: 796 },
+    { label: '55–60', count: 724 },
+    { label: '60–65', count: 571 },
+  ],
+  fo: [
+    { label: '25–30', count: 165 },
+    { label: '30–35', count: 380 },
+    { label: '35–40', count: 520 },
+    { label: '40–45', count: 610 },
+    { label: '45–50', count: 540 },
+    { label: '50–55', count: 380 },
+    { label: '55–60', count: 280 },
+    { label: '60–65', count: 125 },
+  ],
+  ca: [
+    { label: '25–30', count: 22  },
+    { label: '30–35', count: 43  },
+    { label: '35–40', count: 92  },
+    { label: '40–45', count: 138 },
+    { label: '45–50', count: 291 },
+    { label: '50–55', count: 416 },
+    { label: '55–60', count: 444 },
+    { label: '60–65', count: 446 },
+  ],
+}
+
+const demoWaveData: Record<DemoQual, { year: number; count: number; isWave: boolean }[]> = {
+  all: [
+    { year: 2026, count: 95,  isWave: false },
+    { year: 2027, count: 112, isWave: false },
+    { year: 2028, count: 143, isWave: true  },
+    { year: 2029, count: 178, isWave: true  },
+    { year: 2030, count: 194, isWave: true  },
+    { year: 2031, count: 185, isWave: true  },
+    { year: 2032, count: 168, isWave: true  },
+    { year: 2033, count: 142, isWave: true  },
+    { year: 2034, count: 118, isWave: false },
+    { year: 2035, count: 98,  isWave: false },
+    { year: 2036, count: 84,  isWave: false },
+    { year: 2037, count: 71,  isWave: false },
+    { year: 2038, count: 63,  isWave: false },
+    { year: 2039, count: 58,  isWave: false },
+    { year: 2040, count: 52,  isWave: false },
+    { year: 2041, count: 48,  isWave: false },
+    { year: 2042, count: 44,  isWave: false },
+    { year: 2043, count: 41,  isWave: false },
+    { year: 2044, count: 38,  isWave: false },
+  ],
+  fo: [
+    { year: 2026, count: 52,  isWave: false },
+    { year: 2027, count: 61,  isWave: false },
+    { year: 2028, count: 78,  isWave: true  },
+    { year: 2029, count: 95,  isWave: true  },
+    { year: 2030, count: 104, isWave: true  },
+    { year: 2031, count: 98,  isWave: true  },
+    { year: 2032, count: 87,  isWave: true  },
+    { year: 2033, count: 71,  isWave: true  },
+    { year: 2034, count: 58,  isWave: false },
+    { year: 2035, count: 46,  isWave: false },
+    { year: 2036, count: 38,  isWave: false },
+    { year: 2037, count: 32,  isWave: false },
+  ],
+  ca: [
+    { year: 2026, count: 43,  isWave: true  },
+    { year: 2027, count: 51,  isWave: true  },
+    { year: 2028, count: 65,  isWave: true  },
+    { year: 2029, count: 83,  isWave: true  },
+    { year: 2030, count: 90,  isWave: true  },
+    { year: 2031, count: 87,  isWave: true  },
+    { year: 2032, count: 81,  isWave: true  },
+    { year: 2033, count: 71,  isWave: true  },
+    { year: 2034, count: 60,  isWave: false },
+    { year: 2035, count: 52,  isWave: false },
+    { year: 2036, count: 46,  isWave: false },
+    { year: 2037, count: 39,  isWave: false },
+  ],
+}
+
+const demoQualOptions: { key: DemoQual; label: string }[] = [
+  { key: 'all', label: 'All Pilots' },
+  { key: 'fo',  label: 'FO' },
+  { key: 'ca',  label: 'CA' },
+]
+
+const demoAgeBuckets = computed(() => demoAgeData[demoQual.value])
+const demoWaveBuckets = computed(() => demoWaveData[demoQual.value])
+</script>
+
 <template>
   <div>
 
@@ -429,270 +696,3 @@
 
   </div>
 </template>
-
-<script setup lang="ts">
-import type { QualDemographicScale } from '#shared/utils/qual-analytics'
-
-definePageMeta({ layout: 'default' })
-
-const howItWorksSteps = [
-  {
-    icon: 'i-lucide-upload',
-    title: 'Upload your list',
-    description: 'CSV or Excel. We need Seniority Number, Employee Number, Hire Date, Retire Date, Base, Seat, and Fleet — column names don\'t matter, we\'ll map them.',
-  },
-  {
-    icon: 'i-lucide-user-check',
-    title: 'Confirm your entry',
-    description: 'Enter your employee number. We find your row automatically.',
-  },
-  {
-    icon: 'i-lucide-trending-up',
-    title: 'Explore your trajectory',
-    description: 'Instant dashboard: rank, percentile, career-length projections, and retirement forecast.',
-  },
-]
-
-const dataOwnershipItems = [
-  {
-    icon: 'i-lucide-plane',
-    title: 'Works with your airline\'s data',
-    description: 'If they gave you a spreadsheet, you\'re in. No special access needed.',
-  },
-  {
-    icon: 'i-lucide-folder-open',
-    title: 'See it whenever',
-    description: 'Your data stays live. No expiry, no gates.',
-  },
-  {
-    icon: 'i-lucide-credit-card',
-    title: 'Pay when you want a refresh',
-    description: 'Upload a new list when you want a fresh look at your data. Not on a monthly clock.',
-  },
-]
-
-const featureCards = [
-  {
-    icon: 'i-lucide-trending-up',
-    title: 'Trajectory Projections',
-    description: 'Career-length percentile forecast under base, optimistic, and pessimistic retirement scenarios.',
-  },
-  {
-    icon: 'i-lucide-calendar-clock',
-    title: 'Retirement Forecasting',
-    description: 'See how many pilots senior to you are projected to retire in the next 1, 5, and 10 years.',
-  },
-  {
-    icon: 'i-lucide-map-pin',
-    title: 'Position by Base & Seat',
-    description: 'Drill into your rank within your base, seat category, and fleet — not just company-wide.',
-  },
-  {
-    icon: 'i-lucide-git-compare-arrows',
-    title: 'List Comparison',
-    description: 'Diff any two lists: retirements, departures, qual moves, and your rank change at a glance.',
-  },
-  {
-    icon: 'i-lucide-bar-chart-3',
-    title: 'Demographics Breakdown',
-    description: 'Age distribution, years of service, and cohort data for the whole airline.',
-  },
-  {
-    icon: 'i-lucide-upload',
-    title: 'Smart Upload',
-    description: 'CSV or Excel, any column order. Auto-detects employee numbers, hire dates, and seat data.',
-  },
-]
-
-const wikiItems = [
-  {
-    icon: 'i-lucide-eye-off',
-    title: 'Private by default',
-    description: 'Your data never leaves your account unless you choose to share it.',
-  },
-  {
-    icon: 'i-lucide-users',
-    title: 'Opt-in to contribute',
-    description: 'Choose to add your airline\'s trajectory data to the wiki anonymously.',
-  },
-  {
-    icon: 'i-lucide-bar-chart-2',
-    title: 'Opt-in to view',
-    description: 'Only pilots who contribute can see cross-airline trajectory plots.',
-  },
-]
-
-// ── Qual scale demo data ──────────────────────────────────────────────────────
-
-// Demo pilot: ~3 years in, 35th percentile company-wide.
-// FO quals: density starts near 0% → plug at first bar (~2%) → holdable immediately.
-// CA quals: density starts above 40% → plug at first bar → not yet holdable, reachable via projection.
-const BASE_QUAL_SCALES = [
-  {
-    fleet: 'E175', seat: 'FO', base: 'DEN', activeCount: 142,
-    plugPercentile: 2, plugSenNum: 4780, p25: 18, median: 32, p75: 51, max: 62,
-    density: [
-      { start: 0,  count: 4  }, { start: 5,  count: 8  }, { start: 10, count: 14 },
-      { start: 15, count: 19 }, { start: 20, count: 22 }, { start: 25, count: 20 },
-      { start: 30, count: 16 }, { start: 35, count: 13 }, { start: 40, count: 10 },
-      { start: 45, count: 8  }, { start: 50, count: 5  }, { start: 55, count: 2  },
-      { start: 60, count: 1  }, { start: 65, count: 0  }, { start: 70, count: 0  },
-      { start: 75, count: 0  }, { start: 80, count: 0  }, { start: 85, count: 0  },
-      { start: 90, count: 0  }, { start: 95, count: 0  },
-    ],
-  },
-  {
-    fleet: 'E175', seat: 'CA', base: 'DEN', activeCount: 68,
-    plugPercentile: 41, plugSenNum: 2950, p25: 52, median: 64, p75: 76, max: 91,
-    density: [
-      { start: 0,  count: 0  }, { start: 5,  count: 0  }, { start: 10, count: 0  },
-      { start: 15, count: 0  }, { start: 20, count: 0  }, { start: 25, count: 0  },
-      { start: 30, count: 0  }, { start: 35, count: 0  }, { start: 40, count: 3  },
-      { start: 45, count: 7  }, { start: 50, count: 12 }, { start: 55, count: 14 },
-      { start: 60, count: 13 }, { start: 65, count: 9  }, { start: 70, count: 6  },
-      { start: 75, count: 3  }, { start: 80, count: 1  }, { start: 85, count: 0  },
-      { start: 90, count: 0  }, { start: 95, count: 0  },
-    ],
-  },
-  {
-    fleet: 'A320', seat: 'FO', base: 'ORD', activeCount: 198,
-    plugPercentile: 2, plugSenNum: 4820, p25: 12, median: 26, p75: 44, max: 58,
-    density: [
-      { start: 0,  count: 8  }, { start: 5,  count: 16 }, { start: 10, count: 24 },
-      { start: 15, count: 28 }, { start: 20, count: 26 }, { start: 25, count: 22 },
-      { start: 30, count: 18 }, { start: 35, count: 14 }, { start: 40, count: 10 },
-      { start: 45, count: 7  }, { start: 50, count: 4  }, { start: 55, count: 3  },
-      { start: 60, count: 0  }, { start: 65, count: 0  }, { start: 70, count: 0  },
-      { start: 75, count: 0  }, { start: 80, count: 0  }, { start: 85, count: 0  },
-      { start: 90, count: 0  }, { start: 95, count: 0  },
-    ],
-  },
-  {
-    fleet: 'A320', seat: 'CA', base: 'ORD', activeCount: 94,
-    plugPercentile: 46, plugSenNum: 2700, p25: 55, median: 67, p75: 79, max: 92,
-    density: [
-      { start: 0,  count: 0  }, { start: 5,  count: 0  }, { start: 10, count: 0  },
-      { start: 15, count: 0  }, { start: 20, count: 0  }, { start: 25, count: 0  },
-      { start: 30, count: 0  }, { start: 35, count: 0  }, { start: 40, count: 0  },
-      { start: 45, count: 4  }, { start: 50, count: 10 }, { start: 55, count: 16 },
-      { start: 60, count: 18 }, { start: 65, count: 14 }, { start: 70, count: 10 },
-      { start: 75, count: 6  }, { start: 80, count: 3  }, { start: 85, count: 1  },
-      { start: 90, count: 0  }, { start: 95, count: 0  },
-    ],
-  },
-]
-
-const DEMO_CURRENT_PCT = 35
-const demoProjection = useState('landing-demo-projection', () => false)
-const demoProjectionYears = useState('landing-demo-projection-years', () => 5)
-
-const demoQualScales = computed<QualDemographicScale[]>(() => {
-  const years = demoProjection.value ? demoProjectionYears.value : 0
-  const projectedPct = Math.min(99, DEMO_CURRENT_PCT + years * 3.2)
-  return BASE_QUAL_SCALES.map(scale => ({
-    ...scale,
-    userPercentile: projectedPct,
-    currentUserPercentile: DEMO_CURRENT_PCT,
-    isHoldable: projectedPct >= scale.plugPercentile,
-  }))
-})
-
-// ── Analytics demo data ───────────────────────────────────────────────────────
-
-type DemoQual = 'all' | 'fo' | 'ca'
-const demoQual = useState<DemoQual>('landing-demo-qual', () => 'all')
-
-const demoAgeData: Record<DemoQual, { label: string; count: number }[]> = {
-  all: [
-    { label: '25–30', count: 187 },
-    { label: '30–35', count: 423 },
-    { label: '35–40', count: 612 },
-    { label: '40–45', count: 748 },
-    { label: '45–50', count: 831 },
-    { label: '50–55', count: 796 },
-    { label: '55–60', count: 724 },
-    { label: '60–65', count: 571 },
-  ],
-  fo: [
-    { label: '25–30', count: 165 },
-    { label: '30–35', count: 380 },
-    { label: '35–40', count: 520 },
-    { label: '40–45', count: 610 },
-    { label: '45–50', count: 540 },
-    { label: '50–55', count: 380 },
-    { label: '55–60', count: 280 },
-    { label: '60–65', count: 125 },
-  ],
-  ca: [
-    { label: '25–30', count: 22  },
-    { label: '30–35', count: 43  },
-    { label: '35–40', count: 92  },
-    { label: '40–45', count: 138 },
-    { label: '45–50', count: 291 },
-    { label: '50–55', count: 416 },
-    { label: '55–60', count: 444 },
-    { label: '60–65', count: 446 },
-  ],
-}
-
-const demoWaveData: Record<DemoQual, { year: number; count: number; isWave: boolean }[]> = {
-  all: [
-    { year: 2026, count: 95,  isWave: false },
-    { year: 2027, count: 112, isWave: false },
-    { year: 2028, count: 143, isWave: true  },
-    { year: 2029, count: 178, isWave: true  },
-    { year: 2030, count: 194, isWave: true  },
-    { year: 2031, count: 185, isWave: true  },
-    { year: 2032, count: 168, isWave: true  },
-    { year: 2033, count: 142, isWave: true  },
-    { year: 2034, count: 118, isWave: false },
-    { year: 2035, count: 98,  isWave: false },
-    { year: 2036, count: 84,  isWave: false },
-    { year: 2037, count: 71,  isWave: false },
-    { year: 2038, count: 63,  isWave: false },
-    { year: 2039, count: 58,  isWave: false },
-    { year: 2040, count: 52,  isWave: false },
-    { year: 2041, count: 48,  isWave: false },
-    { year: 2042, count: 44,  isWave: false },
-    { year: 2043, count: 41,  isWave: false },
-    { year: 2044, count: 38,  isWave: false },
-  ],
-  fo: [
-    { year: 2026, count: 52,  isWave: false },
-    { year: 2027, count: 61,  isWave: false },
-    { year: 2028, count: 78,  isWave: true  },
-    { year: 2029, count: 95,  isWave: true  },
-    { year: 2030, count: 104, isWave: true  },
-    { year: 2031, count: 98,  isWave: true  },
-    { year: 2032, count: 87,  isWave: true  },
-    { year: 2033, count: 71,  isWave: true  },
-    { year: 2034, count: 58,  isWave: false },
-    { year: 2035, count: 46,  isWave: false },
-    { year: 2036, count: 38,  isWave: false },
-    { year: 2037, count: 32,  isWave: false },
-  ],
-  ca: [
-    { year: 2026, count: 43,  isWave: true  },
-    { year: 2027, count: 51,  isWave: true  },
-    { year: 2028, count: 65,  isWave: true  },
-    { year: 2029, count: 83,  isWave: true  },
-    { year: 2030, count: 90,  isWave: true  },
-    { year: 2031, count: 87,  isWave: true  },
-    { year: 2032, count: 81,  isWave: true  },
-    { year: 2033, count: 71,  isWave: true  },
-    { year: 2034, count: 60,  isWave: false },
-    { year: 2035, count: 52,  isWave: false },
-    { year: 2036, count: 46,  isWave: false },
-    { year: 2037, count: 39,  isWave: false },
-  ],
-}
-
-const demoQualOptions: { key: DemoQual; label: string }[] = [
-  { key: 'all', label: 'All Pilots' },
-  { key: 'fo',  label: 'FO' },
-  { key: 'ca',  label: 'CA' },
-]
-
-const demoAgeBuckets = computed(() => demoAgeData[demoQual.value])
-const demoWaveBuckets = computed(() => demoWaveData[demoQual.value])
-</script>

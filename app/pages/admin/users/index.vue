@@ -1,120 +1,3 @@
-<template>
-  <UDashboardPanel>
-    <template #header>
-      <SeniorityNavbar title="User Management">
-        <template #right>
-          <UModal v-model:open="inviteOpen" title="Invite User" description="Send an invite link via email">
-            <UButton label="Invite User" icon="i-lucide-mail-plus" />
-
-            <template #body>
-              <UFormField label="Email address">
-                <UInput v-model="inviteEmail" type="email" placeholder="pilot@example.com" class="w-full" />
-              </UFormField>
-            </template>
-
-            <template #footer>
-              <div class="flex justify-end gap-2">
-                <UButton label="Cancel" color="neutral" variant="ghost" @click="inviteOpen = false" />
-                <UButton label="Send Invite" :loading="inviteLoading" @click="sendInvite" />
-              </div>
-            </template>
-          </UModal>
-        </template>
-      </SeniorityNavbar>
-    </template>
-
-    <template #body>
-    <div class="p-4 space-y-3">
-      <UAlert v-if="fetchError" icon="i-lucide-alert-triangle" color="error" :title="fetchError" />
-
-      <UInput
-        v-model="globalFilter"
-        icon="i-lucide-search"
-        placeholder="Search users..."
-        class="max-w-sm"
-      />
-
-      <div class="overflow-x-auto">
-        <UTable
-          ref="usersTable"
-          v-model:global-filter="globalFilter"
-          v-model:pagination="pagination"
-          v-model:sorting="sorting"
-          :data="users"
-          :columns="columns"
-          :loading="loading"
-          :pagination-options="paginationOptions"
-          :ui="{ tr: 'data-[selected=true]:bg-(--ui-bg-elevated)' }"
-        >
-          <template #role-cell="{ row }">
-            <USelectMenu
-              :model-value="row.original.role"
-              :items="roleOptions"
-              class="w-32"
-              :loading="updatingRole === row.original.id"
-              @update:model-value="(val: string) => updateRole(row.original.id, val)"
-            />
-          </template>
-
-          <template #actions-cell="{ row }">
-            <div class="flex gap-1">
-              <UButton
-                icon="i-lucide-user"
-                variant="ghost"
-                size="xs"
-                label="View"
-                :to="`/admin/users/${row.original.id}`"
-              />
-              <UButton
-                icon="i-lucide-key-round"
-                variant="ghost"
-                size="xs"
-                label="Reset Password"
-                :loading="resettingPassword === row.original.id"
-                @click="resetPassword(row.original)"
-              />
-              <UButton
-                icon="i-lucide-trash-2"
-                variant="ghost"
-                color="error"
-                size="xs"
-                @click="confirmDelete(row.original)"
-              />
-            </div>
-          </template>
-        </UTable>
-      </div>
-
-      <UModal v-model:open="deleteOpen" title="Delete User" description="This action cannot be undone.">
-        <template #body>
-          <p>
-            Are you sure you want to delete <strong>{{ deleteTarget?.email }}</strong>?
-            Their profile and all uploaded seniority lists will be permanently removed.
-          </p>
-        </template>
-        <template #footer>
-          <div class="flex justify-end gap-2">
-            <UButton label="Cancel" color="neutral" variant="ghost" @click="deleteOpen = false" />
-            <UButton label="Delete User" color="error" :loading="deleteLoading" @click="deleteUser" />
-          </div>
-        </template>
-      </UModal>
-
-      <div class="flex items-center justify-between">
-        <p class="text-sm text-muted">{{ totalRows }} results</p>
-        <UPagination
-          v-if="pageCount > 1"
-          :page="currentPage"
-          :total="totalRows"
-          :items-per-page="pagination.pageSize"
-          @update:page="(p: number) => usersTable?.tableApi?.setPageIndex(p - 1)"
-        />
-      </div>
-    </div>
-    </template>
-  </UDashboardPanel>
-</template>
-
 <script setup lang="ts">
 import type { TableColumn } from '@nuxt/ui'
 import { FetchError } from 'ofetch'
@@ -272,3 +155,120 @@ async function deleteUser() {
 
 onMounted(fetchUsers)
 </script>
+
+<template>
+  <UDashboardPanel>
+    <template #header>
+      <SeniorityNavbar title="User Management">
+        <template #right>
+          <UModal v-model:open="inviteOpen" title="Invite User" description="Send an invite link via email">
+            <UButton label="Invite User" icon="i-lucide-mail-plus" />
+
+            <template #body>
+              <UFormField label="Email address">
+                <UInput v-model="inviteEmail" type="email" placeholder="pilot@example.com" class="w-full" />
+              </UFormField>
+            </template>
+
+            <template #footer>
+              <div class="flex justify-end gap-2">
+                <UButton label="Cancel" color="neutral" variant="ghost" @click="inviteOpen = false" />
+                <UButton label="Send Invite" :loading="inviteLoading" @click="sendInvite" />
+              </div>
+            </template>
+          </UModal>
+        </template>
+      </SeniorityNavbar>
+    </template>
+
+    <template #body>
+    <div class="p-4 space-y-3">
+      <UAlert v-if="fetchError" icon="i-lucide-alert-triangle" color="error" :title="fetchError" />
+
+      <UInput
+        v-model="globalFilter"
+        icon="i-lucide-search"
+        placeholder="Search users..."
+        class="max-w-sm"
+      />
+
+      <div class="overflow-x-auto">
+        <UTable
+          ref="usersTable"
+          v-model:global-filter="globalFilter"
+          v-model:pagination="pagination"
+          v-model:sorting="sorting"
+          :data="users"
+          :columns="columns"
+          :loading="loading"
+          :pagination-options="paginationOptions"
+          :ui="{ tr: 'data-[selected=true]:bg-(--ui-bg-elevated)' }"
+        >
+          <template #role-cell="{ row }">
+            <USelectMenu
+              :model-value="row.original.role"
+              :items="roleOptions"
+              class="w-32"
+              :loading="updatingRole === row.original.id"
+              @update:model-value="(val: string) => updateRole(row.original.id, val)"
+            />
+          </template>
+
+          <template #actions-cell="{ row }">
+            <div class="flex gap-1">
+              <UButton
+                icon="i-lucide-user"
+                variant="ghost"
+                size="xs"
+                label="View"
+                :to="`/admin/users/${row.original.id}`"
+              />
+              <UButton
+                icon="i-lucide-key-round"
+                variant="ghost"
+                size="xs"
+                label="Reset Password"
+                :loading="resettingPassword === row.original.id"
+                @click="resetPassword(row.original)"
+              />
+              <UButton
+                icon="i-lucide-trash-2"
+                variant="ghost"
+                color="error"
+                size="xs"
+                @click="confirmDelete(row.original)"
+              />
+            </div>
+          </template>
+        </UTable>
+      </div>
+
+      <UModal v-model:open="deleteOpen" title="Delete User" description="This action cannot be undone.">
+        <template #body>
+          <p>
+            Are you sure you want to delete <strong>{{ deleteTarget?.email }}</strong>?
+            Their profile and all uploaded seniority lists will be permanently removed.
+          </p>
+        </template>
+        <template #footer>
+          <div class="flex justify-end gap-2">
+            <UButton label="Cancel" color="neutral" variant="ghost" @click="deleteOpen = false" />
+            <UButton label="Delete User" color="error" :loading="deleteLoading" @click="deleteUser" />
+          </div>
+        </template>
+      </UModal>
+
+      <div class="flex items-center justify-between">
+        <p class="text-sm text-muted">{{ totalRows }} results</p>
+        <UPagination
+          v-if="pageCount > 1"
+          :page="currentPage"
+          :total="totalRows"
+          :items-per-page="pagination.pageSize"
+          @update:page="(p: number) => usersTable?.tableApi?.setPageIndex(p - 1)"
+        />
+      </div>
+    </div>
+    </template>
+  </UDashboardPanel>
+</template>

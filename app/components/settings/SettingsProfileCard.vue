@@ -1,29 +1,3 @@
-<template>
-  <UCard>
-    <template #header>
-      <h2 class="text-lg font-semibold">Profile</h2>
-    </template>
-
-    <UForm :schema="UpdateProfileSchema" :state="state" class="space-y-4" @submit="onSave">
-      <UFormField label="Airline" name="icaoCode">
-        <USelectMenu
-          v-model="state.icaoCode"
-          :items="airlineOptions"
-          value-key="value"
-          placeholder="Search airlines..."
-          :loading="airlinesLoading"
-          :search-input="{ placeholder: 'Search by name...' }"
-          class="w-full"
-        />
-      </UFormField>
-      <UFormField label="Employee Number" name="employeeNumber">
-        <UInput v-model="state.employeeNumber" placeholder="e.g. 12345" class="w-full" />
-      </UFormField>
-      <UButton type="submit" :loading="loading">Save profile</UButton>
-    </UForm>
-  </UCard>
-</template>
-
 <script setup lang="ts">
 import { UpdateProfileSchema } from '#shared/schemas/settings'
 import type { UpdateProfileState } from '#shared/schemas/settings'
@@ -72,3 +46,29 @@ async function onSave() {
   toast.add({ title: 'Profile saved', color: 'success' })
 }
 </script>
+
+<template>
+  <UCard>
+    <template #header>
+      <h2 class="text-lg font-semibold">Profile</h2>
+    </template>
+
+    <UForm :schema="UpdateProfileSchema" :state="state" class="space-y-4" @submit="onSave">
+      <UFormField label="Airline" name="icaoCode">
+        <USelectMenu
+          v-model="state.icaoCode"
+          :items="airlineOptions"
+          value-key="value"
+          placeholder="Search airlines..."
+          :loading="airlinesLoading"
+          :search-input="{ placeholder: 'Search by name...' }"
+          class="w-full"
+        />
+      </UFormField>
+      <UFormField label="Employee Number" name="employeeNumber">
+        <UInput v-model="state.employeeNumber" placeholder="e.g. 12345" class="w-full" />
+      </UFormField>
+      <UButton type="submit" :loading="loading">Save profile</UButton>
+    </UForm>
+  </UCard>
+</template>

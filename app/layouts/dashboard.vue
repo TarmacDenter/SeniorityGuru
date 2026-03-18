@@ -1,3 +1,8 @@
+<script setup lang="ts">
+const navItems = useSeniorityNav()
+const sidebarOpen = useState<boolean>('dashboardSidebarOpen', () => false)
+</script>
+
 <template>
   <UDashboardGroup>
     <UDashboardSidebar v-model:open="sidebarOpen" collapsible resizable>
@@ -24,8 +29,3 @@
     <slot />
   </UDashboardGroup>
 </template>
-
-<script setup lang="ts">
-const navItems = useSeniorityNav()
-const sidebarOpen = useState<boolean>('dashboardSidebarOpen', () => false)
-</script>

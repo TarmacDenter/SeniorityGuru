@@ -1,36 +1,3 @@
-<template>
-  <UCard
-    variant="outline"
-    :ui="{
-      root: 'border-l-4 border-l-(--ui-primary)',
-    }"
-  >
-    <div class="flex items-start gap-4">
-      <UIcon name="i-lucide-id-card" class="size-8 text-primary shrink-0 mt-0.5" />
-      <div class="flex-1 min-w-0">
-        <p class="text-base font-semibold text-highlighted">Enter Your Employee Number</p>
-        <p class="text-sm text-muted mt-1">
-          Set your employee number to see your personal seniority data, projections, and rank across bases.
-        </p>
-        <form class="flex items-start gap-2 mt-3" @submit.prevent="onSave">
-          <UInput
-            v-model="employeeNumber"
-            placeholder="e.g. 12345"
-            :color="validationError ? 'error' : undefined"
-          />
-          <UButton
-            type="submit"
-            color="primary"
-            :loading="loading"
-            label="Save"
-          />
-        </form>
-        <p v-if="validationError" class="text-sm text-error mt-1">{{ validationError }}</p>
-      </div>
-    </div>
-  </UCard>
-</template>
-
 <script setup lang="ts">
 import { normalizeEmployeeNumber } from '#shared/schemas/seniority-list'
 import { useUserStore } from '~/stores/user'
@@ -90,3 +57,36 @@ async function onSave() {
   emit('saved')
 }
 </script>
+
+<template>
+  <UCard
+    variant="outline"
+    :ui="{
+      root: 'border-l-4 border-l-(--ui-primary)',
+    }"
+  >
+    <div class="flex items-start gap-4">
+      <UIcon name="i-lucide-id-card" class="size-8 text-primary shrink-0 mt-0.5" />
+      <div class="flex-1 min-w-0">
+        <p class="text-base font-semibold text-highlighted">Enter Your Employee Number</p>
+        <p class="text-sm text-muted mt-1">
+          Set your employee number to see your personal seniority data, projections, and rank across bases.
+        </p>
+        <form class="flex items-start gap-2 mt-3" @submit.prevent="onSave">
+          <UInput
+            v-model="employeeNumber"
+            placeholder="e.g. 12345"
+            :color="validationError ? 'error' : undefined"
+          />
+          <UButton
+            type="submit"
+            color="primary"
+            :loading="loading"
+            label="Save"
+          />
+        </form>
+        <p v-if="validationError" class="text-sm text-error mt-1">{{ validationError }}</p>
+      </div>
+    </div>
+  </UCard>
+</template>

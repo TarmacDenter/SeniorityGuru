@@ -28,7 +28,7 @@ export default defineEventHandler(async (event) => {
   }
 
   const emailMap = new Map<string, string>(
-    authData.users.map((u) => [u.id, u.email ?? ''] as [string, string]),
+    authData.users.map((u: { id: string; email?: string }) => [u.id, u.email ?? ''] as [string, string]),
   )
 
   const activity = (rows ?? []).map((row: { id: string; event_type: string; actor_id: string | null; metadata: Record<string, unknown>; created_at: string }) => ({

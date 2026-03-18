@@ -1,3 +1,42 @@
+<script setup lang="ts">
+type ChangeType = 'retired' | 'departed' | 'qual_move' | 'new_hire' | 'user' | 'unchanged'
+
+interface DemoRow {
+  rank: number
+  name: string
+  base: string
+  seat: string
+  fleet: string
+  change: ChangeType
+  rankDelta: number | null
+  label?: string
+}
+
+const demoRows: DemoRow[] = [
+  { rank: 844, name: 'H. Johansson', base: 'ORD', seat: 'CA', fleet: '777', change: 'retired', rankDelta: null, label: 'Retired' },
+  { rank: 845, name: 'M. Williams', base: 'LAX', seat: 'CA', fleet: '767', change: 'retired', rankDelta: null, label: 'Retired' },
+  { rank: 846, name: 'T. Anderson', base: 'JFK', seat: 'CA', fleet: '777', change: 'unchanged', rankDelta: -2 },
+  { rank: 847, name: 'R. Chen', base: 'DFW', seat: 'FO→CA', fleet: '737', change: 'qual_move', rankDelta: -2, label: 'Upgraded → CA' },
+  { rank: 848, name: 'S. Thompson', base: 'MIA', seat: 'FO', fleet: '767', change: 'unchanged', rankDelta: -2 },
+  { rank: 849, name: '★ You', base: 'DFW', seat: 'FO', fleet: '737', change: 'user', rankDelta: -3, label: '↑ 3 positions' },
+  { rank: 850, name: 'A. Martinez', base: 'SFO', seat: 'FO', fleet: 'A320', change: 'unchanged', rankDelta: -3 },
+  { rank: 851, name: 'K. Foster', base: 'BOS', seat: 'FO', fleet: '737', change: 'departed', rankDelta: null, label: 'Departed' },
+  { rank: 852, name: 'J. Patel', base: 'SEA', seat: 'FO', fleet: '737', change: 'new_hire', rankDelta: null, label: 'New Hire' },
+  { rank: 853, name: 'L. Garcia', base: 'DEN', seat: 'FO', fleet: '737', change: 'new_hire', rankDelta: null, label: 'New Hire' },
+]
+
+function rowClass(row: DemoRow): string {
+  switch (row.change) {
+    case 'retired':
+      return 'opacity-50'
+    case 'user':
+      return 'bg-primary/5'
+    default:
+      return ''
+  }
+}
+</script>
+
 <template>
   <div class="space-y-4">
     <!-- Summary stats bar -->
@@ -99,42 +138,3 @@
     </div>
   </div>
 </template>
-
-<script setup lang="ts">
-type ChangeType = 'retired' | 'departed' | 'qual_move' | 'new_hire' | 'user' | 'unchanged'
-
-interface DemoRow {
-  rank: number
-  name: string
-  base: string
-  seat: string
-  fleet: string
-  change: ChangeType
-  rankDelta: number | null
-  label?: string
-}
-
-const demoRows: DemoRow[] = [
-  { rank: 844, name: 'H. Johansson', base: 'ORD', seat: 'CA', fleet: '777', change: 'retired', rankDelta: null, label: 'Retired' },
-  { rank: 845, name: 'M. Williams', base: 'LAX', seat: 'CA', fleet: '767', change: 'retired', rankDelta: null, label: 'Retired' },
-  { rank: 846, name: 'T. Anderson', base: 'JFK', seat: 'CA', fleet: '777', change: 'unchanged', rankDelta: -2 },
-  { rank: 847, name: 'R. Chen', base: 'DFW', seat: 'FO→CA', fleet: '737', change: 'qual_move', rankDelta: -2, label: 'Upgraded → CA' },
-  { rank: 848, name: 'S. Thompson', base: 'MIA', seat: 'FO', fleet: '767', change: 'unchanged', rankDelta: -2 },
-  { rank: 849, name: '★ You', base: 'DFW', seat: 'FO', fleet: '737', change: 'user', rankDelta: -3, label: '↑ 3 positions' },
-  { rank: 850, name: 'A. Martinez', base: 'SFO', seat: 'FO', fleet: 'A320', change: 'unchanged', rankDelta: -3 },
-  { rank: 851, name: 'K. Foster', base: 'BOS', seat: 'FO', fleet: '737', change: 'departed', rankDelta: null, label: 'Departed' },
-  { rank: 852, name: 'J. Patel', base: 'SEA', seat: 'FO', fleet: '737', change: 'new_hire', rankDelta: null, label: 'New Hire' },
-  { rank: 853, name: 'L. Garcia', base: 'DEN', seat: 'FO', fleet: '737', change: 'new_hire', rankDelta: null, label: 'New Hire' },
-]
-
-function rowClass(row: DemoRow): string {
-  switch (row.change) {
-    case 'retired':
-      return 'opacity-50'
-    case 'user':
-      return 'bg-primary/5'
-    default:
-      return ''
-  }
-}
-</script>

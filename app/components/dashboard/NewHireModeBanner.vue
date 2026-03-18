@@ -1,3 +1,11 @@
+<script setup lang="ts">
+import { useNewHireMode } from '~/composables/useNewHireMode'
+import { useUserStore } from '~/stores/user'
+
+const newHireMode = useNewHireMode()
+const userStore = useUserStore()
+</script>
+
 <template>
   <!-- Mode OFF: show "not found" warning with toggle -->
   <UAlert
@@ -90,11 +98,3 @@
     </div>
   </div>
 </template>
-
-<script setup lang="ts">
-import { useNewHireMode } from '~/composables/useNewHireMode'
-import { useUserStore } from '~/stores/user'
-
-const newHireMode = useNewHireMode()
-const userStore = useUserStore()
-</script>

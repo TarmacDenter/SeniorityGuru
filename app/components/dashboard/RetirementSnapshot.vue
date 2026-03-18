@@ -1,52 +1,3 @@
-<template>
-  <UCard>
-    <template #header>
-      <div class="flex items-center justify-between">
-        <div class="flex items-center gap-3">
-          <div class="flex items-center justify-center size-10 rounded-lg bg-primary/10">
-            <UIcon name="i-lucide-plane-landing" class="size-5 text-primary" />
-          </div>
-          <h3 class="font-semibold text-highlighted">Retirement Snapshot</h3>
-        </div>
-        <UBadge color="primary" variant="subtle" size="sm">
-          {{ formatDate(snapshot.retireDate) }}
-        </UBadge>
-      </div>
-    </template>
-
-    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-      <div class="text-center">
-        <p class="text-xs text-[var(--ui-text-muted)]">Retire Date</p>
-        <p class="text-lg font-semibold font-mono text-highlighted">{{ formatDate(snapshot.retireDate) }}</p>
-      </div>
-      <div class="text-center">
-        <p class="text-xs text-[var(--ui-text-muted)]">Projected Rank</p>
-        <p class="text-lg font-semibold font-mono text-highlighted">#{{ snapshot.atRetirement.rank.toLocaleString() }}</p>
-      </div>
-      <div class="text-center">
-        <p class="text-xs text-[var(--ui-text-muted)]">Percentile</p>
-        <p class="text-lg font-semibold font-mono text-highlighted">{{ snapshot.atRetirement.percentile }}%</p>
-      </div>
-      <div class="text-center">
-        <p class="text-xs text-[var(--ui-text-muted)]">Pilots Ahead</p>
-        <p class="text-lg font-semibold font-mono text-highlighted">{{ (snapshot.atRetirement.rank - 1).toLocaleString() }}</p>
-      </div>
-    </div>
-
-    <USeparator class="mb-4" />
-
-    <div class="flex items-center gap-4 mb-4">
-      <label class="text-sm text-[var(--ui-text-muted)] whitespace-nowrap">Final years to show</label>
-      <USlider v-model="yearsToShow" :min="3" :max="maxYears" :step="1" size="sm" class="flex-1" />
-      <span class="text-sm font-mono font-semibold text-highlighted w-6 text-right">{{ yearsToShow }}</span>
-    </div>
-
-    <div class="overflow-x-auto">
-      <UTable :data="tableData" :columns="columns" />
-    </div>
-  </UCard>
-</template>
-
 <script setup lang="ts">
 import { h } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
@@ -137,3 +88,52 @@ function formatDate(dateStr: string): string {
   return d.toLocaleDateString('en-US', { month: 'short', year: 'numeric', timeZone: 'UTC' })
 }
 </script>
+
+<template>
+  <UCard>
+    <template #header>
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="flex items-center justify-center size-10 rounded-lg bg-primary/10">
+            <UIcon name="i-lucide-plane-landing" class="size-5 text-primary" />
+          </div>
+          <h3 class="font-semibold text-highlighted">Retirement Snapshot</h3>
+        </div>
+        <UBadge color="primary" variant="subtle" size="sm">
+          {{ formatDate(snapshot.retireDate) }}
+        </UBadge>
+      </div>
+    </template>
+
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+      <div class="text-center">
+        <p class="text-xs text-[var(--ui-text-muted)]">Retire Date</p>
+        <p class="text-lg font-semibold font-mono text-highlighted">{{ formatDate(snapshot.retireDate) }}</p>
+      </div>
+      <div class="text-center">
+        <p class="text-xs text-[var(--ui-text-muted)]">Projected Rank</p>
+        <p class="text-lg font-semibold font-mono text-highlighted">#{{ snapshot.atRetirement.rank.toLocaleString() }}</p>
+      </div>
+      <div class="text-center">
+        <p class="text-xs text-[var(--ui-text-muted)]">Percentile</p>
+        <p class="text-lg font-semibold font-mono text-highlighted">{{ snapshot.atRetirement.percentile }}%</p>
+      </div>
+      <div class="text-center">
+        <p class="text-xs text-[var(--ui-text-muted)]">Pilots Ahead</p>
+        <p class="text-lg font-semibold font-mono text-highlighted">{{ (snapshot.atRetirement.rank - 1).toLocaleString() }}</p>
+      </div>
+    </div>
+
+    <USeparator class="mb-4" />
+
+    <div class="flex items-center gap-4 mb-4">
+      <label class="text-sm text-[var(--ui-text-muted)] whitespace-nowrap">Final years to show</label>
+      <USlider v-model="yearsToShow" :min="3" :max="maxYears" :step="1" size="sm" class="flex-1" />
+      <span class="text-sm font-mono font-semibold text-highlighted w-6 text-right">{{ yearsToShow }}</span>
+    </div>
+
+    <div class="overflow-x-auto">
+      <UTable :data="tableData" :columns="columns" />
+    </div>
+  </UCard>
+</template>

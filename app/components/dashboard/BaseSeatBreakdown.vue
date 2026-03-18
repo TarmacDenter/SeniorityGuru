@@ -1,22 +1,3 @@
-<template>
-  <UCard>
-    <template #header>
-      <h3 class="font-semibold text-highlighted">Base / Seat Ranking</h3>
-    </template>
-
-    <UTabs :items="tabs" class="w-full">
-      <template #content="{ item }">
-        <div class="overflow-x-auto mt-2">
-          <UTable
-            :data="filteredData(item.value as string)"
-            :columns="columns"
-          />
-        </div>
-      </template>
-    </UTabs>
-  </UCard>
-</template>
-
 <script setup lang="ts">
 import type { TableColumn } from '@nuxt/ui'
 
@@ -48,3 +29,22 @@ function filteredData(seat: string) {
   return props.data.filter(row => row.seat === seat)
 }
 </script>
+
+<template>
+  <UCard>
+    <template #header>
+      <h3 class="font-semibold text-highlighted">Base / Seat Ranking</h3>
+    </template>
+
+    <UTabs :items="tabs" class="w-full">
+      <template #content="{ item }">
+        <div class="overflow-x-auto mt-2">
+          <UTable
+            :data="filteredData(item.value as string)"
+            :columns="columns"
+          />
+        </div>
+      </template>
+    </UTabs>
+  </UCard>
+</template>

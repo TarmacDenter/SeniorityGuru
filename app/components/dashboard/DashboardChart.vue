@@ -1,17 +1,3 @@
-<template>
-  <div
-    class="w-full relative"
-    :class="height === 'auto' ? 'h-full' : undefined"
-    :style="height !== 'auto' ? { height: height + 'px' } : undefined"
-  >
-    <component
-      :is="chartComponent"
-      :data="(data as any)"
-      :options="(mergedOptions as any)"
-    />
-  </div>
-</template>
-
 <script setup lang="ts">
 import { Bar, Line, Doughnut } from 'vue-chartjs'
 import {
@@ -77,3 +63,17 @@ const mergedOptions = computed(() =>
   deepMerge(defaults as Record<string, any>, (props.options ?? {}) as Record<string, any>)
 )
 </script>
+
+<template>
+  <div
+    class="w-full relative"
+    :class="height === 'auto' ? 'h-full' : undefined"
+    :style="height !== 'auto' ? { height: height + 'px' } : undefined"
+  >
+    <component
+      :is="chartComponent"
+      :data="(data as any)"
+      :options="(mergedOptions as any)"
+    />
+  </div>
+</template>

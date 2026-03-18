@@ -1,3 +1,166 @@
+<script setup lang="ts">
+import type { TableColumn } from '@nuxt/ui'
+import { FetchError } from 'ofetch'
+import type { AdminUserDetail, AdminSeniorityListResponse } from '#shared/schemas/admin'
+
+definePageMeta({ layout: 'dashboard', middleware: ['auth', 'admin'] })
+
+const route = useRoute()
+const userId = route.params.id as string
+const toast = useToast()
+
+// Refs declared before awaits so defineExpose can reference them (vue/no-expose-after-await)
+const deleteOpen = ref(false)
+const editProfileOpen = ref(false)
+
+// defineExpose must precede any top-level awaits; function declarations are hoisted
+defineExpose({ confirmDelete, deleteOpen, saveProfile, editProfileOpen })
+
+const { data: user, pending: userPending } = await useFetch<AdminUserDetail>(`/api/admin/users/${userId}`)
+const { data: listsData, pending: listsPending, refresh: refreshLists } = await useFetch<AdminSeniorityListResponse[]>('/api/admin/seniority/lists')
+
+const userLists = computed(() =>
+  (listsData.value ?? []).filter(l => l.uploaded_by === userId)
+)
+
+const listColumns: TableColumn<AdminSeniorityListResponse>[] = [
+  { accessorKey: 'title', header: 'Title' },
+  { accessorKey: 'airline', header: 'Airline' },
+  { accessorKey: 'effective_date', header: 'Effective Date' },
+  { id: 'actions', header: '' },
+]
+
+// Delete User
+const deleteLoading = ref(false)
+
+function confirmDelete() {
+  deleteOpen.value = true
+}
+
+async function doDelete() {
+  deleteLoading.value = true
+  try {
+    await $fetch(`/api/admin/users/${userId}`, { method: 'DELETE' })
+    toast.add({ title: 'Account deleted', color: 'success' })
+    deleteOpen.value = false
+    await navigateTo('/admin/users')
+  } catch (e: unknown) {
+    const message = e instanceof FetchError && e.statusCode === 400
+      ? (e.data?.statusMessage ?? 'Cannot delete this user')
+      : 'Failed to delete account'
+    toast.add({ title: message, color: 'error' })
+  } finally {
+    deleteLoading.value = false
+  }
+}
+
+// Reset Password
+const resettingPassword = ref(false)
+
+async function resetPassword() {
+  resettingPassword.value = true
+  try {
+    await $fetch('/api/admin/reset-password', { method: 'POST', body: { userId } })
+    toast.add({ title: 'Password reset email sent', color: 'success' })
+  } catch {
+    toast.add({ title: 'Failed to send reset email', color: 'error' })
+  } finally {
+    resettingPassword.value = false
+  }
+}
+
+// Airline options for the edit modal
+const { options: airlineOptions, loading: airlinesLoading, load: loadAirlines } = useAirlineOptions()
+
+// Edit profile modal state
+const editProfileLoading = ref(false)
+const editProfileForm = ref<{
+  icaoCode: string | null
+  employeeNumber: string | null
+  mandatoryRetirementAge: number
+}>({
+  icaoCode: user.value?.icao_code ?? null,
+  employeeNumber: user.value?.employee_number ?? null,
+  mandatoryRetirementAge: user.value?.mandatory_retirement_age ?? 65,
+})
+
+const icaoCodeModel = computed({
+  get: () => editProfileForm.value.icaoCode ?? undefined,
+  set: (val: string | undefined) => { editProfileForm.value.icaoCode = val ?? null },
+})
+
+const employeeNumberModel = computed({
+  get: () => editProfileForm.value.employeeNumber ?? undefined,
+  set: (val: string | undefined) => { editProfileForm.value.employeeNumber = val ?? null },
+})
+
+function openEditProfile() {
+  editProfileForm.value = {
+    icaoCode: user.value?.icao_code ?? null,
+    employeeNumber: user.value?.employee_number ?? null,
+    mandatoryRetirementAge: user.value?.mandatory_retirement_age ?? 65,
+  }
+  loadAirlines()
+  editProfileOpen.value = true
+}
+
+async function saveProfile(overrides?: Record<string, unknown>) {
+  const payload = overrides ?? editProfileForm.value
+  editProfileLoading.value = true
+  try {
+    const updated = await $fetch<{
+      id: string
+      icao_code: string | null
+      employee_number: string | null
+      mandatory_retirement_age: number
+    }>(`/api/admin/users/${userId}/profile`, {
+      method: 'PATCH',
+      body: payload,
+    })
+    if (user.value) {
+      user.value.icao_code = updated.icao_code
+      user.value.employee_number = updated.employee_number
+      user.value.mandatory_retirement_age = updated.mandatory_retirement_age
+    }
+    editProfileOpen.value = false
+    toast.add({ title: 'Profile updated', color: 'success' })
+  } catch (e: unknown) {
+    const message = e instanceof FetchError && (e.statusCode === 400 || e.statusCode === 422)
+      ? (e.statusMessage ?? 'Invalid profile data')
+      : 'Failed to update profile'
+    toast.add({ title: message, color: 'error' })
+  } finally {
+    editProfileLoading.value = false
+  }
+}
+
+// Delete List
+const deleteListOpen = ref(false)
+const deleteListTarget = ref<AdminSeniorityListResponse | null>(null)
+const deleteListLoading = ref(false)
+
+function confirmDeleteList(list: AdminSeniorityListResponse) {
+  deleteListTarget.value = list
+  deleteListOpen.value = true
+}
+
+async function doDeleteList() {
+  if (!deleteListTarget.value) return
+  deleteListLoading.value = true
+  try {
+    await $fetch(`/api/admin/seniority/${deleteListTarget.value.id}`, { method: 'DELETE' })
+    toast.add({ title: 'List deleted', color: 'success' })
+    deleteListOpen.value = false
+    await refreshLists()
+  } catch {
+    toast.add({ title: 'Failed to delete list', color: 'error' })
+  } finally {
+    deleteListLoading.value = false
+  }
+}
+
+</script>
+
 <template>
   <UDashboardPanel>
     <template #header>
@@ -194,166 +357,3 @@
     </template>
   </UDashboardPanel>
 </template>
-
-<script setup lang="ts">
-import type { TableColumn } from '@nuxt/ui'
-import { FetchError } from 'ofetch'
-import type { AdminUserDetail, AdminSeniorityListResponse } from '#shared/schemas/admin'
-
-definePageMeta({ layout: 'dashboard', middleware: ['auth', 'admin'] })
-
-const route = useRoute()
-const userId = route.params.id as string
-const toast = useToast()
-
-// Refs declared before awaits so defineExpose can reference them (vue/no-expose-after-await)
-const deleteOpen = ref(false)
-const editProfileOpen = ref(false)
-
-// defineExpose must precede any top-level awaits; function declarations are hoisted
-defineExpose({ confirmDelete, deleteOpen, saveProfile, editProfileOpen })
-
-const { data: user, pending: userPending } = await useFetch<AdminUserDetail>(`/api/admin/users/${userId}`)
-const { data: listsData, pending: listsPending, refresh: refreshLists } = await useFetch<AdminSeniorityListResponse[]>('/api/admin/seniority/lists')
-
-const userLists = computed(() =>
-  (listsData.value ?? []).filter(l => l.uploaded_by === userId)
-)
-
-const listColumns: TableColumn<AdminSeniorityListResponse>[] = [
-  { accessorKey: 'title', header: 'Title' },
-  { accessorKey: 'airline', header: 'Airline' },
-  { accessorKey: 'effective_date', header: 'Effective Date' },
-  { id: 'actions', header: '' },
-]
-
-// Delete User
-const deleteLoading = ref(false)
-
-function confirmDelete() {
-  deleteOpen.value = true
-}
-
-async function doDelete() {
-  deleteLoading.value = true
-  try {
-    await $fetch(`/api/admin/users/${userId}`, { method: 'DELETE' })
-    toast.add({ title: 'Account deleted', color: 'success' })
-    deleteOpen.value = false
-    await navigateTo('/admin/users')
-  } catch (e: unknown) {
-    const message = e instanceof FetchError && e.statusCode === 400
-      ? (e.data?.statusMessage ?? 'Cannot delete this user')
-      : 'Failed to delete account'
-    toast.add({ title: message, color: 'error' })
-  } finally {
-    deleteLoading.value = false
-  }
-}
-
-// Reset Password
-const resettingPassword = ref(false)
-
-async function resetPassword() {
-  resettingPassword.value = true
-  try {
-    await $fetch('/api/admin/reset-password', { method: 'POST', body: { userId } })
-    toast.add({ title: 'Password reset email sent', color: 'success' })
-  } catch {
-    toast.add({ title: 'Failed to send reset email', color: 'error' })
-  } finally {
-    resettingPassword.value = false
-  }
-}
-
-// Airline options for the edit modal
-const { options: airlineOptions, loading: airlinesLoading, load: loadAirlines } = useAirlineOptions()
-
-// Edit profile modal state
-const editProfileLoading = ref(false)
-const editProfileForm = ref<{
-  icaoCode: string | null
-  employeeNumber: string | null
-  mandatoryRetirementAge: number
-}>({
-  icaoCode: user.value?.icao_code ?? null,
-  employeeNumber: user.value?.employee_number ?? null,
-  mandatoryRetirementAge: user.value?.mandatory_retirement_age ?? 65,
-})
-
-const icaoCodeModel = computed({
-  get: () => editProfileForm.value.icaoCode ?? undefined,
-  set: (val: string | undefined) => { editProfileForm.value.icaoCode = val ?? null },
-})
-
-const employeeNumberModel = computed({
-  get: () => editProfileForm.value.employeeNumber ?? undefined,
-  set: (val: string | undefined) => { editProfileForm.value.employeeNumber = val ?? null },
-})
-
-function openEditProfile() {
-  editProfileForm.value = {
-    icaoCode: user.value?.icao_code ?? null,
-    employeeNumber: user.value?.employee_number ?? null,
-    mandatoryRetirementAge: user.value?.mandatory_retirement_age ?? 65,
-  }
-  loadAirlines()
-  editProfileOpen.value = true
-}
-
-async function saveProfile(overrides?: Record<string, unknown>) {
-  const payload = overrides ?? editProfileForm.value
-  editProfileLoading.value = true
-  try {
-    const updated = await $fetch<{
-      id: string
-      icao_code: string | null
-      employee_number: string | null
-      mandatory_retirement_age: number
-    }>(`/api/admin/users/${userId}/profile`, {
-      method: 'PATCH',
-      body: payload,
-    })
-    if (user.value) {
-      user.value.icao_code = updated.icao_code
-      user.value.employee_number = updated.employee_number
-      user.value.mandatory_retirement_age = updated.mandatory_retirement_age
-    }
-    editProfileOpen.value = false
-    toast.add({ title: 'Profile updated', color: 'success' })
-  } catch (e: unknown) {
-    const message = e instanceof FetchError && (e.statusCode === 400 || e.statusCode === 422)
-      ? (e.statusMessage ?? 'Invalid profile data')
-      : 'Failed to update profile'
-    toast.add({ title: message, color: 'error' })
-  } finally {
-    editProfileLoading.value = false
-  }
-}
-
-// Delete List
-const deleteListOpen = ref(false)
-const deleteListTarget = ref<AdminSeniorityListResponse | null>(null)
-const deleteListLoading = ref(false)
-
-function confirmDeleteList(list: AdminSeniorityListResponse) {
-  deleteListTarget.value = list
-  deleteListOpen.value = true
-}
-
-async function doDeleteList() {
-  if (!deleteListTarget.value) return
-  deleteListLoading.value = true
-  try {
-    await $fetch(`/api/admin/seniority/${deleteListTarget.value.id}`, { method: 'DELETE' })
-    toast.add({ title: 'List deleted', color: 'success' })
-    deleteListOpen.value = false
-    await refreshLists()
-  } catch {
-    toast.add({ title: 'Failed to delete list', color: 'error' })
-  } finally {
-    deleteListLoading.value = false
-  }
-}
-
-</script>

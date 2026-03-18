@@ -1,3 +1,8 @@
+<script setup lang="ts">
+const user = useSupabaseUser()
+const { signOut } = useSignOut()
+</script>
+
 <template>
   <UHeader :to="user ? '/dashboard' : '/'">
     <template #title>
@@ -17,8 +22,3 @@
     </template>
   </UHeader>
 </template>
-
-<script setup lang="ts">
-const user = useSupabaseUser()
-const { signOut } = useSignOut()
-</script>

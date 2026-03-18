@@ -1,19 +1,3 @@
-<template>
-  <div>
-    <h1 class="text-2xl font-bold mb-6 text-center">Set new password</h1>
-
-    <UForm :schema="RecoveryPasswordSchema" :state="state" class="space-y-4" @submit="onSubmit">
-      <UFormField label="New password" name="password">
-        <UInput v-model="state.password" type="password" class="w-full" />
-      </UFormField>
-      <UFormField label="Confirm password" name="confirmPassword">
-        <UInput v-model="state.confirmPassword" type="password" class="w-full" />
-      </UFormField>
-      <UButton type="submit" class="w-full" :loading="loading">Update password</UButton>
-    </UForm>
-  </div>
-</template>
-
 <script setup lang="ts">
 import { RecoveryPasswordSchema } from '#shared/schemas/auth'
 import type { RecoveryPasswordState } from '#shared/schemas/auth'
@@ -50,3 +34,19 @@ async function onSubmit() {
   await navigateTo('/dashboard')
 }
 </script>
+
+<template>
+  <div>
+    <h1 class="text-2xl font-bold mb-6 text-center">Set new password</h1>
+
+    <UForm :schema="RecoveryPasswordSchema" :state="state" class="space-y-4" @submit="onSubmit">
+      <UFormField label="New password" name="password">
+        <UInput v-model="state.password" type="password" class="w-full" />
+      </UFormField>
+      <UFormField label="Confirm password" name="confirmPassword">
+        <UInput v-model="state.confirmPassword" type="password" class="w-full" />
+      </UFormField>
+      <UButton type="submit" class="w-full" :loading="loading">Update password</UButton>
+    </UForm>
+  </div>
+</template>

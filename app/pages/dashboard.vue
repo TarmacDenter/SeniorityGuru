@@ -1,56 +1,3 @@
-<template>
-  <UDashboardPanel>
-    <template #header>
-      <SeniorityNavbar title="Dashboard" :description="navbarDescription" />
-
-      <UDashboardToolbar>
-        <UTabs v-model="activeTab" :items="tabs" :content="false" variant="link" />
-
-        <template #right>
-          <div class="flex items-center gap-2">
-            <USelectMenu v-model="selectedListId" :items="listOptions" value-key="id"
-              label-key="label" placeholder="Select list..." class="w-48" size="sm" />
-            <UBadge v-if="isHistorical" color="warning" variant="subtle" size="sm">
-              <UIcon name="i-lucide-alert-triangle" class="size-3 mr-1" />
-              Historical
-            </UBadge>
-          </div>
-        </template>
-      </UDashboardToolbar>
-    </template>
-
-    <template #body>
-      <!-- My Status tab (quick hits) -->
-      <DashboardTabsMyStatusTab
-        v-if="activeTab === 'status'"
-        :loading="loading"
-        :has-data="hasData"
-        :has-employee-number="hasEmployeeNumber"
-        :user-found="userFound"
-        :is-new-hire-mode="isNewHireMode"
-        :rank-card="rankCard"
-        :stats="stats"
-        :retirement-snapshot="retirementSnapshot"
-        :trajectory-deltas="trajectoryDeltas"
-        :base-status-data="baseStatusData"
-        :trajectory-chart-data="trajectoryChartData"
-      />
-
-      <!-- Demographics tab -->
-      <DashboardTabsDemographicsTab v-else-if="activeTab === 'demographics'" />
-
-      <!-- Position tab -->
-      <DashboardTabsPositionTab v-else-if="activeTab === 'position'" />
-
-      <!-- Trajectory tab -->
-      <DashboardTabsTrajectoryTab v-else-if="activeTab === 'trajectory'" />
-
-      <!-- Seniority List tab — fills panel body, manages its own scroll -->
-      <DashboardTabsSeniorityListTab v-else-if="activeTab === 'seniority'" :loading="loading" />
-    </template>
-  </UDashboardPanel>
-</template>
-
 <script setup lang="ts">
 import type { TabsItem } from '@nuxt/ui';
 import { useSeniorityStore } from '~/stores/seniority';
@@ -156,3 +103,56 @@ onMounted(async () => {
   loading.value = false;
 });
 </script>
+
+<template>
+  <UDashboardPanel>
+    <template #header>
+      <SeniorityNavbar title="Dashboard" :description="navbarDescription" />
+
+      <UDashboardToolbar>
+        <UTabs v-model="activeTab" :items="tabs" :content="false" variant="link" />
+
+        <template #right>
+          <div class="flex items-center gap-2">
+            <USelectMenu v-model="selectedListId" :items="listOptions" value-key="id"
+              label-key="label" placeholder="Select list..." class="w-48" size="sm" />
+            <UBadge v-if="isHistorical" color="warning" variant="subtle" size="sm">
+              <UIcon name="i-lucide-alert-triangle" class="size-3 mr-1" />
+              Historical
+            </UBadge>
+          </div>
+        </template>
+      </UDashboardToolbar>
+    </template>
+
+    <template #body>
+      <!-- My Status tab (quick hits) -->
+      <DashboardTabsMyStatusTab
+        v-if="activeTab === 'status'"
+        :loading="loading"
+        :has-data="hasData"
+        :has-employee-number="hasEmployeeNumber"
+        :user-found="userFound"
+        :is-new-hire-mode="isNewHireMode"
+        :rank-card="rankCard"
+        :stats="stats"
+        :retirement-snapshot="retirementSnapshot"
+        :trajectory-deltas="trajectoryDeltas"
+        :base-status-data="baseStatusData"
+        :trajectory-chart-data="trajectoryChartData"
+      />
+
+      <!-- Demographics tab -->
+      <DashboardTabsDemographicsTab v-else-if="activeTab === 'demographics'" />
+
+      <!-- Position tab -->
+      <DashboardTabsPositionTab v-else-if="activeTab === 'position'" />
+
+      <!-- Trajectory tab -->
+      <DashboardTabsTrajectoryTab v-else-if="activeTab === 'trajectory'" />
+
+      <!-- Seniority List tab — fills panel body, manages its own scroll -->
+      <DashboardTabsSeniorityListTab v-else-if="activeTab === 'seniority'" :loading="loading" />
+    </template>
+  </UDashboardPanel>
+</template>

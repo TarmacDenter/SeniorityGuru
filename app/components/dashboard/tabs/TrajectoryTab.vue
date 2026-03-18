@@ -1,3 +1,31 @@
+<script setup lang="ts">
+import { useQualDemographics } from '~/composables/useQualDemographics'
+import { useQualProjections } from '~/composables/useQualProjections'
+import { useUserTrajectory } from '~/composables/useUserTrajectory'
+import { useDashboardStats } from '~/composables/useDashboardStats'
+import { useUserStore } from '~/stores/user'
+import { DEFAULT_GROWTH_CONFIG } from '#shared/types/growth-config'
+import type { GrowthConfig } from '#shared/types/growth-config'
+
+const userStore = useUserStore()
+const hasEmployeeNumber = computed(() => !!userStore.profile?.employee_number)
+
+const growthConfig = ref<GrowthConfig>({ ...DEFAULT_GROWTH_CONFIG })
+
+const { userFound, rankCard, quals } = useDashboardStats()
+
+const {
+  trajectoryChartData,
+  trajectoryDeltas: companyTrajectoryDeltas,
+  computeComparativeTrajectory,
+  computeRetirementProjection,
+} = useUserTrajectory(growthConfig)
+
+const demographics = useQualDemographics()
+const projections = useQualProjections(demographics.qualFilterFn, growthConfig)
+const qualTrajectoryDeltas = projections.trajectoryDeltas
+</script>
+
 <template>
   <div class="-m-4 sm:-m-6 flex flex-col h-[calc(100%+2rem)] sm:h-[calc(100%+3rem)]">
     <!-- Growth assumption bar -->
@@ -110,31 +138,3 @@
     </div>
   </div>
 </template>
-
-<script setup lang="ts">
-import { useQualDemographics } from '~/composables/useQualDemographics'
-import { useQualProjections } from '~/composables/useQualProjections'
-import { useUserTrajectory } from '~/composables/useUserTrajectory'
-import { useDashboardStats } from '~/composables/useDashboardStats'
-import { useUserStore } from '~/stores/user'
-import { DEFAULT_GROWTH_CONFIG } from '#shared/types/growth-config'
-import type { GrowthConfig } from '#shared/types/growth-config'
-
-const userStore = useUserStore()
-const hasEmployeeNumber = computed(() => !!userStore.profile?.employee_number)
-
-const growthConfig = ref<GrowthConfig>({ ...DEFAULT_GROWTH_CONFIG })
-
-const { userFound, rankCard, quals } = useDashboardStats()
-
-const {
-  trajectoryChartData,
-  trajectoryDeltas: companyTrajectoryDeltas,
-  computeComparativeTrajectory,
-  computeRetirementProjection,
-} = useUserTrajectory(growthConfig)
-
-const demographics = useQualDemographics()
-const projections = useQualProjections(demographics.qualFilterFn, growthConfig)
-const qualTrajectoryDeltas = projections.trajectoryDeltas
-</script>

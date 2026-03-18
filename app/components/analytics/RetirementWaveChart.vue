@@ -1,37 +1,3 @@
-<template>
-  <div class="space-y-4">
-    <!-- Retirement Wave Bar Chart -->
-    <div>
-      <p class="mb-1 text-xs font-medium text-[var(--ui-text-muted)]">
-        Retirements per Year{{ selectedQual ? ` — ${selectedQual}` : '' }}
-      </p>
-      <ClientOnly>
-        <div class="h-48 relative">
-          <Bar :data="waveChartData" :options="waveChartOptions" />
-        </div>
-        <template #fallback>
-          <USkeleton class="h-48 w-full" />
-        </template>
-      </ClientOnly>
-    </div>
-
-    <!-- Trajectory line chart (user percentile over time) -->
-    <div v-if="trajectoryPoints.length > 0">
-      <p class="mb-1 text-xs font-medium text-[var(--ui-text-muted)]">
-        Your Percentile Trajectory{{ selectedQual ? ` — ${selectedQual}` : '' }}
-      </p>
-      <ClientOnly>
-        <div class="h-40 relative">
-          <Line :data="trajectoryChartData" :options="trajectoryChartOptions" />
-        </div>
-        <template #fallback>
-          <USkeleton class="h-40 w-full" />
-        </template>
-      </ClientOnly>
-    </div>
-  </div>
-</template>
-
 <script setup lang="ts">
 import { Bar, Line } from 'vue-chartjs'
 import {
@@ -168,3 +134,37 @@ const trajectoryChartOptions = computed<ChartOptions<'line'>>(() => ({
   },
 } as ChartOptions<'line'>))
 </script>
+
+<template>
+  <div class="space-y-4">
+    <!-- Retirement Wave Bar Chart -->
+    <div>
+      <p class="mb-1 text-xs font-medium text-[var(--ui-text-muted)]">
+        Retirements per Year{{ selectedQual ? ` — ${selectedQual}` : '' }}
+      </p>
+      <ClientOnly>
+        <div class="h-48 relative">
+          <Bar :data="waveChartData" :options="waveChartOptions" />
+        </div>
+        <template #fallback>
+          <USkeleton class="h-48 w-full" />
+        </template>
+      </ClientOnly>
+    </div>
+
+    <!-- Trajectory line chart (user percentile over time) -->
+    <div v-if="trajectoryPoints.length > 0">
+      <p class="mb-1 text-xs font-medium text-[var(--ui-text-muted)]">
+        Your Percentile Trajectory{{ selectedQual ? ` — ${selectedQual}` : '' }}
+      </p>
+      <ClientOnly>
+        <div class="h-40 relative">
+          <Line :data="trajectoryChartData" :options="trajectoryChartOptions" />
+        </div>
+        <template #fallback>
+          <USkeleton class="h-40 w-full" />
+        </template>
+      </ClientOnly>
+    </div>
+  </div>
+</template>

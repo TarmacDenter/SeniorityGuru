@@ -1,3 +1,20 @@
+<script setup lang="ts">
+import { useQualDemographics } from '~/composables/useQualDemographics'
+import { useQualProjections } from '~/composables/useQualProjections'
+import { useUserTrajectory } from '~/composables/useUserTrajectory'
+import { useCompanyStats } from '~/composables/useCompanyStats'
+import { useUserStore } from '~/stores/user'
+
+const userStore = useUserStore()
+const demographics = useQualDemographics()
+const projections = useQualProjections(demographics.qualFilterFn)
+const { computeRetirementProjection } = useUserTrajectory()
+const { quals } = useCompanyStats()
+
+const hasEmployeeNumber = computed(() => !!userStore.profile?.employee_number)
+
+</script>
+
 <template>
   <div class="p-4 sm:p-6 space-y-6">
     <AnalyticsQualFilterBar :demographics="demographics" />
@@ -44,20 +61,3 @@
     />
   </div>
 </template>
-
-<script setup lang="ts">
-import { useQualDemographics } from '~/composables/useQualDemographics'
-import { useQualProjections } from '~/composables/useQualProjections'
-import { useUserTrajectory } from '~/composables/useUserTrajectory'
-import { useCompanyStats } from '~/composables/useCompanyStats'
-import { useUserStore } from '~/stores/user'
-
-const userStore = useUserStore()
-const demographics = useQualDemographics()
-const projections = useQualProjections(demographics.qualFilterFn)
-const { computeRetirementProjection } = useUserTrajectory()
-const { quals } = useCompanyStats()
-
-const hasEmployeeNumber = computed(() => !!userStore.profile?.employee_number)
-
-</script>

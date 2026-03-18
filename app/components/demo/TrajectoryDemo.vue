@@ -1,83 +1,3 @@
-<template>
-  <ClientOnly>
-    <div ref="container" class="space-y-6">
-      <!-- Qual toggle -->
-      <div class="flex justify-center">
-        <div class="flex rounded-lg border border-(--ui-border) overflow-hidden text-sm font-medium">
-          <button
-            v-for="q in qualPresets"
-            :key="q.key"
-            class="px-4 py-1.5 transition-colors"
-            :class="selectedQual === q.key
-              ? 'bg-primary text-white'
-              : 'text-muted hover:bg-(--ui-bg-elevated)'"
-            @click="selectedQual = q.key"
-          >
-            {{ q.label }}
-          </button>
-        </div>
-      </div>
-
-      <!-- Custom legend -->
-      <div class="flex flex-wrap gap-4 justify-center">
-        <div
-          v-for="item in legendItems"
-          :key="item.label"
-          class="flex items-center gap-2"
-        >
-          <div
-            class="h-0.5 w-6 rounded-full shrink-0"
-            :style="{
-              backgroundColor: item.dashed ? 'transparent' : item.color,
-              borderTop: item.dashed ? `2px dashed ${item.color}` : undefined,
-            }"
-          />
-          <span class="text-xs text-muted font-medium">{{ item.label }}</span>
-        </div>
-      </div>
-
-      <!-- Chart area -->
-      <div v-if="visible" class="relative h-72 sm:h-80">
-        <DashboardChart
-          type="line"
-          :data="chartData"
-          :options="chartOptions"
-          height="auto"
-        />
-      </div>
-
-      <!-- Slider -->
-      <div class="flex flex-col items-center gap-2">
-        <label class="text-sm text-muted">
-          Annual new-hire growth rate:
-          <span class="font-mono font-semibold text-primary ml-1">{{ growthRate.toFixed(1) }}%</span>
-        </label>
-        <input
-          v-model.number="growthRate"
-          type="range"
-          min="0"
-          max="10"
-          step="0.5"
-          class="w-full max-w-sm accent-primary cursor-pointer"
-        />
-        <div class="flex justify-between w-full max-w-sm text-xs text-muted">
-          <span>0% (no growth)</span>
-          <span>10% (rapid expansion)</span>
-        </div>
-      </div>
-    </div>
-
-    <template #fallback>
-      <div class="space-y-6">
-        <USkeleton class="h-8 w-64 mx-auto rounded" />
-        <USkeleton class="h-5 w-48 mx-auto rounded" />
-        <USkeleton class="h-72 sm:h-80 w-full rounded-lg" />
-        <USkeleton class="h-8 w-64 mx-auto rounded" />
-      </div>
-    </template>
-  </ClientOnly>
-</template>
-
 <script setup lang="ts">
 import type { ChartData, ChartOptions, TooltipItem } from 'chart.js'
 
@@ -261,3 +181,83 @@ const legendItems = [
   { label: 'Base scenario', color: '#38bdf8', dashed: false },
 ]
 </script>
+
+<template>
+  <ClientOnly>
+    <div ref="container" class="space-y-6">
+      <!-- Qual toggle -->
+      <div class="flex justify-center">
+        <div class="flex rounded-lg border border-(--ui-border) overflow-hidden text-sm font-medium">
+          <button
+            v-for="q in qualPresets"
+            :key="q.key"
+            class="px-4 py-1.5 transition-colors"
+            :class="selectedQual === q.key
+              ? 'bg-primary text-white'
+              : 'text-muted hover:bg-(--ui-bg-elevated)'"
+            @click="selectedQual = q.key"
+          >
+            {{ q.label }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Custom legend -->
+      <div class="flex flex-wrap gap-4 justify-center">
+        <div
+          v-for="item in legendItems"
+          :key="item.label"
+          class="flex items-center gap-2"
+        >
+          <div
+            class="h-0.5 w-6 rounded-full shrink-0"
+            :style="{
+              backgroundColor: item.dashed ? 'transparent' : item.color,
+              borderTop: item.dashed ? `2px dashed ${item.color}` : undefined,
+            }"
+          />
+          <span class="text-xs text-muted font-medium">{{ item.label }}</span>
+        </div>
+      </div>
+
+      <!-- Chart area -->
+      <div v-if="visible" class="relative h-72 sm:h-80">
+        <DashboardChart
+          type="line"
+          :data="chartData"
+          :options="chartOptions"
+          height="auto"
+        />
+      </div>
+
+      <!-- Slider -->
+      <div class="flex flex-col items-center gap-2">
+        <label class="text-sm text-muted">
+          Annual new-hire growth rate:
+          <span class="font-mono font-semibold text-primary ml-1">{{ growthRate.toFixed(1) }}%</span>
+        </label>
+        <input
+          v-model.number="growthRate"
+          type="range"
+          min="0"
+          max="10"
+          step="0.5"
+          class="w-full max-w-sm accent-primary cursor-pointer"
+        >
+        <div class="flex justify-between w-full max-w-sm text-xs text-muted">
+          <span>0% (no growth)</span>
+          <span>10% (rapid expansion)</span>
+        </div>
+      </div>
+    </div>
+
+    <template #fallback>
+      <div class="space-y-6">
+        <USkeleton class="h-8 w-64 mx-auto rounded" />
+        <USkeleton class="h-5 w-48 mx-auto rounded" />
+        <USkeleton class="h-72 sm:h-80 w-full rounded-lg" />
+        <USkeleton class="h-8 w-64 mx-auto rounded" />
+      </div>
+    </template>
+  </ClientOnly>
+</template>

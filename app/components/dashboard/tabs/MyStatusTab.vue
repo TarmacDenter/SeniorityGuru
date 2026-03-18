@@ -1,3 +1,23 @@
+<script setup lang="ts">
+import type { useDashboardStats } from '~/composables/useDashboardStats'
+
+type DashboardStatsReturn = ReturnType<typeof useDashboardStats>
+
+defineProps<{
+  loading: boolean
+  hasData: DashboardStatsReturn['hasData']['value']
+  hasEmployeeNumber: DashboardStatsReturn['hasEmployeeNumber']['value']
+  userFound: DashboardStatsReturn['userFound']['value']
+  isNewHireMode: DashboardStatsReturn['isNewHireMode']['value']
+  rankCard: DashboardStatsReturn['rankCard']['value']
+  stats: DashboardStatsReturn['stats']['value']
+  retirementSnapshot: DashboardStatsReturn['retirementSnapshot']['value']
+  trajectoryDeltas: DashboardStatsReturn['trajectoryDeltas']['value']
+  baseStatusData: DashboardStatsReturn['baseStatusData']['value']
+  trajectoryChartData: DashboardStatsReturn['trajectoryChartData']['value']
+}>()
+</script>
+
 <template>
   <div class="p-4 sm:p-6">
     <!-- Loading state — skeleton -->
@@ -58,23 +78,3 @@
     </template>
   </div>
 </template>
-
-<script setup lang="ts">
-import type { useDashboardStats } from '~/composables/useDashboardStats'
-
-type DashboardStatsReturn = ReturnType<typeof useDashboardStats>
-
-defineProps<{
-  loading: boolean
-  hasData: DashboardStatsReturn['hasData']['value']
-  hasEmployeeNumber: DashboardStatsReturn['hasEmployeeNumber']['value']
-  userFound: DashboardStatsReturn['userFound']['value']
-  isNewHireMode: DashboardStatsReturn['isNewHireMode']['value']
-  rankCard: DashboardStatsReturn['rankCard']['value']
-  stats: DashboardStatsReturn['stats']['value']
-  retirementSnapshot: DashboardStatsReturn['retirementSnapshot']['value']
-  trajectoryDeltas: DashboardStatsReturn['trajectoryDeltas']['value']
-  baseStatusData: DashboardStatsReturn['baseStatusData']['value']
-  trajectoryChartData: DashboardStatsReturn['trajectoryChartData']['value']
-}>()
-</script>

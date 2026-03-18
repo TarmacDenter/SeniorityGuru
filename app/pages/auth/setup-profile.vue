@@ -1,25 +1,3 @@
-<template>
-  <div>
-    <h1 class="text-2xl font-bold mb-2 text-center">Select your airline</h1>
-    <p class="text-center text-sm text-muted mb-6">Choose your airline to access SeniorityGuru.</p>
-
-    <UForm :schema="SetupProfileSchema" :state="state" class="space-y-4" @submit="onSubmit">
-      <UFormField label="Airline" name="icaoCode">
-        <USelectMenu
-          v-model="state.icaoCode"
-          :items="airlineOptions"
-          value-key="value"
-          placeholder="Search airlines..."
-          :loading="airlinesLoading"
-          :search-input="{ placeholder: 'Search by name...' }"
-          class="w-full"
-        />
-      </UFormField>
-      <UButton type="submit" class="w-full" :loading="loading">Continue</UButton>
-    </UForm>
-  </div>
-</template>
-
 <script setup lang="ts">
 import { SetupProfileSchema } from '#shared/schemas/auth'
 import type { SetupProfileState } from '#shared/schemas/auth'
@@ -39,9 +17,8 @@ const state = reactive<SetupProfileState>({
 })
 
 const { options: airlineOptions, loading: airlinesLoading, load: loadAirlines } = useAirlineOptions()
-await loadAirlines()
-
 defineExpose({ state, onSubmit })
+await loadAirlines()
 
 async function onSubmit() {
   const userId = user.value?.sub as string | undefined
@@ -66,3 +43,25 @@ async function onSubmit() {
   await navigateTo('/dashboard')
 }
 </script>
+
+<template>
+  <div>
+    <h1 class="text-2xl font-bold mb-2 text-center">Select your airline</h1>
+    <p class="text-center text-sm text-muted mb-6">Choose your airline to access SeniorityGuru.</p>
+
+    <UForm :schema="SetupProfileSchema" :state="state" class="space-y-4" @submit="onSubmit">
+      <UFormField label="Airline" name="icaoCode">
+        <USelectMenu
+          v-model="state.icaoCode"
+          :items="airlineOptions"
+          value-key="value"
+          placeholder="Search airlines..."
+          :loading="airlinesLoading"
+          :search-input="{ placeholder: 'Search by name...' }"
+          class="w-full"
+        />
+      </UFormField>
+      <UButton type="submit" class="w-full" :loading="loading">Continue</UButton>
+    </UForm>
+  </div>
+</template>

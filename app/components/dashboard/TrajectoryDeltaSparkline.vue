@@ -1,25 +1,3 @@
-<template>
-  <UCard>
-    <template #header>
-      <div class="flex items-center justify-between">
-        <h3 class="font-semibold text-highlighted">Improvement Rate</h3>
-        <UBadge color="primary" variant="subtle" size="sm">YoY</UBadge>
-      </div>
-    </template>
-
-    <ClientOnly>
-      <DashboardChart type="bar" :data="chartData" :height="120" :options="chartOptions" />
-      <template #fallback>
-        <USkeleton class="h-[120px] w-full" />
-      </template>
-    </ClientOnly>
-
-    <p v-if="bestYear" class="mt-2 text-xs text-[var(--ui-text-muted)]">
-      Best year: {{ bestYear.year }} (+{{ bestYear.delta }}pp)
-    </p>
-  </UCard>
-</template>
-
 <script setup lang="ts">
 import type { ChartData, ChartOptions } from 'chart.js'
 import type { TrajectoryDelta } from '#shared/utils/seniority-math'
@@ -88,3 +66,25 @@ const bestYear = computed(() => {
   }
 })
 </script>
+
+<template>
+  <UCard>
+    <template #header>
+      <div class="flex items-center justify-between">
+        <h3 class="font-semibold text-highlighted">Improvement Rate</h3>
+        <UBadge color="primary" variant="subtle" size="sm">YoY</UBadge>
+      </div>
+    </template>
+
+    <ClientOnly>
+      <DashboardChart type="bar" :data="chartData" :height="120" :options="chartOptions" />
+      <template #fallback>
+        <USkeleton class="h-[120px] w-full" />
+      </template>
+    </ClientOnly>
+
+    <p v-if="bestYear" class="mt-2 text-xs text-[var(--ui-text-muted)]">
+      Best year: {{ bestYear.year }} (+{{ bestYear.delta }}pp)
+    </p>
+  </UCard>
+</template>

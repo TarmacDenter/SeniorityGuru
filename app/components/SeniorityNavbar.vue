@@ -1,3 +1,13 @@
+<script setup lang="ts">
+defineProps<{
+  title: string
+  description?: string
+}>()
+
+const user = useSupabaseUser()
+const { signOut } = useSignOut()
+</script>
+
 <template>
   <UDashboardNavbar :title="description ? undefined : title">
     <template v-if="description" #title>
@@ -20,13 +30,3 @@
     </template>
   </UDashboardNavbar>
 </template>
-
-<script setup lang="ts">
-defineProps<{
-  title: string
-  description?: string
-}>()
-
-const user = useSupabaseUser()
-const { signOut } = useSignOut()
-</script>

@@ -1,3 +1,41 @@
+<script setup lang="ts">
+import type { ColumnMap, MappingOptions } from '~/utils/parse-spreadsheet'
+
+const props = defineProps<{
+  headers: string[]
+  columnMap: ColumnMap
+  mappingOptions: MappingOptions
+  sampleRows: string[][]
+}>()
+
+const emit = defineEmits<{
+  'update:columnMap': [map: ColumnMap]
+  'update:mappingOptions': [options: MappingOptions]
+}>()
+
+const requiredFields: { key: keyof ColumnMap; label: string }[] = [
+  { key: 'seniority_number', label: 'Seniority Number' },
+  { key: 'employee_number', label: 'Employee Number' },
+  { key: 'seat', label: 'Seat / Position' },
+  { key: 'base', label: 'Base / Domicile' },
+  { key: 'fleet', label: 'Fleet / Aircraft' },
+]
+
+const columnOptions = computed(() =>
+  props.headers.map((h, i) => ({ label: h || `Column ${i + 1}`, value: i }))
+)
+
+function sampleValue(field: keyof ColumnMap): string | undefined {
+  const idx = props.columnMap[field]
+  if (idx < 0 || !props.sampleRows[0]) return undefined
+  return props.sampleRows[0][idx]
+}
+
+function updateOption<K extends keyof MappingOptions>(key: K, value: MappingOptions[K]) {
+  emit('update:mappingOptions', { ...props.mappingOptions, [key]: value })
+}
+</script>
+
 <template>
   <div class="space-y-6">
     <!-- Required field mappings -->
@@ -157,41 +195,3 @@
     </div>
   </div>
 </template>
-
-<script setup lang="ts">
-import type { ColumnMap, MappingOptions } from '~/utils/parse-spreadsheet'
-
-const props = defineProps<{
-  headers: string[]
-  columnMap: ColumnMap
-  mappingOptions: MappingOptions
-  sampleRows: string[][]
-}>()
-
-const emit = defineEmits<{
-  'update:columnMap': [map: ColumnMap]
-  'update:mappingOptions': [options: MappingOptions]
-}>()
-
-const requiredFields: { key: keyof ColumnMap; label: string }[] = [
-  { key: 'seniority_number', label: 'Seniority Number' },
-  { key: 'employee_number', label: 'Employee Number' },
-  { key: 'seat', label: 'Seat / Position' },
-  { key: 'base', label: 'Base / Domicile' },
-  { key: 'fleet', label: 'Fleet / Aircraft' },
-]
-
-const columnOptions = computed(() =>
-  props.headers.map((h, i) => ({ label: h || `Column ${i + 1}`, value: i }))
-)
-
-function sampleValue(field: keyof ColumnMap): string | undefined {
-  const idx = props.columnMap[field]
-  if (idx < 0 || !props.sampleRows[0]) return undefined
-  return props.sampleRows[0][idx]
-}
-
-function updateOption<K extends keyof MappingOptions>(key: K, value: MappingOptions[K]) {
-  emit('update:mappingOptions', { ...props.mappingOptions, [key]: value })
-}
-</script>

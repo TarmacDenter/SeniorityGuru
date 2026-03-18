@@ -1,19 +1,3 @@
-<template>
-  <div>
-    <p class="mb-1 text-xs font-medium text-[var(--ui-text-muted)]">
-      YoY Percentile Point Change{{ selectedQual ? ` — ${selectedQual}` : '' }}
-    </p>
-    <ClientOnly>
-      <div class="h-56 relative">
-        <Bar :data="chartData" :options="chartOptions" />
-      </div>
-      <template #fallback>
-        <USkeleton class="h-56 w-full" />
-      </template>
-    </ClientOnly>
-  </div>
-</template>
-
 <script setup lang="ts">
 import { Bar } from 'vue-chartjs'
 import {
@@ -95,3 +79,19 @@ const chartOptions = computed<ChartOptions<'bar'>>(() => ({
   },
 } as ChartOptions<'bar'>))
 </script>
+
+<template>
+  <div>
+    <p class="mb-1 text-xs font-medium text-[var(--ui-text-muted)]">
+      YoY Percentile Point Change{{ selectedQual ? ` — ${selectedQual}` : '' }}
+    </p>
+    <ClientOnly>
+      <div class="h-56 relative">
+        <Bar :data="chartData" :options="chartOptions" />
+      </div>
+      <template #fallback>
+        <USkeleton class="h-56 w-full" />
+      </template>
+    </ClientOnly>
+  </div>
+</template>

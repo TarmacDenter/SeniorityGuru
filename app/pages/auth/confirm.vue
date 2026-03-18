@@ -1,22 +1,3 @@
-<template>
-  <div class="text-center">
-    <template v-if="error">
-      <UAlert
-        icon="i-lucide-alert-circle"
-        color="error"
-        variant="soft"
-        :title="errorTitle"
-        :description="errorDescription"
-        class="mb-4"
-      />
-      <UButton to="/auth/resend-email" variant="ghost">Resend confirmation email</UButton>
-    </template>
-    <div v-else class="flex items-center justify-center py-8">
-      <UIcon name="i-lucide-loader-circle" class="animate-spin text-4xl text-primary" />
-    </div>
-  </div>
-</template>
-
 <script setup lang="ts">
 // Auth callback — handles PKCE flow (?code= query param) from email confirmations
 // and password recovery emails. Invites use /auth/accept-invite instead (token_hash OTP flow).
@@ -72,3 +53,22 @@ watchEffect(async () => {
   }
 })
 </script>
+
+<template>
+  <div class="text-center">
+    <template v-if="error">
+      <UAlert
+        icon="i-lucide-alert-circle"
+        color="error"
+        variant="soft"
+        :title="errorTitle"
+        :description="errorDescription"
+        class="mb-4"
+      />
+      <UButton to="/auth/resend-email" variant="ghost">Resend confirmation email</UButton>
+    </template>
+    <div v-else class="flex items-center justify-center py-8">
+      <UIcon name="i-lucide-loader-circle" class="animate-spin text-4xl text-primary" />
+    </div>
+  </div>
+</template>
