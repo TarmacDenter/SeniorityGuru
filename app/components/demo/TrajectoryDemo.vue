@@ -83,15 +83,15 @@ import type { ChartData, ChartOptions, TooltipItem } from 'chart.js'
 
 // ── Qual presets ──────────────────────────────────────────────────────────────
 
-type QualKey = 'fo_narrow' | 'fo_wide' | 'ca_narrow'
+type QualKey = 'company' | 'fleet' | 'qual'
 
 const qualPresets: { key: QualKey; label: string; startPct: number; yearsToRetirement: number; thresholdLabel: string }[] = [
-  { key: 'fo_narrow', label: 'FO · Narrow', startPct: 22, yearsToRetirement: 37, thresholdLabel: 'CA eligibility' },
-  { key: 'fo_wide',   label: 'FO · Wide',   startPct: 50, yearsToRetirement: 22, thresholdLabel: 'Widebody CA' },
-  { key: 'ca_narrow', label: 'CA · Narrow', startPct: 73, yearsToRetirement: 15, thresholdLabel: 'Widebody CA' },
+  { key: 'company', label: 'All Pilots',     startPct: 8,  yearsToRetirement: 37, thresholdLabel: 'Top 25%' },
+  { key: 'fleet',   label: 'E175 · FOs',     startPct: 16, yearsToRetirement: 37, thresholdLabel: 'Top 25%' },
+  { key: 'qual',    label: 'DEN · FO · E175', startPct: 28, yearsToRetirement: 37, thresholdLabel: 'Top 25%' },
 ]
 
-const selectedQual = ref<QualKey>('fo_narrow')
+const selectedQual = ref<QualKey>('company')
 
 const activePreset = computed(() => qualPresets.find((q) => q.key === selectedQual.value)!)
 
