@@ -155,7 +155,7 @@
           <div class="space-y-4">
             <UFormField label="Airline">
               <USelectMenu
-                v-model="editProfileForm.icaoCode"
+                v-model="(editProfileForm.icaoCode as string | undefined)"
                 :items="airlineOptions"
                 value-key="value"
                 :loading="airlinesLoading"
@@ -165,7 +165,7 @@
             </UFormField>
             <UFormField label="Employee Number">
               <UInput
-                v-model="editProfileForm.employeeNumber"
+                v-model="(editProfileForm.employeeNumber as string | undefined)"
                 placeholder="e.g. 12345"
                 class="w-full"
               />
@@ -264,19 +264,19 @@ const { options: airlineOptions, loading: airlinesLoading, load: loadAirlines } 
 const editProfileOpen = ref(false)
 const editProfileLoading = ref(false)
 const editProfileForm = ref<{
-  icaoCode: string | undefined
-  employeeNumber: string | undefined
+  icaoCode: string | null
+  employeeNumber: string | null
   mandatoryRetirementAge: number
 }>({
-  icaoCode: user.value?.icao_code ?? undefined,
-  employeeNumber: user.value?.employee_number ?? undefined,
+  icaoCode: user.value?.icao_code ?? null,
+  employeeNumber: user.value?.employee_number ?? null,
   mandatoryRetirementAge: user.value?.mandatory_retirement_age ?? 65,
 })
 
 function openEditProfile() {
   editProfileForm.value = {
-    icaoCode: user.value?.icao_code ?? undefined,
-    employeeNumber: user.value?.employee_number ?? undefined,
+    icaoCode: user.value?.icao_code ?? null,
+    employeeNumber: user.value?.employee_number ?? null,
     mandatoryRetirementAge: user.value?.mandatory_retirement_age ?? 65,
   }
   loadAirlines()
