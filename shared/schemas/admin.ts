@@ -91,5 +91,6 @@ export const AdminUserDetailSchema = z.object({
   role: z.enum(['user', 'admin', 'moderator']),
   icao_code: z.string().nullable(),
   employee_number: z.string().nullable(),
+  mandatory_retirement_age: z.number().int(),
 })
 export type AdminUserDetail = z.infer<typeof AdminUserDetailSchema>

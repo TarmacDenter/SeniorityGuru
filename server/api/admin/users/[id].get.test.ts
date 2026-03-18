@@ -109,6 +109,7 @@ describe('GET /api/admin/users/[id]', () => {
       role: 'user',
       icao_code: 'UAL',
       employee_number: 'E001',
+      mandatory_retirement_age: 65,
     }
 
     mocks.requireAdmin.mockResolvedValueOnce({ sub: 'admin-id' })
@@ -129,6 +130,7 @@ describe('GET /api/admin/users/[id]', () => {
         role: 'user',
         icao_code: 'UAL',
         employee_number: 'E001',
+        mandatory_retirement_age: 65,
       }),
       'admin/users/[id].get',
     )
