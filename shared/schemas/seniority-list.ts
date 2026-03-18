@@ -31,6 +31,7 @@ export const CreateSeniorityListSchema = z.object({
   effective_date: z.string().regex(ISO_DATE_REGEX, 'Invalid date format'),
   entries: z.array(SeniorityEntrySchema).min(1, 'At least one entry is required'),
   title: z.string().min(1).optional(),
+  targetUserId: z.string().uuid().optional(),
 })
 export type CreateSeniorityList = z.infer<typeof CreateSeniorityListSchema>
 
