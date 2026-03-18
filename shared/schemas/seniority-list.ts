@@ -49,7 +49,6 @@ export const SeniorityListResponseSchema = z.object({
   airline: z.string(),
   title: z.string().nullable(),
   effective_date: z.string(),
-  status: z.string(),
   created_at: z.string(),
 })
 export type SeniorityListResponse = z.infer<typeof SeniorityListResponseSchema>

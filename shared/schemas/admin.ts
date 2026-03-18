@@ -2,7 +2,7 @@ import { z } from 'zod'
 import { uuidField } from './common'
 
 export const UpdateUserRoleSchema = z.object({
-  role: z.enum(['user', 'moderator', 'admin']),
+  role: z.enum(['user', 'admin']),
 })
 export type UpdateUserRole = z.infer<typeof UpdateUserRoleSchema>
 

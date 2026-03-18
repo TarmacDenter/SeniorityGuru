@@ -8,7 +8,6 @@ const mockList: SeniorityListResponse = {
   airline: 'DAL',
   title: 'January List',
   effective_date: '2026-01-15',
-  status: 'active',
   created_at: '2026-01-10T12:00:00Z',
 }
 
@@ -17,7 +16,6 @@ const mockList2: SeniorityListResponse = {
   airline: 'DAL',
   title: null,
   effective_date: '2026-02-15',
-  status: 'active',
   created_at: '2026-02-10T12:00:00Z',
 }
 

@@ -18,7 +18,7 @@ export default defineEventHandler(async (event) => {
 
   const { data, error } = await client
     .from('seniority_lists')
-    .select('id, airline, title, effective_date, status, created_at')
+    .select('id, airline, title, effective_date, created_at')
     .eq('id', id)
     .single()
 
