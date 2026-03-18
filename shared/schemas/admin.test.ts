@@ -5,6 +5,7 @@ import {
   InviteUserSchema,
   ResetUserPasswordSchema,
   AdminUserIdSchema,
+  UpdateUserProfileSchema,
 } from './admin'
 
 describe('UpdateUserRoleSchema', () => {
@@ -53,5 +54,56 @@ describe('AdminUserIdSchema', () => {
 
   it('rejects non-UUID', () => {
     expect(AdminUserIdSchema.safeParse({ id: 'abc' }).success).toBe(false)
+  })
+})
+
+describe('UpdateUserProfileSchema', () => {
+  it('accepts a valid full update', () => {
+    const result = UpdateUserProfileSchema.safeParse({
+      icaoCode: 'DAL',
+      employeeNumber: '12345',
+      mandatoryRetirementAge: 65,
+    })
+    expect(result.success).toBe(true)
+  })
+
+  it('accepts a partial update with only icaoCode', () => {
+    const result = UpdateUserProfileSchema.safeParse({ icaoCode: 'UAL' })
+    expect(result.success).toBe(true)
+  })
+
+  it('accepts null icaoCode to clear the airline', () => {
+    const result = UpdateUserProfileSchema.safeParse({ icaoCode: null })
+    expect(result.success).toBe(true)
+  })
+
+  it('accepts null employeeNumber to clear it', () => {
+    const result = UpdateUserProfileSchema.safeParse({ employeeNumber: null })
+    expect(result.success).toBe(true)
+  })
+
+  it('rejects an empty body', () => {
+    const result = UpdateUserProfileSchema.safeParse({})
+    expect(result.success).toBe(false)
+  })
+
+  it('rejects icaoCode that is too short', () => {
+    const result = UpdateUserProfileSchema.safeParse({ icaoCode: 'A' })
+    expect(result.success).toBe(false)
+  })
+
+  it('rejects icaoCode that is too long', () => {
+    const result = UpdateUserProfileSchema.safeParse({ icaoCode: 'ABCDE' })
+    expect(result.success).toBe(false)
+  })
+
+  it('rejects mandatoryRetirementAge below 55', () => {
+    const result = UpdateUserProfileSchema.safeParse({ mandatoryRetirementAge: 40 })
+    expect(result.success).toBe(false)
+  })
+
+  it('rejects mandatoryRetirementAge above 75', () => {
+    const result = UpdateUserProfileSchema.safeParse({ mandatoryRetirementAge: 80 })
+    expect(result.success).toBe(false)
   })
 })

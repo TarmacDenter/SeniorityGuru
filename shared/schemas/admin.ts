@@ -18,6 +18,16 @@ export const UpdateUserRoleSchema = z.object({
 })
 export type UpdateUserRole = z.infer<typeof UpdateUserRoleSchema>
 
+export const UpdateUserProfileSchema = z.object({
+  icaoCode: z.string().min(2).max(4).nullable().optional(),
+  employeeNumber: z.string().max(20).nullable().optional(),
+  mandatoryRetirementAge: z.number().int().min(55).max(75).optional(),
+}).refine(
+  data => Object.values(data).some(v => v !== undefined),
+  { message: 'At least one field is required' },
+)
+export type UpdateUserProfile = z.infer<typeof UpdateUserProfileSchema>
+
 export const InviteUserSchema = z.object({
   email: z.string().email(),
 })
