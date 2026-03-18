@@ -17,27 +17,23 @@
             <div v-if="currentStep === 'upload'" class="space-y-6">
               <UFileUpload
                 v-model="files"
-                multiple
                 accept=".csv,.xlsx,.xls"
                 variant="area"
                 icon="i-lucide-upload"
                 label="Drag & drop your CSV or XLSX file here"
-                description="or choose a file to upload"
+                description="or tap to choose a file"
+              />
+
+              <UButton
+                v-if="files"
+                variant="ghost"
+                color="neutral"
+                icon="i-lucide-x"
+                class="mt-2"
+                @click="files = null"
               >
-                <template #actions="{ open, removeFile, files: slotFiles }">
-                  <div class="flex items-center justify-center gap-2">
-                    <UButton @click="open()">Choose file</UButton>
-                    <UButton
-                      v-if="Array.isArray(slotFiles) ? slotFiles.length > 0 : !!slotFiles"
-                      variant="ghost"
-                      color="neutral"
-                      @click="removeFile()"
-                    >
-                      Clear
-                    </UButton>
-                  </div>
-                </template>
-              </UFileUpload>
+                Clear file
+              </UButton>
 
               <UAlert
                 v-if="upload.fileName.value"
@@ -159,7 +155,7 @@ definePageMeta({ middleware: 'auth', layout: 'dashboard' })
 
 const upload = useSeniorityUpload()
 const toast = useToast()
-const files = ref<File[] | null>(null)
+const files = ref<File | null>(null)
 const showErrorsOnly = ref(false)
 
 const stepOrder = ['upload', 'mapping', 'review', 'confirm'] as const
@@ -174,13 +170,13 @@ const steps: StepperItem[] = [
 const currentStep = ref<Step | number>('upload')
 const processing = ref(false)
 watch(files, async (next) => {
-  if (!next || next.length === 0) {
+  if (!next) {
     currentStep.value = 'upload'
     await upload.setFiles([])
     return
   }
   currentStep.value = 'upload'
-  await upload.setFiles(next)
+  await upload.setFiles([next])
 })
 
 const currentStepIndex = computed(() => stepOrder.indexOf(currentStep.value as Step))
