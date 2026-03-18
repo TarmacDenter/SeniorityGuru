@@ -32,8 +32,8 @@ vi.mock('#supabase/server', () => ({
   serverSupabaseServiceRole: mocks.serverSupabaseServiceRole,
 }))
 
-vi.mock('~~/shared/schemas/seniority-list', () => ({
-  SeniorityListResponseSchema: { array: () => 'SeniorityListResponseSchema[]' },
+vi.mock('~~/shared/schemas/admin', () => ({
+  AdminSeniorityListResponseSchema: { array: () => 'AdminSeniorityListResponseSchema[]' },
 }))
 
 vi.mock('#server/api/admin/logger', () => ({
@@ -94,7 +94,7 @@ describe('GET /api/admin/seniority/lists', () => {
     expect(mockClient.from).toHaveBeenCalledWith('seniority_lists')
     expect(mocks.fetchAllRows).toHaveBeenCalledWith(mockClient, 'admin/seniority/lists')
     expect(mocks.parseResponse).toHaveBeenCalledWith(
-      'SeniorityListResponseSchema[]',
+      'AdminSeniorityListResponseSchema[]',
       fakeLists,
       'admin/seniority/lists.get',
     )

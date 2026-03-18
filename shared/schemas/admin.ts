@@ -1,6 +1,18 @@
 import { z } from 'zod'
 import { uuidField } from './common'
 
+// --- Admin Seniority List (includes uploaded_by for owner join) ---
+
+export const AdminSeniorityListResponseSchema = z.object({
+  id: z.string().uuid(),
+  airline: z.string(),
+  title: z.string().nullable(),
+  effective_date: z.string(),
+  created_at: z.string(),
+  uploaded_by: z.string().uuid(),
+})
+export type AdminSeniorityListResponse = z.infer<typeof AdminSeniorityListResponseSchema>
+
 export const UpdateUserRoleSchema = z.object({
   role: z.enum(['user', 'admin']),
 })

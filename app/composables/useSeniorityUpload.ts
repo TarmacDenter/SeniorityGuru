@@ -174,7 +174,7 @@ export function useSeniorityUpload() {
   }
 
   /** Save the seniority list to the server. Returns the entry count on success, or throws. */
-  async function save(): Promise<number> {
+  async function save(targetUserId?: string | null): Promise<number> {
     saving.value = true
     saveError.value = null
     log.info('Upload started', { entryCount: entries.value.length, effectiveDate: effectiveDate.value?.toString() })
@@ -186,6 +186,7 @@ export function useSeniorityUpload() {
           effective_date: effectiveDateValue,
           entries: entries.value,
           ...(title.value && { title: title.value }),
+          ...(targetUserId && { targetUserId }),
         },
       })
       log.info('Upload succeeded', { count: result.count })
