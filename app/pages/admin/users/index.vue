@@ -59,6 +59,13 @@
           <template #actions-cell="{ row }">
             <div class="flex gap-1">
               <UButton
+                icon="i-lucide-user"
+                variant="ghost"
+                size="xs"
+                label="View"
+                :to="`/admin/users/${row.original.id}`"
+              />
+              <UButton
                 icon="i-lucide-key-round"
                 variant="ghost"
                 size="xs"
