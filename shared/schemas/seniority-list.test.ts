@@ -224,7 +224,6 @@ describe('SeniorityListResponseSchema', () => {
     airline: 'DAL',
     title: 'January 2026 List',
     effective_date: '2026-01-15',
-    status: 'active',
     created_at: '2026-01-10T12:00:00Z',
   }
 
@@ -249,11 +248,6 @@ describe('SeniorityListResponseSchema', () => {
   it('rejects missing effective_date', () => {
     const { effective_date, ...noDate } = valid
     expect(SeniorityListResponseSchema.safeParse(noDate).success).toBe(false)
-  })
-
-  it('rejects missing status', () => {
-    const { status, ...noStatus } = valid
-    expect(SeniorityListResponseSchema.safeParse(noStatus).success).toBe(false)
   })
 
   it('rejects missing created_at', () => {

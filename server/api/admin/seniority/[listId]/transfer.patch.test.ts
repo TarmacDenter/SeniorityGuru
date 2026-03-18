@@ -10,7 +10,8 @@ const { mocks, mockLogger } = vi.hoisted(() => {
     mockLogger: logger,
     mocks: {
       requireAdmin: vi.fn(),
-      fetchAllRows: vi.fn(),
+      validateBody: vi.fn(),
+      validateRouteParam: vi.fn(),
       parseResponse: vi.fn((_s: unknown, data: unknown) => data),
       serverSupabaseServiceRole: vi.fn(),
     },
@@ -23,7 +24,8 @@ Object.assign(globalThis, {
   createError: (opts: { statusCode: number; statusMessage: string }) =>
     Object.assign(new Error(opts.statusMessage), opts),
   requireAdmin: mocks.requireAdmin,
-  fetchAllRows: mocks.fetchAllRows,
+  validateBody: mocks.validateBody,
+  validateRouteParam: mocks.validateRouteParam,
   parseResponse: mocks.parseResponse,
 })
 
@@ -33,7 +35,8 @@ vi.mock('#supabase/server', () => ({
 }))
 
 vi.mock('~~/shared/schemas/admin', () => ({
-  AdminSeniorityListResponseSchema: { array: () => 'AdminSeniorityListResponseSchema[]' },
+  TransferListBodySchema: 'TransferListBodySchema',
+  TransferListResponseSchema: 'TransferListResponseSchema',
 }))
 
 vi.mock('#server/api/admin/logger', () => ({
@@ -43,24 +46,32 @@ vi.mock('#server/api/admin/logger', () => ({
 /* ------------------------------------------------------------------ */
 /*  Tests                                                             */
 /* ------------------------------------------------------------------ */
-describe('GET /api/admin/seniority/lists', () => {
+describe('PATCH /api/admin/seniority/[listId]/transfer', () => {
   let handler: (event: unknown) => Promise<unknown>
   const fakeEvent = {} as unknown
+  const fakeListId = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'
+  const fakeTargetUserId = 'b2c3d4e5-f6a7-8901-bcde-f12345678901'
 
-  // Chainable mock Supabase client
+  // Chainable mock client
   const mockClient: Record<string, ReturnType<typeof vi.fn>> = {}
   mockClient.from = vi.fn(() => mockClient)
+  mockClient.update = vi.fn(() => mockClient)
+  mockClient.eq = vi.fn(() => mockClient)
   mockClient.select = vi.fn(() => mockClient)
-  mockClient.order = vi.fn(() => mockClient)
+  mockClient.single = vi.fn()
 
   beforeAll(async () => {
-    const mod = await import('./lists.get')
+    const mod = await import('./transfer.patch')
     handler = mod.default
   })
 
   beforeEach(() => {
     vi.clearAllMocks()
     mocks.serverSupabaseServiceRole.mockReturnValue(mockClient)
+    mockClient.from.mockReturnValue(mockClient)
+    mockClient.update.mockReturnValue(mockClient)
+    mockClient.eq.mockReturnValue(mockClient)
+    mockClient.select.mockReturnValue(mockClient)
   })
 
   it('rejects unauthenticated requests', async () => {
@@ -79,39 +90,59 @@ describe('GET /api/admin/seniority/lists', () => {
     await expect(handler(fakeEvent)).rejects.toMatchObject({ statusCode: 403 })
   })
 
-  it('returns seniority lists on success', async () => {
-    const fakeLists = [
-      { id: '1', airline_id: 'a1', effective_date: '2024-01-01', created_at: '2024-01-01' },
-      { id: '2', airline_id: 'a2', effective_date: '2024-06-01', created_at: '2024-06-01' },
-    ]
+  it('rejects invalid listId', async () => {
     mocks.requireAdmin.mockResolvedValueOnce({ sub: 'admin-id' })
-    mocks.fetchAllRows.mockResolvedValueOnce(fakeLists)
+    mocks.validateRouteParam.mockRejectedValueOnce(
+      Object.assign(new Error('Invalid listId'), { statusCode: 422 }),
+    )
+
+    await expect(handler(fakeEvent)).rejects.toMatchObject({ statusCode: 422 })
+  })
+
+  it('rejects invalid body', async () => {
+    mocks.requireAdmin.mockResolvedValueOnce({ sub: 'admin-id' })
+    mocks.validateRouteParam.mockResolvedValueOnce({ listId: fakeListId })
+    mocks.validateBody.mockRejectedValueOnce(
+      Object.assign(new Error('Validation failed'), { statusCode: 422 }),
+    )
+
+    await expect(handler(fakeEvent)).rejects.toMatchObject({ statusCode: 422 })
+  })
+
+  it('updates uploaded_by and returns the updated list', async () => {
+    const fakeUpdated = { id: fakeListId, uploaded_by: fakeTargetUserId }
+
+    mocks.requireAdmin.mockResolvedValueOnce({ sub: 'admin-id' })
+    mocks.validateRouteParam.mockResolvedValueOnce({ listId: fakeListId })
+    mocks.validateBody.mockResolvedValueOnce({ targetUserId: fakeTargetUserId })
+    mockClient.single.mockResolvedValueOnce({ data: fakeUpdated, error: null })
 
     const result = await handler(fakeEvent)
 
-    expect(mocks.requireAdmin).toHaveBeenCalledWith(fakeEvent)
-    expect(mocks.serverSupabaseServiceRole).toHaveBeenCalledWith(fakeEvent)
     expect(mockClient.from).toHaveBeenCalledWith('seniority_lists')
-    expect(mocks.fetchAllRows).toHaveBeenCalledWith(mockClient, 'admin/seniority/lists')
+    expect(mockClient.update).toHaveBeenCalledWith({ uploaded_by: fakeTargetUserId })
+    expect(mockClient.eq).toHaveBeenCalledWith('id', fakeListId)
     expect(mocks.parseResponse).toHaveBeenCalledWith(
-      'AdminSeniorityListResponseSchema[]',
-      fakeLists,
-      'admin/seniority/lists.get',
+      'TransferListResponseSchema',
+      fakeUpdated,
+      'admin/seniority/[listId]/transfer.patch',
     )
-    expect(result).toEqual(fakeLists)
+    expect(result).toEqual(fakeUpdated)
   })
 
-  it('returns 502 when fetchAllRows fails', async () => {
+  it('returns 500 when DB update fails', async () => {
     mocks.requireAdmin.mockResolvedValueOnce({ sub: 'admin-id' })
-    mocks.fetchAllRows.mockRejectedValueOnce(new Error('DB timeout'))
+    mocks.validateRouteParam.mockResolvedValueOnce({ listId: fakeListId })
+    mocks.validateBody.mockResolvedValueOnce({ targetUserId: fakeTargetUserId })
+    mockClient.single.mockResolvedValueOnce({ data: null, error: { message: 'DB error' } })
 
     await expect(handler(fakeEvent)).rejects.toMatchObject({
-      statusCode: 502,
-      statusMessage: 'Failed to fetch seniority lists',
+      statusCode: 500,
+      statusMessage: 'Failed to transfer list',
     })
     expect(mockLogger.error).toHaveBeenCalledWith(
-      'Failed to fetch seniority lists',
-      expect.objectContaining({ error: 'DB timeout' }),
+      'Failed to transfer list',
+      expect.objectContaining({ error: 'DB error' }),
     )
   })
 })

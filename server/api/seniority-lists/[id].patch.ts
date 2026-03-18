@@ -22,7 +22,7 @@ export default defineEventHandler(async (event) => {
     .from('seniority_lists')
     .update(body)
     .eq('id', id)
-    .select('id, airline, title, effective_date, status, created_at')
+    .select('id, airline, title, effective_date, created_at')
     .single()
 
   if (error || !data) {

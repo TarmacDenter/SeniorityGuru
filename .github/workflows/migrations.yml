@@ -17,8 +17,26 @@ on:
       - 'supabase/migrations/**'
 
 jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm install
+
+      - run: npm run typecheck
+
+      - run: npm test
+
   migrate-dev:
     name: Push migrations (Dev)
+    needs: test
     runs-on: ubuntu-latest
     environment: Dev
     if: (github.event_name == 'push' && github.ref == 'refs/heads/dev') || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'dev')
@@ -41,6 +59,7 @@ jobs:
 
   migrate-prod:
     name: Push migrations (Production)
+    needs: test
     runs-on: ubuntu-latest
     environment: Production
     if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'production')

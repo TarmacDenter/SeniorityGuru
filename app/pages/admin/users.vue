@@ -155,7 +155,7 @@ const deleteOpen = ref(false)
 const deleteTarget = ref<AdminUser | null>(null)
 const deleteLoading = ref(false)
 
-const roleOptions = ['user', 'moderator', 'admin']
+const roleOptions = ['user', 'admin']
 
 const columns: TableColumn<AdminUser>[] = [
   { accessorKey: 'email', header: sortableHeader<AdminUser>('Email') },

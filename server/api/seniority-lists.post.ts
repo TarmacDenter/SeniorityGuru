@@ -1,4 +1,4 @@
-import { serverSupabaseClient, serverSupabaseUser } from '#supabase/server'
+import { serverSupabaseClient, serverSupabaseUser, serverSupabaseServiceRole } from '#supabase/server'
 import { CreateSeniorityListSchema, CreateSeniorityListResponseSchema } from '#shared/schemas/seniority-list'
 import { createLogger } from '#shared/utils/logger'
 import { parseResponse } from '../utils/validation'
@@ -13,7 +13,71 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 401, statusMessage: 'Unauthorized' })
   }
 
-  const { entries, effective_date, title } = await validateBody(event, CreateSeniorityListSchema)
+  const { entries, effective_date, title, targetUserId } = await validateBody(event, CreateSeniorityListSchema)
+
+  // --- Admin on-behalf-of path ---
+  if (targetUserId) {
+    await requireAdmin(event)
+
+    const serviceClient = serverSupabaseServiceRole<Database>(event)
+
+    const { data: targetProfile, error: targetProfileError } = await serviceClient
+      .from('profiles')
+      .select('icao_code')
+      .eq('id', targetUserId)
+      .single()
+
+    if (targetProfileError) {
+      log.error('Target profile lookup failed', { targetUserId, error: targetProfileError.message })
+      throw createError({ statusCode: 500, statusMessage: 'Internal server error' })
+    }
+    if (!targetProfile?.icao_code) {
+      log.warn('No airline set on target profile', { targetUserId })
+      throw createError({ statusCode: 400, statusMessage: 'No airline set on profile' })
+    }
+
+    const { data: list, error: listError } = await serviceClient
+      .from('seniority_lists')
+      .insert({
+        airline: targetProfile.icao_code,
+        effective_date,
+        uploaded_by: targetUserId,
+        ...(title && { title }),
+      })
+      .select('id')
+      .single()
+
+    if (listError || !list) {
+      log.error('List insert failed (admin on-behalf)', { targetUserId, error: listError?.message })
+      throw createError({ statusCode: 500, statusMessage: 'Internal server error' })
+    }
+
+    const mappedEntries = entries.map((entry) => ({
+      list_id: list.id,
+      ...entry,
+    }))
+
+    const { error: entriesError } = await serviceClient
+      .from('seniority_entries')
+      .insert(mappedEntries)
+
+    if (entriesError) {
+      log.error('Entries insert failed (admin on-behalf)', { targetUserId, listId: list.id, error: entriesError.message })
+      throw createError({ statusCode: 500, statusMessage: 'Internal server error' })
+    }
+
+    log.info('Seniority list upload completed (admin on-behalf)', {
+      adminId: user.sub,
+      targetUserId,
+      listId: list.id,
+      entryCount: entries.length,
+      airline: targetProfile.icao_code,
+    })
+
+    return parseResponse(CreateSeniorityListResponseSchema, { id: list.id, count: entries.length }, 'seniority-lists.post')
+  }
+
+  // --- Standard user path ---
 
   log.info('Seniority list upload started', {
     userId: user.sub,

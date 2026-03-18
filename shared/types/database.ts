@@ -34,6 +34,38 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_activity_log: {
+        Row: {
+          actor_id: string
+          created_at: string
+          event_type: string
+          id: string
+          metadata: Json
+        }
+        Insert: {
+          actor_id: string
+          created_at?: string
+          event_type: string
+          id?: string
+          metadata?: Json
+        }
+        Update: {
+          actor_id?: string
+          created_at?: string
+          event_type?: string
+          id?: string
+          metadata?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_activity_log_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       airlines: {
         Row: {
           alias: string | null
@@ -143,7 +175,6 @@ export type Database = {
           created_at: string
           effective_date: string
           id: string
-          status: string
           title: string | null
           uploaded_by: string
         }
@@ -152,7 +183,6 @@ export type Database = {
           created_at?: string
           effective_date: string
           id?: string
-          status?: string
           title?: string | null
           uploaded_by: string
         }
@@ -161,7 +191,6 @@ export type Database = {
           created_at?: string
           effective_date?: string
           id?: string
-          status?: string
           title?: string | null
           uploaded_by?: string
         }

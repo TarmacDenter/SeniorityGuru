@@ -1,10 +1,10 @@
 import { serverSupabaseServiceRole } from '#supabase/server';
-import { type SeniorityListResponse, SeniorityListResponseSchema } from '~~/shared/schemas/seniority-list';
+import { type AdminSeniorityListResponse, AdminSeniorityListResponseSchema } from '~~/shared/schemas/admin';
 import { createAdminLogger } from '#server/api/admin/logger'
 
 const logger = createAdminLogger('seniority/lists')
 
-export default defineEventHandler(async (event): Promise<SeniorityListResponse[]> => {
+export default defineEventHandler(async (event): Promise<AdminSeniorityListResponse[]> => {
   await requireAdmin(event)
 
   const client = serverSupabaseServiceRole<Database>(event)
@@ -20,5 +20,5 @@ export default defineEventHandler(async (event): Promise<SeniorityListResponse[]
     throw createError({ statusCode: 502, statusMessage: 'Failed to fetch seniority lists' })
   })
 
-  return parseResponse(SeniorityListResponseSchema.array(), data, 'admin/seniority/lists.get') satisfies SeniorityListResponse[]
+  return parseResponse(AdminSeniorityListResponseSchema.array(), data, 'admin/seniority/lists.get') satisfies AdminSeniorityListResponse[]
 })

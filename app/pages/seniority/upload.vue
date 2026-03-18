@@ -6,6 +6,15 @@
 
     <template #body>
       <div class="max-w-5xl mx-auto p-4 sm:p-6">
+        <UAlert
+          v-if="adminTargetUser"
+          color="warning"
+          icon="i-lucide-shield-alert"
+          :title="`Uploading on behalf of ${adminTargetUser.email}`"
+          description="This list will be attributed to the target user, not you."
+          class="mb-6"
+        />
+
         <UStepper
           v-model="currentStep"
           :items="steps"
@@ -150,8 +159,18 @@
 <script setup lang="ts">
 import type { StepperItem } from '@nuxt/ui'
 import type { DateValue } from '@internationalized/date'
+import type { AdminUserDetail } from '#shared/schemas/admin'
 
 definePageMeta({ middleware: 'auth', layout: 'dashboard' })
+
+const route = useRoute()
+const adminTargetUserId = route.query.userId as string | undefined
+
+const adminTargetUser = ref<AdminUserDetail | null>(null)
+if (adminTargetUserId) {
+  const { data } = await useFetch<AdminUserDetail>(`/api/admin/users/${adminTargetUserId}`)
+  adminTargetUser.value = data.value ?? null
+}
 
 const upload = useSeniorityUpload()
 const toast = useToast()
@@ -223,7 +242,7 @@ defineExpose({ onSave })
 
 async function onSave() {
   try {
-    const count = await upload.save()
+    const count = await upload.save(adminTargetUserId)
     toast.add({ title: `Uploaded ${count} entries`, color: 'success' })
     upload.reset()
     await navigateTo({ path: '/dashboard', query: { tab: 'seniority' } })

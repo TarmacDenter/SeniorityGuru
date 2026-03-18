@@ -49,7 +49,6 @@ export function makeList(overrides: Partial<SeniorityListResponse> = {}): Senior
     airline: 'DAL',
     effective_date: '2026-01-15',
     created_at: '2026-01-15T00:00:00Z',
-    status: 'active',
     title: null,
     ...overrides,
   }

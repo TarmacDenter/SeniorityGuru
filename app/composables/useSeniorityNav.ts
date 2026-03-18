@@ -13,7 +13,15 @@ export function useSeniorityNav(): ComputedRef<NavigationMenuItem[]> {
       { label: 'Settings', icon: 'i-lucide-settings', to: '/settings' },
     ]
     if (userStore.isAdmin) {
-      items.push({ label: 'Admin', icon: 'i-lucide-shield', to: '/admin/users' })
+      items.push({
+        label: 'Admin',
+        icon: 'i-lucide-shield',
+        children: [
+          { label: 'Overview', icon: 'i-lucide-layout-dashboard', to: '/admin' },
+          { label: 'Users', icon: 'i-lucide-users', to: '/admin/users' },
+          { label: 'Lists', icon: 'i-lucide-list', to: '/admin/lists' },
+        ],
+      })
     }
     return items
   })

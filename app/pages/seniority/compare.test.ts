@@ -14,7 +14,7 @@ const {
   mockNavigateTo: vi.fn(),
   mockRouteQuery: { value: {} as Record<string, string> },
   mockFetchLists: vi.fn(),
-  mockLists: { value: [] as { id: string; airline: string; title: string | null; effective_date: string; status: string; created_at: string }[] },
+  mockLists: { value: [] as { id: string; airline: string; title: string | null; effective_date: string; created_at: string }[] },
 }))
 
 // ---------------------------------------------------------------------------
@@ -77,7 +77,6 @@ function makeList(id: string, effectiveDate = '2026-01-01') {
     airline: 'DAL',
     title: 'Test List',
     effective_date: effectiveDate,
-    status: 'active',
     created_at: '2026-01-01T00:00:00Z',
   }
 }

@@ -10,8 +10,7 @@ const { mocks, mockLogger } = vi.hoisted(() => {
     mockLogger: logger,
     mocks: {
       requireAdmin: vi.fn(),
-      fetchAllRows: vi.fn(),
-      parseResponse: vi.fn((_s: unknown, data: unknown) => data),
+      validateRouteParam: vi.fn(),
       serverSupabaseServiceRole: vi.fn(),
     },
   }
@@ -22,18 +21,14 @@ Object.assign(globalThis, {
   defineEventHandler: (fn: Function) => fn,
   createError: (opts: { statusCode: number; statusMessage: string }) =>
     Object.assign(new Error(opts.statusMessage), opts),
+  setResponseStatus: vi.fn(),
   requireAdmin: mocks.requireAdmin,
-  fetchAllRows: mocks.fetchAllRows,
-  parseResponse: mocks.parseResponse,
+  validateRouteParam: mocks.validateRouteParam,
 })
 
 /* Explicit module mocks */
 vi.mock('#supabase/server', () => ({
   serverSupabaseServiceRole: mocks.serverSupabaseServiceRole,
-}))
-
-vi.mock('~~/shared/schemas/admin', () => ({
-  AdminSeniorityListResponseSchema: { array: () => 'AdminSeniorityListResponseSchema[]' },
 }))
 
 vi.mock('#server/api/admin/logger', () => ({
@@ -43,24 +38,28 @@ vi.mock('#server/api/admin/logger', () => ({
 /* ------------------------------------------------------------------ */
 /*  Tests                                                             */
 /* ------------------------------------------------------------------ */
-describe('GET /api/admin/seniority/lists', () => {
+describe('DELETE /api/admin/seniority/[listId]', () => {
   let handler: (event: unknown) => Promise<unknown>
   const fakeEvent = {} as unknown
+  const fakeListId = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'
 
-  // Chainable mock Supabase client
+  // Chainable mock client
   const mockClient: Record<string, ReturnType<typeof vi.fn>> = {}
   mockClient.from = vi.fn(() => mockClient)
-  mockClient.select = vi.fn(() => mockClient)
-  mockClient.order = vi.fn(() => mockClient)
+  mockClient.delete = vi.fn(() => mockClient)
+  mockClient.eq = vi.fn(() => mockClient)
 
   beforeAll(async () => {
-    const mod = await import('./lists.get')
+    const mod = await import('./[listId].delete')
     handler = mod.default
   })
 
   beforeEach(() => {
     vi.clearAllMocks()
     mocks.serverSupabaseServiceRole.mockReturnValue(mockClient)
+    mockClient.from.mockReturnValue(mockClient)
+    mockClient.delete.mockReturnValue(mockClient)
+    mockClient.eq.mockReturnValue(mockClient)
   })
 
   it('rejects unauthenticated requests', async () => {
@@ -79,39 +78,40 @@ describe('GET /api/admin/seniority/lists', () => {
     await expect(handler(fakeEvent)).rejects.toMatchObject({ statusCode: 403 })
   })
 
-  it('returns seniority lists on success', async () => {
-    const fakeLists = [
-      { id: '1', airline_id: 'a1', effective_date: '2024-01-01', created_at: '2024-01-01' },
-      { id: '2', airline_id: 'a2', effective_date: '2024-06-01', created_at: '2024-06-01' },
-    ]
+  it('rejects invalid listId', async () => {
     mocks.requireAdmin.mockResolvedValueOnce({ sub: 'admin-id' })
-    mocks.fetchAllRows.mockResolvedValueOnce(fakeLists)
+    mocks.validateRouteParam.mockRejectedValueOnce(
+      Object.assign(new Error('Invalid listId'), { statusCode: 422 }),
+    )
+
+    await expect(handler(fakeEvent)).rejects.toMatchObject({ statusCode: 422 })
+  })
+
+  it('deletes the list and returns null with 204 status', async () => {
+    mocks.requireAdmin.mockResolvedValueOnce({ sub: 'admin-id' })
+    mocks.validateRouteParam.mockResolvedValueOnce({ listId: fakeListId })
+    mockClient.eq.mockResolvedValueOnce({ error: null })
 
     const result = await handler(fakeEvent)
 
-    expect(mocks.requireAdmin).toHaveBeenCalledWith(fakeEvent)
-    expect(mocks.serverSupabaseServiceRole).toHaveBeenCalledWith(fakeEvent)
     expect(mockClient.from).toHaveBeenCalledWith('seniority_lists')
-    expect(mocks.fetchAllRows).toHaveBeenCalledWith(mockClient, 'admin/seniority/lists')
-    expect(mocks.parseResponse).toHaveBeenCalledWith(
-      'AdminSeniorityListResponseSchema[]',
-      fakeLists,
-      'admin/seniority/lists.get',
-    )
-    expect(result).toEqual(fakeLists)
+    expect(mockClient.delete).toHaveBeenCalled()
+    expect(mockClient.eq).toHaveBeenCalledWith('id', fakeListId)
+    expect(result).toBeNull()
   })
 
-  it('returns 502 when fetchAllRows fails', async () => {
+  it('returns 500 when DB delete fails', async () => {
     mocks.requireAdmin.mockResolvedValueOnce({ sub: 'admin-id' })
-    mocks.fetchAllRows.mockRejectedValueOnce(new Error('DB timeout'))
+    mocks.validateRouteParam.mockResolvedValueOnce({ listId: fakeListId })
+    mockClient.eq.mockResolvedValueOnce({ error: { message: 'DB error' } })
 
     await expect(handler(fakeEvent)).rejects.toMatchObject({
-      statusCode: 502,
-      statusMessage: 'Failed to fetch seniority lists',
+      statusCode: 500,
+      statusMessage: 'Failed to delete list',
     })
     expect(mockLogger.error).toHaveBeenCalledWith(
-      'Failed to fetch seniority lists',
-      expect.objectContaining({ error: 'DB timeout' }),
+      'Failed to delete list',
+      expect.objectContaining({ error: 'DB error' }),
     )
   })
 })

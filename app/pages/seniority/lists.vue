@@ -151,11 +151,6 @@ const columns: TableColumn<SeniorityList>[] = [
     header: sortableHeader<SeniorityList>('Uploaded'),
     cell: ({ row }) => new Date(row.original.created_at).toLocaleDateString(),
   },
-  {
-    accessorKey: 'status',
-    header: sortableHeader<SeniorityList>('Status'),
-    cell: ({ row }) => row.original.status === 'active' ? 'Active' : 'Archived',
-  },
   { id: 'actions', header: '' },
 ]
 

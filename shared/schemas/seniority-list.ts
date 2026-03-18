@@ -31,6 +31,7 @@ export const CreateSeniorityListSchema = z.object({
   effective_date: z.string().regex(ISO_DATE_REGEX, 'Invalid date format'),
   entries: z.array(SeniorityEntrySchema).min(1, 'At least one entry is required'),
   title: z.string().min(1).optional(),
+  targetUserId: z.string().uuid().optional(),
 })
 export type CreateSeniorityList = z.infer<typeof CreateSeniorityListSchema>
 
@@ -49,7 +50,6 @@ export const SeniorityListResponseSchema = z.object({
   airline: z.string(),
   title: z.string().nullable(),
   effective_date: z.string(),
-  status: z.string(),
   created_at: z.string(),
 })
 export type SeniorityListResponse = z.infer<typeof SeniorityListResponseSchema>

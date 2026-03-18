@@ -19,7 +19,7 @@ const {
   mockFetchProfile: vi.fn(),
   mockFetchLists: vi.fn(),
   mockFetchEntries: vi.fn(),
-  mockLists: { value: [] as { id: string; airline: string; title: string | null; effective_date: string; status: string; created_at: string }[] },
+  mockLists: { value: [] as { id: string; airline: string; title: string | null; effective_date: string; created_at: string }[] },
   mockCurrentListId: { value: null as string | null },
 }))
 
@@ -78,7 +78,6 @@ function makeList(id: string) {
     airline: 'DAL',
     title: 'Test List',
     effective_date: '2026-01-01',
-    status: 'active',
     created_at: '2026-01-01T00:00:00Z',
   }
 }

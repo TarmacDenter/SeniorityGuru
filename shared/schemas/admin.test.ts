@@ -10,8 +10,11 @@ import {
 describe('UpdateUserRoleSchema', () => {
   it('accepts valid roles', () => {
     expect(UpdateUserRoleSchema.safeParse({ role: 'user' }).success).toBe(true)
-    expect(UpdateUserRoleSchema.safeParse({ role: 'moderator' }).success).toBe(true)
     expect(UpdateUserRoleSchema.safeParse({ role: 'admin' }).success).toBe(true)
+  })
+
+  it('rejects moderator role (removed from UI)', () => {
+    expect(UpdateUserRoleSchema.safeParse({ role: 'moderator' }).success).toBe(false)
   })
 
   it('rejects invalid role', () => {
