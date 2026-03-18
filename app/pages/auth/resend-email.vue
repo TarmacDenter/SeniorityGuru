@@ -26,6 +26,9 @@
       title="Email sent"
       description="If an account exists for that address, we resent the confirmation link."
     />
+    <p v-if="sent" class="mt-3 text-center text-sm text-muted">
+      Don't see it? Check your junk or spam folder.
+    </p>
   </div>
 </template>
 

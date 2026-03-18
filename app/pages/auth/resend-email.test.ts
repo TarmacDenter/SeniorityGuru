@@ -29,6 +29,18 @@ describe('resend-email page', () => {
     expect(wrapper.find('input[type="email"]').exists()).toBe(true)
   })
 
+  it('shows junk folder reminder after sending email', async () => {
+    const wrapper = await mountSuspended(ResendEmailPage)
+    // Before submit, no junk reminder
+    expect(wrapper.text()).not.toContain('junk or spam folder')
+    // Fill email and submit
+    await wrapper.find('input[type="email"]').setValue('pilot@example.com')
+    await wrapper.find('form').trigger('submit')
+    await wrapper.vm.$nextTick()
+    await new Promise(r => setTimeout(r, 0))
+    expect(wrapper.text()).toContain('junk or spam folder')
+  })
+
   it('does not navigate when user has no email_verified metadata', async () => {
     mockUser.value = { email: 'pilot@example.com', user_metadata: { email_verified: false } }
     const wrapper = await mountSuspended(ResendEmailPage)

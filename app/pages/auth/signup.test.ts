@@ -9,6 +9,11 @@ describe('signup page (invite-only)', () => {
     expect(wrapper.text()).toContain('invite-only')
   })
 
+  it('mentions checking junk or spam folder', async () => {
+    const wrapper = await mountSuspended(SignupPage)
+    expect(wrapper.text()).toContain('junk or spam folder')
+  })
+
   it('does not render a signup form', async () => {
     const wrapper = await mountSuspended(SignupPage)
     expect(wrapper.find('form').exists()).toBe(false)

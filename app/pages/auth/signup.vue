@@ -7,7 +7,7 @@
       color="info"
       variant="soft"
       title="This service is currently invite-only"
-      description="If you've received an invite, check your email for the access link. Contact your administrator to request access."
+      description="If you've received an invite, check your email for the access link (check your junk or spam folder too). Contact your administrator to request access."
     />
 
     <p class="mt-4 text-center text-sm text-muted">
