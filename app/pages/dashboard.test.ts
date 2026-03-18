@@ -84,6 +84,7 @@ function makeList(id: string) {
 
 describe('dashboard.vue — route-synced ref / watcher race condition', () => {
   beforeEach(() => {
+    vi.stubGlobal('$fetch', vi.fn())
     vi.clearAllMocks()
     mockRouteQuery.value = {}
     mockLists.value = []
