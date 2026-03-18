@@ -147,8 +147,9 @@ describe('PATCH /api/admin/users/[id]/profile', () => {
     }
     mockClient.single.mockResolvedValueOnce({ data: updatedProfile, error: null })
 
-    await handler(fakeEvent)
+    const result = await handler(fakeEvent)
     expect(mockClient.update).toHaveBeenCalledWith({ icao_code: null })
+    expect(result).toEqual(updatedProfile)
   })
 
   it('returns 404 when user profile not found', async () => {
