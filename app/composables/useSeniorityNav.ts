@@ -6,7 +6,7 @@ export function useSeniorityNav(): ComputedRef<NavigationMenuItem[]> {
 
   return computed(() => {
     const items: NavigationMenuItem[] = [
-      { label: 'Dashboard', icon: 'i-lucide-layout-dashboard', to: '/' },
+      { label: 'Dashboard', icon: 'i-lucide-layout-dashboard', to: '/dashboard' },
       { label: 'My Lists', icon: 'i-lucide-list', to: '/seniority/lists' },
       { label: 'Upload', icon: 'i-lucide-upload', to: '/seniority/upload' },
       { label: 'Compare', icon: 'i-lucide-git-compare-arrows', to: '/seniority/compare' },
