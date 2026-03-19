@@ -279,3 +279,54 @@ describe('retirementWave()', () => {
     expect(caTotal).toBeLessThanOrEqual(allTotal)
   })
 })
+
+describe('demographics()', () => {
+  const lens = createLens(snapshot, anchor)
+
+  it('returns age distribution', () => {
+    const result = lens.demographics(65)
+    expect(result.ageDistribution.buckets.length).toBeGreaterThan(0)
+    const totalInBuckets = result.ageDistribution.buckets.reduce((s, b) => s + b.count, 0)
+    expect(totalInBuckets + result.ageDistribution.nullCount).toBe(entries.length)
+  })
+
+  it('returns YOS distribution', () => {
+    const result = lens.demographics(65)
+    expect(result.yosDistribution).toHaveProperty('median')
+    expect(result.yosDistribution).toHaveProperty('p25')
+    expect(result.yosDistribution).toHaveProperty('p75')
+  })
+
+  it('returns YOS histogram', () => {
+    const result = lens.demographics(65)
+    expect(result.yosHistogram.length).toBeGreaterThan(0)
+  })
+
+  it('returns qual composition', () => {
+    const result = lens.demographics(65)
+    expect(result.qualComposition.length).toBeGreaterThan(0)
+  })
+
+  it('returns most junior CAs', () => {
+    const result = lens.demographics(65)
+    expect(result.mostJuniorCAs.length).toBeGreaterThan(0)
+    for (const ca of result.mostJuniorCAs) {
+      expect(ca.seat).toBe('CA')
+    }
+  })
+
+  it('applies scope filter', () => {
+    const caOnly = createScenario({ scopeFilter: e => e.seat === 'CA' })
+    const result = lens.demographics(65, caOnly)
+    const caAgeTotal = result.ageDistribution.buckets.reduce((s, b) => s + b.count, 0)
+      + result.ageDistribution.nullCount
+    // 3 CAs in our test data
+    expect(caAgeTotal).toBe(3)
+  })
+
+  it('works without anchor', () => {
+    const noAnchor = createLens(snapshot)
+    const result = noAnchor.demographics(65)
+    expect(result.ageDistribution.buckets.length).toBeGreaterThan(0)
+  })
+})

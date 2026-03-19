@@ -34,6 +34,11 @@ import {
   computeQualSnapshots,
   applyProjectionToSnapshots,
   computeRetirementWave,
+  computeAgeDistribution,
+  computeYosDistribution,
+  computeYosHistogram,
+  computeQualComposition,
+  findMostJuniorCA,
 } from '#shared/utils/qual-analytics'
 
 export function createLens(
@@ -218,8 +223,20 @@ export function createLens(
     )
   }
 
-  function demographics(_mandatoryAge: number, _scenario?: Scenario): DemographicsResult {
-    throw new Error('Not implemented yet')
+  function demographics(mandatoryAge: number, scenario?: Scenario): DemographicsResult {
+    const s = scenario ?? createScenario()
+    const filter = s.scopeFilter
+    const filtered = filter === undefined
+      ? entries
+      : entries.filter(filter)
+
+    return {
+      ageDistribution: computeAgeDistribution(entries, mandatoryAge, filter),
+      yosDistribution: computeYosDistribution(entries, filter),
+      yosHistogram: computeYosHistogram(entries, filter),
+      qualComposition: computeQualComposition(filtered),
+      mostJuniorCAs: findMostJuniorCA(filtered),
+    }
   }
 
   return {
