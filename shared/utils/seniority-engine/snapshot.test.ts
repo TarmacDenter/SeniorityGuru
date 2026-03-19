@@ -1,13 +1,13 @@
 // @vitest-environment node
 import { describe, it, expect } from 'vitest'
-import { makeEntry } from '#shared/test-utils/factories'
+import { makeDomainEntry } from '#shared/test-utils/factories'
 import { createSnapshot } from './snapshot'
 
 describe('createSnapshot', () => {
   const entries = [
-    makeEntry({ seniority_number: 3, employee_number: 'E3', base: 'ATL', seat: 'FO', fleet: '737' }),
-    makeEntry({ seniority_number: 1, employee_number: 'E1', base: 'JFK', seat: 'CA', fleet: '737' }),
-    makeEntry({ seniority_number: 2, employee_number: 'E2', base: 'ATL', seat: 'CA', fleet: '320' }),
+    makeDomainEntry({ seniority_number: 3, employee_number: 'E3', base: 'ATL', seat: 'FO', fleet: '737' }),
+    makeDomainEntry({ seniority_number: 1, employee_number: 'E1', base: 'JFK', seat: 'CA', fleet: '737' }),
+    makeDomainEntry({ seniority_number: 2, employee_number: 'E2', base: 'ATL', seat: 'CA', fleet: '320' }),
   ]
 
   it('preserves original entry order', () => {
@@ -28,10 +28,11 @@ describe('createSnapshot', () => {
     expect(snap.byCell.get('ATL|CA|320')?.length).toBe(1)
   })
 
-  it('skips entries with null base/seat/fleet in cell grouping', () => {
-    const withNull = [...entries, makeEntry({ seniority_number: 4, base: null, seat: 'CA', fleet: '737' })]
-    const snap = createSnapshot(withNull)
-    expect(snap.byCell.size).toBe(3) // null-base entry excluded
+  it('groups additional entries into existing cells', () => {
+    const withExtra = [...entries, makeDomainEntry({ seniority_number: 4, employee_number: 'E4', base: 'ATL', seat: 'CA', fleet: '320' })]
+    const snap = createSnapshot(withExtra)
+    expect(snap.byCell.size).toBe(3)
+    expect(snap.byCell.get('ATL|CA|320')?.length).toBe(2)
   })
 
   it('indexes entries by employee number', () => {

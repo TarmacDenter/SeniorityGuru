@@ -1,4 +1,3 @@
-import type { SeniorityEntryResponse } from '#shared/schemas/seniority-list'
 import type {
   CellBreakdownRow,
   ComparativeTrajectoryResult,
@@ -46,7 +45,7 @@ export function createLens(
   anchor?: PilotAnchor,
 ): SeniorityLens {
   const resolvedAnchor = anchor ?? null
-  const entries = snapshot.entries as SeniorityEntryResponse[]
+  const entries = snapshot.entries
 
   // Cache the anchor's entry via O(1) employee number lookup
   const anchorEntry = resolvedAnchor
@@ -88,9 +87,9 @@ export function createLens(
       const cellAdjustedRank = cellRank - cellRetiredAbove
 
       cellBreakdown.push({
-        base: first.base!,
-        seat: first.seat!,
-        fleet: first.fleet!,
+        base: first.base,
+        seat: first.seat,
+        fleet: first.fleet,
         rank: cellRank,
         adjustedRank: cellAdjustedRank,
         total: cellTotal,

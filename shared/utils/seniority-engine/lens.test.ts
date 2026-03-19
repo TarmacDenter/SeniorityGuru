@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect, vi, beforeAll, afterAll } from 'vitest'
-import { makeEntry } from '#shared/test-utils/factories'
+import { makeDomainEntry as makeEntry } from '#shared/test-utils/factories'
 import { createSnapshot } from './snapshot'
 import { createLens } from './lens'
 import { createScenario } from './scenario'

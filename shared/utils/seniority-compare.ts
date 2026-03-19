@@ -1,36 +1,36 @@
-import type { SeniorityEntryResponse } from '#shared/schemas/seniority-list'
+import type { SeniorityEntry } from '#shared/schemas/seniority-list'
 
-type Entry = SeniorityEntryResponse
+type Entry = SeniorityEntry
 
 export interface RetiredPilot {
   employee_number: string
-  name: string | null
+  name: string | undefined
   seniority_number: number
   retire_date: string
 }
 
 export interface DepartedPilot {
   employee_number: string
-  name: string | null
+  name: string | undefined
   seniority_number: number
-  retire_date: string | null
+  retire_date: string | undefined
 }
 
 export interface QualMove {
   employee_number: string
-  name: string | null
+  name: string | undefined
   seniority_number: number
-  old_seat: string | null
-  new_seat: string | null
-  old_fleet: string | null
-  new_fleet: string | null
-  old_base: string | null
-  new_base: string | null
+  old_seat: string
+  new_seat: string
+  old_fleet: string
+  new_fleet: string
+  old_base: string
+  new_base: string
 }
 
 export interface RankChange {
   employee_number: string
-  name: string | null
+  name: string | undefined
   old_rank: number
   new_rank: number
   delta: number
@@ -38,7 +38,7 @@ export interface RankChange {
 
 export interface NewHire {
   employee_number: string
-  name: string | null
+  name: string | undefined
   seniority_number: number
   hire_date: string
 }

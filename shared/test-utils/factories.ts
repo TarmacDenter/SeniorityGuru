@@ -17,6 +17,21 @@ export function makeEntry(overrides: Partial<SeniorityEntryResponse> = {}): Seni
   }
 }
 
+/** Domain-level entry factory for engine-layer tests (no id/list_id DTO fields). */
+export function makeDomainEntry(overrides: Partial<SeniorityEntry> = {}): SeniorityEntry {
+  return {
+    seniority_number: 1,
+    employee_number: '100',
+    name: 'Test Pilot',
+    hire_date: '2010-01-15',
+    base: 'JFK',
+    seat: 'CA',
+    fleet: '737',
+    retire_date: '2035-06-15',
+    ...overrides,
+  }
+}
+
 export function makePartialEntry(overrides: Partial<SeniorityEntry> = {}): Partial<SeniorityEntry> {
   return {
     seniority_number: 1,

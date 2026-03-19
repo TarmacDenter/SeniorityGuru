@@ -6,7 +6,6 @@ import { makeEntry, makeProfile } from '#shared/test-utils/factories'
 
 const mockSeniorityStore = vi.hoisted(() => ({
   entries: [] as SeniorityEntryResponse[],
-  currentListId: null as string | null,
 }))
 
 const mockUserStore = vi.hoisted(() => ({
@@ -26,14 +25,13 @@ const { useNewHireMode } = await import('./useNewHireMode')
 describe('useNewHireMode', () => {
   beforeEach(() => {
     mockSeniorityStore.entries = []
-    mockSeniorityStore.currentListId = null
     mockUserStore.profile = null
     const mode = useNewHireMode()
     mode.enabled.value = false
     mode.selectedBase.value = null
     mode.selectedSeat.value = null
     mode.selectedFleet.value = null
-    mode.retireDate.value = null
+    mode.birthDate.value = null
   })
 
   describe('realUserFound', () => {
@@ -102,41 +100,41 @@ describe('useNewHireMode', () => {
         makeEntry({ seniority_number: 50, employee_number: '200' }),
         makeEntry({ seniority_number: 25, employee_number: '300' }),
       ]
-      mockSeniorityStore.currentListId = 'list-1'
-      const { enabled, syntheticEntry } = useNewHireMode()
-      enabled.value = true
+      const mode = useNewHireMode()
+      mode.enabled.value = true
+      mode.selectedBase.value = 'JFK'
+      mode.selectedSeat.value = 'CA'
+      mode.selectedFleet.value = '737'
+      mode.birthDate.value = '1970-06-15'
 
-      expect(syntheticEntry.value).not.toBeNull()
-      expect(syntheticEntry.value!.seniority_number).toBe(51)
-      expect(syntheticEntry.value!.employee_number).toBe('999')
-      expect(syntheticEntry.value!.id).toBe('synthetic-new-hire')
-      expect(syntheticEntry.value!.list_id).toBe('list-1')
-      expect(syntheticEntry.value!.name).toBe('You (New Hire)')
+      expect(mode.syntheticEntry.value).not.toBeNull()
+      expect(mode.syntheticEntry.value!.seniority_number).toBe(51)
+      expect(mode.syntheticEntry.value!.employee_number).toBe('999')
+      expect(mode.syntheticEntry.value!.name).toBe('You (New Hire)')
     })
 
     it('uses selected base/seat/fleet', () => {
       mockUserStore.profile = makeProfile({ employee_number: '999' })
       mockSeniorityStore.entries = [makeEntry({ employee_number: '100' })]
-      const { enabled, selectedBase, selectedSeat, selectedFleet, syntheticEntry } = useNewHireMode()
+      const { enabled, selectedBase, selectedSeat, selectedFleet, birthDate, syntheticEntry } = useNewHireMode()
       enabled.value = true
       selectedBase.value = 'LAX'
       selectedSeat.value = 'FO'
       selectedFleet.value = '777'
+      birthDate.value = '1970-06-15'
 
       expect(syntheticEntry.value!.base).toBe('LAX')
       expect(syntheticEntry.value!.seat).toBe('FO')
       expect(syntheticEntry.value!.fleet).toBe('777')
     })
 
-    it('has null base/seat/fleet when none selected', () => {
+    it('is null when inputs are not configured', () => {
       mockUserStore.profile = makeProfile({ employee_number: '999' })
       mockSeniorityStore.entries = [makeEntry({ employee_number: '100' })]
       const { enabled, syntheticEntry } = useNewHireMode()
       enabled.value = true
 
-      expect(syntheticEntry.value!.base).toBeNull()
-      expect(syntheticEntry.value!.seat).toBeNull()
-      expect(syntheticEntry.value!.fleet).toBeNull()
+      expect(syntheticEntry.value).toBeNull()
     })
   })
 
@@ -173,10 +171,10 @@ describe('useNewHireMode', () => {
       expect(availableFleets.value).toEqual(['737', '777', 'A320'])
     })
 
-    it('excludes null values from available options', () => {
+    it('excludes falsy values from available options', () => {
       mockSeniorityStore.entries = [
         makeEntry({ base: 'JFK', seat: 'CA', fleet: '737' }),
-        makeEntry({ base: null, seat: null, fleet: null }),
+        makeEntry({ base: '' as any, seat: '' as any, fleet: '' as any }),
       ]
       const { availableBases, availableSeats, availableFleets } = useNewHireMode()
       expect(availableBases.value).toEqual(['JFK'])
@@ -186,21 +184,40 @@ describe('useNewHireMode', () => {
   })
 
   describe('retireDate', () => {
-    it('includes retireDate in synthetic entry when set', () => {
+    it('computes retireDate from birthDate + 65 years', () => {
+      const { birthDate, retireDate } = useNewHireMode()
+      birthDate.value = '1990-06-15'
+      expect(retireDate.value).toBe('2055-06-15')
+    })
+
+    it('includes computed retireDate in synthetic entry', () => {
       mockUserStore.profile = makeProfile({ employee_number: '999' })
       mockSeniorityStore.entries = [makeEntry({ employee_number: '100' })]
-      const { enabled, retireDate, syntheticEntry } = useNewHireMode()
+      const { enabled, birthDate, selectedBase, selectedSeat, selectedFleet, syntheticEntry } = useNewHireMode()
       enabled.value = true
-      retireDate.value = '2055-06-15'
+      selectedBase.value = 'JFK'
+      selectedSeat.value = 'CA'
+      selectedFleet.value = '737'
+      birthDate.value = '1990-06-15'
       expect(syntheticEntry.value?.retire_date).toBe('2055-06-15')
     })
 
-    it('sets retire_date to null when retireDate is not provided', () => {
+    it('retire_date is undefined when birthDate is not provided', () => {
       mockUserStore.profile = makeProfile({ employee_number: '999' })
       mockSeniorityStore.entries = [makeEntry({ employee_number: '100' })]
-      const { enabled, syntheticEntry } = useNewHireMode()
+      const { enabled, selectedBase, selectedSeat, selectedFleet, birthDate, syntheticEntry } = useNewHireMode()
       enabled.value = true
-      expect(syntheticEntry.value?.retire_date).toBeNull()
+      selectedBase.value = 'JFK'
+      selectedSeat.value = 'CA'
+      selectedFleet.value = '737'
+      // birthDate is null → isConfigured is false → syntheticEntry is null
+      expect(birthDate.value).toBeNull()
+      expect(syntheticEntry.value).toBeNull()
+    })
+
+    it('retireDate is null when birthDate is null', () => {
+      const { retireDate } = useNewHireMode()
+      expect(retireDate.value).toBeNull()
     })
   })
 })

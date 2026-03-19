@@ -48,10 +48,10 @@ describe('useCompanyStats', () => {
       expect(group777!.avgSeniority).toBe(5)
     })
 
-    it('skips entries with null fleet or base', () => {
+    it('skips entries with falsy fleet or base', () => {
       mockSeniorityStore.entries = [
-        makeEntry({ seniority_number: 1, fleet: null, base: 'JFK' }),
-        makeEntry({ seniority_number: 2, fleet: '737', base: null }),
+        makeEntry({ seniority_number: 1, fleet: '' as any, base: 'JFK' }),
+        makeEntry({ seniority_number: 2, fleet: '737', base: '' as any }),
         makeEntry({ seniority_number: 3, fleet: '737', base: 'JFK' }),
       ]
       const { aggregateStats } = useCompanyStats()

@@ -1,15 +1,16 @@
-import type { SeniorityEntryResponse } from '#shared/schemas/seniority-list'
+import type { SeniorityEntry } from '#shared/schemas/seniority-list'
 import { uniqueEntryValues } from '#shared/utils/entry-filters'
 import { useSeniorityStore } from '~/stores/seniority'
 import { useUserStore } from '~/stores/user'
 
 const STORAGE_KEY = 'seniority-guru-new-hire-mode'
+const STORAGE_KEY_CONFIG = 'seniority-guru-new-hire-config'
 
 const enabled = ref(false)
 const selectedBase = ref<string | null>(null)
 const selectedSeat = ref<string | null>(null)
 const selectedFleet = ref<string | null>(null)
-const retireDate = ref<string | null>(null)
+const birthDate = ref<string | null>(null)
 
 let _localStorageInitialized = false
 
@@ -22,8 +23,29 @@ export function useNewHireMode() {
     if (localStorage.getItem(STORAGE_KEY) === 'true') {
       enabled.value = true
     }
+    const savedConfig = localStorage.getItem(STORAGE_KEY_CONFIG)
+    if (savedConfig) {
+      try {
+        const parsed = JSON.parse(savedConfig)
+        if (parsed.birthDate) birthDate.value = parsed.birthDate
+        if (parsed.selectedBase) selectedBase.value = parsed.selectedBase
+        if (parsed.selectedSeat) selectedSeat.value = parsed.selectedSeat
+        if (parsed.selectedFleet) selectedFleet.value = parsed.selectedFleet
+      }
+      catch {
+        // ignore invalid JSON
+      }
+    }
     watch(enabled, (val) => {
       localStorage.setItem(STORAGE_KEY, String(val))
+    })
+    watch([birthDate, selectedBase, selectedSeat, selectedFleet], () => {
+      localStorage.setItem(STORAGE_KEY_CONFIG, JSON.stringify({
+        birthDate: birthDate.value,
+        selectedBase: selectedBase.value,
+        selectedSeat: selectedSeat.value,
+        selectedFleet: selectedFleet.value,
+      }))
     })
   }
 
@@ -39,8 +61,24 @@ export function useNewHireMode() {
 
   const isActive = computed(() => enabled.value && !realUserFound.value)
 
-  const syntheticEntry = computed<SeniorityEntryResponse | null>(() => {
+  const retireDate = computed(() => {
+    if (!birthDate.value) return null
+    const bd = new Date(birthDate.value)
+    const retire = new Date(bd)
+    retire.setFullYear(retire.getFullYear() + 65)
+    return retire.toISOString().split('T')[0]!
+  })
+
+  const isConfigured = computed(() =>
+    selectedBase.value !== null
+    && selectedSeat.value !== null
+    && selectedFleet.value !== null
+    && birthDate.value !== null,
+  )
+
+  const syntheticEntry = computed<SeniorityEntry | null>(() => {
     if (!isActive.value) return null
+    if (!isConfigured.value) return null
     const empNum = userStore.profile?.employee_number
     if (!empNum) return null
     const maxSenNum = seniorityStore.entries.reduce(
@@ -48,16 +86,14 @@ export function useNewHireMode() {
       0,
     )
     return {
-      id: 'synthetic-new-hire',
-      list_id: seniorityStore.currentListId ?? '',
       seniority_number: maxSenNum + 1,
       employee_number: empNum,
       name: 'You (New Hire)',
-      seat: selectedSeat.value,
-      base: selectedBase.value,
-      fleet: selectedFleet.value,
+      seat: selectedSeat.value!,
+      base: selectedBase.value!,
+      fleet: selectedFleet.value!,
       hire_date: new Date().toISOString().split('T')[0]!,
-      retire_date: retireDate.value,
+      retire_date: retireDate.value ?? undefined,
     }
   })
 
@@ -66,12 +102,14 @@ export function useNewHireMode() {
     selectedBase,
     selectedSeat,
     selectedFleet,
-    retireDate,
+    birthDate,
     availableBases,
     availableSeats,
     availableFleets,
     realUserFound,
     isActive,
+    isConfigured,
+    retireDate,
     syntheticEntry,
   }
 }

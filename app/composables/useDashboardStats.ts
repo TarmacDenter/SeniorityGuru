@@ -3,7 +3,6 @@ import { createScenario } from '#shared/utils/seniority-engine'
 import { useSeniorityStore } from '~/stores/seniority'
 import { useUserStore } from '~/stores/user'
 import { useNewHireMode } from './useNewHireMode'
-import { useUserEntry } from './useUserEntry'
 import { useSeniorityEngine } from './useSeniorityEngine'
 import { useCompanyStats } from './useCompanyStats'
 
@@ -19,8 +18,14 @@ export function useDashboardStats() {
   const seniorityStore = useSeniorityStore()
   const userStore = useUserStore()
   const newHireMode = useNewHireMode()
-  const userEntry = useUserEntry({ withNewHireMode: true })
-  const { lens } = useSeniorityEngine()
+  const { snapshot, lens } = useSeniorityEngine()
+
+  // Look up user entry from snapshot (includes synthetic entry in new-hire mode)
+  const userEntry = computed(() => {
+    const empNum = userStore.profile?.employee_number
+    if (!empNum) return undefined
+    return snapshot.value?.byEmployeeNumber.get(empNum)
+  })
 
   const hasData = computed(() => seniorityStore.entries.length > 0)
   const hasEmployeeNumber = computed(() => !!userStore.profile?.employee_number)
@@ -106,7 +111,6 @@ export function useDashboardStats() {
 
   const baseStatusData = computed(() => {
     const standing = standingResult.value
-    const entry = userEntry.value
     if (!standing) return []
     return standing.cellBreakdown.map(row => ({
       base: row.base,
@@ -118,11 +122,7 @@ export function useDashboardStats() {
       adjustedTotal: row.adjustedTotal,
       percentile: row.percentile,
       adjustedPercentile: row.adjustedPercentile,
-      // isAnchorCurrent is false when the anchor isn't in the snapshot (e.g. new-hire mode).
-      // Fall back to direct cell comparison using the user entry.
-      isUserCurrent: row.isAnchorCurrent || !!(
-        entry && row.base === entry.base && row.seat === entry.seat && row.fleet === entry.fleet
-      ),
+      isUserCurrent: row.isAnchorCurrent,
     }))
   })
 

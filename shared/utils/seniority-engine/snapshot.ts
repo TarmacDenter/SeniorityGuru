@@ -1,17 +1,16 @@
-import type { SeniorityEntryResponse } from '#shared/schemas/seniority-list'
+import type { SeniorityEntry } from '#shared/schemas/seniority-list'
 import type { SenioritySnapshot, Qual } from './types'
 import { uniqueEntryValues } from '#shared/utils/entry-filters'
 
-export function createSnapshot(entries: SeniorityEntryResponse[]): SenioritySnapshot {
+export function createSnapshot(entries: SeniorityEntry[]): SenioritySnapshot {
   // Sorted seniority numbers for binary search
   const sortedSenNums = entries
     .map(e => e.seniority_number)
     .sort((a, b) => a - b)
 
   // Group by cell key (base|seat|fleet)
-  const byCell = new Map<string, SeniorityEntryResponse[]>()
+  const byCell = new Map<string, SeniorityEntry[]>()
   for (const e of entries) {
-    if (!e.base || !e.seat || !e.fleet) continue
     const key = `${e.base}|${e.seat}|${e.fleet}`
     let group = byCell.get(key)
     if (!group) { group = []; byCell.set(key, group) }
@@ -19,7 +18,7 @@ export function createSnapshot(entries: SeniorityEntryResponse[]): SenioritySnap
   }
 
   // Employee number index
-  const byEmployeeNumber = new Map<string, SeniorityEntryResponse>()
+  const byEmployeeNumber = new Map<string, SeniorityEntry>()
   for (const e of entries) {
     byEmployeeNumber.set(e.employee_number, e)
   }
@@ -33,7 +32,6 @@ export function createSnapshot(entries: SeniorityEntryResponse[]): SenioritySnap
   const qualSet = new Set<string>()
   const quals: Qual[] = []
   for (const e of entries) {
-    if (!e.seat || !e.fleet || !e.base) continue
     const label = `${e.seat}/${e.fleet}/${e.base}`
     if (qualSet.has(label)) continue
     qualSet.add(label)

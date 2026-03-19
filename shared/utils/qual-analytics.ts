@@ -1,9 +1,7 @@
-import type { SeniorityEntryResponse } from '#shared/schemas/seniority-list'
+import type { SeniorityEntry } from '#shared/schemas/seniority-list'
 import type { FilterFn } from '#shared/utils/seniority-math'
 import type { GrowthConfig } from '#shared/types/growth-config'
 import { computeAdditionalPilots } from '#shared/types/growth-config'
-
-type SeniorityEntry = SeniorityEntryResponse
 
 // Re-export TrajectoryPoint for consumers (matches buildTrajectory return shape)
 export interface TrajectoryPoint {
@@ -16,7 +14,6 @@ export interface TrajectoryPoint {
 // "737 CA", "320 FO" — base is ALWAYS a filter dimension, never part of the key
 
 export function qualKey(entry: SeniorityEntry): string {
-  if (!entry.fleet || !entry.seat) return ''
   return `${entry.fleet} ${entry.seat}`
 }
 
@@ -85,7 +82,7 @@ export interface MostJuniorCARow {
   qualKey: string       // e.g. "737 CA ATL"
   fleet: string
   seat: string
-  base: string | null
+  base: string
   seniorityNumber: number
   hireDate: string
   yos: number
@@ -94,8 +91,8 @@ export interface MostJuniorCARow {
 export function findMostJuniorCA(entries: SeniorityEntry[]): MostJuniorCARow[] {
   const byQual = new Map<string, SeniorityEntry>()
   for (const e of entries) {
-    if (e.seat !== 'CA' || !e.fleet) continue
-    const key = `${e.fleet}|${e.seat}|${e.base ?? ''}`
+    if (e.seat !== 'CA') continue
+    const key = `${e.fleet}|${e.seat}|${e.base}`
     const existing = byQual.get(key)
     if (!existing || e.seniority_number > existing.seniority_number) {
       byQual.set(key, e)
@@ -103,9 +100,9 @@ export function findMostJuniorCA(entries: SeniorityEntry[]): MostJuniorCARow[] {
   }
   return Array.from(byQual.values())
     .map((e) => ({
-      qualKey: [e.fleet, e.seat, e.base].filter(Boolean).join(' '),
-      fleet: e.fleet!,
-      seat: e.seat!,
+      qualKey: `${e.fleet} ${e.seat} ${e.base}`,
+      fleet: e.fleet,
+      seat: e.seat,
       base: e.base,
       seniorityNumber: e.seniority_number,
       hireDate: e.hire_date,
@@ -217,7 +214,6 @@ export function computeQualComposition(entries: SeniorityEntry[]): QualCompositi
 
     const baseCounts = new Map<string, number>()
     for (const e of group) {
-      if (!e.base) continue
       baseCounts.set(e.base, (baseCounts.get(e.base) ?? 0) + 1)
     }
     const byBase = Array.from(baseCounts.entries())
@@ -226,8 +222,8 @@ export function computeQualComposition(entries: SeniorityEntry[]): QualCompositi
 
     return {
       qualKey: key,
-      fleet: fleet!,
-      seat: seat!,
+      fleet,
+      seat,
       total,
       caCount,
       foCount,
@@ -324,7 +320,7 @@ export function computePowerIndexCells(
   projectionDate: Date,
   growthConfig?: GrowthConfig,
 ): PowerIndexCell[] {
-  const withQual = entries.filter((e) => e.fleet && e.seat && e.base)
+  const withQual = entries
   const activeCompany = entries.filter((e) => isActiveAt(e, projectionDate))
   const activeSorted = sortedSenNums(activeCompany)
   const totalCompany = activeCompany.length
@@ -377,7 +373,7 @@ export function computePowerIndexCells(
     }
 
     return {
-      fleet: fleet!, seat: seat!, base: base!, state,
+      fleet, seat, base, state,
       retiredCount, totalInCell: total,
       pilotsAhead: aheadInCell,
       isLowestSeniority,
@@ -424,7 +420,7 @@ export function computeQualSnapshots(entries: SeniorityEntry[]): QualDemographic
   const activeSorted = sortedSenNums(todayActive)
   const totalActive = todayActive.length
 
-  const withQual = todayActive.filter((e) => e.fleet && e.seat && e.base)
+  const withQual = todayActive
   const byCellKey = new Map<string, SeniorityEntry[]>()
   for (const e of withQual) {
     const key = `${e.fleet}|${e.seat}|${e.base}`
@@ -453,9 +449,9 @@ export function computeQualSnapshots(entries: SeniorityEntry[]): QualDemographic
     }))
 
     return {
-      fleet: fleet!,
-      seat: seat!,
-      base: base!,
+      fleet,
+      seat,
+      base,
       activeCount: cellEntries.length,
       plugPercentile: pctls[0] ?? 0,
       plugSenNum,
@@ -531,13 +527,13 @@ export function findThresholdYear(
 
 export interface UpgradeTransition {
   employeeNumber: string
-  name: string | null
+  name: string | undefined
   seniorityNumber: number
   type: 'upgrade' | 'fleet-change' | 'downgrade' | 'other'
-  oldSeat: string | null
-  newSeat: string | null
-  oldFleet: string | null
-  newFleet: string | null
+  oldSeat: string
+  newSeat: string
+  oldFleet: string
+  newFleet: string
 }
 
 export function detectUpgradeTransitions(

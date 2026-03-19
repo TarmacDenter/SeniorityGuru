@@ -1,5 +1,5 @@
 // shared/utils/seniority-engine/types.ts
-import type { SeniorityEntryResponse } from '#shared/schemas/seniority-list'
+import type { SeniorityEntry } from '#shared/schemas/seniority-list'
 import type { GrowthConfig } from '#shared/types/growth-config'
 import type {
   FilterFn,
@@ -63,13 +63,13 @@ export interface Qual {
 
 export interface SenioritySnapshot {
   /** All entries, original order */
-  readonly entries: SeniorityEntryResponse[]
+  readonly entries: SeniorityEntry[]
   /** Seniority numbers sorted ascending (for binary search) */
   readonly sortedSenNums: number[]
   /** Entries grouped by "base|seat|fleet" cell key */
-  readonly byCell: Map<string, SeniorityEntryResponse[]>
+  readonly byCell: Map<string, SeniorityEntry[]>
   /** Employee number -> entry lookup */
-  readonly byEmployeeNumber: Map<string, SeniorityEntryResponse>
+  readonly byEmployeeNumber: Map<string, SeniorityEntry>
   /** Unique base values, sorted */
   readonly uniqueBases: string[]
   /** Unique seat values, sorted */

@@ -1,19 +1,22 @@
 import { describe, it, expect, vi } from 'vitest'
-import { ref } from 'vue'
 import { useSeniorityEngine } from './useSeniorityEngine'
 
 // Mock stores and composables
 const mockStore = vi.hoisted(() => ({ entries: [] as any[] }))
-const mockUserEntryRef = vi.hoisted(() => ({ value: undefined as any }))
+const mockUserStore = vi.hoisted(() => ({ profile: null as any }))
+const mockNewHireMode = vi.hoisted(() => ({
+  isActive: { value: false },
+  syntheticEntry: { value: null as any },
+}))
 
 vi.mock('~/stores/seniority', () => ({
   useSeniorityStore: () => mockStore,
 }))
 vi.mock('~/stores/user', () => ({
-  useUserStore: () => ({}),
+  useUserStore: () => mockUserStore,
 }))
-vi.mock('./useUserEntry', () => ({
-  useUserEntry: () => ref(mockUserEntryRef.value),
+vi.mock('./useNewHireMode', () => ({
+  useNewHireMode: () => mockNewHireMode,
 }))
 
 const { makeEntry } = await import('#shared/test-utils/factories')
@@ -21,7 +24,7 @@ const { makeEntry } = await import('#shared/test-utils/factories')
 describe('useSeniorityEngine', () => {
   it('returns null snapshot and lens when entries are empty', () => {
     mockStore.entries = []
-    mockUserEntryRef.value = undefined
+    mockUserStore.profile = null
     const { snapshot, lens } = useSeniorityEngine()
     expect(snapshot.value).toBeNull()
     expect(lens.value).toBeNull()
@@ -34,9 +37,9 @@ describe('useSeniorityEngine', () => {
     expect(snapshot.value!.entries).toHaveLength(1)
   })
 
-  it('creates lens when both entries and user entry are available', () => {
-    mockStore.entries = [makeEntry({ seniority_number: 1, employee_number: 'E1' })]
-    mockUserEntryRef.value = makeEntry({ seniority_number: 1, employee_number: 'E1', retire_date: '2045-01-01' })
+  it('creates lens when user profile matches an entry', () => {
+    mockStore.entries = [makeEntry({ seniority_number: 1, employee_number: 'E1', retire_date: '2045-01-01' })]
+    mockUserStore.profile = { employee_number: 'E1' }
     const { lens } = useSeniorityEngine()
     expect(lens.value).not.toBeNull()
     expect(lens.value!.anchor).toEqual({
@@ -46,10 +49,33 @@ describe('useSeniorityEngine', () => {
     })
   })
 
-  it('returns null lens when user entry is missing', () => {
+  it('returns null lens when user profile has no matching entry', () => {
     mockStore.entries = [makeEntry()]
-    mockUserEntryRef.value = undefined
+    mockUserStore.profile = { employee_number: 'UNKNOWN' }
     const { lens } = useSeniorityEngine()
     expect(lens.value).toBeNull()
+  })
+
+  it('injects synthetic entry into snapshot when new-hire mode is active', () => {
+    mockStore.entries = [makeEntry({ seniority_number: 1, employee_number: 'E1' })]
+    mockUserStore.profile = { employee_number: 'NEW' }
+    mockNewHireMode.isActive.value = true
+    mockNewHireMode.syntheticEntry.value = {
+      seniority_number: 2,
+      employee_number: 'NEW',
+      name: 'You (New Hire)',
+      seat: 'FO',
+      base: 'JFK',
+      fleet: '737',
+      hire_date: '2026-03-19',
+      retire_date: '2055-06-15',
+    }
+
+    const { snapshot, lens } = useSeniorityEngine()
+    expect(snapshot.value).not.toBeNull()
+    expect(snapshot.value!.entries).toHaveLength(2)
+    expect(snapshot.value!.byEmployeeNumber.get('NEW')).toBeDefined()
+    expect(lens.value).not.toBeNull()
+    expect(lens.value!.anchor!.employeeNumber).toBe('NEW')
   })
 })

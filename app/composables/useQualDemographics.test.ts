@@ -43,12 +43,12 @@ describe('useQualDemographics', () => {
       expect(availableFleets.value).toEqual([])
     })
 
-    it('returns sorted unique non-null fleets', () => {
+    it('returns sorted unique non-falsy fleets', () => {
       mockSeniorityStore.entries = [
         makeEntry({ fleet: '777' }),
         makeEntry({ fleet: '737' }),
         makeEntry({ fleet: '737' }), // duplicate
-        makeEntry({ fleet: null }),  // null excluded
+        makeEntry({ fleet: '' as any }),  // falsy excluded
       ]
       const { availableFleets } = useQualDemographics()
       expect(availableFleets.value).toEqual(['737', '777'])
@@ -56,12 +56,12 @@ describe('useQualDemographics', () => {
   })
 
   describe('availableSeats', () => {
-    it('returns sorted unique non-null seats', () => {
+    it('returns sorted unique non-falsy seats', () => {
       mockSeniorityStore.entries = [
         makeEntry({ seat: 'CA' }),
         makeEntry({ seat: 'FO' }),
         makeEntry({ seat: 'CA' }), // duplicate
-        makeEntry({ seat: null }), // null excluded
+        makeEntry({ seat: '' as any }), // falsy excluded
       ]
       const { availableSeats } = useQualDemographics()
       expect(availableSeats.value).toEqual(['CA', 'FO'])
@@ -86,7 +86,7 @@ describe('useQualDemographics', () => {
       mockSeniorityStore.entries = [
         makeEntry({ base: 'JFK' }),
         makeEntry({ base: 'LAX' }),
-        makeEntry({ base: null }), // null excluded
+        makeEntry({ base: '' as any }), // falsy excluded
       ]
       const { availableBases } = useQualDemographics()
       expect(availableBases.value).toEqual(['JFK', 'LAX'])
@@ -97,7 +97,7 @@ describe('useQualDemographics', () => {
     it('returns correct shape with buckets and nullCount', () => {
       mockSeniorityStore.entries = [
         makeEntry({ retire_date: '2030-01-01' }),
-        makeEntry({ retire_date: null }),
+        makeEntry({ retire_date: undefined }),
       ]
       mockUserStore.profile = makeProfile({ mandatory_retirement_age: 65 })
       const { ageDistribution } = useQualDemographics()

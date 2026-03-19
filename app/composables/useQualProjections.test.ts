@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import type { SeniorityEntryResponse } from '../../shared/schemas/seniority-list'
+import type { SeniorityEntry, SeniorityEntryResponse } from '../../shared/schemas/seniority-list'
 import type { ProfileResponse } from '../../shared/schemas/settings'
 import { makeEntry, makeProfile } from '#shared/test-utils/factories'
 
@@ -134,7 +134,7 @@ describe('useQualProjections', () => {
 
   describe('retirementWave', () => {
     it('returns empty array when no entries with retire dates', () => {
-      mockSeniorityStore.entries = [makeEntry({ retire_date: null })]
+      mockSeniorityStore.entries = [makeEntry({ retire_date: undefined })]
       const { retirementWave } = useQualProjections()
       expect(retirementWave.value).toEqual([])
     })
@@ -161,7 +161,7 @@ describe('useQualProjections', () => {
         makeEntry({ employee_number: '100', seniority_number: 1, fleet: '737', retire_date: '2026-06-01' }),
         makeEntry({ employee_number: '200', seniority_number: 2, fleet: '777', retire_date: '2027-06-01' }),
       ]
-      const filterFn = computed(() => (e: SeniorityEntryResponse) => e.fleet === '737')
+      const filterFn = computed(() => (e: SeniorityEntry) => e.fleet === '737')
       const { retirementWave } = useQualProjections(filterFn)
       const result = retirementWave.value
       // Only the 737 entry should be counted
