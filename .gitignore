@@ -64,4 +64,12 @@ docs.local/
 # VSCode workspace (user-specific)
 *.code-workspace
 
-.worktrees/
+# Sandbox-created dotfiles (Claude Code bind-mounts these)
+.bash_profile
+.bashrc
+.profile
+.zprofile
+.zshrc
+.ripgreprc
+.gitconfig
+.gitmodules
