@@ -67,15 +67,15 @@ describe('useUserTrajectory', () => {
   })
 
   describe('computeRetirementProjection', () => {
-    it('returns time buckets with zeros when no entries', () => {
+    it('returns empty when no lens (no entries, no user)', () => {
       const { computeRetirementProjection } = useUserTrajectory()
       const result = computeRetirementProjection()
-      expect(result.labels.length).toBeGreaterThan(0)
-      expect(result.data.every(n => n === 0)).toBe(true)
+      expect(result.labels).toEqual([])
+      expect(result.data).toEqual([])
       expect(result.filteredTotal).toBe(0)
     })
 
-    it('returns company-wide data when no user entry but entries exist', () => {
+    it('returns empty when entries exist but no user entry (no lens)', () => {
       const now = new Date()
       const nextYear = now.getFullYear() + 1
       mockSeniorityStore.entries = [
@@ -84,8 +84,9 @@ describe('useUserTrajectory', () => {
       ]
       const { computeRetirementProjection } = useUserTrajectory()
       const result = computeRetirementProjection()
-      expect(result.filteredTotal).toBe(2)
-      expect(result.data.reduce((s, n) => s + n, 0)).toBe(2)
+      expect(result.labels).toEqual([])
+      expect(result.data).toEqual([])
+      expect(result.filteredTotal).toBe(0)
     })
 
     it('buckets retirements into yearly intervals', () => {
