@@ -72,7 +72,7 @@ export function useQualProjections(
   )
 
   const userEntry = computed(() => lens.value?.anchor
-    ? { seniority_number: lens.value.anchor.seniorityNumber }
+    ? { seniority_number: lens.value.anchor.seniorityNumber, retire_date: lens.value.anchor.retireDate }
     : undefined,
   )
 

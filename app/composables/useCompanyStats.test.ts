@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { describe, it, expect, vi, beforeEach, ref, computed } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { SeniorityEntryResponse, SeniorityListResponse } from '../../shared/schemas/seniority-list'
 import type { Qual, SenioritySnapshot } from '#shared/utils/seniority-engine'
 import { makeEntry, makeList } from '#shared/test-utils/factories'
