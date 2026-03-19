@@ -34,8 +34,8 @@ const supabase = useSupabaseClient()
 const route = useRoute()
 
 // errorCode is null until onMounted reads the hash — SSR always renders the spinner.
-const errorCode = ref<string | null>(null)
-const errorDescription = ref<string | null>(null)
+const errorCode = ref<string | undefined>(undefined)
+const errorDescription = ref<string | undefined>(undefined)
 
 const errorTitle = computed(() => {
   if (errorCode.value === 'otp_expired') return 'Confirmation link expired'
@@ -64,7 +64,7 @@ onMounted(async () => {
   const params = new URLSearchParams(hash.slice(1))
 
   if (params.has('error')) {
-    errorCode.value = params.get('error_code')
+    errorCode.value = params.get('error_code') ?? undefined
     const raw = params.get('error_description')
     errorDescription.value = raw?.replace(/\+/g, ' ') ?? 'Something went wrong.'
     return
