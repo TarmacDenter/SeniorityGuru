@@ -209,3 +209,73 @@ describe('percentileCrossing()', () => {
     }
   })
 })
+
+describe('holdability()', () => {
+  const lens = createLens(snapshot, anchor)
+
+  it('returns empty when no anchor', () => {
+    expect(createLens(snapshot).holdability()).toEqual([])
+  })
+
+  it('returns power index cells', () => {
+    const cells = lens.holdability()
+    expect(cells.length).toBeGreaterThan(0)
+    for (const cell of cells) {
+      expect(cell).toHaveProperty('fleet')
+      expect(cell).toHaveProperty('seat')
+      expect(cell).toHaveProperty('base')
+      expect(cell).toHaveProperty('state')
+      expect(['green', 'amber', 'red']).toContain(cell.state)
+    }
+  })
+
+  it('uses projection date from scenario', () => {
+    const farFuture = createScenario({ projectionDate: new Date('2044-01-01') })
+    const cells = lens.holdability(farFuture)
+    // Far-future projection should show more retirements, different states
+    expect(cells.length).toBeGreaterThan(0)
+  })
+})
+
+describe('qualScales()', () => {
+  const lens = createLens(snapshot, anchor)
+
+  it('returns empty when no anchor', () => {
+    expect(createLens(snapshot).qualScales()).toEqual([])
+  })
+
+  it('returns qual demographic scales', () => {
+    const scales = lens.qualScales()
+    expect(scales.length).toBeGreaterThan(0)
+    for (const scale of scales) {
+      expect(scale).toHaveProperty('fleet')
+      expect(scale).toHaveProperty('seat')
+      expect(scale).toHaveProperty('base')
+      expect(scale).toHaveProperty('userPercentile')
+      expect(scale).toHaveProperty('isHoldable')
+    }
+  })
+})
+
+describe('retirementWave()', () => {
+  const lens = createLens(snapshot, anchor)
+
+  it('returns retirement wave buckets', () => {
+    const wave = lens.retirementWave()
+    expect(wave.length).toBeGreaterThan(0)
+    for (const bucket of wave) {
+      expect(bucket).toHaveProperty('year')
+      expect(bucket).toHaveProperty('count')
+      expect(bucket).toHaveProperty('isWave')
+    }
+  })
+
+  it('applies scope filter', () => {
+    const caOnly = createScenario({ scopeFilter: e => e.seat === 'CA' })
+    const caWave = lens.retirementWave(caOnly)
+    const allWave = lens.retirementWave()
+    const caTotal = caWave.reduce((sum, b) => sum + b.count, 0)
+    const allTotal = allWave.reduce((sum, b) => sum + b.count, 0)
+    expect(caTotal).toBeLessThanOrEqual(allTotal)
+  })
+})

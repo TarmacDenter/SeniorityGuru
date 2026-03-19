@@ -28,7 +28,13 @@ import type {
   RetirementWaveBucket,
   ThresholdResult,
 } from '#shared/utils/qual-analytics'
-import { findThresholdYear } from '#shared/utils/qual-analytics'
+import {
+  findThresholdYear,
+  computePowerIndexCells,
+  computeQualSnapshots,
+  applyProjectionToSnapshots,
+  computeRetirementWave,
+} from '#shared/utils/qual-analytics'
 
 export function createLens(
   snapshot: SenioritySnapshot,
@@ -176,16 +182,31 @@ export function createLens(
     return findThresholdYear(base, optimistic, pessimistic, targetPercentile)
   }
 
-  function holdability(_scenario?: Scenario): PowerIndexCell[] {
-    throw new Error('Not implemented yet')
+  function holdability(scenario?: Scenario): PowerIndexCell[] {
+    if (!resolvedAnchor) return []
+    const s = scenario ?? createScenario()
+    return computePowerIndexCells(
+      entries,
+      resolvedAnchor.seniorityNumber,
+      s.projectionDate,
+      s.growthConfig,
+    )
   }
 
-  function qualScales(_scenario?: Scenario): QualDemographicScale[] {
-    throw new Error('Not implemented yet')
+  function qualScales(scenario?: Scenario): QualDemographicScale[] {
+    if (!resolvedAnchor) return []
+    const s = scenario ?? createScenario()
+    const snapshots = computeQualSnapshots(entries)
+    if (snapshots.length === 0) return []
+    return applyProjectionToSnapshots(
+      snapshots, entries, resolvedAnchor.seniorityNumber,
+      s.projectionDate, s.growthConfig,
+    )
   }
 
-  function retirementWave(_scenario?: Scenario): RetirementWaveBucket[] {
-    throw new Error('Not implemented yet')
+  function retirementWave(scenario?: Scenario): RetirementWaveBucket[] {
+    const s = scenario ?? createScenario()
+    return computeRetirementWave(entries, s.scopeFilter)
   }
 
   function retirementProjection(scenario?: Scenario): RetirementProjectionResult {
