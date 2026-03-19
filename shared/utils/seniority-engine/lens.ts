@@ -140,6 +140,8 @@ export function createLens(
   function compareTrajectories(
     scenarioA: Scenario, scenarioB: Scenario,
   ): ComparativeTrajectoryResult | null {
+    // Note: only scopeFilter is compared between scenarios — growthConfig from scenarioA is used for both.
+    // Callers should differ only in scopeFilter; differing growthConfigs are silently ignored.
     if (!resolvedAnchor) return null
     return projectComparativeTrajectory(
       entries,
@@ -168,10 +170,13 @@ export function createLens(
     const scaleEntries = (mult: number) =>
       entries.map(e => {
         if (!e.retire_date) return e
-        const daysUntil = (new Date(e.retire_date).getTime() - today.getTime()) * mult
+        const retireMs = new Date(e.retire_date).getTime()
+        // Skip already-retired pilots — scaling a past date inverts optimistic/pessimistic direction
+        if (retireMs <= today.getTime()) return e
+        const durationMs = (retireMs - today.getTime()) * mult
         return {
           ...e,
-          retire_date: new Date(today.getTime() + daysUntil).toISOString().split('T')[0]!,
+          retire_date: new Date(today.getTime() + durationMs).toISOString().split('T')[0]!,
         }
       })
 
@@ -226,9 +231,7 @@ export function createLens(
   function demographics(mandatoryAge: number, scenario?: Scenario): DemographicsResult {
     const s = scenario ?? createScenario()
     const filter = s.scopeFilter
-    const filtered = filter === undefined
-      ? entries
-      : entries.filter(filter)
+    const filtered = entries.filter(filter)
 
     return {
       ageDistribution: computeAgeDistribution(entries, mandatoryAge, filter),

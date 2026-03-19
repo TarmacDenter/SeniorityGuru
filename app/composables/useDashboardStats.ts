@@ -106,6 +106,7 @@ export function useDashboardStats() {
 
   const baseStatusData = computed(() => {
     const standing = standingResult.value
+    const entry = userEntry.value
     if (!standing) return []
     return standing.cellBreakdown.map(row => ({
       base: row.base,
@@ -117,7 +118,11 @@ export function useDashboardStats() {
       adjustedTotal: row.adjustedTotal,
       percentile: row.percentile,
       adjustedPercentile: row.adjustedPercentile,
-      isUserCurrent: row.isAnchorCurrent,
+      // isAnchorCurrent is false when the anchor isn't in the snapshot (e.g. new-hire mode).
+      // Fall back to direct cell comparison using the user entry.
+      isUserCurrent: row.isAnchorCurrent || !!(
+        entry && row.base === entry.base && row.seat === entry.seat && row.fleet === entry.fleet
+      ),
     }))
   })
 
