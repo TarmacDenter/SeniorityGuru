@@ -124,9 +124,9 @@ describe('useDashboardStats composable', () => {
       ]
 
       const { rankCard } = useDashboardStats()
-      // 2 entries retired above (sen nums 1 and 2), so adjusted = 5 - 2 = 3
+      // rank = 4 (3 entries with sen num < 5), retiredAbove = 2 (sens 1 and 2), adjustedRank = 4 - 2 = 2
       expect(rankCard.value.seniorityNumber).toBe(5)
-      expect(rankCard.value.adjustedSeniority).toBe(3)
+      expect(rankCard.value.adjustedSeniority).toBe(2)
       expect(rankCard.value.base).toBe('JFK')
       expect(rankCard.value.seat).toBe('CA')
       expect(rankCard.value.fleet).toBe('737')
