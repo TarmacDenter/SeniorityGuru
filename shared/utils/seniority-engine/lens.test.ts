@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeAll, afterAll } from 'vitest'
 import { makeEntry } from '#shared/test-utils/factories'
 import { createSnapshot } from './snapshot'
 import { createLens } from './lens'
+import { createScenario } from './scenario'
 
 // Fix "today" for deterministic retirement calculations
 beforeAll(() => {
@@ -91,5 +92,74 @@ describe('standing()', () => {
       c => c.base === 'ATL' && c.seat === 'FO' && c.fleet === '320',
     )!
     expect(atlFO320.isAnchorCurrent).toBe(false)
+  })
+})
+
+describe('trajectory()', () => {
+  const lens = createLens(snapshot, anchor)
+
+  it('returns null when no anchor', () => {
+    expect(createLens(snapshot).trajectory()).toBeNull()
+  })
+
+  it('produces trajectory points from today to retirement', () => {
+    const result = lens.trajectory()!
+    expect(result.points.length).toBeGreaterThan(0)
+    expect(result.points[0]!.date).toBe('2026-06-15')
+    // Last point should be at or near retirement date
+    const lastDate = result.points[result.points.length - 1]!.date
+    expect(lastDate.startsWith('204')).toBe(true) // 2040s
+  })
+
+  it('includes chart data parallel to points', () => {
+    const result = lens.trajectory()!
+    expect(result.chartData.labels).toHaveLength(result.points.length)
+    expect(result.chartData.data).toHaveLength(result.points.length)
+    expect(result.chartData.labels[0]).toBe(result.points[0]!.date)
+    expect(result.chartData.data[0]).toBe(result.points[0]!.percentile)
+  })
+
+  it('computes trajectory deltas', () => {
+    const result = lens.trajectory()!
+    // Deltas have one fewer entry than points
+    expect(result.deltas.length).toBe(result.points.length - 1)
+  })
+
+  it('applies scope filter from scenario', () => {
+    const scoped = createScenario({ scopeFilter: e => e.seat === 'CA' })
+    const result = lens.trajectory(scoped)!
+    // With only CAs, percentile should be different
+    const unscoped = lens.trajectory()!
+    expect(result.points[0]!.percentile).not.toBe(unscoped.points[0]!.percentile)
+  })
+
+  it('applies growth config from scenario', () => {
+    const withGrowth = createScenario({ growthConfig: { enabled: true, annualRate: 0.05 } })
+    const result = lens.trajectory(withGrowth)!
+    const noGrowth = lens.trajectory()!
+    // Growth adds junior pilots, improving user's relative position mid-career
+    // Find a mid-career point where the user is not yet rank 1 and has competitors ahead
+    // At ~5 years out (index 5), growth adds pilots and changes percentile
+    const midWithGrowth = result.points[5]!.percentile
+    const midNoGrowth = noGrowth.points[5]!.percentile
+    // Growth increases percentile mid-career (user is more senior relative to larger pool)
+    expect(midWithGrowth).toBeGreaterThan(midNoGrowth)
+  })
+})
+
+describe('retirementProjection()', () => {
+  const lens = createLens(snapshot, anchor)
+
+  it('returns yearly retirement buckets', () => {
+    const result = lens.retirementProjection()
+    expect(result.labels.length).toBeGreaterThan(0)
+    expect(result.data.length).toBe(result.labels.length)
+    expect(result.filteredTotal).toBe(5)
+  })
+
+  it('applies scope filter from scenario', () => {
+    const scoped = createScenario({ scopeFilter: e => e.seat === 'CA' })
+    const result = lens.retirementProjection(scoped)
+    expect(result.filteredTotal).toBe(3) // E1, E2, E4 are CAs
   })
 })

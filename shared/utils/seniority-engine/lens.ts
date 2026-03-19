@@ -14,7 +14,13 @@ import type {
 import {
   computeRank,
   countRetiredAbove,
+  buildTrajectory,
+  generateTimePoints,
+  getProjectionEndDate,
+  projectRetirements,
+  computeTrajectoryDeltas,
 } from '#shared/utils/seniority-math'
+import { createScenario } from './scenario'
 import type {
   PowerIndexCell,
   QualDemographicScale,
@@ -99,8 +105,23 @@ export function createLens(
     }
   }
 
-  function trajectory(_scenario?: Scenario): TrajectoryResult | null {
-    throw new Error('Not implemented yet')
+  function trajectory(scenario?: Scenario): TrajectoryResult | null {
+    if (!resolvedAnchor) return null
+    const s = scenario ?? createScenario()
+    const { today, endDate } = getProjectionEndDate(resolvedAnchor.retireDate)
+    const timePoints = generateTimePoints(today, endDate)
+    const points = buildTrajectory(
+      entries, resolvedAnchor.seniorityNumber, timePoints,
+      s.scopeFilter, s.growthConfig,
+    )
+    return {
+      points,
+      chartData: {
+        labels: points.map(p => p.date),
+        data: points.map(p => p.percentile),
+      },
+      deltas: computeTrajectoryDeltas(points),
+    }
   }
 
   function compareTrajectories(
@@ -127,8 +148,13 @@ export function createLens(
     throw new Error('Not implemented yet')
   }
 
-  function retirementProjection(_scenario?: Scenario): RetirementProjectionResult {
-    throw new Error('Not implemented yet')
+  function retirementProjection(scenario?: Scenario): RetirementProjectionResult {
+    const s = scenario ?? createScenario()
+    return projectRetirements(
+      entries,
+      resolvedAnchor?.retireDate ?? null,
+      s.scopeFilter,
+    )
   }
 
   function demographics(_mandatoryAge: number, _scenario?: Scenario): DemographicsResult {
