@@ -40,9 +40,7 @@ Thumbs.db
 .idea
 .vscode/
 
-# Claude Code — agent memory is ephemeral session state, not source
-.claude/agent-memory/
-.claude/worktrees
+.claude/
 .data
 
 # MCP server config (local dev URLs)
