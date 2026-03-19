@@ -12,9 +12,6 @@ export interface TrajectoryPoint {
 
 // ─── Qual key ────────────────────────────────────────────────────────────────
 // "737 CA", "320 FO" — groups analytics by fleet+seat; base is a filter dimension, not a grouping key.
-// TODO: once QualSpec exists, this function should accept a QualSpec (or a set of QualSpec fields)
-// to determine the grouping granularity — currently hardcoded to fleet+seat. Callers that need
-// fleet-only grouping or fleet+seat+base grouping have no way to express that today.
 
 export function qualKey(entry: SeniorityEntry): string {
   return `${entry.fleet} ${entry.seat}`

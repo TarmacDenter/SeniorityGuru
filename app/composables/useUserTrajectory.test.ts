@@ -107,7 +107,7 @@ describe('useUserTrajectory', () => {
       expect(result.data.reduce((s, n) => s + n, 0)).toBeGreaterThanOrEqual(3)
     })
 
-    it('respects filterFn', () => {
+    it('respects qualSpec', () => {
       mockUserStore.profile = makeProfile({ employee_number: '500' })
       const now = new Date()
       const nextYear = now.getFullYear() + 1
@@ -118,7 +118,7 @@ describe('useUserTrajectory', () => {
       ]
       const { computeRetirementProjection } = useUserTrajectory()
       const all = computeRetirementProjection()
-      const jfk = computeRetirementProjection((e) => e.base === 'JFK')
+      const jfk = computeRetirementProjection({ base: 'JFK' })
       expect(all.filteredTotal).toBe(3)
       expect(jfk.filteredTotal).toBe(2)
       expect(jfk.data.reduce((s, n) => s + n, 0)).toBeLessThanOrEqual(all.data.reduce((s, n) => s + n, 0))
@@ -128,11 +128,11 @@ describe('useUserTrajectory', () => {
   describe('computeComparativeTrajectory', () => {
     it('returns empty when no user entry', () => {
       const { computeComparativeTrajectory } = useUserTrajectory()
-      const result = computeComparativeTrajectory(() => true, () => true)
+      const result = computeComparativeTrajectory({}, {})
       expect(result).toEqual({ labels: [], currentData: [], compareData: [] })
     })
 
-    it('computes separate trajectories for two filters', () => {
+    it('computes separate trajectories for two specs', () => {
       mockUserStore.profile = makeProfile({ employee_number: '500' })
       const now = new Date()
       mockSeniorityStore.entries = [
@@ -144,8 +144,8 @@ describe('useUserTrajectory', () => {
       ]
       const { computeComparativeTrajectory } = useUserTrajectory()
       const result = computeComparativeTrajectory(
-        (e) => e.seat === 'CA' && e.base === 'JFK',
-        (e) => e.seat === 'FO' && e.base === 'LAX',
+        { seat: 'CA', base: 'JFK' },
+        { seat: 'FO', base: 'LAX' },
       )
       expect(result.labels.length).toBeGreaterThan(0)
       expect(result.currentData[result.currentData.length - 1]!).toBeGreaterThan(

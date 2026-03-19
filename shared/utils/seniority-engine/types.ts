@@ -2,7 +2,6 @@
 import type { SeniorityEntry } from '#shared/schemas/seniority-list'
 import type { GrowthConfig } from '#shared/types/growth-config'
 import type {
-  FilterFn,
   TrajectoryDelta,
 } from '#shared/utils/seniority-math'
 import type {
@@ -17,10 +16,11 @@ import type {
   YosDistribution,
   YosHistogramBucket,
 } from '#shared/utils/qual-analytics'
+import type { QualSpec } from './qual-spec'
 
 // Re-export types consumers will need alongside engine types
 export type {
-  FilterFn,
+  QualSpec,
   TrajectoryDelta,
   TrajectoryPoint,
   AgeBucket,
@@ -45,26 +45,17 @@ export interface PilotAnchor {
 export interface ScenarioOptions {
   projectionDate?: Date
   growthConfig?: GrowthConfig
-  // TODO: replace FilterFn with QualSpec once that type exists. The Lens should accept a
-  // structured partial qual (fleet, seat, base — any combination) so callers can say
-  // "scope to 737 CA" or "scope to BOS 220" without building a raw predicate. FilterFn
-  // stays as the internal representation; QualSpec is the public API that the Lens converts.
-  scopeFilter?: FilterFn
+  scopeFilter?: QualSpec
 }
 
 export interface Scenario {
   readonly projectionDate: Date
   readonly growthConfig: GrowthConfig
-  readonly scopeFilter: FilterFn
+  readonly scopeFilter: QualSpec
 }
 
 // Full qual — all three dimensions required (enforced by snapshot validation).
 // For filter scoping, use QualSpec (partial qual) instead.
-// TODO: introduce QualSpec — { fleet?: string; seat?: string; base?: string } — as the canonical
-// type for partial qual filters. Any combination is valid: fleet-only ("737"), fleet+seat ("737 CA"),
-// base+fleet ("BOS 220"), etc. Add a qualSpecToFilter(spec: QualSpec): FilterFn helper so the Lens
-// and analytics functions can accept structured specs instead of opaque FilterFns, and so
-// useScopeFilter can stop encoding/parsing specs as prefixed strings.
 export interface Qual {
   readonly seat: string
   readonly fleet: string
@@ -87,17 +78,7 @@ export interface SenioritySnapshot {
   readonly uniqueSeats: string[]
   /** Unique fleet values, sorted */
   readonly uniqueFleets: string[]
-  /**
-   * All distinct seat/fleet/base qual labels, sorted.
-   * Format: "CA/737/JFK" — matches useCompanyStats.quals output.
-   *
-   * TODO: align Qual label format with the rest of the codebase.
-   * There are two distinct concepts here:
-   *   - Full qual (fleet + seat + base): the specific position a pilot holds — this is what Qual represents
-   *   - Partial qual (fleet + seat, no base): a qual scope where base is a filter dimension — this is what qualKey() in qual-analytics represents
-   * Each has a different label format ("CA/737/JFK" here vs "737 CA" in qualKey() vs "737 CA ATL" in MostJuniorCARow).
-   * Decide on canonical label formats for both concepts and consolidate.
-   */
+  /** All distinct seat/fleet/base qual labels, sorted. Format: "CA/737/JFK". */
   readonly quals: Qual[]
 }
 

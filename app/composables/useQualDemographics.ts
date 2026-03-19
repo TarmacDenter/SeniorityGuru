@@ -1,5 +1,5 @@
-import { createLens, createScenario } from '#shared/utils/seniority-engine'
-import type { FilterFn } from '#shared/utils/seniority-math'
+import { createLens, createScenario, qualSpecLabel } from '#shared/utils/seniority-engine'
+import type { QualSpec } from '#shared/utils/seniority-engine'
 import { uniqueEntryValues } from '#shared/utils/entry-filters'
 import { useSeniorityStore } from '~/stores/seniority'
 import { useUserStore } from '~/stores/user'
@@ -28,18 +28,17 @@ export function useQualDemographics() {
     return uniqueEntryValues(filtered, 'base')
   })
 
-  const qualFilterFn = computed<FilterFn>(() => {
-    return (e) => {
-      if (selectedFleet.value && e.fleet !== selectedFleet.value) return false
-      if (selectedSeat.value && e.seat !== selectedSeat.value) return false
-      if (selectedBase.value && e.base !== selectedBase.value) return false
-      return true
-    }
+  const qualSpec = computed<QualSpec>(() => {
+    const spec: { fleet?: string; seat?: string; base?: string } = {}
+    if (selectedFleet.value) spec.fleet = selectedFleet.value
+    if (selectedSeat.value) spec.seat = selectedSeat.value
+    if (selectedBase.value) spec.base = selectedBase.value
+    return spec
   })
 
   const mandatoryAge = computed(() => userStore.profile?.mandatory_retirement_age ?? 65)
 
-  const scenario = computed(() => createScenario({ scopeFilter: qualFilterFn.value }))
+  const scenario = computed(() => createScenario({ scopeFilter: qualSpec.value }))
 
   // Demographics doesn't need an anchor — use anchored lens if available,
   // fall back to anchor-less lens for demographic-only queries
@@ -71,11 +70,8 @@ export function useQualDemographics() {
   )
 
   const qualLabel = computed(() => {
-    const parts: string[] = []
-    if (selectedFleet.value) parts.push(selectedFleet.value)
-    if (selectedSeat.value) parts.push(selectedSeat.value)
-    if (selectedBase.value) parts.push(selectedBase.value)
-    return parts.join(' ')
+    const label = qualSpecLabel(qualSpec.value)
+    return label === 'Company-wide' ? '' : label
   })
 
   // Auto-clear stale selections when the active list changes
@@ -105,7 +101,7 @@ export function useQualDemographics() {
     availableFleets,
     availableSeats,
     availableBases,
-    qualFilterFn,
+    qualSpec,
     qualLabel,
     clearFilter,
     ageDistribution,

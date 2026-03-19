@@ -2,14 +2,15 @@
 import { useQualDemographics } from '~/composables/useQualDemographics'
 import { useQualProjections } from '~/composables/useQualProjections'
 import { useUserTrajectory } from '~/composables/useUserTrajectory'
-import { useCompanyStats } from '~/composables/useCompanyStats'
 import { useUserStore } from '~/stores/user'
+import { useSeniorityStore } from '~/stores/seniority'
 
 const userStore = useUserStore()
+const seniorityStore = useSeniorityStore()
 const demographics = useQualDemographics()
-const projections = useQualProjections(demographics.qualFilterFn)
+const projections = useQualProjections(demographics.qualSpec)
 const { computeRetirementProjection } = useUserTrajectory()
-const { quals } = useCompanyStats()
+const entries = computed(() => seniorityStore.entries)
 
 const hasEmployeeNumber = computed(() => !!userStore.profile?.employee_number)
 
@@ -56,7 +57,7 @@ const hasEmployeeNumber = computed(() => !!userStore.profile?.employee_number)
 
     <!-- Retirement Comparison (dual-scope) -->
     <DashboardRetirementComparison
-      :quals="quals"
+      :entries="entries"
       :compute-projection="computeRetirementProjection"
     />
   </div>

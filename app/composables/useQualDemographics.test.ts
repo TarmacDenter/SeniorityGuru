@@ -269,28 +269,36 @@ describe('useQualDemographics', () => {
     })
   })
 
-  describe('qualFilterFn', () => {
-    it('passes all entries when no filter selected', () => {
+  describe('qualSpec', () => {
+    it('returns empty spec when no filter selected', () => {
       mockSeniorityStore.entries = [
         makeEntry({ fleet: '737', seat: 'CA', base: 'JFK' }),
         makeEntry({ fleet: '777', seat: 'FO', base: 'LAX' }),
       ]
-      const { qualFilterFn } = useQualDemographics()
-      const filtered = mockSeniorityStore.entries.filter(qualFilterFn.value)
-      expect(filtered.length).toBe(2)
+      const { qualSpec } = useQualDemographics()
+      expect(qualSpec.value).toEqual({})
     })
 
-    it('filters correctly when fleet and seat selected', () => {
+    it('returns spec with fleet and seat when selected', () => {
       mockSeniorityStore.entries = [
         makeEntry({ fleet: '737', seat: 'CA', base: 'JFK' }),
         makeEntry({ fleet: '777', seat: 'FO', base: 'LAX' }),
       ]
-      const { qualFilterFn, selectedFleet, selectedSeat } = useQualDemographics()
+      const { qualSpec, selectedFleet, selectedSeat } = useQualDemographics()
       selectedFleet.value = '737'
       selectedSeat.value = 'CA'
-      const filtered = mockSeniorityStore.entries.filter(qualFilterFn.value)
-      expect(filtered.length).toBe(1)
-      expect(filtered[0]?.fleet).toBe('737')
+      expect(qualSpec.value).toEqual({ fleet: '737', seat: 'CA' })
+    })
+
+    it('returns spec with all three dimensions when selected', () => {
+      mockSeniorityStore.entries = [
+        makeEntry({ fleet: '737', seat: 'CA', base: 'JFK' }),
+      ]
+      const { qualSpec, selectedFleet, selectedSeat, selectedBase } = useQualDemographics()
+      selectedFleet.value = '737'
+      selectedSeat.value = 'CA'
+      selectedBase.value = 'JFK'
+      expect(qualSpec.value).toEqual({ fleet: '737', seat: 'CA', base: 'JFK' })
     })
   })
 })

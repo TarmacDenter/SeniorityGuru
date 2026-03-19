@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import type { ChartData, TooltipItem } from 'chart.js'
-import type { FilterFn } from '#shared/utils/seniority-math'
-type Qual = { seat: string; fleet: string; base: string; label: string }
+import type { QualSpec } from '#shared/utils/seniority-engine'
+import type { SeniorityEntry } from '#shared/schemas/seniority-list'
 
 const props = defineProps<{
-  quals: Qual[]
+  entries: readonly SeniorityEntry[]
   computeComparative: (
-    currentFilter: FilterFn,
-    compareFilter: FilterFn
+    specA: QualSpec,
+    specB: QualSpec
   ) => { labels: string[]; currentData: number[]; compareData: number[] }
   userBase?: string
   userSeat?: string
@@ -15,14 +15,19 @@ const props = defineProps<{
 }>()
 
 const { colors } = useChartTheme()
-const qualsRef = computed(() => props.quals)
-const { scopeOptions, makeFilter } = useScopeFilter(qualsRef)
+const entriesRef = computed(() => props.entries)
+const { scopeOptions, specForLabel } = useScopeFilter(entriesRef)
 
 const defaultScope = computed(() => {
-  if (props.userSeat && props.userFleet && props.userBase) {
-    return `${props.userSeat}/${props.userFleet}/${props.userBase}`
+  if (props.userBase && props.userSeat && props.userFleet) {
+    // Find the matching label from scope options
+    return scopeOptions.value.find(label =>
+      label !== 'Company-wide' && label.includes(props.userBase!) && label.includes(props.userSeat!) && label.includes(props.userFleet!),
+    ) ?? 'Company-wide'
   }
-  if (props.userBase) return `Base: ${props.userBase}`
+  if (props.userBase) {
+    return scopeOptions.value.find(label => label === props.userBase) ?? 'Company-wide'
+  }
   return 'Company-wide'
 })
 
@@ -31,8 +36,8 @@ const compareScope = ref('')
 
 const chartData = computed<ChartData<'line'>>(() => {
   const result = props.computeComparative(
-    makeFilter(currentScope.value),
-    makeFilter(compareScope.value || currentScope.value),
+    specForLabel(currentScope.value),
+    specForLabel(compareScope.value || currentScope.value),
   )
 
   const datasets: ChartData<'line'>['datasets'] = [{

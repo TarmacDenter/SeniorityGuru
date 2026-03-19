@@ -1,6 +1,13 @@
 export { createSnapshot } from './snapshot'
 export { createScenario } from './scenario'
 export { createLens } from './lens'
+export {
+  COMPANY_WIDE,
+  qualSpecToFilter,
+  qualSpecLabel,
+  qualSpecEquals,
+  enumerateQualSpecs,
+} from './qual-spec'
 export type {
   // Core primitives
   SenioritySnapshot,
@@ -8,6 +15,7 @@ export type {
   ScenarioOptions,
   PilotAnchor,
   Qual,
+  QualSpec,
   SeniorityLens,
   // Result types
   StandingResult,
@@ -18,7 +26,6 @@ export type {
   RetirementProjectionResult,
   DemographicsResult,
   // Re-exported from existing modules
-  FilterFn,
   TrajectoryDelta,
   AgeBucket,
   MostJuniorCARow,

@@ -1,15 +1,13 @@
 import { createScenario } from '#shared/utils/seniority-engine'
-import type { FilterFn } from '#shared/utils/seniority-math'
+import type { QualSpec } from '#shared/utils/seniority-engine'
 import { DEFAULT_GROWTH_CONFIG, type GrowthConfig } from '#shared/types/growth-config'
 import type { ComputedRef, Ref } from 'vue'
 import { useSeniorityEngine } from './useSeniorityEngine'
 
 const BANNER_KEY = 'qual-projections-banner-dismissed'
 
-const noFilter: FilterFn = () => true
-
 export function useQualProjections(
-  qualFilterFn: ComputedRef<FilterFn> = computed(() => noFilter),
+  qualSpec: ComputedRef<QualSpec> = computed(() => ({})),
   growthConfig: Ref<GrowthConfig> = ref({ ...DEFAULT_GROWTH_CONFIG }),
 ) {
   const { lens } = useSeniorityEngine()
@@ -40,7 +38,7 @@ export function useQualProjections(
 
   const scopedScenario = computed(() => createScenario({
     growthConfig: growthConfig.value,
-    scopeFilter: qualFilterFn.value,
+    scopeFilter: qualSpec.value,
   }))
 
   const powerIndexCells = computed(() =>

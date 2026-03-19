@@ -21,6 +21,7 @@ import {
   computeTrajectoryDeltas,
 } from '#shared/utils/seniority-math'
 import { createScenario } from './scenario'
+import { qualSpecToFilter } from './qual-spec'
 import type {
   PowerIndexCell,
   QualDemographicScale,
@@ -124,7 +125,7 @@ export function createLens(
     const timePoints = generateTimePoints(today, endDate)
     const points = buildTrajectory(
       entries, resolvedAnchor.seniorityNumber, timePoints,
-      s.scopeFilter, s.growthConfig,
+      qualSpecToFilter(s.scopeFilter), s.growthConfig,
     )
     return {
       points,
@@ -146,8 +147,8 @@ export function createLens(
       entries,
       resolvedAnchor.seniorityNumber,
       resolvedAnchor.retireDate,
-      scenarioA.scopeFilter,
-      scenarioB.scopeFilter,
+      qualSpecToFilter(scenarioA.scopeFilter),
+      qualSpecToFilter(scenarioB.scopeFilter),
       scenarioA.growthConfig,
     )
   }
@@ -161,9 +162,11 @@ export function createLens(
     const timePoints = generateTimePoints(today, endDate)
     const gc = s.growthConfig
 
+    const filter = qualSpecToFilter(s.scopeFilter)
+
     const base = buildTrajectory(
       entries, resolvedAnchor.seniorityNumber, timePoints,
-      s.scopeFilter, gc,
+      filter, gc,
     )
 
     const scaleEntries = (mult: number) =>
@@ -181,11 +184,11 @@ export function createLens(
 
     const optimistic = buildTrajectory(
       scaleEntries(0.9), resolvedAnchor.seniorityNumber, timePoints,
-      s.scopeFilter, gc,
+      filter, gc,
     )
     const pessimistic = buildTrajectory(
       scaleEntries(1.1), resolvedAnchor.seniorityNumber, timePoints,
-      s.scopeFilter, gc,
+      filter, gc,
     )
 
     return findThresholdYear(base, optimistic, pessimistic, targetPercentile)
@@ -215,7 +218,7 @@ export function createLens(
 
   function retirementWave(scenario?: Scenario): RetirementWaveBucket[] {
     const s = scenario ?? createScenario()
-    return computeRetirementWave(entries, s.scopeFilter)
+    return computeRetirementWave(entries, qualSpecToFilter(s.scopeFilter))
   }
 
   function retirementProjection(scenario?: Scenario): RetirementProjectionResult {
@@ -223,13 +226,13 @@ export function createLens(
     return projectRetirements(
       entries,
       resolvedAnchor?.retireDate ?? null,
-      s.scopeFilter,
+      qualSpecToFilter(s.scopeFilter),
     )
   }
 
   function demographics(mandatoryAge: number, scenario?: Scenario): DemographicsResult {
     const s = scenario ?? createScenario()
-    const filter = s.scopeFilter
+    const filter = qualSpecToFilter(s.scopeFilter)
     const filtered = entries.filter(filter)
 
     return {

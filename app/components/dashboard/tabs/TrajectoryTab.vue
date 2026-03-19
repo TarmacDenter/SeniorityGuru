@@ -4,15 +4,18 @@ import { useQualProjections } from '~/composables/useQualProjections'
 import { useUserTrajectory } from '~/composables/useUserTrajectory'
 import { useDashboardStats } from '~/composables/useDashboardStats'
 import { useUserStore } from '~/stores/user'
+import { useSeniorityStore } from '~/stores/seniority'
 import { DEFAULT_GROWTH_CONFIG } from '#shared/types/growth-config'
 import type { GrowthConfig } from '#shared/types/growth-config'
 
 const userStore = useUserStore()
+const seniorityStore = useSeniorityStore()
 const hasEmployeeNumber = computed(() => !!userStore.profile?.employee_number)
 
 const growthConfig = ref<GrowthConfig>({ ...DEFAULT_GROWTH_CONFIG })
 
-const { userFound, rankCard, quals } = useDashboardStats()
+const { userFound, rankCard } = useDashboardStats()
+const entries = computed(() => seniorityStore.entries)
 
 const {
   trajectoryChartData,
@@ -22,7 +25,7 @@ const {
 } = useUserTrajectory(growthConfig)
 
 const demographics = useQualDemographics()
-const projections = useQualProjections(demographics.qualFilterFn, growthConfig)
+const projections = useQualProjections(demographics.qualSpec, growthConfig)
 const qualTrajectoryDeltas = projections.trajectoryDeltas
 </script>
 
@@ -67,7 +70,7 @@ const qualTrajectoryDeltas = projections.trajectoryDeltas
       <!-- Seniority Comparison (dual-scope trajectory lines) -->
       <DashboardSeniorityComparison
         v-if="userFound"
-        :quals="quals"
+        :entries="entries"
         :compute-comparative="computeComparativeTrajectory"
         :user-base="rankCard.base"
         :user-seat="rankCard.seat"
@@ -116,7 +119,7 @@ const qualTrajectoryDeltas = projections.trajectoryDeltas
 
       <!-- Retirement Comparison (dual-scope) -->
       <DashboardRetirementComparison
-        :quals="quals"
+        :entries="entries"
         :compute-projection="computeRetirementProjection"
       />
 

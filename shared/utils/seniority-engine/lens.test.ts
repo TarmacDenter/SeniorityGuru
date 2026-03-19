@@ -126,7 +126,7 @@ describe('trajectory()', () => {
   })
 
   it('applies scope filter from scenario', () => {
-    const scoped = createScenario({ scopeFilter: e => e.seat === 'CA' })
+    const scoped = createScenario({ scopeFilter: { seat: 'CA' } })
     const result = lens.trajectory(scoped)!
     // With only CAs, percentile should be different
     const unscoped = lens.trajectory()!
@@ -158,7 +158,7 @@ describe('retirementProjection()', () => {
   })
 
   it('applies scope filter from scenario', () => {
-    const scoped = createScenario({ scopeFilter: e => e.seat === 'CA' })
+    const scoped = createScenario({ scopeFilter: { seat: 'CA' } })
     const result = lens.retirementProjection(scoped)
     expect(result.filteredTotal).toBe(3) // E1, E2, E4 are CAs
   })
@@ -173,8 +173,8 @@ describe('compareTrajectories()', () => {
   })
 
   it('returns two parallel percentile arrays', () => {
-    const caFilter = createScenario({ scopeFilter: e => e.seat === 'CA' })
-    const foFilter = createScenario({ scopeFilter: e => e.seat === 'FO' })
+    const caFilter = createScenario({ scopeFilter: { seat: 'CA' } })
+    const foFilter = createScenario({ scopeFilter: { seat: 'FO' } })
     const result = lens.compareTrajectories(caFilter, foFilter)!
     expect(result.labels.length).toBeGreaterThan(0)
     expect(result.currentData.length).toBe(result.labels.length)
@@ -271,7 +271,7 @@ describe('retirementWave()', () => {
   })
 
   it('applies scope filter', () => {
-    const caOnly = createScenario({ scopeFilter: e => e.seat === 'CA' })
+    const caOnly = createScenario({ scopeFilter: { seat: 'CA' } })
     const caWave = lens.retirementWave(caOnly)
     const allWave = lens.retirementWave()
     const caTotal = caWave.reduce((sum, b) => sum + b.count, 0)
@@ -316,7 +316,7 @@ describe('demographics()', () => {
   })
 
   it('applies scope filter', () => {
-    const caOnly = createScenario({ scopeFilter: e => e.seat === 'CA' })
+    const caOnly = createScenario({ scopeFilter: { seat: 'CA' } })
     const result = lens.demographics(65, caOnly)
     const caAgeTotal = result.ageDistribution.buckets.reduce((s, b) => s + b.count, 0)
       + result.ageDistribution.nullCount

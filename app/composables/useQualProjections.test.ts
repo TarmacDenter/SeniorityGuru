@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import type { SeniorityEntry, SeniorityEntryResponse } from '../../shared/schemas/seniority-list'
+import type { SeniorityEntryResponse } from '../../shared/schemas/seniority-list'
 import type { ProfileResponse } from '../../shared/schemas/settings'
 import { makeEntry, makeProfile } from '#shared/test-utils/factories'
 
@@ -155,14 +155,14 @@ describe('useQualProjections', () => {
       }
     })
 
-    it('filters when a qualFilterFn is passed', () => {
+    it('filters when a qualSpec is passed', () => {
       mockUserStore.profile = makeProfile({ employee_number: '100' })
       mockSeniorityStore.entries = [
         makeEntry({ employee_number: '100', seniority_number: 1, fleet: '737', retire_date: '2026-06-01' }),
         makeEntry({ employee_number: '200', seniority_number: 2, fleet: '777', retire_date: '2027-06-01' }),
       ]
-      const filterFn = computed(() => (e: SeniorityEntry) => e.fleet === '737')
-      const { retirementWave } = useQualProjections(filterFn)
+      const qualSpec = computed(() => ({ fleet: '737' }))
+      const { retirementWave } = useQualProjections(qualSpec)
       const result = retirementWave.value
       // Only the 737 entry should be counted
       const total = result.reduce((sum, b) => sum + b.count, 0)

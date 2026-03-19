@@ -1,5 +1,6 @@
-import { formatNumber, type FilterFn } from '#shared/utils/seniority-math'
+import { formatNumber } from '#shared/utils/seniority-math'
 import { createScenario } from '#shared/utils/seniority-engine'
+import type { QualSpec } from '#shared/utils/seniority-engine'
 import { useSeniorityStore } from '~/stores/seniority'
 import { useUserStore } from '~/stores/user'
 import { useNewHireMode } from './useNewHireMode'
@@ -135,16 +136,16 @@ export function useDashboardStats() {
 
   const trajectoryDeltas = computed(() => trajectoryResult.value?.deltas ?? [])
 
-  function computeRetirementProjection(filterFn: FilterFn = () => true) {
+  function computeRetirementProjection(spec: QualSpec = {}) {
     if (!lens.value) return { labels: [] as string[], data: [] as number[], filteredTotal: 0 }
-    return lens.value.retirementProjection(createScenario({ scopeFilter: filterFn }))
+    return lens.value.retirementProjection(createScenario({ scopeFilter: spec }))
   }
 
-  function computeComparativeTrajectory(currentFilter: FilterFn, compareFilter: FilterFn) {
+  function computeComparativeTrajectory(specA: QualSpec, specB: QualSpec) {
     if (!lens.value) return { labels: [] as string[], currentData: [] as number[], compareData: [] as number[] }
     return lens.value.compareTrajectories(
-      createScenario({ scopeFilter: currentFilter }),
-      createScenario({ scopeFilter: compareFilter }),
+      createScenario({ scopeFilter: specA }),
+      createScenario({ scopeFilter: specB }),
     ) ?? { labels: [] as string[], currentData: [] as number[], compareData: [] as number[] }
   }
 
