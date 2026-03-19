@@ -1,21 +1,8 @@
-import {
-  computePowerIndexCells,
-  computeRetirementWave,
-  computeQualSnapshots,
-  applyProjectionToSnapshots,
-  findThresholdYear,
-} from '#shared/utils/qual-analytics'
-import {
-  getProjectionEndDate,
-  generateTimePoints,
-  buildTrajectory,
-  computeTrajectoryDeltas,
-  type FilterFn,
-} from '#shared/utils/seniority-math'
+import { createScenario } from '#shared/utils/seniority-engine'
+import type { FilterFn } from '#shared/utils/seniority-math'
 import { DEFAULT_GROWTH_CONFIG, type GrowthConfig } from '#shared/types/growth-config'
 import type { ComputedRef, Ref } from 'vue'
-import { useSeniorityStore } from '~/stores/seniority'
-import { useUserEntry } from './useUserEntry'
+import { useSeniorityEngine } from './useSeniorityEngine'
 
 const BANNER_KEY = 'qual-projections-banner-dismissed'
 
@@ -25,8 +12,7 @@ export function useQualProjections(
   qualFilterFn: ComputedRef<FilterFn> = computed(() => noFilter),
   growthConfig: Ref<GrowthConfig> = ref({ ...DEFAULT_GROWTH_CONFIG }),
 ) {
-  const seniorityStore = useSeniorityStore()
-  const userEntry = useUserEntry({ withNewHireMode: true })
+  const { lens } = useSeniorityEngine()
 
   const isBannerDismissed = ref(
     typeof localStorage !== 'undefined' ? localStorage.getItem(BANNER_KEY) === 'true' : false,
@@ -39,7 +25,7 @@ export function useQualProjections(
     }
   }
 
-  const projectionYears = ref(0) // 0–10 slider
+  const projectionYears = ref(0)
 
   const projectionDate = computed(() => {
     const d = new Date()
@@ -47,81 +33,48 @@ export function useQualProjections(
     return d
   })
 
-  const powerIndexCells = computed(() => {
-    if (!userEntry.value) return []
-    return computePowerIndexCells(
-      seniorityStore.entries,
-      userEntry.value.seniority_number,
-      projectionDate.value,
-      growthConfig.value,
-    )
-  })
+  const positionScenario = computed(() => createScenario({
+    projectionDate: projectionDate.value,
+    growthConfig: growthConfig.value,
+  }))
 
-  const retirementWave = computed(() =>
-    computeRetirementWave(seniorityStore.entries, qualFilterFn.value),
+  const scopedScenario = computed(() => createScenario({
+    growthConfig: growthConfig.value,
+    scopeFilter: qualFilterFn.value,
+  }))
+
+  const powerIndexCells = computed(() =>
+    lens.value?.holdability(positionScenario.value) ?? [],
   )
 
-  const waveTrajectory = computed(() => {
-    if (!userEntry.value) return []
-    const { today, endDate } = getProjectionEndDate(userEntry.value.retire_date)
-    const timePoints = generateTimePoints(today, endDate)
-    return buildTrajectory(seniorityStore.entries, userEntry.value.seniority_number, timePoints, qualFilterFn.value, growthConfig.value)
-  })
+  const retirementWave = computed(() =>
+    lens.value?.retirementWave(scopedScenario.value) ?? [],
+  )
 
-  const targetPercentile = ref(50) // 50 | 75 | 90
+  const waveTrajectoryResult = computed(() =>
+    lens.value?.trajectory(scopedScenario.value) ?? null,
+  )
+  const waveTrajectory = computed(() => waveTrajectoryResult.value?.points ?? [])
 
-  const thresholdResult = computed(() => {
-    if (!userEntry.value) return null
+  const targetPercentile = ref(50)
 
-    const { today, endDate } = getProjectionEndDate(userEntry.value.retire_date)
-    const timePoints = generateTimePoints(today, endDate)
+  const thresholdResult = computed(() =>
+    lens.value?.percentileCrossing(
+      targetPercentile.value,
+      scopedScenario.value,
+    ) ?? null,
+  )
 
-    const gc = growthConfig.value
+  const trajectoryDeltas = computed(() => waveTrajectoryResult.value?.deltas ?? [])
 
-    const base = buildTrajectory(
-      seniorityStore.entries,
-      userEntry.value.seniority_number,
-      timePoints,
-      qualFilterFn.value,
-      gc,
-    )
+  const qualScales = computed(() =>
+    lens.value?.qualScales(positionScenario.value) ?? [],
+  )
 
-    const scaleEntries = (mult: number) =>
-      seniorityStore.entries.map((e) => {
-        if (!e.retire_date) return e
-        const daysUntil = (new Date(e.retire_date).getTime() - today.getTime()) * mult
-        return {
-          ...e,
-          retire_date: new Date(today.getTime() + daysUntil).toISOString().split('T')[0]!,
-        }
-      })
-
-    const optimistic = buildTrajectory(
-      scaleEntries(0.9),
-      userEntry.value.seniority_number,
-      timePoints,
-      qualFilterFn.value,
-      gc,
-    )
-    const pessimistic = buildTrajectory(
-      scaleEntries(1.1),
-      userEntry.value.seniority_number,
-      timePoints,
-      qualFilterFn.value,
-      gc,
-    )
-
-    return findThresholdYear(base, optimistic, pessimistic, targetPercentile.value)
-  })
-
-  const trajectoryDeltas = computed(() => computeTrajectoryDeltas(waveTrajectory.value))
-
-  const qualSnapshots = computed(() => computeQualSnapshots(seniorityStore.entries))
-
-  const qualScales = computed(() => {
-    if (!userEntry.value || qualSnapshots.value.length === 0) return []
-    return applyProjectionToSnapshots(qualSnapshots.value, seniorityStore.entries, userEntry.value.seniority_number, projectionDate.value, growthConfig.value)
-  })
+  const userEntry = computed(() => lens.value?.anchor
+    ? { seniority_number: lens.value.anchor.seniorityNumber }
+    : undefined,
+  )
 
   return {
     isBannerDismissed,
