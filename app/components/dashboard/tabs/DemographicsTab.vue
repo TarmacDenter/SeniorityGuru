@@ -1,3 +1,15 @@
+<script setup lang="ts">
+import { useQualDemographics } from '~/composables/useQualDemographics'
+import { computeYOS } from '#shared/utils/qual-analytics'
+
+const demographics = useQualDemographics()
+
+const userYos = computed(() => {
+  const entry = demographics.userEntry.value
+  return entry ? computeYOS(entry.hire_date) : undefined
+})
+</script>
+
 <template>
   <div class="p-4 sm:p-6 space-y-6">
     <AnalyticsQualFilterBar :demographics="demographics" />
@@ -48,15 +60,3 @@
     </UCard>
   </div>
 </template>
-
-<script setup lang="ts">
-import { useQualDemographics } from '~/composables/useQualDemographics'
-import { computeYOS } from '#shared/utils/qual-analytics'
-
-const demographics = useQualDemographics()
-
-const userYos = computed(() => {
-  const entry = demographics.userEntry.value
-  return entry ? computeYOS(entry.hire_date) : undefined
-})
-</script>

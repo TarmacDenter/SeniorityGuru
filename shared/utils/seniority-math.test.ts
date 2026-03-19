@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { describe, it, expect } from 'vitest'
 import { countRetiredAbove, generateTimePoints, buildTrajectory, computeRank, getProjectionEndDate, formatDateLabel, formatNumber, projectRetirements, projectComparativeTrajectory, computeTrajectoryDeltas } from './seniority-math'
-import { makeEntry } from '#shared/test-utils/factories'
+import { makeDomainEntry as makeEntry } from '#shared/test-utils/factories'
 import type { GrowthConfig } from '#shared/types/growth-config'
 
 describe('countRetiredAbove', () => {
@@ -37,8 +37,8 @@ describe('countRetiredAbove', () => {
 
   it('handles null retire_date (should NOT count as retired)', () => {
     const entries = [
-      makeEntry({ seniority_number: 1, retire_date: null }),
-      makeEntry({ seniority_number: 2, retire_date: null }),
+      makeEntry({ seniority_number: 1, retire_date: undefined }),
+      makeEntry({ seniority_number: 2, retire_date: undefined }),
     ]
     const result = countRetiredAbove(entries, 5, new Date('2026-01-01'))
     expect(result).toBe(0)
@@ -117,8 +117,8 @@ describe('buildTrajectory', () => {
 
   it('handles entries with no retire_date', () => {
     const entries = [
-      makeEntry({ seniority_number: 1, retire_date: null }),
-      makeEntry({ seniority_number: 2, retire_date: null }),
+      makeEntry({ seniority_number: 1, retire_date: undefined }),
+      makeEntry({ seniority_number: 2, retire_date: undefined }),
       makeEntry({ seniority_number: 5, employee_number: '500', retire_date: '2040-01-01' }),
     ]
     const timePoints = [new Date('2030-01-01'), new Date('2035-01-01')]

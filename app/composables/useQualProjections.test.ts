@@ -134,7 +134,7 @@ describe('useQualProjections', () => {
 
   describe('retirementWave', () => {
     it('returns empty array when no entries with retire dates', () => {
-      mockSeniorityStore.entries = [makeEntry({ retire_date: null })]
+      mockSeniorityStore.entries = [makeEntry({ retire_date: undefined })]
       const { retirementWave } = useQualProjections()
       expect(retirementWave.value).toEqual([])
     })
@@ -155,13 +155,14 @@ describe('useQualProjections', () => {
       }
     })
 
-    it('filters when a qualFilterFn is passed', () => {
+    it('filters when a qualSpec is passed', () => {
+      mockUserStore.profile = makeProfile({ employee_number: '100' })
       mockSeniorityStore.entries = [
-        makeEntry({ fleet: '737', retire_date: '2026-06-01' }),
-        makeEntry({ fleet: '777', retire_date: '2027-06-01' }),
+        makeEntry({ employee_number: '100', seniority_number: 1, fleet: '737', retire_date: '2026-06-01' }),
+        makeEntry({ employee_number: '200', seniority_number: 2, fleet: '777', retire_date: '2027-06-01' }),
       ]
-      const filterFn = computed(() => (e: SeniorityEntryResponse) => e.fleet === '737')
-      const { retirementWave } = useQualProjections(filterFn)
+      const qualSpec = computed(() => ({ fleet: '737' }))
+      const { retirementWave } = useQualProjections(qualSpec)
       const result = retirementWave.value
       // Only the 737 entry should be counted
       const total = result.reduce((sum, b) => sum + b.count, 0)

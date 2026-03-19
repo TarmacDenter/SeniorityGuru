@@ -1,6 +1,9 @@
+import type { QualSpec } from '#shared/utils/seniority-engine/qual-spec'
+
 export interface GrowthConfig {
   enabled: boolean
   annualRate: number // 0.005 to 0.10 (0.5% to 10%), step 0.005
+  qualOverrides?: { spec: QualSpec; rate: number }[]
 }
 
 export const DEFAULT_GROWTH_CONFIG: GrowthConfig = {

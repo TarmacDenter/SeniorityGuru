@@ -1,3 +1,16 @@
+<script setup lang="ts">
+definePageMeta({ layout: 'default' })
+
+const sections = [
+  { id: 'percentile', title: 'Seniority Percentile' },
+  { id: 'adjusted-rank', title: 'Adjusted vs Raw Rank' },
+  { id: 'holdability', title: 'Holdability & The Plug' },
+  { id: 'growth-model', title: 'Growth Modeling' },
+  { id: 'projection-limits', title: 'Projection Limitations' },
+  { id: 'threshold-calculator', title: 'Percentile Threshold Calculator' },
+] as const
+</script>
+
 <template>
   <div>
     <SeniorityNavbar title="How It Works" description="Methodology, assumptions, and data limitations" />
@@ -201,16 +214,3 @@
     </UContainer>
   </div>
 </template>
-
-<script setup lang="ts">
-definePageMeta({ layout: 'default' })
-
-const sections = [
-  { id: 'percentile', title: 'Seniority Percentile' },
-  { id: 'adjusted-rank', title: 'Adjusted vs Raw Rank' },
-  { id: 'holdability', title: 'Holdability & The Plug' },
-  { id: 'growth-model', title: 'Growth Modeling' },
-  { id: 'projection-limits', title: 'Projection Limitations' },
-  { id: 'threshold-calculator', title: 'Percentile Threshold Calculator' },
-] as const
-</script>

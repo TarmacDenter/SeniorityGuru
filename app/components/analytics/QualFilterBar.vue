@@ -1,4 +1,13 @@
+<script setup lang="ts">
+import type { useQualDemographics } from '~/composables/useQualDemographics'
+
+defineProps<{
+  demographics: ReturnType<typeof useQualDemographics>
+}>()
+</script>
+
 <template>
+  <!-- eslint-disable vue/no-mutating-props -->
   <div class="flex gap-3 flex-wrap items-center">
     <USelect
       :model-value="demographics.selectedFleet.value ?? undefined"
@@ -32,12 +41,5 @@
       Clear filter
     </UButton>
   </div>
+  <!-- eslint-enable vue/no-mutating-props -->
 </template>
-
-<script setup lang="ts">
-import type { useQualDemographics } from '~/composables/useQualDemographics'
-
-defineProps<{
-  demographics: ReturnType<typeof useQualDemographics>
-}>()
-</script>

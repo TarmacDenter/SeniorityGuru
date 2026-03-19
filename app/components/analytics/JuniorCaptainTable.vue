@@ -1,7 +1,3 @@
-<template>
-  <UTable :data="tableRows" :columns="columns" />
-</template>
-
 <script setup lang="ts">
 import { h } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
@@ -53,3 +49,7 @@ const columns: TableColumn<TableRow>[] = [
   },
 ]
 </script>
+
+<template>
+  <UTable :data="tableRows" :columns="columns" />
+</template>

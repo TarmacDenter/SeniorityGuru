@@ -4,6 +4,7 @@ node_modules
 # Nuxt build output
 .nuxt
 .output
+.vercel
 dist
 
 # NuxtHub local state
@@ -39,9 +40,7 @@ Thumbs.db
 .idea
 .vscode/
 
-# Claude Code — agent memory is ephemeral session state, not source
-.claude/agent-memory/
-.claude/worktrees
+.claude/
 .data
 
 # MCP server config (local dev URLs)
@@ -63,4 +62,12 @@ docs.local/
 # VSCode workspace (user-specific)
 *.code-workspace
 
-.worktrees/
+# Sandbox-created dotfiles (Claude Code bind-mounts these)
+.bash_profile
+.bashrc
+.profile
+.zprofile
+.zshrc
+.ripgreprc
+.gitconfig
+.gitmodules

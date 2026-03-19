@@ -1,3 +1,56 @@
+<script setup lang="ts">
+import type { QualDemographicScale, DensityBucket } from '#shared/utils/qual-analytics'
+import { SEAT_ORDER } from '#shared/utils/qual-analytics'
+
+const BUCKET_WIDTH_PCT = 5
+
+const props = defineProps<{
+  scales: QualDemographicScale[]
+}>()
+
+const sortedScales = computed(() =>
+  [...props.scales].sort((a, b) => {
+    const seatDiff = (SEAT_ORDER[a.seat] ?? 99) - (SEAT_ORDER[b.seat] ?? 99)
+    if (seatDiff !== 0) return seatDiff
+    const fleetDiff = a.fleet.localeCompare(b.fleet)
+    if (fleetDiff !== 0) return fleetDiff
+    return a.plugPercentile - b.plugPercentile
+  }),
+)
+
+const rowMaxCounts = computed(() => {
+  const map = new Map<string, number>()
+  for (const scale of props.scales) {
+    const key = `${scale.fleet} ${scale.seat} ${scale.base}`
+    map.set(key, Math.max(...scale.density.map((b) => b.count), 1))
+  }
+  return map
+})
+
+function densityBarStyle(scale: QualDemographicScale, bucket: DensityBucket) {
+  if (bucket.count === 0) return { display: 'none' }
+  const key = `${scale.fleet} ${scale.seat} ${scale.base}`
+  const maxInRow = rowMaxCounts.value.get(key) ?? 1
+  const heightPct = (bucket.count / maxInRow) * 100
+  return {
+    left: `${bucket.start}%`,
+    width: `${BUCKET_WIDTH_PCT}%`,
+    height: `${Math.max(heightPct, 4)}%`,
+    borderRadius: '1px 1px 0 0',
+  }
+}
+
+function clamp(value: number) {
+  return Math.max(0, Math.min(100, value))
+}
+
+function isProjecting(scale: QualDemographicScale) {
+  return Math.abs(scale.userPercentile - scale.currentUserPercentile) > 0.1
+}
+
+const hasProjection = computed(() => sortedScales.value.some(isProjecting))
+</script>
+
 <template>
   <div class="space-y-1">
     <p class="text-sm text-[var(--ui-text-muted)] mb-3">
@@ -108,56 +161,3 @@
     </div>
   </div>
 </template>
-
-<script setup lang="ts">
-import type { QualDemographicScale, DensityBucket } from '#shared/utils/qual-analytics'
-import { SEAT_ORDER } from '#shared/utils/qual-analytics'
-
-const BUCKET_WIDTH_PCT = 5
-
-const props = defineProps<{
-  scales: QualDemographicScale[]
-}>()
-
-const sortedScales = computed(() =>
-  [...props.scales].sort((a, b) => {
-    const seatDiff = (SEAT_ORDER[a.seat] ?? 99) - (SEAT_ORDER[b.seat] ?? 99)
-    if (seatDiff !== 0) return seatDiff
-    const fleetDiff = a.fleet.localeCompare(b.fleet)
-    if (fleetDiff !== 0) return fleetDiff
-    return a.plugPercentile - b.plugPercentile
-  }),
-)
-
-const rowMaxCounts = computed(() => {
-  const map = new Map<string, number>()
-  for (const scale of props.scales) {
-    const key = `${scale.fleet} ${scale.seat} ${scale.base}`
-    map.set(key, Math.max(...scale.density.map((b) => b.count), 1))
-  }
-  return map
-})
-
-function densityBarStyle(scale: QualDemographicScale, bucket: DensityBucket) {
-  if (bucket.count === 0) return { display: 'none' }
-  const key = `${scale.fleet} ${scale.seat} ${scale.base}`
-  const maxInRow = rowMaxCounts.value.get(key) ?? 1
-  const heightPct = (bucket.count / maxInRow) * 100
-  return {
-    left: `${bucket.start}%`,
-    width: `${BUCKET_WIDTH_PCT}%`,
-    height: `${Math.max(heightPct, 4)}%`,
-    borderRadius: '1px 1px 0 0',
-  }
-}
-
-function clamp(value: number) {
-  return Math.max(0, Math.min(100, value))
-}
-
-function isProjecting(scale: QualDemographicScale) {
-  return Math.abs(scale.userPercentile - scale.currentUserPercentile) > 0.1
-}
-
-const hasProjection = computed(() => sortedScales.value.some(isProjecting))
-</script>

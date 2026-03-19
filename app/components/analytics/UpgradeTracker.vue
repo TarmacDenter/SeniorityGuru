@@ -1,3 +1,38 @@
+<script setup lang="ts">
+import { h } from 'vue'
+import type { TableColumn } from '@nuxt/ui'
+import type { UpgradeTrackerResponse } from '~/composables/useQualUpgrades'
+
+type IntervalRow = {
+  dateRange: string
+  upgrades: number
+  fleetChanges: number
+  downgrades: number
+}
+
+const props = defineProps<{
+  data: UpgradeTrackerResponse | null
+  loading: boolean
+  error: string | null
+}>()
+
+const tableRows = computed<IntervalRow[]>(() =>
+  (props.data?.intervals ?? []).map(i => ({
+    dateRange: `${i.fromDate} → ${i.toDate}`,
+    upgrades: i.upgrades,
+    fleetChanges: i.fleetChanges,
+    downgrades: i.downgrades,
+  })),
+)
+
+const columns: TableColumn<IntervalRow>[] = [
+  { accessorKey: 'dateRange', header: 'Date Range' },
+  { accessorKey: 'upgrades', header: 'Upgrades', cell: ({ row }) => h('span', { class: 'font-mono' }, row.original.upgrades) },
+  { accessorKey: 'fleetChanges', header: 'Fleet Changes', cell: ({ row }) => h('span', { class: 'font-mono' }, row.original.fleetChanges) },
+  { accessorKey: 'downgrades', header: 'Downgrades', cell: ({ row }) => h('span', { class: 'font-mono' }, row.original.downgrades) },
+]
+</script>
+
 <template>
   <div>
     <!-- Loading state -->
@@ -63,38 +98,3 @@
     </template>
   </div>
 </template>
-
-<script setup lang="ts">
-import { h } from 'vue'
-import type { TableColumn } from '@nuxt/ui'
-import type { UpgradeTrackerResponse } from '~/composables/useQualUpgrades'
-
-type IntervalRow = {
-  dateRange: string
-  upgrades: number
-  fleetChanges: number
-  downgrades: number
-}
-
-const props = defineProps<{
-  data: UpgradeTrackerResponse | null
-  loading: boolean
-  error: string | null
-}>()
-
-const tableRows = computed<IntervalRow[]>(() =>
-  (props.data?.intervals ?? []).map(i => ({
-    dateRange: `${i.fromDate} → ${i.toDate}`,
-    upgrades: i.upgrades,
-    fleetChanges: i.fleetChanges,
-    downgrades: i.downgrades,
-  })),
-)
-
-const columns: TableColumn<IntervalRow>[] = [
-  { accessorKey: 'dateRange', header: 'Date Range' },
-  { accessorKey: 'upgrades', header: 'Upgrades', cell: ({ row }) => h('span', { class: 'font-mono' }, row.original.upgrades) },
-  { accessorKey: 'fleetChanges', header: 'Fleet Changes', cell: ({ row }) => h('span', { class: 'font-mono' }, row.original.fleetChanges) },
-  { accessorKey: 'downgrades', header: 'Downgrades', cell: ({ row }) => h('span', { class: 'font-mono' }, row.original.downgrades) },
-]
-</script>

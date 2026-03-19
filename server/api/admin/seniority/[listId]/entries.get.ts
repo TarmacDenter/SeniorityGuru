@@ -1,9 +1,9 @@
 import { serverSupabaseServiceRole } from '#supabase/server'
 import { type SeniorityEntryResponse, SeniorityEntryResponseSchema } from '~~/shared/schemas/seniority-list'
 import { createAdminLogger } from '#server/api/admin/logger'
+import { z } from 'zod'
 
 const logger = createAdminLogger('seniority/entries')
-import { z } from 'zod'
 
 const ListIdParamSchema = z.object({
   listId: z.string().uuid('Invalid list ID'),

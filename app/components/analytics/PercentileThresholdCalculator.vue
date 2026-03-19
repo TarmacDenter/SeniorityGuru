@@ -1,3 +1,18 @@
+<script setup lang="ts">
+defineProps<{
+  result: { year: string; optimistic: string | null; pessimistic: string | null } | null
+  targetPercentile: number
+  selectedQual: string
+  hasEmployeeNumber: boolean
+}>()
+
+defineEmits<{
+  percentileChange: [number]
+}>()
+
+const percentileOptions = [50, 75, 90] as const
+</script>
+
 <template>
   <div class="space-y-4">
     <!-- No employee number state -->
@@ -70,18 +85,3 @@
     </template>
   </div>
 </template>
-
-<script setup lang="ts">
-defineProps<{
-  result: { year: string; optimistic: string | null; pessimistic: string | null } | null
-  targetPercentile: number
-  selectedQual: string
-  hasEmployeeNumber: boolean
-}>()
-
-defineEmits<{
-  percentileChange: [number]
-}>()
-
-const percentileOptions = [50, 75, 90] as const
-</script>

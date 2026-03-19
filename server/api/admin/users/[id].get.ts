@@ -27,7 +27,7 @@ export default defineEventHandler(async (event) => {
 
   const { data: profile, error: profileError } = await client
     .from('profiles')
-    .select('role, icao_code, employee_number')
+    .select('role, icao_code, employee_number, mandatory_retirement_age')
     .eq('id', id)
     .single()
 
@@ -44,5 +44,6 @@ export default defineEventHandler(async (event) => {
     role: profile?.role ?? 'user',
     icao_code: profile?.icao_code ?? null,
     employee_number: profile?.employee_number ?? null,
+    mandatory_retirement_age: profile?.mandatory_retirement_age ?? 65,
   }, 'admin/users/[id].get')
 })

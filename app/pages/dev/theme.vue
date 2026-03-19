@@ -1,3 +1,47 @@
+<script setup lang="ts">
+definePageMeta({ layout: 'dashboard' })
+
+if (!import.meta.dev) {
+  await navigateTo('/dashboard')
+}
+
+const semanticColors = ['primary', 'secondary', 'success', 'info', 'warning', 'error', 'neutral'] as const
+const shades = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950] as const
+const componentColors = ['primary', 'secondary', 'success', 'info', 'warning', 'error', 'neutral'] as const
+
+const textTokens = [
+  { class: 'text-highlighted' },
+  { class: 'text-toned' },
+  { class: 'text-default' },
+  { class: 'text-muted' },
+  { class: 'text-dimmed' },
+]
+
+const surfaceTokens = [
+  { label: 'bg (base)', bg: 'bg-default' },
+  { label: 'bg-muted', bg: 'bg-muted' },
+  { label: 'bg-elevated', bg: 'bg-elevated' },
+  { label: 'bg-accented', bg: 'bg-accented' },
+]
+
+const iconColors = [
+  { class: 'text-primary' },
+  { class: 'text-secondary' },
+  { class: 'text-success' },
+  { class: 'text-info' },
+  { class: 'text-warning' },
+  { class: 'text-error' },
+  { class: 'text-muted' },
+  { class: 'text-highlighted' },
+]
+
+const retirementTokens = [
+  { label: 'past', title: 'Past / Retiring' },
+  { label: 'imminent', title: 'Imminent (~2yr)' },
+  { label: 'soon', title: 'Soon (~5yr)' },
+]
+</script>
+
 <template>
   <UDashboardPanel>
     <template #body>
@@ -117,47 +161,3 @@
     </template>
   </UDashboardPanel>
 </template>
-
-<script setup lang="ts">
-definePageMeta({ layout: 'dashboard' })
-
-if (!import.meta.dev) {
-  await navigateTo('/dashboard')
-}
-
-const semanticColors = ['primary', 'secondary', 'success', 'info', 'warning', 'error', 'neutral'] as const
-const shades = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950] as const
-const componentColors = ['primary', 'secondary', 'success', 'info', 'warning', 'error', 'neutral'] as const
-
-const textTokens = [
-  { class: 'text-highlighted' },
-  { class: 'text-toned' },
-  { class: 'text-default' },
-  { class: 'text-muted' },
-  { class: 'text-dimmed' },
-]
-
-const surfaceTokens = [
-  { label: 'bg (base)', bg: 'bg-default' },
-  { label: 'bg-muted', bg: 'bg-muted' },
-  { label: 'bg-elevated', bg: 'bg-elevated' },
-  { label: 'bg-accented', bg: 'bg-accented' },
-]
-
-const iconColors = [
-  { class: 'text-primary' },
-  { class: 'text-secondary' },
-  { class: 'text-success' },
-  { class: 'text-info' },
-  { class: 'text-warning' },
-  { class: 'text-error' },
-  { class: 'text-muted' },
-  { class: 'text-highlighted' },
-]
-
-const retirementTokens = [
-  { label: 'past', title: 'Past / Retiring' },
-  { label: 'imminent', title: 'Imminent (~2yr)' },
-  { label: 'soon', title: 'Soon (~5yr)' },
-]
-</script>

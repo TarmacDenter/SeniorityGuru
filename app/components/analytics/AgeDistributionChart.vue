@@ -1,20 +1,3 @@
-<template>
-  <div>
-    <ClientOnly>
-      <div class="h-64 relative">
-        <Bar :data="chartData" :options="chartOptions" />
-      </div>
-      <template #fallback>
-        <USkeleton class="h-64 w-full" />
-      </template>
-    </ClientOnly>
-    <p v-if="nullCount > 0" class="mt-2 text-xs text-[var(--ui-text-muted)]">
-      * {{ nullCount }} pilot{{ nullCount === 1 ? '' : 's' }} excluded (no retirement date on file).
-      Age derived using mandatory retirement age of 65.
-    </p>
-  </div>
-</template>
-
 <script setup lang="ts">
 import { Bar } from 'vue-chartjs'
 import {
@@ -69,3 +52,20 @@ const chartOptions = computed<ChartOptions<'bar'>>(() => ({
   },
 } as ChartOptions<'bar'>))
 </script>
+
+<template>
+  <div>
+    <ClientOnly>
+      <div class="h-64 relative">
+        <Bar :data="chartData" :options="chartOptions" />
+      </div>
+      <template #fallback>
+        <USkeleton class="h-64 w-full" />
+      </template>
+    </ClientOnly>
+    <p v-if="nullCount > 0" class="mt-2 text-xs text-[var(--ui-text-muted)]">
+      * {{ nullCount }} pilot{{ nullCount === 1 ? '' : 's' }} excluded (no retirement date on file).
+      Age derived using mandatory retirement age of 65.
+    </p>
+  </div>
+</template>

@@ -1,20 +1,15 @@
 // @vitest-environment node
 import { describe, it, expect } from 'vitest'
 import { computeComparison } from './seniority-compare'
-import type { SeniorityEntryResponse } from '#shared/schemas/seniority-list'
+import type { SeniorityEntry } from '#shared/schemas/seniority-list'
 
-type Entry = SeniorityEntryResponse
-
-function makeEntry(overrides: Partial<Entry> & { employee_number: string; seniority_number: number }): Entry {
+function makeEntry(overrides: Partial<SeniorityEntry> & { employee_number: string; seniority_number: number }): SeniorityEntry {
   return {
-    id: crypto.randomUUID(),
-    list_id: 'list-1',
     hire_date: '2010-01-01',
-    name: null,
+    retire_date: '2055-01-01',
     seat: 'CA',
     fleet: '737',
     base: 'JFK',
-    retire_date: null,
     ...overrides,
   }
 }
@@ -22,7 +17,7 @@ function makeEntry(overrides: Partial<Entry> & { employee_number: string; senior
 describe('computeComparison', () => {
   it('detects retired pilots (present in old, absent in new, retire_date <= effective_date)', () => {
     const older = [makeEntry({ employee_number: '100', seniority_number: 1, retire_date: '2025-06-01' })]
-    const newer: Entry[] = []
+    const newer: SeniorityEntry[] = []
     const result = computeComparison(older, newer, '2026-01-01')
     expect(result.retired).toHaveLength(1)
     expect(result.retired[0]!.employee_number).toBe('100')
@@ -31,10 +26,10 @@ describe('computeComparison', () => {
 
   it('detects departed pilots (present in old, absent in new, no/future retire_date)', () => {
     const older = [
-      makeEntry({ employee_number: '200', seniority_number: 1, retire_date: null }),
+      makeEntry({ employee_number: '200', seniority_number: 1 }),
       makeEntry({ employee_number: '201', seniority_number: 2, retire_date: '2030-01-01' }),
     ]
-    const newer: Entry[] = []
+    const newer: SeniorityEntry[] = []
     const result = computeComparison(older, newer, '2026-01-01')
     expect(result.departed).toHaveLength(2)
     expect(result.retired).toHaveLength(0)
@@ -61,7 +56,7 @@ describe('computeComparison', () => {
   })
 
   it('detects new hires (in newer, absent from older)', () => {
-    const older: Entry[] = []
+    const older: SeniorityEntry[] = []
     const newer = [makeEntry({ employee_number: '500', seniority_number: 100, hire_date: '2025-12-01' })]
     const result = computeComparison(older, newer, '2026-01-01')
     expect(result.newHires).toHaveLength(1)

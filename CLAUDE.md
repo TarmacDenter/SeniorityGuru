@@ -132,7 +132,15 @@ supabase db push        # push local migrations to remote
 
 ## Testing
 
-**All new features and bug fixes require tests.** `npm test` must pass before any PR is merged.
+**All new features and bug fixes require tests.** Before finishing any feature or declaring work done, all three gates must pass:
+
+```bash
+npm run lint       # zero errors (warnings OK)
+npm run typecheck  # zero errors
+npm test           # all tests pass
+```
+
+Run all three. Do not claim completion without fresh output from each.
 
 **Stack:** Vitest + `@nuxt/test-utils` + `@vue/test-utils` + `happy-dom`
 

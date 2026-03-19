@@ -110,7 +110,7 @@ test.describe('Invite flow', () => {
     await userPage.getByRole('button', { name: /continue/i }).click()
 
     // Step 8: Should land on the dashboard
-    await expect(userPage).toHaveURL('http://localhost:3000/', { timeout: 10000 })
+    await expect(userPage).toHaveURL('http://localhost:3000/dashboard', { timeout: 10000 })
 
     await userContext.close()
   })
@@ -203,14 +203,14 @@ test.describe('Change user role', () => {
     const row = table.getByRole('row').filter({ hasText: 'test@test.com' })
     await row.locator('button').filter({ hasText: 'user' }).click()
 
-    // Select "moderator" from dropdown
-    await page.getByRole('option', { name: 'moderator' }).click()
+    // Select "admin" from dropdown
+    await page.getByRole('option', { name: 'admin' }).click()
 
     // Should show success toast
     await expect(page.locator('[data-slot="title"]').filter({ hasText: 'Role updated' })).toBeVisible({ timeout: 5000 })
 
     // Revert to "user" (cleanup)
-    await row.locator('button').filter({ hasText: 'moderator' }).click()
+    await row.locator('button').filter({ hasText: 'admin' }).click()
     await page.getByRole('option', { name: 'user' }).click()
     await expect(page.locator('[data-slot="title"]').filter({ hasText: 'Role updated' }).last()).toBeVisible({ timeout: 5000 })
   })

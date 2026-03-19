@@ -1,3 +1,82 @@
+<script setup lang="ts">
+import { useSeniorityStore } from '~/stores/seniority'
+import { useQualUpgrades } from '~/composables/useQualUpgrades'
+import { retiredColumns, departedColumns, qualMoveColumns, rankChangeColumns, newHireColumns, qualMoveFilters } from '~/utils/column-definitions'
+
+definePageMeta({
+  middleware: 'auth',
+  layout: 'dashboard',
+})
+
+const seniorityStore = useSeniorityStore()
+const route = useRoute()
+
+const listIdA = ref<string | undefined>((route.query.a as string) || undefined)
+const listIdB = ref<string | undefined>((route.query.b as string) || undefined)
+
+const { loading, error, comparison } = useSeniorityCompare(listIdA, listIdB)
+const upgrades = useQualUpgrades({ lazy: true })
+const upgradesFetched = ref(false)
+
+function onUpgradesTabActivated() {
+  if (!upgradesFetched.value) {
+    upgradesFetched.value = true
+    upgrades.fetchUpgradeTracker()
+  }
+}
+
+// Keep query params in sync — only for user-initiated changes after mount.
+// When onMounted sets defaults, oldA and oldB are both undefined → guard skips.
+watch([listIdA, listIdB], async ([a, b], [oldA, oldB]) => {
+  if (!oldA && !oldB) return
+  const query: Record<string, string> = {}
+  if (a) query.a = a
+  if (b) query.b = b
+  await navigateTo({ path: '/seniority/compare', query }, { replace: true })
+})
+
+// Load lists for the selectors
+onMounted(async () => {
+  if (!seniorityStore.lists.length) {
+    await seniorityStore.fetchLists()
+  }
+  // Auto-select most recent two if not already set.
+  // Fires watcher but oldA/oldB are both undefined → guard catches it.
+  if (!listIdA.value && !listIdB.value && seniorityStore.lists.length >= 2) {
+    listIdA.value = seniorityStore.lists[1]!.id // second most recent = older
+    listIdB.value = seniorityStore.lists[0]!.id // most recent = newer
+  }
+})
+
+const listOptions = computed(() =>
+  seniorityStore.lists.map(l => ({
+    label: l.title ? `${l.title} — ${l.effective_date}` : l.effective_date,
+    value: l.id,
+  })),
+)
+
+const summaryStats = computed(() => {
+  if (!comparison.value) return []
+  return [
+    { label: 'Retired', count: comparison.value.retired.length, color: 'text-(--ui-text-muted)' },
+    { label: 'Departed', count: comparison.value.departed.length, color: 'text-(--ui-warning)' },
+    { label: 'Qual Moves', count: comparison.value.qualMoves.length, color: 'text-(--ui-info)' },
+    { label: 'Rank Changes', count: comparison.value.rankChanges.length, color: 'text-(--ui-primary)' },
+    { label: 'New Hires', count: comparison.value.newHires.length, color: 'text-(--ui-success)' },
+  ]
+})
+
+const tabs = [
+  { label: 'Retired', slot: 'retired' as const },
+  { label: 'Departed', slot: 'departed' as const },
+  { label: 'Qual Moves', slot: 'qual-moves' as const },
+  { label: 'Rank Changes', slot: 'rank-changes' as const },
+  { label: 'New Hires', slot: 'new-hires' as const },
+  { label: 'Upgrades', slot: 'upgrades' as const },
+]
+
+</script>
+
 <template>
   <UDashboardPanel>
     <template #header>
@@ -89,82 +168,3 @@
     </template>
   </UDashboardPanel>
 </template>
-
-<script setup lang="ts">
-import { useSeniorityStore } from '~/stores/seniority'
-import { useQualUpgrades } from '~/composables/useQualUpgrades'
-import { retiredColumns, departedColumns, qualMoveColumns, rankChangeColumns, newHireColumns, qualMoveFilters } from '~/utils/column-definitions'
-
-definePageMeta({
-  middleware: 'auth',
-  layout: 'dashboard',
-})
-
-const seniorityStore = useSeniorityStore()
-const route = useRoute()
-
-const listIdA = ref<string | undefined>((route.query.a as string) || undefined)
-const listIdB = ref<string | undefined>((route.query.b as string) || undefined)
-
-const { loading, error, comparison } = useSeniorityCompare(listIdA, listIdB)
-const upgrades = useQualUpgrades({ lazy: true })
-const upgradesFetched = ref(false)
-
-function onUpgradesTabActivated() {
-  if (!upgradesFetched.value) {
-    upgradesFetched.value = true
-    upgrades.fetchUpgradeTracker()
-  }
-}
-
-// Keep query params in sync — only for user-initiated changes after mount.
-// When onMounted sets defaults, oldA and oldB are both undefined → guard skips.
-watch([listIdA, listIdB], async ([a, b], [oldA, oldB]) => {
-  if (!oldA && !oldB) return
-  const query: Record<string, string> = {}
-  if (a) query.a = a
-  if (b) query.b = b
-  await navigateTo({ path: '/seniority/compare', query }, { replace: true })
-})
-
-// Load lists for the selectors
-onMounted(async () => {
-  if (!seniorityStore.lists.length) {
-    await seniorityStore.fetchLists()
-  }
-  // Auto-select most recent two if not already set.
-  // Fires watcher but oldA/oldB are both undefined → guard catches it.
-  if (!listIdA.value && !listIdB.value && seniorityStore.lists.length >= 2) {
-    listIdA.value = seniorityStore.lists[1]!.id // second most recent = older
-    listIdB.value = seniorityStore.lists[0]!.id // most recent = newer
-  }
-})
-
-const listOptions = computed(() =>
-  seniorityStore.lists.map(l => ({
-    label: l.title ? `${l.title} — ${l.effective_date}` : l.effective_date,
-    value: l.id,
-  })),
-)
-
-const summaryStats = computed(() => {
-  if (!comparison.value) return []
-  return [
-    { label: 'Retired', count: comparison.value.retired.length, color: 'text-(--ui-text-muted)' },
-    { label: 'Departed', count: comparison.value.departed.length, color: 'text-(--ui-warning)' },
-    { label: 'Qual Moves', count: comparison.value.qualMoves.length, color: 'text-(--ui-info)' },
-    { label: 'Rank Changes', count: comparison.value.rankChanges.length, color: 'text-(--ui-primary)' },
-    { label: 'New Hires', count: comparison.value.newHires.length, color: 'text-(--ui-success)' },
-  ]
-})
-
-const tabs = [
-  { label: 'Retired', slot: 'retired' as const },
-  { label: 'Departed', slot: 'departed' as const },
-  { label: 'Qual Moves', slot: 'qual-moves' as const },
-  { label: 'Rank Changes', slot: 'rank-changes' as const },
-  { label: 'New Hires', slot: 'new-hires' as const },
-  { label: 'Upgrades', slot: 'upgrades' as const },
-]
-
-</script>

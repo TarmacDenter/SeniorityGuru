@@ -43,12 +43,11 @@ describe('useQualDemographics', () => {
       expect(availableFleets.value).toEqual([])
     })
 
-    it('returns sorted unique non-null fleets', () => {
+    it('returns sorted unique fleets', () => {
       mockSeniorityStore.entries = [
         makeEntry({ fleet: '777' }),
         makeEntry({ fleet: '737' }),
-        makeEntry({ fleet: '737' }), // duplicate
-        makeEntry({ fleet: null }),  // null excluded
+        makeEntry({ fleet: '737' }), // duplicate — should be deduplicated
       ]
       const { availableFleets } = useQualDemographics()
       expect(availableFleets.value).toEqual(['737', '777'])
@@ -56,12 +55,11 @@ describe('useQualDemographics', () => {
   })
 
   describe('availableSeats', () => {
-    it('returns sorted unique non-null seats', () => {
+    it('returns sorted unique seats', () => {
       mockSeniorityStore.entries = [
         makeEntry({ seat: 'CA' }),
         makeEntry({ seat: 'FO' }),
-        makeEntry({ seat: 'CA' }), // duplicate
-        makeEntry({ seat: null }), // null excluded
+        makeEntry({ seat: 'CA' }), // duplicate — should be deduplicated
       ]
       const { availableSeats } = useQualDemographics()
       expect(availableSeats.value).toEqual(['CA', 'FO'])
@@ -86,7 +84,7 @@ describe('useQualDemographics', () => {
       mockSeniorityStore.entries = [
         makeEntry({ base: 'JFK' }),
         makeEntry({ base: 'LAX' }),
-        makeEntry({ base: null }), // null excluded
+        makeEntry({ base: 'JFK' }), // duplicate — should be deduplicated
       ]
       const { availableBases } = useQualDemographics()
       expect(availableBases.value).toEqual(['JFK', 'LAX'])
@@ -97,7 +95,7 @@ describe('useQualDemographics', () => {
     it('returns correct shape with buckets and nullCount', () => {
       mockSeniorityStore.entries = [
         makeEntry({ retire_date: '2030-01-01' }),
-        makeEntry({ retire_date: null }),
+        makeEntry({ retire_date: undefined }),
       ]
       mockUserStore.profile = makeProfile({ mandatory_retirement_age: 65 })
       const { ageDistribution } = useQualDemographics()
@@ -271,28 +269,36 @@ describe('useQualDemographics', () => {
     })
   })
 
-  describe('qualFilterFn', () => {
-    it('passes all entries when no filter selected', () => {
+  describe('qualSpec', () => {
+    it('returns empty spec when no filter selected', () => {
       mockSeniorityStore.entries = [
         makeEntry({ fleet: '737', seat: 'CA', base: 'JFK' }),
         makeEntry({ fleet: '777', seat: 'FO', base: 'LAX' }),
       ]
-      const { qualFilterFn } = useQualDemographics()
-      const filtered = mockSeniorityStore.entries.filter(qualFilterFn.value)
-      expect(filtered.length).toBe(2)
+      const { qualSpec } = useQualDemographics()
+      expect(qualSpec.value).toEqual({})
     })
 
-    it('filters correctly when fleet and seat selected', () => {
+    it('returns spec with fleet and seat when selected', () => {
       mockSeniorityStore.entries = [
         makeEntry({ fleet: '737', seat: 'CA', base: 'JFK' }),
         makeEntry({ fleet: '777', seat: 'FO', base: 'LAX' }),
       ]
-      const { qualFilterFn, selectedFleet, selectedSeat } = useQualDemographics()
+      const { qualSpec, selectedFleet, selectedSeat } = useQualDemographics()
       selectedFleet.value = '737'
       selectedSeat.value = 'CA'
-      const filtered = mockSeniorityStore.entries.filter(qualFilterFn.value)
-      expect(filtered.length).toBe(1)
-      expect(filtered[0]?.fleet).toBe('737')
+      expect(qualSpec.value).toEqual({ fleet: '737', seat: 'CA' })
+    })
+
+    it('returns spec with all three dimensions when selected', () => {
+      mockSeniorityStore.entries = [
+        makeEntry({ fleet: '737', seat: 'CA', base: 'JFK' }),
+      ]
+      const { qualSpec, selectedFleet, selectedSeat, selectedBase } = useQualDemographics()
+      selectedFleet.value = '737'
+      selectedSeat.value = 'CA'
+      selectedBase.value = 'JFK'
+      expect(qualSpec.value).toEqual({ fleet: '737', seat: 'CA', base: 'JFK' })
     })
   })
 })

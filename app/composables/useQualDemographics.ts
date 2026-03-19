@@ -1,28 +1,25 @@
-import {
-  computeAgeDistribution,
-  findMostJuniorCA,
-  computeQualComposition,
-  computeYosDistribution,
-  computeYosHistogram,
-} from '#shared/utils/qual-analytics'
+import { createLens, createScenario, qualSpecLabel } from '#shared/utils/seniority-engine'
+import type { QualSpec } from '#shared/utils/seniority-engine'
 import { uniqueEntryValues } from '#shared/utils/entry-filters'
-import type { FilterFn } from '#shared/utils/seniority-math'
 import { useSeniorityStore } from '~/stores/seniority'
 import { useUserStore } from '~/stores/user'
 import { useUserEntry } from './useUserEntry'
+import { useSeniorityEngine } from './useSeniorityEngine'
 
 export function useQualDemographics() {
   const seniorityStore = useSeniorityStore()
   const userStore = useUserStore()
   const userEntry = useUserEntry()
+  const { snapshot, lens } = useSeniorityEngine()
 
   const selectedFleet = ref<string | null>(null)
   const selectedSeat = ref<string | null>(null)
   const selectedBase = ref<string | null>(null)
 
-  const availableFleets = computed(() => uniqueEntryValues(seniorityStore.entries, 'fleet'))
-  const availableSeats = computed(() => uniqueEntryValues(seniorityStore.entries, 'seat'))
+  const availableFleets = computed(() => snapshot.value?.uniqueFleets ?? [])
+  const availableSeats = computed(() => snapshot.value?.uniqueSeats ?? [])
   const availableBases = computed(() => {
+    // Bases are filtered by selected fleet/seat — can't use snapshot directly
     const filtered = seniorityStore.entries.filter((e) => {
       if (selectedFleet.value && e.fleet !== selectedFleet.value) return false
       if (selectedSeat.value && e.seat !== selectedSeat.value) return false
@@ -31,43 +28,50 @@ export function useQualDemographics() {
     return uniqueEntryValues(filtered, 'base')
   })
 
-  const qualFilterFn = computed<FilterFn>(() => {
-    return (e) => {
-      if (selectedFleet.value && e.fleet !== selectedFleet.value) return false
-      if (selectedSeat.value && e.seat !== selectedSeat.value) return false
-      if (selectedBase.value && e.base !== selectedBase.value) return false
-      return true
-    }
+  const qualSpec = computed<QualSpec>(() => {
+    const spec: { fleet?: string; seat?: string; base?: string } = {}
+    if (selectedFleet.value) spec.fleet = selectedFleet.value
+    if (selectedSeat.value) spec.seat = selectedSeat.value
+    if (selectedBase.value) spec.base = selectedBase.value
+    return spec
   })
 
   const mandatoryAge = computed(() => userStore.profile?.mandatory_retirement_age ?? 65)
 
+  const scenario = computed(() => createScenario({ scopeFilter: qualSpec.value }))
+
+  // Demographics doesn't need an anchor — use anchored lens if available,
+  // fall back to anchor-less lens for demographic-only queries
+  const demographicsResult = computed(() => {
+    if (!snapshot.value) return null
+    const l = lens.value ?? createLens(snapshot.value)
+    return l.demographics(mandatoryAge.value, scenario.value)
+  })
+
   const ageDistribution = computed(() =>
-    computeAgeDistribution(seniorityStore.entries, mandatoryAge.value, qualFilterFn.value),
+    demographicsResult.value?.ageDistribution ?? { buckets: [], nullCount: 0 },
   )
 
   const mostJuniorCAs = computed(() =>
-    findMostJuniorCA(seniorityStore.entries.filter(qualFilterFn.value)),
+    demographicsResult.value?.mostJuniorCAs ?? [],
   )
 
   const qualComposition = computed(() =>
-    computeQualComposition(seniorityStore.entries),
+    demographicsResult.value?.qualComposition ?? [],
   )
 
   const yosDistribution = computed(() =>
-    computeYosDistribution(seniorityStore.entries, qualFilterFn.value),
+    demographicsResult.value?.yosDistribution
+    ?? { entryFloor: 0, p10: 0, p25: 0, median: 0, p75: 0, p90: 0, max: 0 },
   )
 
   const yosHistogram = computed(() =>
-    computeYosHistogram(seniorityStore.entries, qualFilterFn.value),
+    demographicsResult.value?.yosHistogram ?? [],
   )
 
   const qualLabel = computed(() => {
-    const parts: string[] = []
-    if (selectedFleet.value) parts.push(selectedFleet.value)
-    if (selectedSeat.value) parts.push(selectedSeat.value)
-    if (selectedBase.value) parts.push(selectedBase.value)
-    return parts.join(' ')
+    const label = qualSpecLabel(qualSpec.value)
+    return label === 'Company-wide' ? '' : label
   })
 
   // Auto-clear stale selections when the active list changes
@@ -97,7 +101,7 @@ export function useQualDemographics() {
     availableFleets,
     availableSeats,
     availableBases,
-    qualFilterFn,
+    qualSpec,
     qualLabel,
     clearFilter,
     ageDistribution,

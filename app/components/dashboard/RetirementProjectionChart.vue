@@ -1,3 +1,11 @@
+<script setup lang="ts">
+import type { ChartData } from 'chart.js'
+
+defineProps<{
+  data: ChartData<'bar'>
+}>()
+</script>
+
 <template>
   <UCard>
     <template #header>
@@ -15,11 +23,3 @@
     </ClientOnly>
   </UCard>
 </template>
-
-<script setup lang="ts">
-import type { ChartData } from 'chart.js'
-
-defineProps<{
-  data: ChartData<'bar'>
-}>()
-</script>

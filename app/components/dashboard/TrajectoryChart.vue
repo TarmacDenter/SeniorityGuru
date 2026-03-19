@@ -1,25 +1,3 @@
-<template>
-  <UCard>
-    <template #header>
-      <div class="flex items-center justify-between">
-        <div class="flex items-center">
-          <h3 class="font-semibold text-highlighted">Company Seniority Trajectory</h3>
-          <InfoIcon text="Shows how your seniority percentile changes as pilots senior to you retire. Percentile: 100% = most senior, 0% = most junior." size="sm" class="ml-1.5" />
-          <slot name="badge" />
-        </div>
-        <UBadge color="primary" variant="subtle" size="sm">Projected</UBadge>
-      </div>
-    </template>
-
-    <ClientOnly>
-      <DashboardChart type="line" :data="chartData" :height="280" :options="chartOptions" />
-      <template #fallback>
-        <USkeleton class="h-[280px] w-full" />
-      </template>
-    </ClientOnly>
-  </UCard>
-</template>
-
 <script setup lang="ts">
 import type { ChartData, TooltipItem } from 'chart.js'
 
@@ -79,3 +57,25 @@ const chartOptions = {
   },
 };
 </script>
+
+<template>
+  <UCard>
+    <template #header>
+      <div class="flex items-center justify-between">
+        <div class="flex items-center">
+          <h3 class="font-semibold text-highlighted">Company Seniority Trajectory</h3>
+          <InfoIcon text="Shows how your seniority percentile changes as pilots senior to you retire. Percentile: 100% = most senior, 0% = most junior." size="sm" class="ml-1.5" />
+          <slot name="badge" />
+        </div>
+        <UBadge color="primary" variant="subtle" size="sm">Projected</UBadge>
+      </div>
+    </template>
+
+    <ClientOnly>
+      <DashboardChart type="line" :data="chartData" :height="280" :options="chartOptions" />
+      <template #fallback>
+        <USkeleton class="h-[280px] w-full" />
+      </template>
+    </ClientOnly>
+  </UCard>
+</template>

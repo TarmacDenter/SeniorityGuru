@@ -1,3 +1,36 @@
+<script setup lang="ts">
+import type { AdminStatsResponse, AdminActivityResponse } from '#shared/schemas/admin'
+
+definePageMeta({ layout: 'dashboard', middleware: ['auth', 'admin'] })
+
+const { data: stats, pending: statsPending } = await useFetch<AdminStatsResponse>('/api/admin/stats')
+const { data: activity, pending: activityPending } = await useFetch<AdminActivityResponse>('/api/admin/activity')
+
+function eventLabel(item: AdminActivityResponse[number]): string {
+  if (item.event_type === 'user_signup') return 'New user signed up'
+  if (item.event_type === 'list_upload') {
+    const meta = item.metadata as { title?: string; airline?: string }
+    const parts: string[] = ['Uploaded a list']
+    if (meta.title || meta.airline) {
+      const detail = [meta.title, meta.airline ? `(${meta.airline})` : ''].filter(Boolean).join(' ')
+      parts.push(`: ${detail}`)
+    }
+    return parts.join('')
+  }
+  return item.event_type
+}
+
+function formatRelative(dateStr: string): string {
+  const now = Date.now()
+  const then = new Date(dateStr).getTime()
+  const diff = Math.floor((now - then) / 1000)
+  if (diff < 60) return 'just now'
+  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`
+  return `${Math.floor(diff / 86400)}d ago`
+}
+</script>
+
 <template>
   <UDashboardPanel>
     <template #header>
@@ -75,36 +108,3 @@
     </template>
   </UDashboardPanel>
 </template>
-
-<script setup lang="ts">
-import type { AdminStatsResponse, AdminActivityResponse } from '#shared/schemas/admin'
-
-definePageMeta({ layout: 'dashboard', middleware: ['auth', 'admin'] })
-
-const { data: stats, pending: statsPending } = await useFetch<AdminStatsResponse>('/api/admin/stats')
-const { data: activity, pending: activityPending } = await useFetch<AdminActivityResponse>('/api/admin/activity')
-
-function eventLabel(item: AdminActivityResponse[number]): string {
-  if (item.event_type === 'user_signup') return 'New user signed up'
-  if (item.event_type === 'list_upload') {
-    const meta = item.metadata as { title?: string; airline?: string }
-    const parts: string[] = ['Uploaded a list']
-    if (meta.title || meta.airline) {
-      const detail = [meta.title, meta.airline ? `(${meta.airline})` : ''].filter(Boolean).join(' ')
-      parts.push(`: ${detail}`)
-    }
-    return parts.join('')
-  }
-  return item.event_type
-}
-
-function formatRelative(dateStr: string): string {
-  const now = Date.now()
-  const then = new Date(dateStr).getTime()
-  const diff = Math.floor((now - then) / 1000)
-  if (diff < 60) return 'just now'
-  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`
-  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`
-  return `${Math.floor(diff / 86400)}d ago`
-}
-</script>

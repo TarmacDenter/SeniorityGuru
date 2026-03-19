@@ -19,7 +19,7 @@ const { mocks, mockLogger } = vi.hoisted(() => {
 
 /* Nitro auto-imports → globals */
 Object.assign(globalThis, {
-  defineEventHandler: (fn: Function) => fn,
+  defineEventHandler: (fn: (...args: unknown[]) => unknown) => fn,
   createError: (opts: { statusCode: number; statusMessage: string }) =>
     Object.assign(new Error(opts.statusMessage), opts),
   requireAdmin: mocks.requireAdmin,

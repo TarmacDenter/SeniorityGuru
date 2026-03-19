@@ -26,6 +26,16 @@ describe('normalizeEmployeeNumber', () => {
   })
 })
 
+const createValid = () => ({
+    seniority_number: 1,
+    employee_number: '12345',
+    seat: 'CA',
+    base: 'JFK',
+    fleet: '737',
+    hire_date: '2010-01-15',
+    retire_date: '2050-02-14'
+  })
+
 
 describe('SeniorityEntrySchema', () => {
   const valid = {
@@ -35,6 +45,7 @@ describe('SeniorityEntrySchema', () => {
     base: 'JFK',
     fleet: '737',
     hire_date: '2010-01-15',
+    retire_date: '2050-02-14'
   }
 
   it('accepts a valid entry with required fields only', () => {
@@ -94,14 +105,7 @@ describe('SeniorityListIdSchema', () => {
 })
 
 describe('CreateSeniorityListSchema', () => {
-  const validEntry = {
-    seniority_number: 1,
-    employee_number: '12345',
-    seat: 'CA',
-    base: 'JFK',
-    fleet: '737',
-    hire_date: '2010-01-15',
-  }
+  const validEntry = createValid()
 
   it('accepts a valid list payload', () => {
     const result = CreateSeniorityListSchema.safeParse({
@@ -179,14 +183,7 @@ describe('UpdateSeniorityListSchema', () => {
 })
 
 describe('CreateSeniorityListSchema title field', () => {
-  const validEntry = {
-    seniority_number: 1,
-    employee_number: '12345',
-    seat: 'CA',
-    base: 'JFK',
-    fleet: '737',
-    hire_date: '2010-01-15',
-  }
+  const validEntry = createValid()
 
   it('accepts optional title in create payload', () => {
     const result = CreateSeniorityListSchema.safeParse({
@@ -274,24 +271,24 @@ describe('SeniorityEntryResponseSchema', () => {
     expect(SeniorityEntryResponseSchema.safeParse(valid).success).toBe(true)
   })
 
-  it('accepts nullable name', () => {
-    expect(SeniorityEntryResponseSchema.safeParse({ ...valid, name: null }).success).toBe(true)
+  it('rejects nullable name', () => {
+    expect(SeniorityEntryResponseSchema.safeParse({ ...valid, name: null }).success).toBe(false)
   })
 
-  it('accepts nullable seat', () => {
-    expect(SeniorityEntryResponseSchema.safeParse({ ...valid, seat: null }).success).toBe(true)
+  it('rejects nullable seat', () => {
+    expect(SeniorityEntryResponseSchema.safeParse({ ...valid, seat: null }).success).toBe(false)
   })
 
-  it('accepts nullable base', () => {
-    expect(SeniorityEntryResponseSchema.safeParse({ ...valid, base: null }).success).toBe(true)
+  it('rejects nullable base', () => {
+    expect(SeniorityEntryResponseSchema.safeParse({ ...valid, base: null }).success).toBe(false)
   })
 
-  it('accepts nullable fleet', () => {
-    expect(SeniorityEntryResponseSchema.safeParse({ ...valid, fleet: null }).success).toBe(true)
+  it('rejects nullable fleet', () => {
+    expect(SeniorityEntryResponseSchema.safeParse({ ...valid, fleet: null }).success).toBe(false)
   })
 
-  it('accepts nullable retire_date', () => {
-    expect(SeniorityEntryResponseSchema.safeParse({ ...valid, retire_date: null }).success).toBe(true)
+  it('does not accept a nullable retire_date', () => {
+    expect(SeniorityEntryResponseSchema.safeParse({ ...valid, retire_date: null }).success).toBe(false)
   })
 
   it('rejects missing id', () => {

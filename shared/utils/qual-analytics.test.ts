@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect } from 'vitest'
-import type { SeniorityEntryResponse } from '#shared/schemas/seniority-list'
+import type { SeniorityEntry } from '#shared/schemas/seniority-list'
 import {
   qualKey,
   deriveAge,
@@ -19,15 +19,11 @@ import {
 } from './qual-analytics'
 import type { GrowthConfig } from '#shared/types/growth-config'
 
-type SeniorityEntry = SeniorityEntryResponse
-
 // ─── Test factory ─────────────────────────────────────────────────────────────
 let _nextId = 1
 function makeEntry(overrides: Partial<SeniorityEntry> = {}): SeniorityEntry {
   const id = _nextId++
   return {
-    id: `entry-${id}`,
-    list_id: 'list-1',
     seniority_number: id,
     employee_number: `EMP${String(id).padStart(4, '0')}`,
     name: `Pilot_${id}`,
@@ -35,7 +31,7 @@ function makeEntry(overrides: Partial<SeniorityEntry> = {}): SeniorityEntry {
     base: 'JFK',
     fleet: '737',
     hire_date: '2010-01-01',
-    retire_date: null,
+    retire_date: '2055-01-01',
     ...overrides,
   }
 }
@@ -45,11 +41,8 @@ describe('qualKey', () => {
   it('returns "fleet seat" string', () => {
     expect(qualKey(makeEntry({ fleet: '737', seat: 'CA' }))).toBe('737 CA')
   })
-  it('returns empty string when fleet is null', () => {
-    expect(qualKey(makeEntry({ fleet: null, seat: 'CA' }))).toBe('')
-  })
-  it('returns empty string when seat is null', () => {
-    expect(qualKey(makeEntry({ fleet: '737', seat: null }))).toBe('')
+  it('returns non-empty string for valid fleet and seat', () => {
+    expect(qualKey(makeEntry({ fleet: '320', seat: 'FO' }))).toBe('320 FO')
   })
 })
 
@@ -83,17 +76,15 @@ describe('computeYOS', () => {
 
 // ─── computeAgeDistribution ───────────────────────────────────────────────────
 describe('computeAgeDistribution', () => {
-  it('groups entries into correct buckets and counts nulls', () => {
+  it('groups entries into correct age buckets', () => {
     const entries = [
       // retire 2030 → born ~1965 → age ~61 → bucket "60–64"
       makeEntry({ retire_date: '2030-01-01' }),
       // retire 2040 → born ~1975 → age ~51 → bucket "50–54"
       makeEntry({ retire_date: '2040-01-01' }),
-      // no retire_date → null
-      makeEntry({ retire_date: null }),
     ]
     const { buckets, nullCount } = computeAgeDistribution(entries, 65)
-    expect(nullCount).toBe(1)
+    expect(nullCount).toBe(0)
     const bucket6064 = buckets.find((b) => b.label === '60–64')
     const bucket5054 = buckets.find((b) => b.label === '50–54')
     expect(bucket6064?.count).toBe(1)
@@ -253,14 +244,13 @@ describe('computeQualComposition', () => {
     expect(total).toBeCloseTo(100, 0)
   })
 
-  it('skips entries with null fleet or seat', () => {
+  it('groups all valid entries', () => {
     const entries = [
-      makeEntry({ fleet: null, seat: 'CA' }),
-      makeEntry({ fleet: '737', seat: null }),
       makeEntry({ fleet: '737', seat: 'CA' }),
+      makeEntry({ fleet: '787', seat: 'FO' }),
     ]
     const result = computeQualComposition(entries)
-    expect(result).toHaveLength(1)
+    expect(result).toHaveLength(2)
   })
 })
 
@@ -296,18 +286,6 @@ describe('computeRetirementWave', () => {
     expect(result.map((b) => b.year)).toEqual([2029, 2030, 2031])
   })
 
-  it('excludes entries with null retire_date', () => {
-    const entries = [
-      makeEntry({ retire_date: null }),
-      makeEntry({ retire_date: '2030-01-01' }),
-    ]
-    const result = computeRetirementWave(entries)
-    expect(result).toHaveLength(1)
-  })
-
-  it('returns empty array when no entries have retire_date', () => {
-    expect(computeRetirementWave([makeEntry({ retire_date: null })])).toEqual([])
-  })
 })
 
 // ─── computePowerIndexCells ───────────────────────────────────────────────────
@@ -318,9 +296,9 @@ describe('computePowerIndexCells', () => {
   it('green when user can hold today (more senior than most junior active)', () => {
     // User seniority_number=50. Cell has pilots with sen_nums 100,200,300 — all more junior.
     const entries = [
-      makeEntry({ fleet: '737', seat: 'CA', base: 'JFK', seniority_number: 100, retire_date: null }),
-      makeEntry({ fleet: '737', seat: 'CA', base: 'JFK', seniority_number: 200, retire_date: null }),
-      makeEntry({ fleet: '737', seat: 'CA', base: 'JFK', seniority_number: 300, retire_date: null }),
+      makeEntry({ fleet: '737', seat: 'CA', base: 'JFK', seniority_number: 100, retire_date: undefined }),
+      makeEntry({ fleet: '737', seat: 'CA', base: 'JFK', seniority_number: 200, retire_date: undefined }),
+      makeEntry({ fleet: '737', seat: 'CA', base: 'JFK', seniority_number: 300, retire_date: undefined }),
     ]
     const cells = computePowerIndexCells(entries, 50, TODAY)
     expect(cells[0]?.state).toBe('green')
@@ -331,8 +309,8 @@ describe('computePowerIndexCells', () => {
 
   it('isLowestSeniority is true when user is the most junior in the cell', () => {
     const entries = [
-      makeEntry({ fleet: '737', seat: 'CA', base: 'JFK', seniority_number: 50, retire_date: null }),
-      makeEntry({ fleet: '737', seat: 'CA', base: 'JFK', seniority_number: 100, retire_date: null }),
+      makeEntry({ fleet: '737', seat: 'CA', base: 'JFK', seniority_number: 50, retire_date: undefined }),
+      makeEntry({ fleet: '737', seat: 'CA', base: 'JFK', seniority_number: 100, retire_date: undefined }),
     ]
     // User at 100 — they ARE the most junior CA in the cell → amber (unlikely to hold)
     const cells = computePowerIndexCells(entries, 100, TODAY)
@@ -346,7 +324,7 @@ describe('computePowerIndexCells', () => {
     // After retirement of 100: most junior active = 200, user 150 <= 200 → green
     const entries = [
       makeEntry({ fleet: '737', seat: 'CA', base: 'JFK', seniority_number: 100, retire_date: '2028-01-01' }),
-      makeEntry({ fleet: '737', seat: 'CA', base: 'JFK', seniority_number: 200, retire_date: null }),
+      makeEntry({ fleet: '737', seat: 'CA', base: 'JFK', seniority_number: 200, retire_date: undefined }),
     ]
     const cells = computePowerIndexCells(entries, 150, FUTURE)
     expect(cells[0]?.state).toBe('green')
@@ -361,7 +339,7 @@ describe('computePowerIndexCells', () => {
     for (let i = 1; i <= 19; i++) {
       entries.push(makeEntry({ fleet: '737', seat: 'CA', base: 'JFK', seniority_number: i, retire_date: '2025-01-01' }))
     }
-    entries.push(makeEntry({ fleet: '737', seat: 'CA', base: 'JFK', seniority_number: 50, retire_date: null }))
+    entries.push(makeEntry({ fleet: '737', seat: 'CA', base: 'JFK', seniority_number: 50, retire_date: undefined }))
     const cells = computePowerIndexCells(entries, 100, TODAY)
     expect(cells[0]?.state).toBe('red')
     expect(cells[0]?.numbersJuniorToPlug).toBe(50)
@@ -369,9 +347,9 @@ describe('computePowerIndexCells', () => {
 
   it('red when many pilots still blocking', () => {
     const entries = [
-      makeEntry({ fleet: '737', seat: 'CA', base: 'JFK', seniority_number: 1, retire_date: null }),
-      makeEntry({ fleet: '737', seat: 'CA', base: 'JFK', seniority_number: 2, retire_date: null }),
-      makeEntry({ fleet: '737', seat: 'CA', base: 'JFK', seniority_number: 3, retire_date: null }),
+      makeEntry({ fleet: '737', seat: 'CA', base: 'JFK', seniority_number: 1, retire_date: undefined }),
+      makeEntry({ fleet: '737', seat: 'CA', base: 'JFK', seniority_number: 2, retire_date: undefined }),
+      makeEntry({ fleet: '737', seat: 'CA', base: 'JFK', seniority_number: 3, retire_date: undefined }),
     ]
     const cells = computePowerIndexCells(entries, 9999, TODAY)
     expect(cells[0]?.state).toBe('red')
@@ -388,7 +366,7 @@ describe('computePowerIndexCells', () => {
       entries.push(makeEntry({ fleet: '737', seat: 'CA', base: 'JFK', seniority_number: i, retire_date: '2025-01-01' }))
     }
     for (let i = 6; i <= 10; i++) {
-      entries.push(makeEntry({ fleet: '737', seat: 'CA', base: 'JFK', seniority_number: i, retire_date: null }))
+      entries.push(makeEntry({ fleet: '737', seat: 'CA', base: 'JFK', seniority_number: i, retire_date: undefined }))
     }
     const cells = computePowerIndexCells(entries, 7, TODAY)
     expect(cells[0]?.state).toBe('green')
@@ -416,8 +394,8 @@ describe('computePowerIndexCells with growthConfig', () => {
 
   it('disabled growth matches no-growth behavior', () => {
     const entries = [
-      makeEntry({ fleet: '737', seat: 'CA', base: 'JFK', seniority_number: 1, retire_date: null }),
-      makeEntry({ fleet: '737', seat: 'CA', base: 'JFK', seniority_number: 2, retire_date: null }),
+      makeEntry({ fleet: '737', seat: 'CA', base: 'JFK', seniority_number: 1, retire_date: undefined }),
+      makeEntry({ fleet: '737', seat: 'CA', base: 'JFK', seniority_number: 2, retire_date: undefined }),
     ]
     const disabled: GrowthConfig = { enabled: false, annualRate: 0.05 }
     const cellsNone = computePowerIndexCells(entries, 1, FUTURE)

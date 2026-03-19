@@ -6,7 +6,7 @@ const log = createAdminLogger('users')
 export default defineEventHandler(async (event) => {
   await requireAdmin(event)
 
-  const client = serverSupabaseServiceRole(event)
+  const client = serverSupabaseServiceRole<Database>(event)
 
   const { data: authData, error: authError } = await client.auth.admin.listUsers()
   if (authError) {

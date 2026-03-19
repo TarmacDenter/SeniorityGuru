@@ -1,52 +1,10 @@
-<template>
-  <div class="space-y-3 pt-3">
-    <div v-if="filters?.length" data-testid="filter-bar" class="flex flex-wrap gap-3">
-      <UFormField v-for="filter in filters" :key="filter.key" :label="filter.label">
-        <USelectMenu
-          v-model="activeFilters[filter.key]"
-          :items="filterOptions[filter.key] ?? []"
-          multiple
-          :placeholder="`All ${filter.label}s`"
-          class="w-40"
-        />
-      </UFormField>
-    </div>
-    <UInput
-      v-model="table.globalFilter.value"
-      icon="i-lucide-search"
-      :placeholder="searchPlaceholder"
-      class="max-w-sm"
-    />
-    <div class="overflow-x-auto">
-      <UTable
-        ref="comparisonTable"
-        v-model:global-filter="table.globalFilter.value"
-        v-model:pagination="table.pagination.value"
-        v-model:sorting="table.sorting.value"
-        :data="filteredData"
-        :columns="columns"
-        :pagination-options="table.paginationOptions"
-      />
-    </div>
-    <div class="flex items-center justify-between">
-      <p class="text-sm text-muted">{{ table.totalRows.value }} results</p>
-      <UPagination
-        v-if="table.pageCount.value > 1"
-        :page="table.currentPage.value"
-        :total="table.totalRows.value"
-        :items-per-page="table.pagination.value.pageSize"
-        @update:page="(p: number) => table.tableRef.value?.tableApi?.setPageIndex(p - 1)"
-      />
-    </div>
-  </div>
-</template>
-
 <script setup lang="ts">
 import type { TableColumn } from '@nuxt/ui'
 import type { FilterConfig } from '~/utils/column-definitions'
 
 const props = defineProps<{
-  data: any[]
+  data: unknown[]
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   columns: TableColumn<any>[]
   searchPlaceholder?: string
   filters?: FilterConfig[]
@@ -92,3 +50,46 @@ const filteredData = computed(() => {
 
 defineExpose({ filterOptions, filteredData, activeFilters })
 </script>
+
+<template>
+  <div class="space-y-3 pt-3">
+    <div v-if="filters?.length" data-testid="filter-bar" class="flex flex-wrap gap-3">
+      <UFormField v-for="filter in filters" :key="filter.key" :label="filter.label">
+        <USelectMenu
+          v-model="activeFilters[filter.key]"
+          :items="filterOptions[filter.key] ?? []"
+          multiple
+          :placeholder="`All ${filter.label}s`"
+          class="w-40"
+        />
+      </UFormField>
+    </div>
+    <UInput
+      v-model="table.globalFilter.value"
+      icon="i-lucide-search"
+      :placeholder="searchPlaceholder"
+      class="max-w-sm"
+    />
+    <div class="overflow-x-auto">
+      <UTable
+        ref="comparisonTable"
+        v-model:global-filter="table.globalFilter.value"
+        v-model:pagination="table.pagination.value"
+        v-model:sorting="table.sorting.value"
+        :data="filteredData"
+        :columns="columns"
+        :pagination-options="table.paginationOptions"
+      />
+    </div>
+    <div class="flex items-center justify-between">
+      <p class="text-sm text-muted">{{ table.totalRows.value }} results</p>
+      <UPagination
+        v-if="table.pageCount.value > 1"
+        :page="table.currentPage.value"
+        :total="table.totalRows.value"
+        :items-per-page="table.pagination.value.pageSize"
+        @update:page="(p: number) => table.tableRef.value?.tableApi?.setPageIndex(p - 1)"
+      />
+    </div>
+  </div>
+</template>

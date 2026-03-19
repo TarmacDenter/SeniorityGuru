@@ -1,3 +1,130 @@
+<script setup lang="ts">
+import type { TableColumn } from '@nuxt/ui'
+import { FetchError } from 'ofetch'
+import type { AdminSeniorityListResponse } from '#shared/schemas/admin'
+
+definePageMeta({ layout: 'dashboard', middleware: ['auth', 'admin'] })
+
+interface AdminUser {
+  id: string
+  email: string
+  role: string
+  icao_code: string | null
+  employee_number: string | null
+  created_at: string
+  last_sign_in_at: string | null
+}
+
+interface ListWithOwner extends AdminSeniorityListResponse {
+  owner_email: string | null
+}
+
+const toast = useToast()
+const deleteOpen = ref(false)
+defineExpose({ confirmDelete, deleteOpen })
+
+const { data: listsData, pending: listsPending, refresh: refreshLists } = await useFetch<AdminSeniorityListResponse[]>('/api/admin/seniority/lists')
+const { data: usersData, pending: usersPending } = await useFetch<AdminUser[]>('/api/admin/users')
+
+const fetchError = ref<string | null>(null)
+
+const userMap = computed(() => {
+  const map = new Map<string, AdminUser>()
+  for (const u of usersData.value ?? []) {
+    map.set(u.id, u)
+  }
+  return map
+})
+
+const listsWithOwner = computed<ListWithOwner[]>(() => {
+  return (listsData.value ?? []).map(list => ({
+    ...list,
+    owner_email: userMap.value.get(list.uploaded_by)?.email ?? null,
+  }))
+})
+
+const userOptions = computed(() =>
+  (usersData.value ?? []).map(u => ({ id: u.id, email: u.email }))
+)
+
+const columns: TableColumn<ListWithOwner>[] = [
+  { accessorKey: 'owner_email', header: 'Owner' },
+  { accessorKey: 'airline', header: 'Airline' },
+  { accessorKey: 'title', header: 'Title' },
+  { accessorKey: 'effective_date', header: 'Effective Date' },
+  { accessorKey: 'created_at', header: 'Created' },
+  { id: 'actions', header: '' },
+]
+
+// Transfer
+const transferOpen = ref(false)
+const transferTarget = ref<ListWithOwner | null>(null)
+const transferTargetUser = ref<string | undefined>(undefined)
+const transferLoading = ref(false)
+
+function openTransfer(list: ListWithOwner) {
+  transferTarget.value = list
+  transferTargetUser.value = undefined
+  transferOpen.value = true
+}
+
+async function doTransfer() {
+  if (!transferTarget.value || !transferTargetUser.value) return
+  transferLoading.value = true
+  try {
+    await $fetch(`/api/admin/seniority/${transferTarget.value.id}/transfer`, {
+      method: 'PATCH',
+      body: { targetUserId: transferTargetUser.value },
+    })
+    toast.add({ title: 'List transferred', color: 'success' })
+    transferOpen.value = false
+    await refreshLists()
+  } catch {
+    toast.add({ title: 'Failed to transfer list', color: 'error' })
+  } finally {
+    transferLoading.value = false
+  }
+}
+
+// Delete
+const deleteTarget = ref<ListWithOwner | null>(null)
+const deleteLoading = ref(false)
+
+function confirmDelete(list: ListWithOwner) {
+  deleteTarget.value = list
+  deleteOpen.value = true
+}
+
+async function doDelete() {
+  if (!deleteTarget.value) return
+  deleteLoading.value = true
+  try {
+    await $fetch(`/api/admin/seniority/${deleteTarget.value.id}`, { method: 'DELETE' })
+    toast.add({ title: 'List deleted', color: 'success' })
+    deleteOpen.value = false
+    await refreshLists()
+  } catch (e: unknown) {
+    const message = e instanceof FetchError ? (e.data?.statusMessage ?? 'Failed to delete') : 'Failed to delete'
+    toast.add({ title: message, color: 'error' })
+  } finally {
+    deleteLoading.value = false
+  }
+}
+
+// Upload for user
+const uploadPickerOpen = ref(false)
+const uploadTargetUser = ref<string | undefined>(undefined)
+
+async function goToUpload() {
+  if (!uploadTargetUser.value) return
+  const targetId = uploadTargetUser.value
+  uploadPickerOpen.value = false
+  await navigateTo({ path: '/seniority/upload', query: { userId: targetId } })
+}
+
+
+</script>
+
 <template>
   <UDashboardPanel>
     <template #header>
@@ -112,129 +239,3 @@
     </template>
   </UDashboardPanel>
 </template>
-
-<script setup lang="ts">
-import type { TableColumn } from '@nuxt/ui'
-import { FetchError } from 'ofetch'
-import type { AdminSeniorityListResponse } from '#shared/schemas/admin'
-
-definePageMeta({ layout: 'dashboard', middleware: ['auth', 'admin'] })
-
-interface AdminUser {
-  id: string
-  email: string
-  role: string
-  icao_code: string | null
-  employee_number: string | null
-  created_at: string
-  last_sign_in_at: string | null
-}
-
-interface ListWithOwner extends AdminSeniorityListResponse {
-  owner_email: string | null
-}
-
-const toast = useToast()
-
-const { data: listsData, pending: listsPending, refresh: refreshLists } = await useFetch<AdminSeniorityListResponse[]>('/api/admin/seniority/lists')
-const { data: usersData, pending: usersPending } = await useFetch<AdminUser[]>('/api/admin/users')
-
-const fetchError = ref<string | null>(null)
-
-const userMap = computed(() => {
-  const map = new Map<string, AdminUser>()
-  for (const u of usersData.value ?? []) {
-    map.set(u.id, u)
-  }
-  return map
-})
-
-const listsWithOwner = computed<ListWithOwner[]>(() => {
-  return (listsData.value ?? []).map(list => ({
-    ...list,
-    owner_email: userMap.value.get(list.uploaded_by)?.email ?? null,
-  }))
-})
-
-const userOptions = computed(() =>
-  (usersData.value ?? []).map(u => ({ id: u.id, email: u.email }))
-)
-
-const columns: TableColumn<ListWithOwner>[] = [
-  { accessorKey: 'owner_email', header: 'Owner' },
-  { accessorKey: 'airline', header: 'Airline' },
-  { accessorKey: 'title', header: 'Title' },
-  { accessorKey: 'effective_date', header: 'Effective Date' },
-  { accessorKey: 'created_at', header: 'Created' },
-  { id: 'actions', header: '' },
-]
-
-// Transfer
-const transferOpen = ref(false)
-const transferTarget = ref<ListWithOwner | null>(null)
-const transferTargetUser = ref<string | undefined>(undefined)
-const transferLoading = ref(false)
-
-function openTransfer(list: ListWithOwner) {
-  transferTarget.value = list
-  transferTargetUser.value = undefined
-  transferOpen.value = true
-}
-
-async function doTransfer() {
-  if (!transferTarget.value || !transferTargetUser.value) return
-  transferLoading.value = true
-  try {
-    await $fetch(`/api/admin/seniority/${transferTarget.value.id}/transfer`, {
-      method: 'PATCH',
-      body: { targetUserId: transferTargetUser.value },
-    })
-    toast.add({ title: 'List transferred', color: 'success' })
-    transferOpen.value = false
-    await refreshLists()
-  } catch {
-    toast.add({ title: 'Failed to transfer list', color: 'error' })
-  } finally {
-    transferLoading.value = false
-  }
-}
-
-// Delete
-const deleteOpen = ref(false)
-const deleteTarget = ref<ListWithOwner | null>(null)
-const deleteLoading = ref(false)
-
-function confirmDelete(list: ListWithOwner) {
-  deleteTarget.value = list
-  deleteOpen.value = true
-}
-
-async function doDelete() {
-  if (!deleteTarget.value) return
-  deleteLoading.value = true
-  try {
-    await $fetch(`/api/admin/seniority/${deleteTarget.value.id}`, { method: 'DELETE' })
-    toast.add({ title: 'List deleted', color: 'success' })
-    deleteOpen.value = false
-    await refreshLists()
-  } catch (e: unknown) {
-    const message = e instanceof FetchError ? (e.data?.statusMessage ?? 'Failed to delete') : 'Failed to delete'
-    toast.add({ title: message, color: 'error' })
-  } finally {
-    deleteLoading.value = false
-  }
-}
-
-// Upload for user
-const uploadPickerOpen = ref(false)
-const uploadTargetUser = ref<string | undefined>(undefined)
-
-async function goToUpload() {
-  if (!uploadTargetUser.value) return
-  const targetId = uploadTargetUser.value
-  uploadPickerOpen.value = false
-  await navigateTo({ path: '/seniority/upload', query: { userId: targetId } })
-}
-
-defineExpose({ confirmDelete, deleteOpen })
-</script>

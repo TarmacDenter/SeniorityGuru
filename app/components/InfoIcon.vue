@@ -1,12 +1,3 @@
-<template>
-  <UTooltip :text="text">
-    <UIcon
-      name="i-heroicons-information-circle"
-      :class="[sizeClass, 'text-[--ui-text-muted] cursor-help']"
-    />
-  </UTooltip>
-</template>
-
 <script setup lang="ts">
 const props = withDefaults(
   defineProps<{
@@ -25,6 +16,15 @@ const sizeClass = computed(() => {
   }
 })
 </script>
+
+<template>
+  <UTooltip :text="text">
+    <UIcon
+      name="i-heroicons-information-circle"
+      :class="[sizeClass, 'text-[--ui-text-muted] cursor-help']"
+    />
+  </UTooltip>
+</template>
 
 <style scoped>
 /* inline-flex so the icon aligns with surrounding text */

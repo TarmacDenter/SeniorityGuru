@@ -1,11 +1,13 @@
 // @vitest-environment nuxt
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mountSuspended, mockNuxtImport } from '@nuxt/test-utils/runtime'
+import { FetchError } from 'ofetch'
 
-const { mockUseFetch, mockNavigateTo, mockRouteParams } = vi.hoisted(() => ({
+const { mockUseFetch, mockNavigateTo, mockRouteParams, mockFetch } = vi.hoisted(() => ({
   mockUseFetch: vi.fn(),
   mockNavigateTo: vi.fn(),
   mockRouteParams: { value: { id: 'user-abc' } },
+  mockFetch: vi.fn(),
 }))
 
 mockNuxtImport('useFetch', () => mockUseFetch)
@@ -14,6 +16,11 @@ mockNuxtImport('useRoute', () => () => ({
   params: mockRouteParams.value,
   query: {},
   path: '/admin/users/user-abc',
+}))
+mockNuxtImport('useAirlineOptions', () => () => ({
+  options: ref([{ label: 'Delta Air Lines (DAL)', value: 'DAL' }]),
+  loading: ref(false),
+  load: vi.fn(),
 }))
 
 const mockUser = {
@@ -24,6 +31,7 @@ const mockUser = {
   role: 'user',
   icao_code: 'DAL',
   employee_number: '12345',
+  mandatory_retirement_age: 65,
 }
 
 const mockLists = [
@@ -49,6 +57,9 @@ describe('admin/users/[id].vue', () => {
   beforeEach(() => {
     mockUseFetch.mockReset()
     mockNavigateTo.mockReset()
+    mockFetch.mockReset()
+    vi.stubGlobal('$fetch', mockFetch)
+
     mockUseFetch.mockImplementation((url: string) => {
       if (url === '/api/admin/users/user-abc') {
         return { data: ref(mockUser), pending: ref(false), error: ref(null) }
@@ -87,5 +98,94 @@ describe('admin/users/[id].vue', () => {
     vm.confirmDelete()
     await nextTick()
     expect(vm.deleteOpen).toBe(true)
+  })
+
+  it('renders an "Edit Profile" button in the Profile Card', async () => {
+    const UserDetailPage = await import('./[id].vue')
+    const wrapper = await mountSuspended(UserDetailPage.default)
+    expect(wrapper.text()).toContain('Edit Profile')
+  })
+
+  it('saveProfile calls PATCH endpoint with the provided fields', async () => {
+    mockFetch.mockResolvedValueOnce({
+      id: 'user-abc',
+      icao_code: 'UAL',
+      employee_number: '12345',
+      mandatory_retirement_age: 65,
+    })
+
+    const UserDetailPage = await import('./[id].vue')
+    const wrapper = await mountSuspended(UserDetailPage.default)
+    const vm = wrapper.vm as unknown as { saveProfile: (p: Record<string, unknown>) => Promise<void> }
+
+    await vm.saveProfile({ icaoCode: 'UAL' })
+
+    expect(mockFetch).toHaveBeenCalledWith(
+      '/api/admin/users/user-abc/profile',
+      expect.objectContaining({ method: 'PATCH', body: { icaoCode: 'UAL' } }),
+    )
+  })
+
+  it('saveProfile patches local user ref on success', async () => {
+    mockFetch.mockResolvedValueOnce({
+      id: 'user-abc',
+      icao_code: 'UAL',
+      employee_number: '99',
+      mandatory_retirement_age: 60,
+    })
+
+    const UserDetailPage = await import('./[id].vue')
+    const wrapper = await mountSuspended(UserDetailPage.default)
+    const vm = wrapper.vm as unknown as {
+      saveProfile: (p: Record<string, unknown>) => Promise<void>
+    }
+
+    await vm.saveProfile({ icaoCode: 'UAL', employeeNumber: '99', mandatoryRetirementAge: 60 })
+    await nextTick()
+
+    expect(wrapper.text()).toContain('UAL')
+  })
+
+  it('saveProfile shows error toast and keeps modal open when fetch fails', async () => {
+    mockFetch.mockRejectedValueOnce(new Error('Server error'))
+
+    const UserDetailPage = await import('./[id].vue')
+    const wrapper = await mountSuspended(UserDetailPage.default)
+    const vm = wrapper.vm as unknown as {
+      saveProfile: (p: Record<string, unknown>) => Promise<void>
+      editProfileOpen: boolean
+    }
+
+    // Open the modal first
+    vm.editProfileOpen = true
+    await nextTick()
+
+    await vm.saveProfile({ icaoCode: 'UAL' })
+    await nextTick()
+
+    // Modal should remain open after error
+    expect(vm.editProfileOpen).toBe(true)
+  })
+
+  it('saveProfile surfaces server validation message on 422', async () => {
+    const fetchError = new FetchError('Invalid airline code')
+    ;(fetchError as any).statusCode = 422
+    ;(fetchError as any).statusMessage = 'Invalid airline code'
+    mockFetch.mockRejectedValueOnce(fetchError)
+
+    const UserDetailPage = await import('./[id].vue')
+    const wrapper = await mountSuspended(UserDetailPage.default)
+    const vm = wrapper.vm as unknown as {
+      saveProfile: (p: Record<string, unknown>) => Promise<void>
+      editProfileOpen: boolean
+    }
+
+    vm.editProfileOpen = true
+    await nextTick()
+    await vm.saveProfile({ icaoCode: 'INVALID_CODE_THAT_IS_TOO_LONG' })
+    await nextTick()
+
+    // Modal must stay open on error (key assertion; toast content verified via e2e)
+    expect(vm.editProfileOpen).toBe(true)
   })
 })

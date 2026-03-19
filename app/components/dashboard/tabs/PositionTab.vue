@@ -1,3 +1,45 @@
+<script setup lang="ts">
+import { useQualProjections } from '~/composables/useQualProjections'
+import { useUserStore } from '~/stores/user'
+import { DEFAULT_GROWTH_CONFIG } from '#shared/types/growth-config'
+import type { GrowthConfig } from '#shared/types/growth-config'
+
+const userStore = useUserStore()
+const hasEmployeeNumber = computed(() => !!userStore.profile?.employee_number)
+
+const growthConfig = ref<GrowthConfig>({ ...DEFAULT_GROWTH_CONFIG })
+const projections = useQualProjections(undefined, growthConfig)
+
+const usePositionProjection = ref(false)
+const positionYearsInput = ref(1)
+let positionDebounceTimer: ReturnType<typeof setTimeout> | null = null
+
+const positionSliderMax = computed(() => {
+  const retireDate = projections.userEntry.value?.retire_date
+  if (!retireDate) return 30
+  const years = Math.ceil((new Date(retireDate).getTime() - Date.now()) / (365.25 * 24 * 60 * 60 * 1000))
+  return Math.max(1, years)
+})
+
+watch(usePositionProjection, (on) => {
+  if (!on) {
+    positionYearsInput.value = 1
+    projections.projectionYears.value = 0
+  }
+})
+
+watch(positionYearsInput, (val) => {
+  if (positionDebounceTimer) clearTimeout(positionDebounceTimer)
+  positionDebounceTimer = setTimeout(() => {
+    projections.projectionYears.value = val
+  }, 500)
+})
+
+onUnmounted(() => {
+  if (positionDebounceTimer) clearTimeout(positionDebounceTimer)
+})
+</script>
+
 <template>
   <div class="-m-4 sm:-m-6 flex flex-col h-[calc(100%+2rem)] sm:h-[calc(100%+3rem)]">
     <!-- Projection controls — pinned toolbar -->
@@ -64,45 +106,3 @@
     </div>
   </div>
 </template>
-
-<script setup lang="ts">
-import { useQualProjections } from '~/composables/useQualProjections'
-import { useUserStore } from '~/stores/user'
-import { DEFAULT_GROWTH_CONFIG } from '#shared/types/growth-config'
-import type { GrowthConfig } from '#shared/types/growth-config'
-
-const userStore = useUserStore()
-const hasEmployeeNumber = computed(() => !!userStore.profile?.employee_number)
-
-const growthConfig = ref<GrowthConfig>({ ...DEFAULT_GROWTH_CONFIG })
-const projections = useQualProjections(undefined, growthConfig)
-
-const usePositionProjection = ref(false)
-const positionYearsInput = ref(1)
-let positionDebounceTimer: ReturnType<typeof setTimeout> | null = null
-
-const positionSliderMax = computed(() => {
-  const retireDate = projections.userEntry.value?.retire_date
-  if (!retireDate) return 30
-  const years = Math.ceil((new Date(retireDate).getTime() - Date.now()) / (365.25 * 24 * 60 * 60 * 1000))
-  return Math.max(1, years)
-})
-
-watch(usePositionProjection, (on) => {
-  if (!on) {
-    positionYearsInput.value = 1
-    projections.projectionYears.value = 0
-  }
-})
-
-watch(positionYearsInput, (val) => {
-  if (positionDebounceTimer) clearTimeout(positionDebounceTimer)
-  positionDebounceTimer = setTimeout(() => {
-    projections.projectionYears.value = val
-  }, 500)
-})
-
-onUnmounted(() => {
-  if (positionDebounceTimer) clearTimeout(positionDebounceTimer)
-})
-</script>

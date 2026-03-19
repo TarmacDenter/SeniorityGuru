@@ -1,3 +1,98 @@
+<script setup lang="ts">
+import type { StepperItem } from '@nuxt/ui'
+import type { DateValue } from '@internationalized/date'
+import type { AdminUserDetail } from '#shared/schemas/admin'
+
+definePageMeta({ middleware: 'auth', layout: 'dashboard' })
+
+const route = useRoute()
+const adminTargetUserId = route.query.userId as string | undefined
+
+const adminTargetUser = ref<AdminUserDetail | null>(null)
+defineExpose({ onSave })
+if (adminTargetUserId) {
+  const { data } = await useFetch<AdminUserDetail>(`/api/admin/users/${adminTargetUserId}`)
+  adminTargetUser.value = data.value ?? null
+}
+
+const upload = useSeniorityUpload()
+const toast = useToast()
+const files = ref<File | null>(null)
+const showErrorsOnly = ref(false)
+
+const stepOrder = ['upload', 'mapping', 'review', 'confirm'] as const
+type Step = typeof stepOrder[number]
+const steps: StepperItem[] = [
+  { title: 'Upload', description: 'Choose file', icon: 'i-lucide-upload', value: 'upload' },
+  { title: 'Map Columns', description: 'Match fields', icon: 'i-lucide-columns-3', value: 'mapping' },
+  { title: 'Review', description: 'Validate data', icon: 'i-lucide-scan-eye', value: 'review' },
+  { title: 'Save', description: 'Confirm & upload', icon: 'i-lucide-check-circle', value: 'confirm' },
+]
+
+const currentStep = ref<Step | number>('upload')
+const processing = ref(false)
+watch(files, async (next) => {
+  if (!next) {
+    currentStep.value = 'upload'
+    await upload.setFiles([])
+    return
+  }
+  currentStep.value = 'upload'
+  await upload.setFiles([next])
+})
+
+const currentStepIndex = computed(() => stepOrder.indexOf(currentStep.value as Step))
+const sampleRows = computed(() => upload.rawRows.value.slice(0, 3))
+const effectiveDateModel = computed({
+  get: () => (upload.effectiveDate.value ?? undefined) as DateValue | undefined,
+  set: (value: DateValue | undefined) => {
+    upload.effectiveDate.value = value ?? null
+  },
+})
+
+const canAdvance = computed(() => {
+  if (currentStep.value === 'upload') return upload.rawRows.value.length > 0
+  if (currentStep.value === 'mapping') {
+    const m = upload.columnMap.value
+    return m.seniority_number >= 0 && m.employee_number >= 0 && m.seat >= 0 && m.base >= 0 && m.fleet >= 0 && m.hire_date >= 0
+  }
+  if (currentStep.value === 'review') return upload.errorCount.value === 0 && upload.entries.value.length > 0
+  return true
+})
+
+async function nextStep() {
+  if (currentStep.value === 'mapping') {
+    processing.value = true
+    // Yield to let the UI update with the loading state before heavy work
+    await new Promise(resolve => setTimeout(resolve, 0))
+    upload.applyMapping()
+    processing.value = false
+  }
+  const nextIdx = currentStepIndex.value + 1
+  if (nextIdx < stepOrder.length) {
+    currentStep.value = stepOrder[nextIdx]!
+  }
+}
+
+function prevStep() {
+  const prevIdx = currentStepIndex.value - 1
+  if (prevIdx >= 0) {
+    currentStep.value = stepOrder[prevIdx]!
+  }
+}
+
+async function onSave() {
+  try {
+    const count = await upload.save(adminTargetUserId)
+    toast.add({ title: `Uploaded ${count} entries`, color: 'success' })
+    upload.reset()
+    await navigateTo({ path: '/dashboard', query: { tab: 'seniority' } })
+  } catch {
+    toast.add({ title: upload.saveError.value ?? 'Upload failed', color: 'error' })
+  }
+}
+</script>
+
 <template>
   <UDashboardPanel>
     <template #header>
@@ -155,99 +250,3 @@
     </template>
   </UDashboardPanel>
 </template>
-
-<script setup lang="ts">
-import type { StepperItem } from '@nuxt/ui'
-import type { DateValue } from '@internationalized/date'
-import type { AdminUserDetail } from '#shared/schemas/admin'
-
-definePageMeta({ middleware: 'auth', layout: 'dashboard' })
-
-const route = useRoute()
-const adminTargetUserId = route.query.userId as string | undefined
-
-const adminTargetUser = ref<AdminUserDetail | null>(null)
-if (adminTargetUserId) {
-  const { data } = await useFetch<AdminUserDetail>(`/api/admin/users/${adminTargetUserId}`)
-  adminTargetUser.value = data.value ?? null
-}
-
-const upload = useSeniorityUpload()
-const toast = useToast()
-const files = ref<File | null>(null)
-const showErrorsOnly = ref(false)
-
-const stepOrder = ['upload', 'mapping', 'review', 'confirm'] as const
-type Step = typeof stepOrder[number]
-const steps: StepperItem[] = [
-  { title: 'Upload', description: 'Choose file', icon: 'i-lucide-upload', value: 'upload' },
-  { title: 'Map Columns', description: 'Match fields', icon: 'i-lucide-columns-3', value: 'mapping' },
-  { title: 'Review', description: 'Validate data', icon: 'i-lucide-scan-eye', value: 'review' },
-  { title: 'Save', description: 'Confirm & upload', icon: 'i-lucide-check-circle', value: 'confirm' },
-]
-
-const currentStep = ref<Step | number>('upload')
-const processing = ref(false)
-watch(files, async (next) => {
-  if (!next) {
-    currentStep.value = 'upload'
-    await upload.setFiles([])
-    return
-  }
-  currentStep.value = 'upload'
-  await upload.setFiles([next])
-})
-
-const currentStepIndex = computed(() => stepOrder.indexOf(currentStep.value as Step))
-const sampleRows = computed(() => upload.rawRows.value.slice(0, 3))
-const effectiveDateModel = computed({
-  get: () => (upload.effectiveDate.value ?? undefined) as DateValue | undefined,
-  set: (value: DateValue | undefined) => {
-    upload.effectiveDate.value = value ?? null
-  },
-})
-
-const canAdvance = computed(() => {
-  if (currentStep.value === 'upload') return upload.rawRows.value.length > 0
-  if (currentStep.value === 'mapping') {
-    const m = upload.columnMap.value
-    return m.seniority_number >= 0 && m.employee_number >= 0 && m.seat >= 0 && m.base >= 0 && m.fleet >= 0 && m.hire_date >= 0
-  }
-  if (currentStep.value === 'review') return upload.errorCount.value === 0 && upload.entries.value.length > 0
-  return true
-})
-
-async function nextStep() {
-  if (currentStep.value === 'mapping') {
-    processing.value = true
-    // Yield to let the UI update with the loading state before heavy work
-    await new Promise(resolve => setTimeout(resolve, 0))
-    upload.applyMapping()
-    processing.value = false
-  }
-  const nextIdx = currentStepIndex.value + 1
-  if (nextIdx < stepOrder.length) {
-    currentStep.value = stepOrder[nextIdx]!
-  }
-}
-
-function prevStep() {
-  const prevIdx = currentStepIndex.value - 1
-  if (prevIdx >= 0) {
-    currentStep.value = stepOrder[prevIdx]!
-  }
-}
-
-defineExpose({ onSave })
-
-async function onSave() {
-  try {
-    const count = await upload.save(adminTargetUserId)
-    toast.add({ title: `Uploaded ${count} entries`, color: 'success' })
-    upload.reset()
-    await navigateTo({ path: '/dashboard', query: { tab: 'seniority' } })
-  } catch {
-    toast.add({ title: upload.saveError.value ?? 'Upload failed', color: 'error' })
-  }
-}
-</script>

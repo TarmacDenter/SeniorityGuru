@@ -1,30 +1,3 @@
-<template>
-  <div class="space-y-4">
-    <!-- YOS histogram chart -->
-    <ClientOnly>
-      <div class="h-48 relative">
-        <Bar :data="chartData" :options="chartOptions" />
-      </div>
-      <template #fallback>
-        <USkeleton class="h-48 w-full" />
-      </template>
-    </ClientOnly>
-
-    <!-- Summary stats row -->
-    <div class="flex flex-wrap gap-x-6 gap-y-1 text-xs text-[var(--ui-text-muted)]">
-      <span>P10 <strong class="text-highlighted font-mono">{{ distribution.p10.toFixed(1) }}y</strong></span>
-      <span>P25 <strong class="text-highlighted font-mono">{{ distribution.p25.toFixed(1) }}y</strong></span>
-      <span>Median <strong class="text-highlighted font-mono">{{ distribution.median.toFixed(1) }}y</strong></span>
-      <span>P75 <strong class="text-highlighted font-mono">{{ distribution.p75.toFixed(1) }}y</strong></span>
-      <span>P90 <strong class="text-highlighted font-mono">{{ distribution.p90.toFixed(1) }}y</strong></span>
-      <span>Most junior entry <strong class="text-highlighted font-mono">{{ distribution.entryFloor.toFixed(1) }}y</strong></span>
-      <span v-if="userYos !== undefined" class="text-primary font-semibold">
-        You: {{ userYos.toFixed(1) }}y
-      </span>
-    </div>
-  </div>
-</template>
-
 <script setup lang="ts">
 import { Bar } from 'vue-chartjs'
 import {
@@ -101,3 +74,30 @@ const chartOptions = computed<ChartOptions<'bar'>>(() => ({
   },
 } as ChartOptions<'bar'>))
 </script>
+
+<template>
+  <div class="space-y-4">
+    <!-- YOS histogram chart -->
+    <ClientOnly>
+      <div class="h-48 relative">
+        <Bar :data="chartData" :options="chartOptions" />
+      </div>
+      <template #fallback>
+        <USkeleton class="h-48 w-full" />
+      </template>
+    </ClientOnly>
+
+    <!-- Summary stats row -->
+    <div class="flex flex-wrap gap-x-6 gap-y-1 text-xs text-[var(--ui-text-muted)]">
+      <span>P10 <strong class="text-highlighted font-mono">{{ distribution.p10.toFixed(1) }}y</strong></span>
+      <span>P25 <strong class="text-highlighted font-mono">{{ distribution.p25.toFixed(1) }}y</strong></span>
+      <span>Median <strong class="text-highlighted font-mono">{{ distribution.median.toFixed(1) }}y</strong></span>
+      <span>P75 <strong class="text-highlighted font-mono">{{ distribution.p75.toFixed(1) }}y</strong></span>
+      <span>P90 <strong class="text-highlighted font-mono">{{ distribution.p90.toFixed(1) }}y</strong></span>
+      <span>Most junior entry <strong class="text-highlighted font-mono">{{ distribution.entryFloor.toFixed(1) }}y</strong></span>
+      <span v-if="userYos !== undefined" class="text-primary font-semibold">
+        You: {{ userYos.toFixed(1) }}y
+      </span>
+    </div>
+  </div>
+</template>

@@ -1,3 +1,12 @@
+<script setup lang="ts">
+defineProps<{
+  collapsed?: boolean
+}>()
+
+const user = useSupabaseUser()
+const { signOut } = useSignOut()
+</script>
+
 <template>
   <div class="flex flex-col gap-2 p-2 overflow-hidden">
     <UUser
@@ -21,12 +30,3 @@
     </div>
   </div>
 </template>
-
-<script setup lang="ts">
-defineProps<{
-  collapsed?: boolean
-}>()
-
-const user = useSupabaseUser()
-const { signOut } = useSignOut()
-</script>

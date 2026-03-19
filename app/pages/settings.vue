@@ -1,3 +1,7 @@
+<script setup lang="ts">
+definePageMeta({ layout: 'dashboard', middleware: 'auth' })
+</script>
+
 <template>
   <UDashboardPanel>
     <template #header>
@@ -14,7 +18,3 @@
     </template>
   </UDashboardPanel>
 </template>
-
-<script setup lang="ts">
-definePageMeta({ layout: 'dashboard', middleware: 'auth' })
-</script>

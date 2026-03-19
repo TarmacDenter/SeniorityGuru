@@ -1,22 +1,3 @@
-<template>
-  <UCard>
-    <template #header>
-      <div class="flex items-center justify-between">
-        <h3 class="font-semibold text-highlighted">Status by Base / Seat / Fleet</h3>
-        <div class="flex items-center gap-2">
-          <span class="text-xs text-muted">Adjusted</span>
-          <InfoIcon text="Adjusted rank and total exclude retired pilots. Raw rank includes everyone on the original list." size="xs" />
-          <USwitch v-model="adjusted" size="xs" />
-        </div>
-      </div>
-    </template>
-
-    <div class="overflow-x-auto">
-      <UTable :data="displayData" :columns="columns" />
-    </div>
-  </UCard>
-</template>
-
 <script setup lang="ts">
 import { h } from 'vue';
 import type { TableColumn } from '@nuxt/ui';
@@ -75,3 +56,22 @@ const columns: TableColumn<DisplayRow>[] = [
   { accessorKey: 'displayPercentile', header: 'TOP %', cell: ({ row }) => h('span', { class: highlightClass(row.original) }, `${row.original.displayPercentile}%`) },
 ];
 </script>
+
+<template>
+  <UCard>
+    <template #header>
+      <div class="flex items-center justify-between">
+        <h3 class="font-semibold text-highlighted">Status by Base / Seat / Fleet</h3>
+        <div class="flex items-center gap-2">
+          <span class="text-xs text-muted">Adjusted</span>
+          <InfoIcon text="Adjusted rank and total exclude retired pilots. Raw rank includes everyone on the original list." size="xs" />
+          <USwitch v-model="adjusted" size="xs" />
+        </div>
+      </div>
+    </template>
+
+    <div class="overflow-x-auto">
+      <UTable :data="displayData" :columns="columns" />
+    </div>
+  </UCard>
+</template>

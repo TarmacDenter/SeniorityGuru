@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { SeniorityEntryResponse, SeniorityListResponse } from '../../shared/schemas/seniority-list'
+import type { Qual, SenioritySnapshot } from '#shared/utils/seniority-engine'
 import { makeEntry, makeList } from '#shared/test-utils/factories'
 
 const mockSeniorityStore = vi.hoisted(() => ({
@@ -8,8 +9,16 @@ const mockSeniorityStore = vi.hoisted(() => ({
   lists: [] as SeniorityListResponse[],
 }))
 
+const mockSnapshot = vi.hoisted(() => ({
+  value: null as SenioritySnapshot | null,
+}))
+
 vi.mock('~/stores/seniority', () => ({
   useSeniorityStore: () => mockSeniorityStore,
+}))
+
+vi.mock('./useSeniorityEngine', () => ({
+  useSeniorityEngine: () => ({ snapshot: mockSnapshot }),
 }))
 
 const { useCompanyStats } = await import('./useCompanyStats')
@@ -18,6 +27,7 @@ describe('useCompanyStats', () => {
   beforeEach(() => {
     mockSeniorityStore.entries = []
     mockSeniorityStore.lists = []
+    mockSnapshot.value = null
   })
 
   describe('aggregateStats', () => {
@@ -38,10 +48,10 @@ describe('useCompanyStats', () => {
       expect(group777!.avgSeniority).toBe(5)
     })
 
-    it('skips entries with null fleet or base', () => {
+    it('skips entries with falsy fleet or base', () => {
       mockSeniorityStore.entries = [
-        makeEntry({ seniority_number: 1, fleet: null, base: 'JFK' }),
-        makeEntry({ seniority_number: 2, fleet: '737', base: null }),
+        makeEntry({ seniority_number: 1, fleet: '' as any, base: 'JFK' }),
+        makeEntry({ seniority_number: 2, fleet: '737', base: '' as any }),
         makeEntry({ seniority_number: 3, fleet: '737', base: 'JFK' }),
       ]
       const { aggregateStats } = useCompanyStats()
@@ -67,30 +77,31 @@ describe('useCompanyStats', () => {
   })
 
   describe('quals', () => {
-    it('builds unique qual combos from actual entries', () => {
-      mockSeniorityStore.entries = [
-        makeEntry({ base: 'JFK', seat: 'CA', fleet: '737' }),
-        makeEntry({ base: 'LAX', seat: 'FO', fleet: '777' }),
-        makeEntry({ base: 'JFK', seat: 'CA', fleet: '737' }),
-        makeEntry({ base: null, seat: null, fleet: null }),
-      ]
+    it('returns empty array when snapshot is null', () => {
+      mockSnapshot.value = null
       const { quals } = useCompanyStats()
-      expect(quals.value).toEqual([
-        { seat: 'CA', fleet: '737', base: 'JFK', label: 'CA/737/JFK' },
-        { seat: 'FO', fleet: '777', base: 'LAX', label: 'FO/777/LAX' },
-      ])
+      expect(quals.value).toEqual([])
     })
 
-    it('does not generate cross-product combos', () => {
-      mockSeniorityStore.entries = [
-        makeEntry({ base: 'JFK', seat: 'CA', fleet: '737' }),
-        makeEntry({ base: 'LAX', seat: 'FO', fleet: '777' }),
+    it('returns quals from snapshot', () => {
+      const snapshotQuals: Qual[] = [
+        { seat: 'CA', fleet: '737', base: 'JFK', label: 'CA/737/JFK' },
+        { seat: 'FO', fleet: '777', base: 'LAX', label: 'FO/777/LAX' },
       ]
+      mockSnapshot.value = { quals: snapshotQuals } as unknown as SenioritySnapshot
       const { quals } = useCompanyStats()
-      const labels = quals.value.map((q) => q.label)
-      expect(labels).not.toContain('CA/777/LAX')
-      expect(labels).not.toContain('FO/737/JFK')
-      expect(labels).toHaveLength(2)
+      expect(quals.value).toEqual(snapshotQuals)
+    })
+
+    it('returns a copy of snapshot quals (not mutating original)', () => {
+      const snapshotQuals: Qual[] = [
+        { seat: 'CA', fleet: '737', base: 'JFK', label: 'CA/737/JFK' },
+      ]
+      mockSnapshot.value = { quals: snapshotQuals } as unknown as SenioritySnapshot
+      const { quals } = useCompanyStats()
+      const result = quals.value
+      expect(result).not.toBe(snapshotQuals)
+      expect(result).toEqual(snapshotQuals)
     })
   })
 })

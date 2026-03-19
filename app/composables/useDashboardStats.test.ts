@@ -2,7 +2,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { SeniorityEntryResponse, SeniorityListResponse } from '../../shared/schemas/seniority-list'
 import type { ProfileResponse } from '../../shared/schemas/settings'
-import { makeEntry, makeList, makeProfile } from '#shared/test-utils/factories'
+import { makeDomainEntry, makeEntry, makeList, makeProfile } from '#shared/test-utils/factories'
 
 const mockSeniorityStore = vi.hoisted(() => ({
   entries: [] as SeniorityEntryResponse[],
@@ -32,7 +32,7 @@ const mockNewHireMode = vi.hoisted(() => ({
   availableFleets: { value: [] as string[] },
   realUserFound: { value: false },
   isActive: { value: false },
-  syntheticEntry: { value: null as SeniorityEntryResponse | null },
+  syntheticEntry: { value: null as import('../../shared/schemas/seniority-list').SeniorityEntry | null },
 }))
 
 vi.mock('./useNewHireMode', () => ({
@@ -124,9 +124,9 @@ describe('useDashboardStats composable', () => {
       ]
 
       const { rankCard } = useDashboardStats()
-      // 2 entries retired above (sen nums 1 and 2), so adjusted = 5 - 2 = 3
+      // rank = 4 (3 entries with sen num < 5), retiredAbove = 2 (sens 1 and 2), adjustedRank = 4 - 2 = 2
       expect(rankCard.value.seniorityNumber).toBe(5)
-      expect(rankCard.value.adjustedSeniority).toBe(3)
+      expect(rankCard.value.adjustedSeniority).toBe(2)
       expect(rankCard.value.base).toBe('JFK')
       expect(rankCard.value.seat).toBe('CA')
       expect(rankCard.value.fleet).toBe('737')
@@ -253,15 +253,14 @@ describe('useDashboardStats composable', () => {
         makeEntry({ seniority_number: 1, employee_number: '100' }),
       ]
       mockNewHireMode.isActive.value = true
-      mockNewHireMode.syntheticEntry.value = makeEntry({
-        id: 'synthetic-new-hire',
+      mockNewHireMode.syntheticEntry.value = makeDomainEntry({
         seniority_number: 2,
         employee_number: '999',
         name: 'You (New Hire)',
         base: 'JFK',
         seat: 'CA',
         fleet: '737',
-        retire_date: null,
+        retire_date: undefined,
       })
 
       const { userFound, isNewHireMode } = useDashboardStats()
@@ -276,15 +275,14 @@ describe('useDashboardStats composable', () => {
         makeEntry({ seniority_number: 2, employee_number: '200' }),
       ]
       mockNewHireMode.isActive.value = true
-      mockNewHireMode.syntheticEntry.value = makeEntry({
-        id: 'synthetic-new-hire',
+      mockNewHireMode.syntheticEntry.value = makeDomainEntry({
         seniority_number: 3,
         employee_number: '999',
         name: 'You (New Hire)',
         base: 'LAX',
         seat: 'FO',
         fleet: '777',
-        retire_date: null,
+        retire_date: undefined,
       })
 
       const { rankCard } = useDashboardStats()

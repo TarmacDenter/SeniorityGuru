@@ -1,3 +1,15 @@
+<script setup lang="ts">
+defineProps<{
+  stats: Array<{
+    label: string
+    value: string
+    trend?: string
+    trendUp?: boolean
+    icon?: string
+  }>
+}>()
+</script>
+
 <template>
   <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
     <DashboardStatCard
@@ -11,15 +23,3 @@
     />
   </div>
 </template>
-
-<script setup lang="ts">
-defineProps<{
-  stats: Array<{
-    label: string
-    value: string
-    trend?: string
-    trendUp?: boolean
-    icon?: string
-  }>
-}>()
-</script>

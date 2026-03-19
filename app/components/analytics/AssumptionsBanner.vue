@@ -1,3 +1,14 @@
+<script setup lang="ts">
+withDefaults(
+  defineProps<{
+    isBannerDismissed: boolean
+    context?: 'trajectory' | 'position' | 'general'
+  }>(),
+  { context: 'general' },
+)
+defineEmits<{ dismiss: [] }>()
+</script>
+
 <template>
   <div v-if="!isBannerDismissed" class="mb-4">
     <UAlert
@@ -50,14 +61,3 @@
     </UButton>
   </div>
 </template>
-
-<script setup lang="ts">
-withDefaults(
-  defineProps<{
-    isBannerDismissed: boolean
-    context?: 'trajectory' | 'position' | 'general'
-  }>(),
-  { context: 'general' },
-)
-defineEmits<{ dismiss: [] }>()
-</script>

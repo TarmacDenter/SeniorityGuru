@@ -28,7 +28,7 @@ export default defineEventHandler(async (event) => {
   const authUsers = authResult.data?.users ?? []
 
   const emailMap = new Map<string, string>(
-    authUsers.map((u) => [u.id, u.email ?? ''] as [string, string]),
+    authUsers.map((u: { id: string; email?: string }) => [u.id, u.email ?? ''] as [string, string]),
   )
 
   const totalUsers = profiles.length

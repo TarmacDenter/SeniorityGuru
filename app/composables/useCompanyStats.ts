@@ -1,11 +1,13 @@
 import type { SeniorityEntryResponse } from '#shared/schemas/seniority-list'
 import { formatDateLabel } from '#shared/utils/seniority-math'
 import { useSeniorityStore } from '~/stores/seniority'
+import { useSeniorityEngine } from './useSeniorityEngine'
 
 type SeniorityEntry = SeniorityEntryResponse
 
 export function useCompanyStats() {
   const seniorityStore = useSeniorityStore()
+  const { snapshot } = useSeniorityEngine()
 
   const aggregateStats = computed(() => {
     const entries = seniorityStore.entries
@@ -54,20 +56,10 @@ export function useCompanyStats() {
     }))
   })
 
+  // Use snapshot quals instead of rebuilding from entries
   const quals = computed(() => {
-    const entries = seniorityStore.entries
-    const seen = new Set<string>()
-    const result: { seat: string; fleet: string; base: string; label: string }[] = []
-
-    for (const e of entries) {
-      if (!e.seat || !e.fleet || !e.base) continue
-      const key = `${e.seat}/${e.fleet}/${e.base}`
-      if (seen.has(key)) continue
-      seen.add(key)
-      result.push({ seat: e.seat, fleet: e.fleet, base: e.base, label: key })
-    }
-
-    return result.sort((a, b) => a.label.localeCompare(b.label))
+    if (!snapshot.value) return []
+    return [...snapshot.value.quals]
   })
 
   return {

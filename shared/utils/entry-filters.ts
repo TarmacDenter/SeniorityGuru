@@ -1,7 +1,7 @@
-import type { SeniorityEntryResponse } from '#shared/schemas/seniority-list'
+import type { SeniorityEntry } from '#shared/schemas/seniority-list'
 
 export function uniqueEntryValues(
-  entries: SeniorityEntryResponse[],
+  entries: SeniorityEntry[],
   field: 'fleet' | 'seat' | 'base',
 ): string[] {
   const values = new Set<string>()

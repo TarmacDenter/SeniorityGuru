@@ -1,21 +1,3 @@
-<template>
-  <UCard
-:ui="{
-    root: 'transition-all duration-200 hover:scale-[1.02] hover:ring-primary/30',
-  }">
-    <div class="flex items-start justify-between">
-      <div>
-        <p class="text-sm text-muted">{{ label }}</p>
-        <p class="text-2xl font-bold font-mono text-highlighted mt-1">{{ displayValue }}</p>
-        <p v-if="trend" class="text-xs mt-1" :class="trendUp ? 'text-success' : 'text-error'">
-          {{ trend }}
-        </p>
-      </div>
-      <UIcon v-if="icon" :name="icon" class="size-8 text-primary" />
-    </div>
-  </UCard>
-</template>
-
 <script setup lang="ts">
 const props = defineProps<{
   label: string;
@@ -63,3 +45,21 @@ onMounted(() => {
   requestAnimationFrame(tick);
 });
 </script>
+
+<template>
+  <UCard
+:ui="{
+    root: 'transition-all duration-200 hover:scale-[1.02] hover:ring-primary/30',
+  }">
+    <div class="flex items-start justify-between">
+      <div>
+        <p class="text-sm text-muted">{{ label }}</p>
+        <p class="text-2xl font-bold font-mono text-highlighted mt-1">{{ displayValue }}</p>
+        <p v-if="trend" class="text-xs mt-1" :class="trendUp ? 'text-success' : 'text-error'">
+          {{ trend }}
+        </p>
+      </div>
+      <UIcon v-if="icon" :name="icon" class="size-8 text-primary" />
+    </div>
+  </UCard>
+</template>
