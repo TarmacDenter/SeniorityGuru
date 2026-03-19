@@ -1,6 +1,8 @@
 import type { SeniorityEntryResponse } from '#shared/schemas/seniority-list'
 import { formatDateLabel } from '#shared/utils/seniority-math'
 import { useSeniorityStore } from '~/stores/seniority'
+// Intentionally uses the base engine — company aggregates should not include
+// the synthetic new-hire entry.
 import { useSeniorityEngine } from './useSeniorityEngine'
 
 type SeniorityEntry = SeniorityEntryResponse

@@ -3,6 +3,7 @@ import { useQualDemographics } from '~/composables/useQualDemographics'
 import { useQualProjections } from '~/composables/useQualProjections'
 import { useUserTrajectory } from '~/composables/useUserTrajectory'
 import { useDashboardStats } from '~/composables/useDashboardStats'
+import { useNewHireMode } from '~/composables/useNewHireMode'
 import { useUserStore } from '~/stores/user'
 import { useSeniorityStore } from '~/stores/seniority'
 import { DEFAULT_GROWTH_CONFIG } from '#shared/types/growth-config'
@@ -10,7 +11,8 @@ import type { GrowthConfig } from '#shared/types/growth-config'
 
 const userStore = useUserStore()
 const seniorityStore = useSeniorityStore()
-const hasEmployeeNumber = computed(() => !!userStore.profile?.employee_number)
+const newHireMode = useNewHireMode()
+const hasEmployeeNumber = computed(() => !!userStore.profile?.employee_number || !!newHireMode.syntheticEntry.value)
 
 const growthConfig = ref<GrowthConfig>({ ...DEFAULT_GROWTH_CONFIG })
 

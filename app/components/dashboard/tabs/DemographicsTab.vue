@@ -1,13 +1,23 @@
 <script setup lang="ts">
 import { useQualDemographics } from '~/composables/useQualDemographics'
+import { useNewHireMode } from '~/composables/useNewHireMode'
 import { computeYOS } from '#shared/utils/qual-analytics'
 
 const demographics = useQualDemographics()
+const newHireMode = useNewHireMode()
 
 const userYos = computed(() => {
+  const synthetic = newHireMode.syntheticEntry.value
+  if (synthetic) return computeYOS(synthetic.hire_date)
   const entry = demographics.userEntry.value
-  return entry ? computeYOS(entry.hire_date) : undefined
+  if (entry) return computeYOS(entry.hire_date)
+  return undefined
 })
+
+const userSeniorityNumber = computed(() =>
+  newHireMode.syntheticEntry.value?.seniority_number
+  ?? demographics.userEntry.value?.seniority_number,
+)
 </script>
 
 <template>
@@ -23,7 +33,7 @@ const userYos = computed(() => {
           </template>
           <AnalyticsJuniorCaptainTable
             :rows="demographics.mostJuniorCAs.value"
-            :user-seniority-number="demographics.userEntry.value?.seniority_number"
+            :user-seniority-number="userSeniorityNumber"
           />
         </UCard>
       </div>

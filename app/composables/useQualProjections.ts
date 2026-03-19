@@ -2,7 +2,7 @@ import { createScenario } from '#shared/utils/seniority-engine'
 import type { QualSpec } from '#shared/utils/seniority-engine'
 import { DEFAULT_GROWTH_CONFIG, type GrowthConfig } from '#shared/types/growth-config'
 import type { ComputedRef, Ref } from 'vue'
-import { useSeniorityEngine } from './useSeniorityEngine'
+import { useEffectiveSeniorityEngine } from './useEffectiveSeniorityEngine'
 
 const BANNER_KEY = 'qual-projections-banner-dismissed'
 
@@ -10,7 +10,7 @@ export function useQualProjections(
   qualSpec: ComputedRef<QualSpec> = computed(() => ({})),
   growthConfig: Ref<GrowthConfig> = ref({ ...DEFAULT_GROWTH_CONFIG }),
 ) {
-  const { lens } = useSeniorityEngine()
+  const { lens } = useEffectiveSeniorityEngine()
 
   const isBannerDismissed = ref(
     typeof localStorage !== 'undefined' ? localStorage.getItem(BANNER_KEY) === 'true' : false,

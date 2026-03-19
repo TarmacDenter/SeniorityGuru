@@ -20,6 +20,16 @@ export function useNewHireMode() {
 
   if (!_localStorageInitialized && import.meta.client && typeof localStorage !== 'undefined') {
     _localStorageInitialized = true
+
+    // Reset new-hire config when the user actively changes their employee number.
+    // Skip the initial profile hydration (undefined → value) to avoid wiping
+    // localStorage-restored state on page load.
+    watch(
+      () => userStore.profile?.employee_number,
+      (newVal, oldVal) => {
+        if (oldVal != null && newVal !== oldVal) reset()
+      },
+    )
     if (localStorage.getItem(STORAGE_KEY) === 'true') {
       enabled.value = true
     }
@@ -59,13 +69,12 @@ export function useNewHireMode() {
     return seniorityStore.entries.some((e) => e.employee_number === empNum)
   })
 
-  const isActive = computed(() => enabled.value && !realUserFound.value)
-
   const retireDate = computed(() => {
     if (!birthDate.value) return null
     const bd = new Date(birthDate.value)
     const retire = new Date(bd)
-    retire.setFullYear(retire.getFullYear() + 65)
+    const retirementAge = userStore.profile?.mandatory_retirement_age ?? 65
+    retire.setFullYear(retire.getFullYear() + retirementAge)
     return retire.toISOString().split('T')[0]!
   })
 
@@ -77,10 +86,9 @@ export function useNewHireMode() {
   )
 
   const syntheticEntry = computed<SeniorityEntry | null>(() => {
-    if (!isActive.value) return null
+    if (!enabled.value) return null
     if (!isConfigured.value) return null
-    const empNum = userStore.profile?.employee_number
-    if (!empNum) return null
+    const empNum = '_new_hire'
     const maxSenNum = seniorityStore.entries.reduce(
       (max, e) => Math.max(max, e.seniority_number),
       0,
@@ -97,6 +105,14 @@ export function useNewHireMode() {
     }
   })
 
+  function reset() {
+    enabled.value = false
+    selectedBase.value = null
+    selectedSeat.value = null
+    selectedFleet.value = null
+    birthDate.value = null
+  }
+
   return {
     enabled,
     selectedBase,
@@ -107,9 +123,9 @@ export function useNewHireMode() {
     availableSeats,
     availableFleets,
     realUserFound,
-    isActive,
     isConfigured,
     retireDate,
     syntheticEntry,
+    reset,
   }
 }

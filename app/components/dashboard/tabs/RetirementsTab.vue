@@ -2,17 +2,19 @@
 import { useQualDemographics } from '~/composables/useQualDemographics'
 import { useQualProjections } from '~/composables/useQualProjections'
 import { useUserTrajectory } from '~/composables/useUserTrajectory'
+import { useNewHireMode } from '~/composables/useNewHireMode'
 import { useUserStore } from '~/stores/user'
 import { useSeniorityStore } from '~/stores/seniority'
 
 const userStore = useUserStore()
 const seniorityStore = useSeniorityStore()
+const newHireMode = useNewHireMode()
 const demographics = useQualDemographics()
 const projections = useQualProjections(demographics.qualSpec)
 const { computeRetirementProjection } = useUserTrajectory()
 const entries = computed(() => seniorityStore.entries)
 
-const hasEmployeeNumber = computed(() => !!userStore.profile?.employee_number)
+const hasEmployeeNumber = computed(() => !!userStore.profile?.employee_number || !!newHireMode.syntheticEntry.value)
 
 </script>
 

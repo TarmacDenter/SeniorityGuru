@@ -2,10 +2,10 @@ import { createScenario } from '#shared/utils/seniority-engine'
 import type { QualSpec } from '#shared/utils/seniority-engine'
 import { DEFAULT_GROWTH_CONFIG, type GrowthConfig } from '#shared/types/growth-config'
 import type { Ref } from 'vue'
-import { useSeniorityEngine } from './useSeniorityEngine'
+import { useEffectiveSeniorityEngine } from './useEffectiveSeniorityEngine'
 
 export function useUserTrajectory(growthConfig: Ref<GrowthConfig> = ref({ ...DEFAULT_GROWTH_CONFIG })) {
-  const { lens } = useSeniorityEngine()
+  const { lens } = useEffectiveSeniorityEngine()
 
   const scenario = computed(() => createScenario({ growthConfig: growthConfig.value }))
 

@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { useQualProjections } from '~/composables/useQualProjections'
+import { useNewHireMode } from '~/composables/useNewHireMode'
 import { useUserStore } from '~/stores/user'
 import { DEFAULT_GROWTH_CONFIG } from '#shared/types/growth-config'
 import type { GrowthConfig } from '#shared/types/growth-config'
 
 const userStore = useUserStore()
-const hasEmployeeNumber = computed(() => !!userStore.profile?.employee_number)
+const newHireMode = useNewHireMode()
+const hasEmployeeNumber = computed(() => !!userStore.profile?.employee_number || !!newHireMode.syntheticEntry.value)
 
 const growthConfig = ref<GrowthConfig>({ ...DEFAULT_GROWTH_CONFIG })
 const projections = useQualProjections(undefined, growthConfig)

@@ -7,14 +7,16 @@ const userStore = useUserStore()
 </script>
 
 <template>
-  <!-- Mode OFF: show "not found" warning with toggle -->
+  <!-- Mode OFF: show "not found" / "no emp number" warning with toggle -->
   <UAlert
-    v-if="!newHireMode.isActive.value"
+    v-if="!newHireMode.enabled.value"
     icon="i-lucide-alert-triangle"
     color="warning"
     variant="subtle"
-    title="Employee Number Not Found"
-    :description="`Employee number '${userStore.profile?.employee_number}' was not found in the current seniority list.`"
+    :title="userStore.profile?.employee_number ? 'Employee Number Not Found' : 'No Employee Number Set'"
+    :description="userStore.profile?.employee_number
+      ? `Employee number '${userStore.profile.employee_number}' was not found in the current seniority list.`
+      : 'Enable New Hire Mode to see projected seniority data as a new hire at the bottom of the list.'"
   >
     <template #actions>
       <div class="flex items-center gap-2">

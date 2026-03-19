@@ -4,6 +4,9 @@ import { uniqueEntryValues } from '#shared/utils/entry-filters'
 import { useSeniorityStore } from '~/stores/seniority'
 import { useUserStore } from '~/stores/user'
 import { useUserEntry } from './useUserEntry'
+// Intentionally uses the base engine — demographics reflect the real pilot population,
+// not the synthetic new-hire entry. Callers needing user-specific markers (YOS, holdable)
+// must fall back to newHireMode.syntheticEntry at the call site.
 import { useSeniorityEngine } from './useSeniorityEngine'
 
 export function useQualDemographics() {

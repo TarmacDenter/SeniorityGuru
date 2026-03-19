@@ -12,6 +12,7 @@ definePageMeta({ layout: 'dashboard', middleware: 'auth' })
       <div class="max-w-2xl mx-auto space-y-6 p-4 sm:p-6">
         <SettingsProfileCard />
         <SettingsPreferencesCard />
+        <SettingsNewHireModeCard />
         <SettingsEmailCard />
         <SettingsPasswordCard />
       </div>

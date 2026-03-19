@@ -24,7 +24,6 @@ vi.mock('~/stores/user', () => ({
 vi.mock('./useNewHireMode', () => ({
   useNewHireMode: () => ({
     enabled: { value: false },
-    isActive: { value: false },
     syntheticEntry: { value: null },
     realUserFound: { value: false },
     selectedBase: { value: null },
