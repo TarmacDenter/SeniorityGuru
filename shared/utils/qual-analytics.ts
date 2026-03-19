@@ -11,7 +11,10 @@ export interface TrajectoryPoint {
 }
 
 // ─── Qual key ────────────────────────────────────────────────────────────────
-// "737 CA", "320 FO" — base is ALWAYS a filter dimension, never part of the key
+// "737 CA", "320 FO" — groups analytics by fleet+seat; base is a filter dimension, not a grouping key.
+// TODO: once QualSpec exists, this function should accept a QualSpec (or a set of QualSpec fields)
+// to determine the grouping granularity — currently hardcoded to fleet+seat. Callers that need
+// fleet-only grouping or fleet+seat+base grouping have no way to express that today.
 
 export function qualKey(entry: SeniorityEntry): string {
   return `${entry.fleet} ${entry.seat}`
@@ -55,7 +58,7 @@ const AGE_BUCKETS: { label: string; min: number; max: number }[] = [
 ]
 
 export function computeAgeDistribution(
-  entries: SeniorityEntry[],
+  entries: readonly SeniorityEntry[],
   mandatoryAge: number,
   filterFn?: FilterFn,
 ): { buckets: AgeBucket[]; nullCount: number } {
@@ -88,7 +91,7 @@ export interface MostJuniorCARow {
   yos: number
 }
 
-export function findMostJuniorCA(entries: SeniorityEntry[]): MostJuniorCARow[] {
+export function findMostJuniorCA(entries: readonly SeniorityEntry[]): MostJuniorCARow[] {
   const byQual = new Map<string, SeniorityEntry>()
   for (const e of entries) {
     if (e.seat !== 'CA') continue
@@ -130,7 +133,7 @@ export interface YosHistogramBucket {
 }
 
 export function computeYosHistogram(
-  entries: SeniorityEntry[],
+  entries: readonly SeniorityEntry[],
   filterFn?: FilterFn,
 ): YosHistogramBucket[] {
   const filtered = filterFn ? entries.filter(filterFn) : entries
@@ -157,7 +160,7 @@ function percentileOf(sorted: number[], p: number): number {
 }
 
 export function computeYosDistribution(
-  entries: SeniorityEntry[],
+  entries: readonly SeniorityEntry[],
   filterFn?: FilterFn,
 ): YosDistribution {
   const filtered = filterFn ? entries.filter(filterFn) : entries
@@ -196,7 +199,7 @@ export interface QualCompositionRow {
   byBase: { base: string; count: number; pct: number }[]
 }
 
-export function computeQualComposition(entries: SeniorityEntry[]): QualCompositionRow[] {
+export function computeQualComposition(entries: readonly SeniorityEntry[]): QualCompositionRow[] {
   const byQual = new Map<string, SeniorityEntry[]>()
   for (const e of entries) {
     const key = qualKey(e)
@@ -242,7 +245,7 @@ export interface RetirementWaveBucket {
 }
 
 export function computeRetirementWave(
-  entries: SeniorityEntry[],
+  entries: readonly SeniorityEntry[],
   filterFn?: FilterFn,
 ): RetirementWaveBucket[] {
   const filtered = filterFn ? entries.filter(filterFn) : entries
@@ -304,7 +307,7 @@ function lowerBound(sorted: number[], target: number): number {
   return lo
 }
 
-function sortedSenNums(entries: SeniorityEntry[]): number[] {
+function sortedSenNums(entries: readonly SeniorityEntry[]): number[] {
   return entries.map((e) => e.seniority_number).sort((a, b) => a - b)
 }
 
@@ -315,7 +318,7 @@ function companyPercentile(senNum: number, sortedNums: number[], total: number):
 }
 
 export function computePowerIndexCells(
-  entries: SeniorityEntry[],
+  entries: readonly SeniorityEntry[],
   userSenNum: number,
   projectionDate: Date,
   growthConfig?: GrowthConfig,
@@ -412,7 +415,7 @@ export interface QualDemographicScale extends QualDemographicSnapshot {
   isHoldable: boolean
 }
 
-export function computeQualSnapshots(entries: SeniorityEntry[]): QualDemographicSnapshot[] {
+export function computeQualSnapshots(entries: readonly SeniorityEntry[]): QualDemographicSnapshot[] {
   const today = new Date()
   const todayActive = entries.filter((e) => isActiveAt(e, today))
   if (todayActive.length === 0) return []
@@ -466,7 +469,7 @@ export function computeQualSnapshots(entries: SeniorityEntry[]): QualDemographic
 
 export function applyProjectionToSnapshots(
   snapshots: QualDemographicSnapshot[],
-  entries: SeniorityEntry[],
+  entries: readonly SeniorityEntry[],
   userSenNum: number,
   projectionDate: Date,
   growthConfig?: GrowthConfig,
@@ -537,8 +540,8 @@ export interface UpgradeTransition {
 }
 
 export function detectUpgradeTransitions(
-  olderEntries: SeniorityEntry[],
-  newerEntries: SeniorityEntry[],
+  olderEntries: readonly SeniorityEntry[],
+  newerEntries: readonly SeniorityEntry[],
 ): UpgradeTransition[] {
   const olderByEmpNum = new Map(olderEntries.map((e) => [e.employee_number, e]))
   const transitions: UpgradeTransition[] = []

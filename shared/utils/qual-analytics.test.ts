@@ -31,6 +31,7 @@ function makeEntry(overrides: Partial<SeniorityEntry> = {}): SeniorityEntry {
     base: 'JFK',
     fleet: '737',
     hire_date: '2010-01-01',
+    retire_date: '2055-01-01',
     ...overrides,
   }
 }
@@ -75,17 +76,15 @@ describe('computeYOS', () => {
 
 // ─── computeAgeDistribution ───────────────────────────────────────────────────
 describe('computeAgeDistribution', () => {
-  it('groups entries into correct buckets and counts missing retire_date', () => {
+  it('groups entries into correct age buckets', () => {
     const entries = [
       // retire 2030 → born ~1965 → age ~61 → bucket "60–64"
       makeEntry({ retire_date: '2030-01-01' }),
       // retire 2040 → born ~1975 → age ~51 → bucket "50–54"
       makeEntry({ retire_date: '2040-01-01' }),
-      // no retire_date
-      makeEntry(),
     ]
     const { buckets, nullCount } = computeAgeDistribution(entries, 65)
-    expect(nullCount).toBe(1)
+    expect(nullCount).toBe(0)
     const bucket6064 = buckets.find((b) => b.label === '60–64')
     const bucket5054 = buckets.find((b) => b.label === '50–54')
     expect(bucket6064?.count).toBe(1)
@@ -287,18 +286,6 @@ describe('computeRetirementWave', () => {
     expect(result.map((b) => b.year)).toEqual([2029, 2030, 2031])
   })
 
-  it('excludes entries without retire_date', () => {
-    const entries = [
-      makeEntry(),
-      makeEntry({ retire_date: '2030-01-01' }),
-    ]
-    const result = computeRetirementWave(entries)
-    expect(result).toHaveLength(1)
-  })
-
-  it('returns empty array when no entries have retire_date', () => {
-    expect(computeRetirementWave([makeEntry()])).toEqual([])
-  })
 })
 
 // ─── computePowerIndexCells ───────────────────────────────────────────────────

@@ -10,7 +10,7 @@ export type { FilterFn };
  * Count entries senior to user (lower seniority_number) that have retired by asOfDate.
  */
 export function countRetiredAbove(
-  entries: SeniorityEntry[],
+  entries: readonly SeniorityEntry[],
   userSenNum: number,
   asOfDate: Date,
   filterFn?: FilterFn,
@@ -43,7 +43,7 @@ export function generateTimePoints(startDate: Date, endDate: Date): Date[] {
  * Percentile is inverted: 100% = most senior (#1), 0% = most junior.
  */
 export function buildTrajectory(
-  entries: SeniorityEntry[],
+  entries: readonly SeniorityEntry[],
   userSenNum: number,
   timePoints: Date[],
   filterFn?: FilterFn,
@@ -78,7 +78,7 @@ export function buildTrajectory(
 }
 
 /** Compute raw rank: number of entries with lower seniority_number + 1 */
-export function computeRank(entries: SeniorityEntry[], userSenNum: number): number {
+export function computeRank(entries: readonly SeniorityEntry[], userSenNum: number): number {
   return entries.filter((e) => e.seniority_number < userSenNum).length + 1;
 }
 
@@ -108,7 +108,7 @@ export function formatNumber(n: number): string {
  * When retireDate is null, falls back to a 30-year window.
  */
 export function projectRetirements(
-  entries: SeniorityEntry[],
+  entries: readonly SeniorityEntry[],
   retireDate: string | null,
   filterFn: FilterFn = () => true,
 ): { labels: string[]; data: number[]; filteredTotal: number; } {
@@ -145,7 +145,7 @@ export function projectRetirements(
  * Build two trajectories (current and compare) for a given user seniority number.
  */
 export function projectComparativeTrajectory(
-  allEntries: SeniorityEntry[],
+  allEntries: readonly SeniorityEntry[],
   userSenNum: number,
   retireDate: string | null,
   currentFilter: FilterFn,

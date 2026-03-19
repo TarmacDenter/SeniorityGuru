@@ -43,12 +43,11 @@ describe('useQualDemographics', () => {
       expect(availableFleets.value).toEqual([])
     })
 
-    it('returns sorted unique non-falsy fleets', () => {
+    it('returns sorted unique fleets', () => {
       mockSeniorityStore.entries = [
         makeEntry({ fleet: '777' }),
         makeEntry({ fleet: '737' }),
-        makeEntry({ fleet: '737' }), // duplicate
-        makeEntry({ fleet: '' as any }),  // falsy excluded
+        makeEntry({ fleet: '737' }), // duplicate — should be deduplicated
       ]
       const { availableFleets } = useQualDemographics()
       expect(availableFleets.value).toEqual(['737', '777'])
@@ -56,12 +55,11 @@ describe('useQualDemographics', () => {
   })
 
   describe('availableSeats', () => {
-    it('returns sorted unique non-falsy seats', () => {
+    it('returns sorted unique seats', () => {
       mockSeniorityStore.entries = [
         makeEntry({ seat: 'CA' }),
         makeEntry({ seat: 'FO' }),
-        makeEntry({ seat: 'CA' }), // duplicate
-        makeEntry({ seat: '' as any }), // falsy excluded
+        makeEntry({ seat: 'CA' }), // duplicate — should be deduplicated
       ]
       const { availableSeats } = useQualDemographics()
       expect(availableSeats.value).toEqual(['CA', 'FO'])
@@ -86,7 +84,7 @@ describe('useQualDemographics', () => {
       mockSeniorityStore.entries = [
         makeEntry({ base: 'JFK' }),
         makeEntry({ base: 'LAX' }),
-        makeEntry({ base: '' as any }), // falsy excluded
+        makeEntry({ base: 'JFK' }), // duplicate — should be deduplicated
       ]
       const { availableBases } = useQualDemographics()
       expect(availableBases.value).toEqual(['JFK', 'LAX'])

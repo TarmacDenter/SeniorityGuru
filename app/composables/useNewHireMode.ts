@@ -93,7 +93,7 @@ export function useNewHireMode() {
       base: selectedBase.value!,
       fleet: selectedFleet.value!,
       hire_date: new Date().toISOString().split('T')[0]!,
-      retire_date: retireDate.value ?? undefined,
+      retire_date: retireDate.value!,
     }
   })
 

@@ -1,4 +1,11 @@
 import type { FilterFn } from '#shared/utils/seniority-math'
+// TODO: once QualSpec is defined in seniority-engine/types.ts, this composable should:
+//   1. Accept QualSpec[] instead of full Qual[] — derive partial qual options (fleet-only,
+//      seat-only, base-only, base+fleet, fleet+seat, etc.) from the snapshot's unique dimension values
+//   2. Replace the string-encoded scope options ("Fleet: 737", "CA/737/JFK") with structured
+//      QualSpec objects so makeFilter() receives a QualSpec and calls qualSpecToFilter() instead
+//      of parsing prefixed strings
+//   3. Support arbitrary dimension combinations — currently base+fleet (e.g. "BOS 220") is missing
 type Qual = { seat: string; fleet: string; base: string; label: string }
 
 export function useScopeFilter(quals: Ref<Qual[]> | ComputedRef<Qual[]>) {

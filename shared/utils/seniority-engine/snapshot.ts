@@ -2,11 +2,30 @@ import type { SeniorityEntry } from '#shared/schemas/seniority-list'
 import type { SenioritySnapshot, Qual } from './types'
 import { uniqueEntryValues } from '#shared/utils/entry-filters'
 
-export function createSnapshot(entries: SeniorityEntry[]): SenioritySnapshot {
-  // Sorted seniority numbers for binary search
-  const sortedSenNums = entries
-    .map(e => e.seniority_number)
-    .sort((a, b) => a - b)
+export class InvalidSnapshotDataError extends Error {
+  constructor(message: string, public invalidEntry?: SeniorityEntry) {
+      super(message)
+  }
+}
+
+export function createSnapshot(entries: readonly SeniorityEntry[]): SenioritySnapshot {
+  // Validate entries — fail fast on data integrity issues
+  const seenSenNums = new Set<number>()
+  const seenEmpNums = new Set<string>()
+  for (const e of entries) {
+    if (!e.base || !e.seat || !e.fleet)
+      throw new InvalidSnapshotDataError(`Entry is missing required qual data (base/seat/fleet).`, e)
+    if (seenSenNums.has(e.seniority_number))
+      throw new InvalidSnapshotDataError(`Duplicate seniority number: ${e.seniority_number}.`, e)
+    if (seenEmpNums.has(e.employee_number))
+      throw new InvalidSnapshotDataError(`Duplicate employee number: ${e.employee_number}.`, e)
+    seenSenNums.add(e.seniority_number)
+    seenEmpNums.add(e.employee_number)
+  }
+
+  // Sorted copy of entries by seniority number ascending
+  const sortedEntries = entries
+    .toSorted((a, b) => a.seniority_number - b.seniority_number)
 
   // Group by cell key (base|seat|fleet)
   const byCell = new Map<string, SeniorityEntry[]>()
@@ -24,9 +43,9 @@ export function createSnapshot(entries: SeniorityEntry[]): SenioritySnapshot {
   }
 
   // Unique filter values
-  const uniqueBases = uniqueEntryValues(entries, 'base')
-  const uniqueSeats = uniqueEntryValues(entries, 'seat')
-  const uniqueFleets = uniqueEntryValues(entries, 'fleet')
+  const uniqueBases = uniqueEntryValues(sortedEntries, 'base')
+  const uniqueSeats = uniqueEntryValues(sortedEntries, 'seat')
+  const uniqueFleets = uniqueEntryValues(sortedEntries, 'fleet')
 
   // Qual labels (distinct seat/fleet/base combos)
   const qualSet = new Set<string>()
@@ -41,7 +60,7 @@ export function createSnapshot(entries: SeniorityEntry[]): SenioritySnapshot {
 
   return {
     entries,
-    sortedSenNums,
+    sortedEntries,
     byCell,
     byEmployeeNumber,
     uniqueBases,

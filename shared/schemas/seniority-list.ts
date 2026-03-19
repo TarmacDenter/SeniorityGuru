@@ -18,7 +18,7 @@ export const SeniorityEntrySchema = z.object({
   fleet: z.string().min(1),
   name: z.string().optional(),
   hire_date: z.string().regex(ISO_DATE_REGEX, 'Invalid date format'),
-  retire_date: z.string().regex(ISO_DATE_REGEX, 'Invalid date format').optional(),
+  retire_date: z.string().regex(ISO_DATE_REGEX, 'Invalid date format'),
 })
 export type SeniorityEntry = z.infer<typeof SeniorityEntrySchema>
 
@@ -59,6 +59,7 @@ export const SeniorityEntryResponseSchema = z.object({
   id: z.string().uuid(),
   list_id: z.string().uuid(),
 })
+
 export type SeniorityEntryResponse = z.infer<typeof SeniorityEntryResponseSchema>
 
 export const CreateSeniorityListResponseSchema = z.object({

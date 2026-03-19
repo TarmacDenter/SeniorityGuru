@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { describe, it, expect } from 'vitest'
 import { makeDomainEntry } from '#shared/test-utils/factories'
-import { createSnapshot } from './snapshot'
+import { createSnapshot, InvalidSnapshotDataError } from './snapshot'
 
 describe('createSnapshot', () => {
   const entries = [
@@ -15,9 +15,9 @@ describe('createSnapshot', () => {
     expect(snap.entries.map(e => e.seniority_number)).toEqual([3, 1, 2])
   })
 
-  it('sorts seniority numbers ascending', () => {
+  it('sorts entries by seniority numbers ascending', () => {
     const snap = createSnapshot(entries)
-    expect([...snap.sortedSenNums]).toEqual([1, 2, 3])
+    expect([...snap.sortedEntries.map(s => s.seniority_number)]).toEqual([1, 2, 3])
   })
 
   it('groups entries by cell key (base|seat|fleet)', () => {
@@ -33,6 +33,11 @@ describe('createSnapshot', () => {
     const snap = createSnapshot(withExtra)
     expect(snap.byCell.size).toBe(3)
     expect(snap.byCell.get('ATL|CA|320')?.length).toBe(2)
+  })
+
+  it('throws InvalidSnapshotDataError for entries with missing base/seat/fleet', () => {
+    const withNull = [...entries, makeDomainEntry({ seniority_number: 4, employee_number: 'E4', base: '' as unknown as string, seat: 'CA', fleet: '737' })]
+    expect(() => createSnapshot(withNull)).toThrow(InvalidSnapshotDataError)
   })
 
   it('indexes entries by employee number', () => {
@@ -56,7 +61,7 @@ describe('createSnapshot', () => {
   it('handles empty entries', () => {
     const snap = createSnapshot([])
     expect(snap.entries).toHaveLength(0)
-    expect(snap.sortedSenNums).toHaveLength(0)
+    expect(snap.sortedEntries).toHaveLength(0)
     expect(snap.byCell.size).toBe(0)
     expect(snap.quals).toHaveLength(0)
   })
