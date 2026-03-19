@@ -18,6 +18,7 @@ import {
   generateTimePoints,
   getProjectionEndDate,
   projectRetirements,
+  projectComparativeTrajectory,
   computeTrajectoryDeltas,
 } from '#shared/utils/seniority-math'
 import { createScenario } from './scenario'
@@ -27,6 +28,7 @@ import type {
   RetirementWaveBucket,
   ThresholdResult,
 } from '#shared/utils/qual-analytics'
+import { findThresholdYear } from '#shared/utils/qual-analytics'
 
 export function createLens(
   snapshot: SenioritySnapshot,
@@ -125,15 +127,53 @@ export function createLens(
   }
 
   function compareTrajectories(
-    _scenarioA: Scenario, _scenarioB: Scenario,
+    scenarioA: Scenario, scenarioB: Scenario,
   ): ComparativeTrajectoryResult | null {
-    throw new Error('Not implemented yet')
+    if (!resolvedAnchor) return null
+    return projectComparativeTrajectory(
+      entries,
+      resolvedAnchor.seniorityNumber,
+      resolvedAnchor.retireDate,
+      scenarioA.scopeFilter,
+      scenarioB.scopeFilter,
+      scenarioA.growthConfig,
+    )
   }
 
   function percentileCrossing(
-    _target: number, _scenario?: Scenario,
+    targetPercentile: number, scenario?: Scenario,
   ): ThresholdResult | null {
-    throw new Error('Not implemented yet')
+    if (!resolvedAnchor) return null
+    const s = scenario ?? createScenario()
+    const { today, endDate } = getProjectionEndDate(resolvedAnchor.retireDate)
+    const timePoints = generateTimePoints(today, endDate)
+    const gc = s.growthConfig
+
+    const base = buildTrajectory(
+      entries, resolvedAnchor.seniorityNumber, timePoints,
+      s.scopeFilter, gc,
+    )
+
+    const scaleEntries = (mult: number) =>
+      entries.map(e => {
+        if (!e.retire_date) return e
+        const daysUntil = (new Date(e.retire_date).getTime() - today.getTime()) * mult
+        return {
+          ...e,
+          retire_date: new Date(today.getTime() + daysUntil).toISOString().split('T')[0]!,
+        }
+      })
+
+    const optimistic = buildTrajectory(
+      scaleEntries(0.9), resolvedAnchor.seniorityNumber, timePoints,
+      s.scopeFilter, gc,
+    )
+    const pessimistic = buildTrajectory(
+      scaleEntries(1.1), resolvedAnchor.seniorityNumber, timePoints,
+      s.scopeFilter, gc,
+    )
+
+    return findThresholdYear(base, optimistic, pessimistic, targetPercentile)
   }
 
   function holdability(_scenario?: Scenario): PowerIndexCell[] {

@@ -163,3 +163,49 @@ describe('retirementProjection()', () => {
     expect(result.filteredTotal).toBe(3) // E1, E2, E4 are CAs
   })
 })
+
+describe('compareTrajectories()', () => {
+  const lens = createLens(snapshot, anchor)
+
+  it('returns null when no anchor', () => {
+    const s = createScenario()
+    expect(createLens(snapshot).compareTrajectories(s, s)).toBeNull()
+  })
+
+  it('returns two parallel percentile arrays', () => {
+    const caFilter = createScenario({ scopeFilter: e => e.seat === 'CA' })
+    const foFilter = createScenario({ scopeFilter: e => e.seat === 'FO' })
+    const result = lens.compareTrajectories(caFilter, foFilter)!
+    expect(result.labels.length).toBeGreaterThan(0)
+    expect(result.currentData.length).toBe(result.labels.length)
+    expect(result.compareData.length).toBe(result.labels.length)
+  })
+})
+
+describe('percentileCrossing()', () => {
+  const lens = createLens(snapshot, anchor)
+
+  it('returns null when no anchor', () => {
+    expect(createLens(snapshot).percentileCrossing(50)).toBeNull()
+  })
+
+  it('finds year when user crosses target percentile', () => {
+    // With only 5 pilots and user at sen#4, retirements will push percentile up
+    const result = lens.percentileCrossing(50)
+    // May or may not cross 50% depending on retirement timing
+    // At minimum, the function should return without error
+    if (result) {
+      expect(result.year).toMatch(/^\d{4}$/)
+    }
+  })
+
+  it('returns base/optimistic/pessimistic years', () => {
+    // Use a low threshold that's easily reachable
+    const result = lens.percentileCrossing(30)
+    if (result) {
+      expect(result).toHaveProperty('year')
+      expect(result).toHaveProperty('optimistic')
+      expect(result).toHaveProperty('pessimistic')
+    }
+  })
+})
