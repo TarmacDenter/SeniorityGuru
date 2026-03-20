@@ -13,7 +13,8 @@ export default defineNuxtConfig({
     '@nuxt/eslint',
     '@nuxt/ui',
     '@nuxtjs/supabase',
-    '@pinia/nuxt'
+    '@pinia/nuxt',
+    '@vercel/analytics'
   ],
   css: ['~/assets/css/main.css'],
   supabase: {
