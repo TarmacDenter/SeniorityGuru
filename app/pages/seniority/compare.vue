@@ -72,7 +72,6 @@ const tabs = [
   { label: 'Qual Moves', slot: 'qual-moves' as const },
   { label: 'Rank Changes', slot: 'rank-changes' as const },
   { label: 'New Hires', slot: 'new-hires' as const },
-  { label: 'Upgrades', slot: 'upgrades' as const },
 ]
 
 </script>
@@ -140,18 +139,6 @@ const tabs = [
           </template>
           <template #new-hires>
             <ComparisonTab :data="comparison.newHires" :columns="newHireColumns" search-placeholder="Search new hires..." />
-          </template>
-          <template #upgrades>
-            <UCard>
-              <template #header>
-                <h3 class="font-semibold">Upgrade Tracker</h3>
-              </template>
-              <AnalyticsUpgradeTracker
-                :data="upgrades.upgradeTrackerData.value"
-                :loading="upgrades.upgradeTrackerLoading.value"
-                :error="upgrades.upgradeTrackerError.value"
-              />
-            </UCard>
           </template>
         </UTabs>
       </template>
