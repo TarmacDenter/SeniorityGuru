@@ -23,7 +23,7 @@ export default withNuxt(
   {
     files: ['**/*.test.ts', '**/*.spec.ts', 'e2e/**/*.ts'],
     rules: {
-      '@typescript-eslint/no-explicit-any': 'warn',
+      '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/no-require-imports': 'off',
       'no-console': 'off',
     },
@@ -34,4 +34,5 @@ export default withNuxt(
       'no-console': 'off',
     },
   },
+
 )
