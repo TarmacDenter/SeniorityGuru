@@ -471,21 +471,29 @@ export function applyProjectionToSnapshots(
   projectionDate: Date,
   growthConfig?: GrowthConfig,
 ): QualDemographicScale[] {
+  // Use the same rank-based projection as buildTrajectory: fix total at original
+  // list size and subtract retirements from rank. The previous approach (re-filter
+  // to active entries, re-sort, lowerBound) kept the most junior pilot pinned at
+  // the bottom regardless of retirements above them.
   const today = new Date()
-  const todayActive = entries.filter((e) => isActiveAt(e, today))
-  const todaySorted = sortedSenNums(todayActive)
-  const currentPctl = todayActive.length > 0
-    ? companyPercentile(userSenNum, todaySorted, todayActive.length)
+  const totalPilots = entries.length
+  const aheadOfUser = entries.filter(e => e.seniority_number < userSenNum)
+  const initialRank = aheadOfUser.length + 1
+
+  const retiredAheadToday = aheadOfUser.filter(e => e.retire_date && new Date(e.retire_date) <= today).length
+  const currentRank = initialRank - retiredAheadToday
+  const currentPctl = totalPilots > 0
+    ? Math.round(((totalPilots - currentRank + 1) / totalPilots) * 100 * 10) / 10
     : 0
 
-  const projectedActive = entries.filter((e) => isActiveAt(e, projectionDate))
-  const projectedSorted = sortedSenNums(projectedActive)
+  const retiredAheadProjected = aheadOfUser.filter(e => e.retire_date && new Date(e.retire_date) <= projectionDate).length
+  const projectedRank = initialRank - retiredAheadProjected
   const additional = growthConfig?.enabled
-    ? computeAdditionalPilots(entries.length, growthConfig.annualRate, today, projectionDate)
+    ? computeAdditionalPilots(totalPilots, growthConfig.annualRate, today, projectionDate)
     : 0
-  const projectedTotal = projectedActive.length + additional
+  const projectedTotal = totalPilots + additional
   const userPctl = projectedTotal > 0
-    ? companyPercentile(userSenNum, projectedSorted, projectedTotal)
+    ? Math.round(((projectedTotal - projectedRank + 1) / projectedTotal) * 100 * 10) / 10
     : 0
 
   return snapshots.map((snap) => ({

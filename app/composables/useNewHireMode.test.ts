@@ -55,41 +55,17 @@ describe('useNewHireMode', () => {
     })
   })
 
-  describe('isActive', () => {
-    it('is false when not enabled', () => {
-      mockUserStore.profile = makeProfile({ employee_number: '999' })
-      mockSeniorityStore.entries = [makeEntry({ employee_number: '100' })]
-      const { isActive } = useNewHireMode()
-      expect(isActive.value).toBe(false)
-    })
-
-    it('is false when enabled but user is found in list', () => {
-      mockUserStore.profile = makeProfile({ employee_number: '100' })
-      mockSeniorityStore.entries = [makeEntry({ employee_number: '100' })]
-      const { enabled, isActive } = useNewHireMode()
-      enabled.value = true
-      expect(isActive.value).toBe(false)
-    })
-
-    it('is true when enabled and user not found in list', () => {
-      mockUserStore.profile = makeProfile({ employee_number: '999' })
-      mockSeniorityStore.entries = [makeEntry({ employee_number: '100' })]
-      const { enabled, isActive } = useNewHireMode()
-      enabled.value = true
-      expect(isActive.value).toBe(true)
-    })
-  })
-
   describe('syntheticEntry', () => {
     it('is null when not active', () => {
       const { syntheticEntry } = useNewHireMode()
       expect(syntheticEntry.value).toBeNull()
     })
 
-    it('is null when active but no employee number', () => {
+    it('is null when enabled but not configured', () => {
       mockUserStore.profile = makeProfile({ employee_number: null })
       const { enabled, syntheticEntry } = useNewHireMode()
       enabled.value = true
+      // syntheticEntry is null because isConfigured is false (no base/seat/fleet/birthDate)
       expect(syntheticEntry.value).toBeNull()
     })
 
@@ -109,7 +85,7 @@ describe('useNewHireMode', () => {
 
       expect(mode.syntheticEntry.value).not.toBeNull()
       expect(mode.syntheticEntry.value!.seniority_number).toBe(51)
-      expect(mode.syntheticEntry.value!.employee_number).toBe('999')
+      expect(mode.syntheticEntry.value!.employee_number).toBe('_new_hire')
       expect(mode.syntheticEntry.value!.name).toBe('You (New Hire)')
     })
 
@@ -184,10 +160,17 @@ describe('useNewHireMode', () => {
   })
 
   describe('retireDate', () => {
-    it('computes retireDate from birthDate + 65 years', () => {
+    it('defaults to birthDate + 65 years when profile has no retirement age', () => {
       const { birthDate, retireDate } = useNewHireMode()
       birthDate.value = '1990-06-15'
       expect(retireDate.value).toBe('2055-06-15')
+    })
+
+    it('uses profile mandatory_retirement_age when set', () => {
+      mockUserStore.profile = makeProfile({ mandatory_retirement_age: 60 })
+      const { birthDate, retireDate } = useNewHireMode()
+      birthDate.value = '1990-06-15'
+      expect(retireDate.value).toBe('2050-06-15')
     })
 
     it('includes computed retireDate in synthetic entry', () => {

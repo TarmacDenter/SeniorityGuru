@@ -39,7 +39,7 @@ defineProps<{
       <!-- Banners (outside grid) -->
       <DashboardEmployeeNumberBanner v-if="!hasEmployeeNumber" class="mb-4 lg:mb-6" />
       <DashboardNewHireModeBanner
-        v-else-if="!userFound || isNewHireMode"
+        v-if="!userFound || isNewHireMode"
         class="mb-4 lg:mb-6"
       />
 

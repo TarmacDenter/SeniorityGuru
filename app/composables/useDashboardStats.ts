@@ -4,7 +4,7 @@ import type { QualSpec } from '#shared/utils/seniority-engine'
 import { useSeniorityStore } from '~/stores/seniority'
 import { useUserStore } from '~/stores/user'
 import { useNewHireMode } from './useNewHireMode'
-import { useSeniorityEngine } from './useSeniorityEngine'
+import { useEffectiveSeniorityEngine } from './useEffectiveSeniorityEngine'
 import { useCompanyStats } from './useCompanyStats'
 
 interface StatCard {
@@ -19,17 +19,17 @@ export function useDashboardStats() {
   const seniorityStore = useSeniorityStore()
   const userStore = useUserStore()
   const newHireMode = useNewHireMode()
-  const { snapshot, lens } = useSeniorityEngine()
+  const { snapshot, lens } = useEffectiveSeniorityEngine()
 
-  // Look up user entry from snapshot (includes synthetic entry in new-hire mode)
+  // The effective engine handles the mode switch: in new-hire mode the snapshot
+  // includes the synthetic entry and the lens is anchored to it.
   const userEntry = computed(() => {
-    const empNum = userStore.profile?.employee_number
-    if (!empNum) return undefined
-    return snapshot.value?.byEmployeeNumber.get(empNum)
+    if (!snapshot.value || !lens.value?.anchor) return undefined
+    return snapshot.value.byEmployeeNumber.get(lens.value.anchor.employeeNumber)
   })
 
   const hasData = computed(() => seniorityStore.entries.length > 0)
-  const hasEmployeeNumber = computed(() => !!userStore.profile?.employee_number)
+  const hasEmployeeNumber = computed(() => !!userStore.profile?.employee_number || !!newHireMode.syntheticEntry.value)
   const userFound = computed(() => !!userEntry.value)
 
   const standingResult = computed(() => lens.value?.standing() ?? null)
@@ -166,7 +166,7 @@ export function useDashboardStats() {
     hasData,
     hasEmployeeNumber,
     userFound,
-    isNewHireMode: newHireMode.isActive,
+    isNewHireMode: newHireMode.enabled,
     newHireMode,
     rankCard,
     stats,

@@ -25,6 +25,7 @@ export type SeniorityEntry = z.infer<typeof SeniorityEntrySchema>
 export const SeniorityListIdSchema = z.object({
   id: z.string().uuid('Invalid list ID'),
 })
+export type SeniorityListId = z.infer<typeof SeniorityListIdSchema>
 
 export const CreateSeniorityListSchema = z.object({
   effective_date: z.string().regex(ISO_DATE_REGEX, 'Invalid date format'),
@@ -58,7 +59,6 @@ export const SeniorityEntryResponseSchema = z.object({
   id: z.string().uuid(),
   list_id: z.string().uuid(),
 })
-
 export type SeniorityEntryResponse = z.infer<typeof SeniorityEntryResponseSchema>
 
 export const CreateSeniorityListResponseSchema = z.object({

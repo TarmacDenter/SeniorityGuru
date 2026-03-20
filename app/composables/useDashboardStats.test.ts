@@ -31,7 +31,6 @@ const mockNewHireMode = vi.hoisted(() => ({
   availableSeats: { value: [] as string[] },
   availableFleets: { value: [] as string[] },
   realUserFound: { value: false },
-  isActive: { value: false },
   syntheticEntry: { value: null as import('../../shared/schemas/seniority-list').SeniorityEntry | null },
 }))
 
@@ -58,7 +57,6 @@ describe('useDashboardStats composable', () => {
     mockSeniorityStore.lists = []
     mockUserStore.profile = null
     mockNewHireMode.enabled.value = false
-    mockNewHireMode.isActive.value = false
     mockNewHireMode.syntheticEntry.value = null
     mockNewHireMode.realUserFound.value = false
   })
@@ -252,15 +250,15 @@ describe('useDashboardStats composable', () => {
       mockSeniorityStore.entries = [
         makeEntry({ seniority_number: 1, employee_number: '100' }),
       ]
-      mockNewHireMode.isActive.value = true
+      mockNewHireMode.enabled.value = true
       mockNewHireMode.syntheticEntry.value = makeDomainEntry({
         seniority_number: 2,
-        employee_number: '999',
+        employee_number: '_new_hire',
         name: 'You (New Hire)',
         base: 'JFK',
         seat: 'CA',
         fleet: '737',
-        retire_date: undefined,
+        retire_date: '2091-06-15',
       })
 
       const { userFound, isNewHireMode } = useDashboardStats()
@@ -274,15 +272,15 @@ describe('useDashboardStats composable', () => {
         makeEntry({ seniority_number: 1, employee_number: '100' }),
         makeEntry({ seniority_number: 2, employee_number: '200' }),
       ]
-      mockNewHireMode.isActive.value = true
+      mockNewHireMode.enabled.value = true
       mockNewHireMode.syntheticEntry.value = makeDomainEntry({
         seniority_number: 3,
-        employee_number: '999',
+        employee_number: '_new_hire',
         name: 'You (New Hire)',
         base: 'LAX',
         seat: 'FO',
         fleet: '777',
-        retire_date: undefined,
+        retire_date: '2091-06-15',
       })
 
       const { rankCard } = useDashboardStats()
@@ -292,14 +290,11 @@ describe('useDashboardStats composable', () => {
       expect(rankCard.value.fleet).toBe('777')
     })
 
-    it('prefers real entry over synthetic when user IS found', () => {
+    it('uses real entry when new hire mode is off', () => {
       mockUserStore.profile = makeProfile({ employee_number: '100' })
       mockSeniorityStore.entries = [
         makeEntry({ seniority_number: 1, employee_number: '100', base: 'JFK' }),
       ]
-      // Even if new hire mode is technically enabled, isActive should be false
-      // because realUserFound is true — but let's test that the real entry wins
-      mockNewHireMode.isActive.value = false
       mockNewHireMode.syntheticEntry.value = null
 
       const { rankCard, userFound } = useDashboardStats()
