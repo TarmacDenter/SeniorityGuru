@@ -15,17 +15,14 @@ Data stays isolated per user. You upload your own lists and only see your own da
 
 ## Shipped
 
-- Auth flow (invite-only signup, PKCE confirm, profile setup with airline/employee number)
-- CSV/XLSX upload with interactive column mapping and human-readable validation errors
-- Full seniority list viewer with your row highlighted
-- 6-tab dashboard: My Status, Demographics, Position, Retirements, Projections, Seniority List
-- Seniority list comparison with diff categories, tabbed UI, and upgrade tracking
-- List management (view, edit, delete your uploaded lists)
-- Settings page (profile, preferences, password)
-- Admin panel with user management, role editing, invite, and password reset
-- Public landing page for unauthenticated visitors
-- Structured logging for Cloudflare Workers
-- Pagination, search, and sorting across all data tables
+- Invite-only auth with PKCE confirm, profile setup, and password reset
+- CSV/XLSX upload with column mapping and validation
+- Seniority dashboard with rank, demographics, position, retirements, and projections
+- List comparison with diff categories and upgrade tracking
+- List management (view, edit, delete)
+- Settings (profile, preferences, password)
+- Admin panel (users, roles, invites, password reset)
+- Pagination, search, and sorting across all tables
 
 ## Roadmap
 
@@ -37,7 +34,7 @@ Data stays isolated per user. You upload your own lists and only see your own da
 
 ## Stack
 
-Nuxt 4 · Nuxt UI · Pinia · Supabase (Postgres + Auth) · NuxtHub (Cloudflare Workers) · Zod · Chart.js · Vitest + Playwright
+Nuxt 4 · Nuxt UI · Pinia · Supabase (Postgres + Auth) · Vercel · Zod · Chart.js · Vitest + Playwright
 
 ## Setup
 

@@ -25,4 +25,19 @@ describe('AppHeader', () => {
     const wrapper = await mountSuspended(AppHeader)
     expect(wrapper.html()).toContain('href="/dashboard"')
   })
+
+  it('shows "Sign in" button when user is not signed in', async () => {
+    const wrapper = await mountSuspended(AppHeader)
+    expect(wrapper.text()).toContain('Sign in')
+    expect(wrapper.text()).not.toContain('Go to Dashboard')
+    expect(wrapper.text()).not.toContain('Sign out')
+  })
+
+  it('shows "Go to Dashboard" and "Sign out" when user is signed in', async () => {
+    mockUser.value = { sub: 'user-123' }
+    const wrapper = await mountSuspended(AppHeader)
+    expect(wrapper.text()).toContain('Go to Dashboard')
+    expect(wrapper.text()).toContain('Sign out')
+    expect(wrapper.text()).not.toContain('Sign in')
+  })
 })

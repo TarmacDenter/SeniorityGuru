@@ -3,6 +3,8 @@ import type { QualDemographicScale } from '#shared/utils/qual-analytics'
 
 definePageMeta({ layout: 'default' })
 
+const user = useSupabaseUser()
+
 const howItWorksSteps = [
   {
     icon: 'i-lucide-upload',
@@ -288,9 +290,14 @@ const demoWaveBuckets = computed(() => demoWaveData[demoQual.value])
           </p>
 
           <div class="flex flex-wrap justify-center gap-3">
-            <UButton to="/auth/login" size="xl" icon="i-lucide-arrow-right" trailing>
-              Request Access
-            </UButton>
+            <ClientOnly>
+              <UButton v-if="user" to="/dashboard" size="xl" icon="i-lucide-arrow-right" trailing>
+                Go to Dashboard
+              </UButton>
+              <UButton v-else to="/auth/login" size="xl" icon="i-lucide-arrow-right" trailing>
+                Request Access
+              </UButton>
+            </ClientOnly>
             <UButton to="#demo" size="xl" variant="ghost" icon="i-lucide-play-circle" trailing>
               See How It Works
             </UButton>
@@ -675,9 +682,14 @@ const demoWaveBuckets = computed(() => demoWaveData[demoQual.value])
           <p class="text-muted">
             Request access to start tracking your seniority today.
           </p>
-          <UButton to="/auth/login" size="xl" icon="i-lucide-arrow-right" trailing>
-            Request Access
-          </UButton>
+          <ClientOnly>
+            <UButton v-if="user" to="/dashboard" size="xl" icon="i-lucide-arrow-right" trailing>
+              Go to Dashboard
+            </UButton>
+            <UButton v-else to="/auth/login" size="xl" icon="i-lucide-arrow-right" trailing>
+              Request Access
+            </UButton>
+          </ClientOnly>
 
           <!-- Trust signals -->
           <div class="flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm text-muted pt-2">

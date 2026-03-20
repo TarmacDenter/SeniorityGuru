@@ -508,27 +508,15 @@ export function applyProjectionToSnapshots(
 
 export interface ThresholdResult {
   year: string
-  optimistic: string | null
-  pessimistic: string | null
 }
 
 export function findThresholdYear(
   baseTrajectory: TrajectoryPoint[],
-  optimisticTrajectory: TrajectoryPoint[],
-  pessimisticTrajectory: TrajectoryPoint[],
   targetPercentile: number,
 ): ThresholdResult | null {
-  const firstCrossing = (traj: TrajectoryPoint[]): string | null =>
-    traj.find((pt) => pt.percentile >= targetPercentile)?.date.substring(0, 4) ?? null
-
-  const year = firstCrossing(baseTrajectory)
+  const year = baseTrajectory.find((pt) => pt.percentile >= targetPercentile)?.date.substring(0, 4) ?? null
   if (!year) return null
-
-  return {
-    year,
-    optimistic: firstCrossing(optimisticTrajectory),
-    pessimistic: firstCrossing(pessimisticTrajectory),
-  }
+  return { year }
 }
 
 // ─── Upgrade transition detection ─────────────────────────────────────────────

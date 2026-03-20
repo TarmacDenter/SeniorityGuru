@@ -199,13 +199,13 @@ describe('percentileCrossing()', () => {
     }
   })
 
-  it('returns base/optimistic/pessimistic years', () => {
+  it('returns only a base year (no optimistic/pessimistic)', () => {
     // Use a low threshold that's easily reachable
     const result = lens.percentileCrossing(30)
     if (result) {
       expect(result).toHaveProperty('year')
-      expect(result).toHaveProperty('optimistic')
-      expect(result).toHaveProperty('pessimistic')
+      expect(result).not.toHaveProperty('optimistic')
+      expect(result).not.toHaveProperty('pessimistic')
     }
   })
 })

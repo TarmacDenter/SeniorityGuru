@@ -221,8 +221,8 @@ describe('useQualProjections', () => {
       const result = thresholdResult.value
       if (result !== null) {
         expect(result).toHaveProperty('year')
-        expect(result).toHaveProperty('optimistic')
-        expect(result).toHaveProperty('pessimistic')
+        expect(result).not.toHaveProperty('optimistic')
+        expect(result).not.toHaveProperty('pessimistic')
       }
     })
   })

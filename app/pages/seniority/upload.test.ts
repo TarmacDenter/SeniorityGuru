@@ -1,11 +1,15 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mountSuspended, mockNuxtImport } from '@nuxt/test-utils/runtime'
+import type { DOMWrapper } from '@vue/test-utils'
 import UploadPage from './upload.vue'
 
-const { mockSave, mockReset, mockNavigateTo } = vi.hoisted(() => ({
+const { mockSave, mockReset, mockNavigateTo, mockColumnMap, mockMappingOptions, mockRawRows } = vi.hoisted(() => ({
   mockSave: vi.fn(),
   mockReset: vi.fn(),
   mockNavigateTo: vi.fn(),
+  mockColumnMap: { value: { seniority_number: -1, employee_number: -1, seat: -1, base: -1, fleet: -1, hire_date: -1, retire_date: -1, name: -1 } },
+  mockMappingOptions: { value: {} as Record<string, unknown> },
+  mockRawRows: { value: [] as unknown[] },
 }))
 
 mockNuxtImport('navigateTo', () => mockNavigateTo)
@@ -15,13 +19,13 @@ mockNuxtImport('useSeniorityUpload', () => () => ({
   saving: { value: false },
   saveError: { value: null },
   fileName: { value: null },
-  rawRows: { value: [] },
+  rawRows: mockRawRows,
   rawHeaders: { value: [] },
   entries: { value: [] },
   errorCount: { value: 0 },
   rowErrors: { value: new Map() },
-  columnMap: { value: {} },
-  mappingOptions: { value: {} },
+  columnMap: mockColumnMap,
+  mappingOptions: mockMappingOptions,
   effectiveDate: { value: null },
   title: { value: '' },
   setFiles: vi.fn().mockResolvedValue(undefined),
@@ -29,6 +33,16 @@ mockNuxtImport('useSeniorityUpload', () => () => ({
   updateCell: vi.fn(),
   deleteRow: vi.fn(),
 }))
+
+/** Returns true when the "Next" button exists and is NOT disabled. */
+async function isNextEnabled(wrapper: Awaited<ReturnType<typeof mountSuspended>>) {
+  await wrapper.vm.$nextTick()
+  const buttons = wrapper.findAll('button')
+  const nextBtn = buttons.find((b: DOMWrapper<HTMLButtonElement>) => b.text().includes('Next'))
+  if (!nextBtn) return false
+  // attributes('disabled') returns undefined when not present, '' when present (empty attribute)
+  return nextBtn.attributes('disabled') === undefined
+}
 
 describe('upload page onSave', () => {
   beforeEach(() => {
@@ -76,5 +90,89 @@ describe('upload page onSave', () => {
     await wrapper.vm.onSave()
 
     expect(mockNavigateTo).not.toHaveBeenCalled()
+  })
+})
+
+describe('upload page canAdvance — mapping step', () => {
+  const allRequiredMapped = {
+    seniority_number: 0,
+    employee_number: 1,
+    seat: 2,
+    base: 3,
+    fleet: 4,
+    hire_date: 5,
+    retire_date: 6,
+    name: -1,
+  }
+
+  beforeEach(() => {
+    // Start on upload step with rows so we can advance to mapping
+    mockRawRows.value = [['a', 'b', 'c', 'd', 'e', 'f', 'g']]
+    mockColumnMap.value = { ...allRequiredMapped }
+    mockMappingOptions.value = { retireMode: 'direct' }
+  })
+
+  it('Next is disabled on mapping step when retire_date is unmapped and DOB mode is off', async () => {
+    mockRawRows.value = [['a']]
+    mockColumnMap.value = { ...allRequiredMapped, retire_date: -1 }
+    mockMappingOptions.value = { retireMode: 'direct' }
+
+    const wrapper = await mountSuspended(UploadPage)
+
+    // Advance to mapping step by clicking Next on upload step
+    const buttons = wrapper.findAll('button')
+    const nextBtn = buttons.find(b => b.text().includes('Next'))
+    expect(nextBtn).toBeDefined()
+    await nextBtn!.trigger('click')
+    await wrapper.vm.$nextTick()
+
+    // Now on mapping step — Next should be disabled because retire_date is unmapped
+    expect(await isNextEnabled(wrapper)).toBe(false)
+  })
+
+  it('Next is enabled on mapping step when retire_date is mapped and DOB mode is off', async () => {
+    mockRawRows.value = [['a']]
+    mockColumnMap.value = { ...allRequiredMapped, retire_date: 6 }
+    mockMappingOptions.value = { retireMode: 'direct' }
+
+    const wrapper = await mountSuspended(UploadPage)
+
+    const buttons = wrapper.findAll('button')
+    const nextBtn = buttons.find(b => b.text().includes('Next'))
+    await nextBtn!.trigger('click')
+    await wrapper.vm.$nextTick()
+
+    expect(await isNextEnabled(wrapper)).toBe(true)
+  })
+
+  it('Next is enabled on mapping step when retire_date is unmapped but DOB derivation mode is on', async () => {
+    mockRawRows.value = [['a']]
+    mockColumnMap.value = { ...allRequiredMapped, retire_date: -1 }
+    mockMappingOptions.value = { retireMode: 'dob' }
+
+    const wrapper = await mountSuspended(UploadPage)
+
+    const buttons = wrapper.findAll('button')
+    const nextBtn = buttons.find(b => b.text().includes('Next'))
+    await nextBtn!.trigger('click')
+    await wrapper.vm.$nextTick()
+
+    expect(await isNextEnabled(wrapper)).toBe(true)
+  })
+
+  it('Next is disabled on mapping step when other required fields are missing', async () => {
+    mockRawRows.value = [['a']]
+    // hire_date unmapped, retire_date mapped
+    mockColumnMap.value = { ...allRequiredMapped, hire_date: -1, retire_date: 6 }
+    mockMappingOptions.value = { retireMode: 'direct' }
+
+    const wrapper = await mountSuspended(UploadPage)
+
+    const buttons = wrapper.findAll('button')
+    const nextBtn = buttons.find(b => b.text().includes('Next'))
+    await nextBtn!.trigger('click')
+    await wrapper.vm.$nextTick()
+
+    expect(await isNextEnabled(wrapper)).toBe(false)
   })
 })

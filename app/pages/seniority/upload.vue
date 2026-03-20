@@ -54,7 +54,9 @@ const canAdvance = computed(() => {
   if (currentStep.value === 'upload') return upload.rawRows.value.length > 0
   if (currentStep.value === 'mapping') {
     const m = upload.columnMap.value
-    return m.seniority_number >= 0 && m.employee_number >= 0 && m.seat >= 0 && m.base >= 0 && m.fleet >= 0 && m.hire_date >= 0
+    const dobDerivationModeActive = upload.mappingOptions.value.retireMode === 'dob'
+    const retireDateSatisfied = m.retire_date >= 0 || dobDerivationModeActive
+    return m.seniority_number >= 0 && m.employee_number >= 0 && m.seat >= 0 && m.base >= 0 && m.fleet >= 0 && m.hire_date >= 0 && retireDateSatisfied
   }
   if (currentStep.value === 'review') return upload.errorCount.value === 0 && upload.entries.value.length > 0
   return true

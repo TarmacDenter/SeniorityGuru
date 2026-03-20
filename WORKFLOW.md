@@ -99,16 +99,16 @@ Use the `/ship` Claude slash command to automate steps 2-4.
 
 **Always squash merge** the PR on GitHub (never regular merge or rebase merge).
 
-### After merge — auto-sync
+### After merge — realign dev manually
 
-`.github/workflows/sync-dev.yml` automatically resets `dev` to `main` after CI passes on `main`. **No manual realignment needed.** The sequence is:
+Squash merge creates a new commit on `main` not in `dev`'s history, so `dev` diverges after every ship. Realign immediately after the merge:
 
-1. Squash merge PR → `main`
-2. CI runs on `main` (typecheck + tests)
-3. `sync-dev` fires → `git push --force origin origin/main:refs/heads/dev`
-4. `dev` HEAD = `main` HEAD
-
-> **Why this matters**: squash merge creates a new commit on `main` not in `dev`'s history, so `dev` diverges after every ship. The sync workflow eliminates permanent divergence without manual intervention.
+```bash
+git checkout dev
+git fetch origin
+git reset --hard origin/main
+git push --force origin dev
+```
 
 semantic-release runs automatically on every push to `main` and:
 1. Analyzes the squash commit message
@@ -145,12 +145,22 @@ git push origin dev
 | CI (typecheck + tests) | GitHub (push to `dev`, PRs to `main`/`dev`) | Same as pre-push |
 | Database migrations | GitHub (`migrations.yml`, gated on CI passing) | `supabase db push` to dev or prod |
 | semantic-release | GitHub (push to `main`) | Version bump + changelog + tag |
-| sync-dev | GitHub (`sync-dev.yml`, after CI passes on `main`) | Force-reset `dev` to `main` |
 
 ---
 
 ## Branch Protection
 
-Configure on GitHub:
-- `main` — require PR, require CI pass (typecheck + test), no direct push
-- `dev` — **unprotected** (push directly, force-push allowed for history revision)
+Both branches are protected via GitHub Rulesets (Settings → Rules → Rulesets).
+
+### `main`
+Standard protection — require PR, CI must pass, no direct push.
+
+### `dev` — Ruleset: "Dev w/bypass"
+- **Bypass**: Repository admin (always allow) — owner can push directly and force-push
+- **Restrict updates** — non-admins cannot push directly; all changes via PR
+- **Restrict deletions** — branch cannot be deleted by non-admins
+- **Require a pull request before merging** — 0 required approvals
+- **Require status checks to pass** — `Test` + `Typecheck` from CI must be green
+- **Require branches to be up to date** — PRs must be current before merging
+- **Require linear history** — merge commits blocked; squash or rebase merge only
+- **Block force pushes** — blocked for non-admins (admin bypass covers post-ship realignment)

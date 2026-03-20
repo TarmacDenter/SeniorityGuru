@@ -1,28 +1,8 @@
 # CLAUDE.md — Pilot Seniority Tracker
 
-## Project Overview
+A web app for airline pilots to track and project their seniority standing. Stack: Nuxt 4 + Supabase + Vercel. Read `package.json` for commands, `nuxt.config.ts` for configuration.
 
-A web app for airline pilots to track and project their seniority standing over time.
-
----
-
-## Tech Stack
-
-| Layer | Choice |
-|---|---|
-| Framework | Nuxt 4 |
-| UI | NuxtUI (module) |
-| State | Pinia |
-| Backend / DB | Supabase |
-| Auth | `@nuxtjs/supabase` module (SSR cookies / PKCE) |
-| Deployment | Vercel |
-| Language | TypeScript throughout |
-
----
-
-## Environment
-
-- Always use `node`/`npm` as the runtime, NOT `bun` or other alternatives
+**Runtime:** Always use `node`/`npm`, NOT `bun`.
 
 ---
 
@@ -32,7 +12,7 @@ A web app for airline pilots to track and project their seniority standing over 
 - **No Docker** — Supabase CLI handles local DB via its own Docker internals; Vercel handles runtime
 - **SSR auth via cookies** — `@nuxtjs/supabase` with `useSsrCookies: true` (default); PKCE flow required
 - **RLS everywhere** — all tables have Row Level Security; use a `get_my_role()` security definer helper for role checks
-- **Greenfield — no production users** — the app has not been released publicly. There are no existing users, no live data, and no backwards-compatibility obligations. DB schema changes, Zod schema changes, and TypeScript type changes carry zero migration risk. Propose and implement schema improvements freely.
+- **Live test users exist** — treat DB schema changes carefully. No public release yet, but real user accounts and data are present. Do not assume zero migration risk.
 
 ---
 
@@ -42,7 +22,7 @@ A web app for airline pilots to track and project their seniority standing over 
 - Use `serverSupabaseUser()` in Nitro API routes to verify auth (returns JWT claims — see below)
 - Use `serverSupabaseClient()` for user-scoped DB operations in server routes (carries user session, respects RLS)
 - Use `serverSupabaseServiceRole()` only when bypassing RLS is required (e.g., admin operations, cross-user queries)
-- Required pages: `/auth/login`, `/auth/signup`, `/auth/confirm` (PKCE callback), `/auth/setup-profile`, `/auth/reset-password`, `/auth/update-password`, `/auth/resend-email`
+- Required pages: `/auth/login`, `/auth/signup`, `/auth/confirm` (PKCE callback), `/auth/accept-invite`, `/auth/setup-profile`, `/auth/reset-password`, `/auth/update-password`, `/auth/resend-email`
 - Roles: `user`, `moderator`, `admin` stored in `profiles.role` enum
 - Never trust client-side role assignment — restrict `profiles` update via RLS policy
 
@@ -95,38 +75,9 @@ Both `useSupabaseUser()` (client) and `serverSupabaseUser()` (server) return **J
 - Use Supabase JS client with Zod DTOs for data access — do NOT use Drizzle ORM
 - RLS policies must avoid self-referencing recursion
 - Always use `user.sub` (not `user.id`) for Supabase auth user identification
-- Always target local Supabase instance for devment and seeding, not remote DB
+- Always target local Supabase instance for development and seeding, not remote DB
 - Schema: `airlines`, `profiles`, `seniority_lists`, `seniority_entries` — see `supabase/migrations/` for full definitions
-- **Supabase JS returns max 1000 rows by default** — always use `fetchAllRows()` (from `app/composables/useFetchAllRows.ts`) for any query that could exceed 1000 rows. Never use raw `.select('*')` without `.range()` or `fetchAllRows` for large tables like `seniority_entries`
-
----
-
-## Environment Variables
-
-```bash
-SUPABASE_URL=
-SUPABASE_KEY=           # anon/public key
-SUPABASE_SECRET_KEY=    # server-side only, never expose to client
-```
-
----
-
-## Commands
-
-```bash
-npm install             # install dependencies
-npm run dev             # Nuxt dev server
-npm run build           # production build
-npm test                # run test suite (Vitest)
-npm run test:watch      # run tests in watch mode
-npm run test:e2e        # run Playwright e2e tests
-npm run typecheck       # run vue-tsc type check
-npm run db:types        # regenerate types/database.ts from Supabase schema
-npm run db:seed-airlines  # load airlines CSV into local Supabase
-npm run db:start        # spins up local Supabase (requires Docker)
-npm run db:reset        # apply migrations + seed.sql
-supabase db push        # push local migrations to remote
-```
+- **Supabase JS returns max 1000 rows by default** — always use `fetchAllRows()` (from `server/utils/fetchAllRows.ts`) for any server-side query that could exceed 1000 rows. Never use raw `.select('*')` without `.range()` or `fetchAllRows` for large tables like `seniority_entries`
 
 ---
 
@@ -166,7 +117,7 @@ Run all three. Do not claim completion without fresh output from each.
 
 - All DB queries go through Supabase client — no raw fetch to PostgREST
 - Server-only secrets (service key) only used in `server/` routes
-- Composables for shared data-fetching logic (e.g., `useSeniorityList()`)
+- Composables for shared data-fetching logic — read `app/composables/` for existing patterns before writing new ones
 - NuxtUI components used for all UI primitives — no custom component duplicates what NuxtUI provides
 - **Theming**: always use Nuxt UI semantic tokens (`--ui-bg`, `--ui-text-muted`, `--ui-border`, etc.) — use raw Tailwind utilities only as escape hatch. When referencing colors inside `--ui-*` overrides, use Tailwind's `--color-*` variables, NOT `--ui-color-*`
 - TypeScript strict mode; define DB types from Supabase generated types
@@ -189,7 +140,7 @@ Use **Zod** at every boundary between the frontend and backend. Define schemas i
 - **Feature integration**: rebase onto `dev`, fast-forward merge (push directly to `dev`)
 - **Releases**: squash merge `dev` → `main` via PR; semantic-release runs automatically
 - **Hotfixes**: squash merge to `main` via PR, then cherry-pick to `dev`
-- **History revision**: `dev` is unprotected — rebase and force-push freely to keep history clean
+- **History revision**: `dev` has admin bypass — owner can rebase and force-push; other devs must PR
 - **Commit format**: Conventional Commits (`type(scope): description`) — enforced via husky + commitlint
 - **Quality gates**: pre-push hook runs typecheck + tests; CI runs both on push to `dev` and PRs to `main`
 

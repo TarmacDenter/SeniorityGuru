@@ -169,29 +169,7 @@ export function createLens(
       filter, gc,
     )
 
-    const scaleEntries = (mult: number) =>
-      entries.map(e => {
-        if (!e.retire_date) return e
-        const retireMs = new Date(e.retire_date).getTime()
-        // Skip already-retired pilots — scaling a past date inverts optimistic/pessimistic direction
-        if (retireMs <= today.getTime()) return e
-        const durationMs = (retireMs - today.getTime()) * mult
-        return {
-          ...e,
-          retire_date: new Date(today.getTime() + durationMs).toISOString().split('T')[0]!,
-        }
-      })
-
-    const optimistic = buildTrajectory(
-      scaleEntries(0.9), resolvedAnchor.seniorityNumber, timePoints,
-      filter, gc,
-    )
-    const pessimistic = buildTrajectory(
-      scaleEntries(1.1), resolvedAnchor.seniorityNumber, timePoints,
-      filter, gc,
-    )
-
-    return findThresholdYear(base, optimistic, pessimistic, targetPercentile)
+    return findThresholdYear(base, targetPercentile)
   }
 
   function holdability(scenario?: Scenario): PowerIndexCell[] {

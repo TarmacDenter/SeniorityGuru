@@ -1,6 +1,6 @@
 <script setup lang="ts">
 defineProps<{
-  result: { year: string; optimistic: string | null; pessimistic: string | null } | null
+  result: { year: string } | null
   targetPercentile: number
   selectedQual: string
   hasEmployeeNumber: boolean
@@ -45,33 +45,16 @@ const percentileOptions = [50, 75, 90] as const
 
       <!-- Result card -->
       <UCard v-if="result">
-        <div class="space-y-2">
-          <div class="flex items-center gap-2">
-            <UIcon name="i-lucide-calendar-check" class="size-4 text-primary" />
-            <p class="text-sm">
-              At current attrition, you could hold
-              <strong>{{ selectedQual || 'this qual' }}</strong>
-              in the
-              <strong>top {{ 100 - targetPercentile }}%</strong>
-              by
-              <strong>{{ result.pessimistic ?? result.year }}–{{ result.optimistic ?? result.year }}</strong>.
-            </p>
-          </div>
-          <div class="flex flex-wrap gap-4 text-xs text-[var(--ui-text-muted)]">
-            <div>
-              <span>Base estimate: </span>
-              <span class="font-mono font-medium text-highlighted">{{ result.year }}</span>
-            </div>
-            <div v-if="result.optimistic" class="flex items-center gap-1">
-              <span>Optimistic (faster retirements): </span>
-              <span class="font-mono font-medium text-[var(--ui-color-success-500)]">{{ result.optimistic }}</span>
-              <InfoIcon text="Optimistic assumes retirements happen 10% sooner (dates scaled ×0.9). Pessimistic assumes 10% later (×1.1). ±10% is a modeling convention." size="xs" />
-            </div>
-            <div v-if="result.pessimistic" class="flex items-center gap-1">
-              <span>Pessimistic (slower retirements): </span>
-              <span class="font-mono font-medium text-[var(--ui-color-error-500)]">{{ result.pessimistic }}</span>
-            </div>
-          </div>
+        <div class="flex items-center gap-2">
+          <UIcon name="i-lucide-calendar-check" class="size-4 text-primary" />
+          <p class="text-sm">
+            At current attrition, you could hold
+            <strong>{{ selectedQual || 'this qual' }}</strong>
+            in the
+            <strong>top {{ 100 - targetPercentile }}%</strong>
+            by
+            <strong class="font-mono">{{ result.year }}</strong>.
+          </p>
         </div>
       </UCard>
 

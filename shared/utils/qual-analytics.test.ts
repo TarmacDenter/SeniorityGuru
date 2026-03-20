@@ -436,23 +436,21 @@ describe('findThresholdYear', () => {
 
   it('returns null when threshold is never crossed', () => {
     const traj = makeTrajectory([2026, 2027, 2028], [30, 40, 45])
-    expect(findThresholdYear(traj, traj, traj, 50)).toBeNull()
+    expect(findThresholdYear(traj, 50)).toBeNull()
   })
 
   it('returns the year of first crossing', () => {
     const traj = makeTrajectory([2026, 2027, 2028], [40, 51, 60])
-    const result = findThresholdYear(traj, traj, traj, 50)
+    const result = findThresholdYear(traj, 50)
     expect(result?.year).toBe('2027')
   })
 
-  it('returns null for optimistic when that trajectory never crosses', () => {
+  it('returns only a year (no optimistic/pessimistic fields)', () => {
     const base = makeTrajectory([2026, 2027], [40, 60])
-    const optimistic = makeTrajectory([2026, 2027], [40, 55])
-    const pessimistic = makeTrajectory([2026, 2027], [40, 30])
-    const result = findThresholdYear(base, optimistic, pessimistic, 50)
+    const result = findThresholdYear(base, 50)
     expect(result?.year).toBe('2027')
-    expect(result?.optimistic).toBe('2027')
-    expect(result?.pessimistic).toBeNull()
+    expect(result).not.toHaveProperty('optimistic')
+    expect(result).not.toHaveProperty('pessimistic')
   })
 })
 

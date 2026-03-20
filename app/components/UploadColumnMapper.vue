@@ -125,7 +125,7 @@ function updateOption<K extends keyof MappingOptions>(key: K, value: MappingOpti
     <!-- Retirement handling -->
     <div class="space-y-4">
       <div class="flex items-center gap-4">
-        <span class="text-sm font-medium">Retirement date</span>
+        <span class="text-sm font-medium">Retirement date <span class="text-error">*</span></span>
         <div class="inline-flex">
           <UButton
             size="xs"
@@ -147,7 +147,7 @@ function updateOption<K extends keyof MappingOptions>(key: K, value: MappingOpti
       </div>
 
       <div v-if="mappingOptions.retireMode === 'direct'" class="max-w-sm">
-        <UFormField label="Retirement date column">
+        <UFormField label="Retirement date column" required>
           <USelectMenu
             :model-value="columnMap.retire_date >= 0 ? columnMap.retire_date : undefined"
             :items="columnOptions"
@@ -160,7 +160,7 @@ function updateOption<K extends keyof MappingOptions>(key: K, value: MappingOpti
       </div>
 
       <div v-else class="max-w-sm">
-        <UFormField label="Date of birth column">
+        <UFormField label="Date of birth column" required>
           <USelectMenu
             :model-value="mappingOptions.dobCol != null && mappingOptions.dobCol >= 0 ? mappingOptions.dobCol : undefined"
             :items="columnOptions"
