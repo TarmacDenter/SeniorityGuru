@@ -12,6 +12,7 @@ const { mocks, mockLogger } = vi.hoisted(() => {
       requireAdmin: vi.fn(),
       parseResponse: vi.fn((_s: unknown, data: unknown) => data),
       serverSupabaseServiceRole: vi.fn(),
+      fetchAllRows: vi.fn(),
     },
   }
 })
@@ -23,6 +24,7 @@ Object.assign(globalThis, {
     Object.assign(new Error(opts.statusMessage), opts),
   requireAdmin: mocks.requireAdmin,
   parseResponse: mocks.parseResponse,
+  fetchAllRows: mocks.fetchAllRows,
 })
 
 /* Explicit module mocks */
@@ -68,6 +70,7 @@ describe('GET /api/admin/stats', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mocks.serverSupabaseServiceRole.mockReturnValue(mockClient)
+    mocks.fetchAllRows.mockResolvedValue([])
     // Restore mockQueryResult chain after clearAllMocks
     mockQueryResult.select.mockReturnValue(mockQueryResult)
     mockQueryResult.eq.mockReturnValue(mockQueryResult)
@@ -108,9 +111,8 @@ describe('GET /api/admin/stats', () => {
     }
 
     mocks.requireAdmin.mockResolvedValueOnce({ sub: 'admin-id' })
-    // profiles query
+    mocks.fetchAllRows.mockResolvedValueOnce(fakeProfiles)
     mockQueryResult.select
-      .mockReturnValueOnce({ data: fakeProfiles, error: null }) // profiles full
       .mockReturnValueOnce(mockQueryResult) // seniority_lists count chain
       .mockReturnValueOnce(mockQueryResult) // seniority_entries count chain
     mockQueryResult.limit
@@ -134,7 +136,7 @@ describe('GET /api/admin/stats', () => {
 
   it('returns 500 when profiles query fails', async () => {
     mocks.requireAdmin.mockResolvedValueOnce({ sub: 'admin-id' })
-    mockQueryResult.select.mockReturnValueOnce({ data: null, error: { message: 'DB error' } })
+    mocks.fetchAllRows.mockRejectedValueOnce(new Error('Failed to fetch rows: DB error'))
     mockClient.auth.admin.listUsers.mockResolvedValueOnce({ data: { users: [] }, error: null })
     mockQueryResult.limit
       .mockResolvedValueOnce({ data: [], error: null })
@@ -148,7 +150,6 @@ describe('GET /api/admin/stats', () => {
 
   it('returns 500 when listUsers fails', async () => {
     mocks.requireAdmin.mockResolvedValueOnce({ sub: 'admin-id' })
-    mockQueryResult.select.mockReturnValueOnce({ data: [], error: null })
     mockClient.auth.admin.listUsers.mockResolvedValueOnce({ data: null, error: { message: 'Auth error' } })
     mockQueryResult.limit
       .mockResolvedValueOnce({ data: [], error: null })

@@ -9,22 +9,34 @@ export default defineEventHandler(async (event) => {
 
   const client = serverSupabaseServiceRole(event)
 
-  const [profilesResult, listsResult, entriesResult, authResult] = await Promise.all([
-    client.from('profiles').select('id, role, icao_code, created_at'),
-    client.from('seniority_lists').select('count').limit(1),
-    client.from('seniority_entries').select('count').limit(1),
-    client.auth.admin.listUsers(),
-  ])
+  let profiles: { id: string; role: string; icao_code: string | null; created_at: string }[]
+  let listsResult: { data: { count?: number }[] | null; error: { message: string } | null }
+  let entriesResult: { data: { count?: number }[] | null; error: { message: string } | null }
+  let authResult: { data: { users: { id: string; email?: string }[] } | null; error: { message: string } | null }
 
-  if (profilesResult.error || authResult.error) {
+  try {
+    ;[profiles, listsResult, entriesResult, authResult] = await Promise.all([
+      fetchAllRows(
+        client.from('profiles').select('id, role, icao_code, created_at'),
+        'admin/stats/profiles',
+      ),
+      client.from('seniority_lists').select('count').limit(1),
+      client.from('seniority_entries').select('count').limit(1),
+      client.auth.admin.listUsers({ page: 1, perPage: 1000 }),
+    ])
+  }
+  catch (err) {
+    logger.error('Failed to fetch stats', { error: err instanceof Error ? err.message : 'unknown' })
+    throw createError({ statusCode: 500, statusMessage: 'Failed to fetch stats' })
+  }
+
+  if (authResult.error) {
     logger.error('Failed to fetch stats', {
-      profilesError: profilesResult.error?.message,
       authError: authResult.error?.message,
     })
     throw createError({ statusCode: 500, statusMessage: 'Failed to fetch stats' })
   }
 
-  const profiles = profilesResult.data ?? []
   const authUsers = authResult.data?.users ?? []
 
   const emailMap = new Map<string, string>(

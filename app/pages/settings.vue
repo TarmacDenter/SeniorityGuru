@@ -15,6 +15,7 @@ definePageMeta({ layout: 'dashboard', middleware: 'auth' })
         <SettingsNewHireModeCard />
         <SettingsEmailCard />
         <SettingsPasswordCard />
+        <SettingsDangerZoneCard />
       </div>
     </template>
   </UDashboardPanel>
