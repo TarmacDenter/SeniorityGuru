@@ -39,15 +39,6 @@ vi.mock('~/stores/seniority', () => ({
 // ---------------------------------------------------------------------------
 // Composable mocks
 // ---------------------------------------------------------------------------
-vi.mock('~/composables/useQualUpgrades', () => ({
-  useQualUpgrades: () => ({
-    upgradeTrackerData: ref([]),
-    upgradeTrackerLoading: ref(false),
-    upgradeTrackerError: ref(null),
-    fetchUpgradeTracker: vi.fn(),
-  }),
-}))
-
 vi.mock('~/composables/useSeniorityCompare', () => ({
   useSeniorityCompare: () => ({
     loading: ref(false),

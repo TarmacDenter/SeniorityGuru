@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { useSeniorityStore } from '~/stores/seniority'
-import { useQualUpgrades } from '~/composables/useQualUpgrades'
 import { retiredColumns, departedColumns, qualMoveColumns, rankChangeColumns, newHireColumns, qualMoveFilters } from '~/utils/column-definitions'
 
 definePageMeta({
@@ -15,15 +14,6 @@ const listIdA = ref<string | undefined>((route.query.a as string) || undefined)
 const listIdB = ref<string | undefined>((route.query.b as string) || undefined)
 
 const { loading, error, comparison } = useSeniorityCompare(listIdA, listIdB)
-const upgrades = useQualUpgrades({ lazy: true })
-const upgradesFetched = ref(false)
-
-function onUpgradesTabActivated() {
-  if (!upgradesFetched.value) {
-    upgradesFetched.value = true
-    upgrades.fetchUpgradeTracker()
-  }
-}
 
 // Keep query params in sync — only for user-initiated changes after mount.
 // When onMounted sets defaults, oldA and oldB are both undefined → guard skips.
@@ -124,7 +114,7 @@ const tabs = [
         </div>
 
         <!-- Detail tabs -->
-        <UTabs :items="tabs" class="mt-4" @update:model-value="$event === 'upgrades' && onUpgradesTabActivated()">
+        <UTabs :items="tabs" class="mt-4">
           <template #retired>
             <ComparisonTab :data="comparison.retired" :columns="retiredColumns" search-placeholder="Search retired..." />
           </template>
