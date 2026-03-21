@@ -70,7 +70,7 @@ async function onSubmit() {
   const { error: verifyError } = await supabase.auth.verifyOtp({
     email: state.email,
     token: state.token,
-    type: 'signup',
+    type: 'email',
   })
 
   loading.value = false

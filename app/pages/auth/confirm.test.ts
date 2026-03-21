@@ -123,7 +123,7 @@ describe('confirm page', () => {
 
   // --- OTP form submission ---
 
-  it('calls verifyOtp with type signup on form submit', async () => {
+  it('calls verifyOtp with type email on form submit', async () => {
     const wrapper = await mountSuspended(ConfirmPage)
     await wrapper.find('input[type="email"]').setValue('pilot@example.com')
     await wrapper.find('input[placeholder="000000"]').setValue('123456')
@@ -133,7 +133,7 @@ describe('confirm page', () => {
     expect(mockVerifyOtp).toHaveBeenCalledWith({
       email: 'pilot@example.com',
       token: '123456',
-      type: 'signup',
+      type: 'email',
     })
   })
 
