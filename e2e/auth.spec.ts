@@ -55,13 +55,15 @@ test.describe('Auth gates', () => {
 })
 
 // ---------------------------------------------------------------------------
-// Signup page (invite-only)
+// Signup page
 // ---------------------------------------------------------------------------
 
 test.describe('Signup', () => {
-  test('shows invite-only message', async ({ page, goto }) => {
+  test('shows the create account form', async ({ page, goto }) => {
     await goto('/auth/signup', { waitUntil: 'hydration' })
-    await expect(page.getByRole('heading', { name: 'Invite Only' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Create your account' })).toBeVisible()
+    await expect(page.locator('input[type="email"]')).toBeVisible()
+    await expect(page.locator('input[type="password"]').first()).toBeVisible()
   })
 })
 
