@@ -20,7 +20,10 @@ const { signOut } = useSignOut()
           <UButton to="/dashboard" variant="ghost" size="sm">Go to Dashboard</UButton>
           <UButton variant="ghost" size="sm" @click="signOut">Sign out</UButton>
         </template>
-        <UButton v-else to="/auth/login" size="sm">Sign in</UButton>
+        <template v-else>
+          <UButton to="/auth/login" variant="ghost" size="sm">Sign in</UButton>
+          <UButton to="/auth/signup" size="sm">Sign up</UButton>
+        </template>
       </ClientOnly>
     </template>
   </UHeader>

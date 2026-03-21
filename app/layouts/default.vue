@@ -6,5 +6,6 @@
         <slot />
       </UContainer>
     </UMain>
+    <AppFooter />
   </div>
 </template>

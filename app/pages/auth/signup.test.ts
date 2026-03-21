@@ -2,23 +2,22 @@ import { describe, it, expect } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import SignupPage from './signup.vue'
 
-describe('signup page (invite-only)', () => {
-  it('renders the invite-only message', async () => {
+describe('signup page', () => {
+  it('renders the create account heading', async () => {
     const wrapper = await mountSuspended(SignupPage)
-    expect(wrapper.text()).toContain('Invite Only')
-    expect(wrapper.text()).toContain('invite-only')
+    expect(wrapper.text()).toContain('Create your account')
   })
 
-  it('mentions checking junk or spam folder', async () => {
+  it('renders a signup form with email and password fields', async () => {
     const wrapper = await mountSuspended(SignupPage)
-    expect(wrapper.text()).toContain('junk or spam folder')
+    expect(wrapper.find('input[type="email"]').exists()).toBe(true)
+    expect(wrapper.findAll('input[type="password"]').length).toBe(2)
   })
 
-  it('does not render a signup form', async () => {
+  it('does not render OAuth buttons', async () => {
     const wrapper = await mountSuspended(SignupPage)
-    expect(wrapper.find('form').exists()).toBe(false)
-    expect(wrapper.find('input[type="email"]').exists()).toBe(false)
-    expect(wrapper.find('input[type="password"]').exists()).toBe(false)
+    expect(wrapper.text()).not.toContain('Continue with Google')
+    expect(wrapper.text()).not.toContain('Continue with Apple')
   })
 
   it('shows a link to the login page', async () => {

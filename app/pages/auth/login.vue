@@ -10,7 +10,7 @@ const loading = ref(false)
 
 const state = reactive<LoginState>({
   email: '',
-  password: ''
+  password: '',
 })
 
 async function onSubmit() {
@@ -23,26 +23,29 @@ async function onSubmit() {
     return
   }
 
-  navigateTo('/dashboard')
+  await navigateTo('/dashboard')
 }
 </script>
 
 <template>
   <div>
     <h1 class="text-2xl font-bold mb-6 text-center">Sign in</h1>
+
     <UForm :schema="LoginSchema" :state="state" class="space-y-4" @submit="onSubmit">
       <UFormField label="Email" name="email">
-        <UInput v-model="state.email" type="email" placeholder="you@example.com" class="w-full" />
+        <UInput v-model="state.email" type="email" placeholder="you@example.com" class="w-full" autocomplete="email" />
       </UFormField>
       <UFormField label="Password" name="password">
-        <UInput v-model="state.password" type="password" class="w-full" />
+        <UInput v-model="state.password" type="password" class="w-full" autocomplete="current-password" />
       </UFormField>
       <UButton type="submit" class="w-full" :loading="loading">Sign in</UButton>
     </UForm>
+
     <div class="mt-4 text-center text-sm space-y-2">
       <div>
         <ULink to="/auth/reset-password" class="text-primary hover:underline">Forgot your password?</ULink>
       </div>
+
       <div class="text-muted">
         Don't have an account?
         <ULink to="/auth/signup" class="text-primary hover:underline">Sign up</ULink>

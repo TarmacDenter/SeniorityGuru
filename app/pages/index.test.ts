@@ -39,10 +39,10 @@ describe('index.vue — CTA conditional rendering', () => {
     mockUser.value = null
   })
 
-  it('shows "Request Access" hero CTA when user is not signed in', async () => {
+  it('shows "Get Started" hero CTA when user is not signed in', async () => {
     const IndexPage = await import('./index.vue')
     const wrapper = await mountSuspended(IndexPage.default)
-    expect(wrapper.text()).toContain('Request Access')
+    expect(wrapper.text()).toContain('Get Started')
   })
 
   it('shows "Go to Dashboard" hero CTA when user is signed in', async () => {
@@ -59,9 +59,9 @@ describe('index.vue — CTA conditional rendering', () => {
     expect(wrapper.html()).toContain('href="/dashboard"')
   })
 
-  it('hero CTA links to /auth/login when user is not signed in', async () => {
+  it('hero CTA links to /auth/signup when user is not signed in', async () => {
     const IndexPage = await import('./index.vue')
     const wrapper = await mountSuspended(IndexPage.default)
-    expect(wrapper.html()).toContain('href="/auth/login"')
+    expect(wrapper.html()).toContain('href="/auth/signup"')
   })
 })

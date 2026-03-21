@@ -3,6 +3,14 @@ import type { QualDemographicScale } from '#shared/utils/qual-analytics'
 
 definePageMeta({ layout: 'default' })
 
+useSeoMeta({
+  title: 'SeniorityGuru — Pilot Seniority Tracker',
+  description: 'Track your seniority rank, percentile, and career trajectory. Upload your airline\'s seniority list and see exactly where you stand.',
+  ogTitle: 'SeniorityGuru — Pilot Seniority Tracker',
+  ogDescription: 'Upload your airline\'s seniority list and instantly see your rank, percentile, and career projections.',
+  twitterCard: 'summary',
+})
+
 const user = useSupabaseUser()
 
 const howItWorksSteps = [
@@ -294,8 +302,8 @@ const demoWaveBuckets = computed(() => demoWaveData[demoQual.value])
               <UButton v-if="user" to="/dashboard" size="xl" icon="i-lucide-arrow-right" trailing>
                 Go to Dashboard
               </UButton>
-              <UButton v-else to="/auth/login" size="xl" icon="i-lucide-arrow-right" trailing>
-                Request Access
+              <UButton v-else to="/auth/signup" size="xl" icon="i-lucide-arrow-right" trailing>
+                Get Started
               </UButton>
             </ClientOnly>
             <UButton to="#demo" size="xl" variant="ghost" icon="i-lucide-play-circle" trailing>
@@ -677,17 +685,17 @@ const demoWaveBuckets = computed(() => demoWaveData[demoQual.value])
       <UContainer>
         <div class="max-w-xl mx-auto space-y-6">
           <h2 class="text-2xl sm:text-3xl font-bold tracking-tight">
-            Currently in open beta
+            Know where you stand.
           </h2>
           <p class="text-muted">
-            Request access to start tracking your seniority today.
+            Free to use. Sign up and know where you stand.
           </p>
           <ClientOnly>
             <UButton v-if="user" to="/dashboard" size="xl" icon="i-lucide-arrow-right" trailing>
               Go to Dashboard
             </UButton>
-            <UButton v-else to="/auth/login" size="xl" icon="i-lucide-arrow-right" trailing>
-              Request Access
+            <UButton v-else to="/auth/signup" size="xl" icon="i-lucide-arrow-right" trailing>
+              Get Started
             </UButton>
           </ClientOnly>
 
