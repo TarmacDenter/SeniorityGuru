@@ -3,14 +3,14 @@ import { mountSuspended, mockNuxtImport } from '@nuxt/test-utils/runtime'
 import ResendEmailPage from './resend-email.vue'
 
 const { mockUser, mockNavigateTo, mockResend } = vi.hoisted(() => ({
-  mockUser: { value: null as { email?: string; user_metadata?: Record<string, unknown> } | null },
+  mockUser: { value: null as { email?: string } | null },
   mockNavigateTo: vi.fn().mockResolvedValue(undefined),
   mockResend: vi.fn().mockResolvedValue({ error: null }),
 }))
 
 mockNuxtImport('useSupabaseUser', () => () => mockUser)
 mockNuxtImport('useSupabaseClient', () => () => ({
-  auth: { resend: mockResend, onAuthStateChange: vi.fn() },
+  auth: { resend: mockResend },
 }))
 mockNuxtImport('navigateTo', () => mockNavigateTo)
 
@@ -23,48 +23,58 @@ describe('resend-email page', () => {
     mockResend.mockResolvedValue({ error: null })
   })
 
+  // --- Form rendering ---
+
   it('renders the resend email form', async () => {
     const wrapper = await mountSuspended(ResendEmailPage)
     expect(wrapper.text()).toContain('Confirm your email')
     expect(wrapper.find('input[type="email"]').exists()).toBe(true)
   })
 
-  it('shows junk folder reminder after sending email', async () => {
+  it('email field is enabled when no user session', async () => {
     const wrapper = await mountSuspended(ResendEmailPage)
-    // Before submit, no junk reminder
-    expect(wrapper.text()).not.toContain('junk or spam folder')
-    // Fill email and submit
+    const input = wrapper.find('input[type="email"]').element as HTMLInputElement
+    expect(input.disabled).toBe(false)
+  })
+
+  it('email field is disabled and pre-filled when user has an email', async () => {
+    mockUser.value = { email: 'pilot@example.com' }
+    const wrapper = await mountSuspended(ResendEmailPage)
+    const input = wrapper.find('input[type="email"]').element as HTMLInputElement
+    expect(input.disabled).toBe(true)
+  })
+
+  // --- Post-resend navigation ---
+
+  it('navigates to /auth/confirm with email after successful resend', async () => {
+    const wrapper = await mountSuspended(ResendEmailPage)
     await wrapper.find('input[type="email"]').setValue('pilot@example.com')
     await wrapper.find('form').trigger('submit')
     await wrapper.vm.$nextTick()
     await new Promise(r => setTimeout(r, 0))
-    expect(wrapper.text()).toContain('junk or spam folder')
+    expect(mockNavigateTo).toHaveBeenCalledWith('/auth/confirm?email=pilot%40example.com')
   })
 
-  it('does not navigate when user has no email_verified metadata', async () => {
-    mockUser.value = { email: 'pilot@example.com', user_metadata: { email_verified: false } }
+  it('navigates even when resend returns a non-rate-limit error (anti-enumeration)', async () => {
+    mockResend.mockResolvedValue({ error: { code: 'user_not_found', message: 'User not found' } })
     const wrapper = await mountSuspended(ResendEmailPage)
+    await wrapper.find('input[type="email"]').setValue('unknown@example.com')
+    await wrapper.find('form').trigger('submit')
     await wrapper.vm.$nextTick()
-    expect(mockNavigateTo).not.toHaveBeenCalled()
-  })
-
-  it('navigates to /dashboard when user already has email_verified on mount', async () => {
-    // watchEffect fires eagerly — set user before mount so the guard triggers on first run
-    mockUser.value = { email: 'pilot@example.com', user_metadata: { email_verified: true } }
-    await mountSuspended(ResendEmailPage)
-    expect(mockNavigateTo).toHaveBeenCalledWith('/dashboard')
-  })
-
-  it('calls navigateTo exactly once even on repeated mount ticks (re-entry guard)', async () => {
-    mockUser.value = { email: 'pilot@example.com', user_metadata: { email_verified: true } }
-    await mountSuspended(ResendEmailPage)
     await new Promise(r => setTimeout(r, 0))
-    expect(mockNavigateTo).toHaveBeenCalledTimes(1)
+    expect(mockNavigateTo).toHaveBeenCalledWith('/auth/confirm?email=unknown%40example.com')
   })
 
-  it('does not navigate when user is null', async () => {
+  // --- Rate-limit error ---
+
+  it('shows rate-limit warning and does not navigate when over_email_otp_max_frequency', async () => {
+    mockResend.mockResolvedValue({ error: { code: 'over_email_otp_max_frequency', message: 'Rate limited' } })
     const wrapper = await mountSuspended(ResendEmailPage)
+    await wrapper.find('input[type="email"]').setValue('pilot@example.com')
+    await wrapper.find('form').trigger('submit')
     await wrapper.vm.$nextTick()
+    await new Promise(r => setTimeout(r, 0))
     expect(mockNavigateTo).not.toHaveBeenCalled()
+    expect(wrapper.text()).toContain('Too many attempts')
   })
 })
