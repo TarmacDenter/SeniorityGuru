@@ -141,7 +141,7 @@ const tableData = computed<SeniorityRow[]>(() => {
 
     <!-- Scrollable content area -->
     <div class="flex-1 overflow-scroll min-h-0 overscroll-auto md:overscroll-contain">
-      <div class="p-4 sm:p-6">
+      <div class="sm:p-6">
         <!-- Empty state -->
         <UEmpty v-if="!loading && !latestList" icon="i-lucide-list-ordered" title="No Seniority List Yet"
           description="Upload your airline's seniority list to view your position, track retirements, and project your trajectory."
@@ -162,6 +162,7 @@ const tableData = computed<SeniorityRow[]>(() => {
               :columns="columns" :loading="loading || seniorityStore.entriesLoading"
               :expanded-options="{ getRowCanExpand: () => true }"
               :pagination-options="{ getPaginationRowModel: getPaginationRowModel() }" sticky :meta="tableMeta"
+              :ui="isMobile ? { th: 'px-2 py-2 text-xs', td: 'px-2 py-1.5 text-xs' } : {}"
               class="w-full overscroll-contain text-xs sm:text-md">
               <template #expanded="{ row }">
                 <div :class="['grid grid-cols-2 sm:grid-cols-3 gap-3 px-4 py-3 text-xs', row.original._isUser ? 'bg-primary/5' : '']">
