@@ -1,6 +1,6 @@
 import { test, expect } from './fixtures/test'
 import { TEST_USERS } from './helpers/auth'
-import { waitForEmail, extractLink, purgeAllMessages } from './helpers/mailpit'
+import { waitForEmail, extractOtpCode, purgeAllMessages } from './helpers/mailpit'
 import { createClient } from '@supabase/supabase-js'
 
 const SUPABASE_URL = 'http://127.0.0.1:54321'
@@ -85,11 +85,11 @@ test.describe('Logout', () => {
 // Password recovery flow
 // ---------------------------------------------------------------------------
 
-test.describe('Password recovery', () => {
+test.describe('Password recovery (OTP)', () => {
   // Use ualUser to avoid interfering with dalUser (used by authenticatedPage fixture)
   const testEmail = TEST_USERS.ualUser.email
 
-  test('request → email → set new password → dashboard', async ({ page, goto }) => {
+  test('request → OTP code → set new password → dashboard', async ({ page, goto }) => {
     await purgeAllMessages()
 
     // Step 1: Request password reset
@@ -97,28 +97,30 @@ test.describe('Password recovery', () => {
     await page.getByLabel('Email').fill(testEmail)
     await page.getByRole('button', { name: /reset|send/i }).click()
 
-    // Should show success alert (UAlert renders title in [data-slot="title"])
-    await expect(page.locator('[data-slot="title"]').filter({ hasText: 'Check your email' })).toBeVisible({ timeout: 5000 })
+    // Should navigate to confirm page with recovery type
+    await expect(page).toHaveURL(/\/auth\/confirm.*type=recovery/, { timeout: 5000 })
+    await expect(page.getByRole('heading', { name: 'Reset your password' })).toBeVisible()
 
-    // Step 2: Get the recovery email from Mailpit
+    // Step 2: Get the recovery OTP from Mailpit
     const email = await waitForEmail(testEmail, { subject: 'Reset' })
-    const link = extractLink(email.HTML)
-    expect(link).toBeTruthy()
+    const otpCode = extractOtpCode(email.HTML)
+    expect(otpCode).toMatch(/^\d{6}$/)
 
-    // Step 3: Click the recovery link → Supabase verify → /auth/confirm → /auth/update-password
-    await page.goto(link)
+    // Step 3: Enter the OTP code
+    await page.getByLabel('Recovery code').fill(otpCode)
+    await page.getByRole('button', { name: /verify/i }).click()
+
+    // Step 4: Should redirect to update-password
     await expect(page).toHaveURL(/\/auth\/update-password/, { timeout: 10000 })
-
-    // Wait for the page to be fully rendered before interacting
     await expect(page.getByRole('heading', { name: 'Set new password' })).toBeVisible()
 
-    // Step 4: Set a new password (must differ from old — Supabase rejects same-password updates)
+    // Step 5: Set a new password (must differ from old — Supabase rejects same-password updates)
     const tempPassword = 'TempNewPass1234!'
     await page.getByLabel('New password').fill(tempPassword)
     await page.getByLabel('Confirm password').fill(tempPassword)
     await page.getByRole('button', { name: /update password/i }).click()
 
-    // Step 5: Should redirect to dashboard
+    // Step 6: Should redirect to dashboard
     await expect(page).toHaveURL('http://localhost:3000/dashboard', { timeout: 15000 })
 
     // Restore original password so future test runs work

@@ -1,25 +1,19 @@
 <!DOCTYPE html>
 <html>
-
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Reset Your Password</title>
 </head>
-
-<body
-  style="margin:0; padding:0; background-color:#f4f4f5; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0"
-    style="background-color:#f4f4f5; padding:40px 20px;">
+<body style="margin:0; padding:0; background-color:#f4f4f5; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f4f5; padding:40px 20px;">
     <tr>
       <td align="center">
-        <table role="presentation" width="480" cellpadding="0" cellspacing="0"
-          style="background-color:#ffffff; border-radius:8px; overflow:hidden;">
+        <table role="presentation" width="480" cellpadding="0" cellspacing="0" style="background-color:#ffffff; border-radius:8px; overflow:hidden;">
           <!-- Header -->
           <tr>
             <td style="background-color:#1e293b; padding:24px 32px; text-align:center;">
-              <h1 style="margin:0; font-size:22px; font-weight:700; color:#ffffff; letter-spacing:-0.5px;">SeniorityGuru
-              </h1>
+              <h1 style="margin:0; font-size:22px; font-weight:700; color:#ffffff; letter-spacing:-0.5px;">SeniorityGuru</h1>
             </td>
           </tr>
           <!-- Body -->
@@ -27,22 +21,30 @@
             <td style="padding:32px;">
               <h2 style="margin:0 0 16px; font-size:20px; font-weight:600; color:#1e293b;">Need a new password?</h2>
               <p style="margin:0 0 24px; font-size:15px; line-height:1.6; color:#475569;">
-                No problem! Click the button below to choose a new password for your SeniorityGuru account.
+                No problem! Enter the code below to reset your SeniorityGuru password.
               </p>
+              <!-- OTP Code -->
+              <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 auto 24px;">
+                <tr>
+                  <td style="background-color:#f1f5f9; border:2px dashed #cbd5e1; border-radius:8px; padding:16px 32px; text-align:center;">
+                    <p style="margin:0 0 4px; font-size:12px; font-weight:600; color:#94a3b8; letter-spacing:0.1em; text-transform:uppercase;">Your recovery code</p>
+                    <p style="margin:0; font-size:32px; font-weight:700; color:#1e293b; letter-spacing:0.15em; font-family:monospace;">{{ .Token }}</p>
+                  </td>
+                </tr>
+              </table>
               <!-- CTA -->
               <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 auto;">
                 <tr>
                   <td style="border-radius:6px; background-color:#2563eb;">
-                    <a href="{{ .ConfirmationURL }}" target="_blank"
-                      style="display:inline-block; padding:12px 32px; font-size:15px; font-weight:600; color:#ffffff; text-decoration:none;">
-                      Reset Password
+                    <a href="{{ .SiteURL }}/auth/confirm?type=recovery" target="_blank" style="display:inline-block; padding:12px 32px; font-size:15px; font-weight:600; color:#ffffff; text-decoration:none;">
+                      Enter my code
                     </a>
                   </td>
                 </tr>
               </table>
               <p style="margin:24px 0 0; font-size:13px; line-height:1.5; color:#94a3b8;">
-                If the button doesn't work, copy and paste this link into your browser:<br />
-                <a href="{{ .ConfirmationURL }}" style="color:#2563eb; word-break:break-all;">{{ .ConfirmationURL }}</a>
+                If the button doesn't work, go to <strong>{{ .SiteURL }}/auth/confirm?type=recovery</strong> and enter the code above.<br />
+                This code expires in 1 hour.
               </p>
             </td>
           </tr>
@@ -59,5 +61,4 @@
     </tr>
   </table>
 </body>
-
 </html>
