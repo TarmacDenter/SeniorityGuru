@@ -1,5 +1,5 @@
-// @vitest-environment node
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { mockNuxtImport } from '@nuxt/test-utils/runtime'
 
 const { mockIsAdmin, mockProfile } = vi.hoisted(() => ({
   mockIsAdmin: { value: false },
@@ -13,16 +13,22 @@ vi.mock('~/stores/user', () => ({
   }),
 }))
 
-// Minimal stubs for Nuxt auto-imports used by the composable
-vi.mock('#imports', () => ({
-  computed: (fn: () => unknown) => ({ value: fn() }),
-  useNuxtApp: vi.fn(),
+vi.mock('@vueuse/core', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@vueuse/core')>()
+  return {
+    ...actual,
+    useMediaQuery: () => ({ value: false }), // non-mobile by default
+  }
+})
+
+vi.mock('~/composables/useDashboardTabs', () => ({
+  useDashboardTabs: () => ({ activeTab: { value: 'status' }, tabs: [] }),
+  DASHBOARD_TABS: [],
 }))
 
-vi.mock('vue', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('vue')>()
-  return actual
-})
+// Mock Nuxt composables used by useSeniorityNav
+mockNuxtImport('useRoute', () => () => ({ path: '/', query: {} }))
+mockNuxtImport('useState', () => (_key: string, init?: () => unknown) => ({ value: init?.() }))
 
 describe('useSeniorityNav', () => {
   beforeEach(() => {

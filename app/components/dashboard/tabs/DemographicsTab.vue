@@ -21,32 +21,40 @@ const userSeniorityNumber = computed(() =>
 </script>
 
 <template>
-  <div class="p-4 sm:p-6 space-y-6">
-    <AnalyticsQualFilterBar :demographics="demographics" />
+  <div class="sm:p-6 space-y-6">
+    <div class="px-4 pt-4 sm:px-0 sm:pt-0">
+      <AnalyticsQualFilterBar :demographics="demographics" />
+    </div>
 
-    <!-- Row 1: Junior CA table + Qual Composition -->
-    <div class="grid grid-cols-5 gap-6">
-      <div class="col-span-3">
-        <UCard>
-          <template #header>
-            <h3 class="font-semibold">Most Junior Captain by Qual</h3>
-          </template>
-          <AnalyticsJuniorCaptainTable
-            :rows="demographics.mostJuniorCAs.value"
-            :user-seniority-number="userSeniorityNumber"
-          />
-        </UCard>
-      </div>
-      <div class="col-span-2 space-y-3 overflow-y-auto max-h-96">
+    <!-- Most Junior Captain by Qual — full width, own row -->
+    <UCard :ui="{ body: 'px-0 py-0 sm:px-4 sm:py-5' }">
+      <template #header>
+        <h3 class="font-semibold">Most Junior Captain by Qual</h3>
+      </template>
+      <AnalyticsJuniorCaptainTable
+        :rows="demographics.mostJuniorCAs.value"
+        :user-seniority-number="userSeniorityNumber"
+      />
+    </UCard>
+
+    <!-- Base / Fleet / Seat Sizes — own row -->
+    <AnalyticsQualSizesCard :composition="demographics.qualComposition.value" />
+
+    <!-- Qual Composition list — full width, own row -->
+    <UCard>
+      <template #header>
+        <h3 class="font-semibold">Qual Composition</h3>
+      </template>
+      <div class="space-y-2">
         <AnalyticsQualCompositionCard
           v-for="row in demographics.qualComposition.value"
           :key="row.qualKey"
           :row="row"
         />
       </div>
-    </div>
+    </UCard>
 
-    <!-- Row 2: Age distribution -->
+    <!-- Age distribution -->
     <UCard>
       <template #header>
         <h3 class="font-semibold">Age Distribution{{ demographics.qualLabel.value ? ` — ${demographics.qualLabel.value}` : '' }}</h3>
@@ -57,7 +65,7 @@ const userSeniorityNumber = computed(() =>
       />
     </UCard>
 
-    <!-- Row 3: YOS breakdown -->
+    <!-- YOS breakdown -->
     <UCard>
       <template #header>
         <h3 class="font-semibold">Years of Service{{ demographics.qualLabel.value ? ` — ${demographics.qualLabel.value}` : '' }}</h3>

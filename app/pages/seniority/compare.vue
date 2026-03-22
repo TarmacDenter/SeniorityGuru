@@ -69,33 +69,31 @@ const tabs = [
 <template>
   <UDashboardPanel>
     <template #header>
-      <SeniorityNavbar title="Compare Lists">
-        <template #right>
-          <div class="flex flex-wrap items-center gap-3">
-            <UFormField label="Older List" class="w-full sm:w-56">
-              <USelectMenu
-                v-model="listIdA"
-                :items="listOptions"
-                value-key="value"
-                placeholder="Select list..."
-              />
-            </UFormField>
-            <UIcon name="i-lucide-arrow-right" class="hidden sm:block text-(--ui-text-muted)" />
-            <UFormField label="Newer List" class="w-full sm:w-56">
-              <USelectMenu
-                v-model="listIdB"
-                :items="listOptions"
-                value-key="value"
-                placeholder="Select list..."
-              />
-            </UFormField>
-          </div>
-        </template>
-      </SeniorityNavbar>
+      <SeniorityNavbar title="Compare Lists" />
     </template>
 
     <template #body>
     <div class="p-4 space-y-4">
+      <!-- List selectors — inside body so they scroll on mobile, never clip behind header -->
+      <div class="flex flex-col sm:flex-row sm:flex-wrap sm:items-end gap-3">
+        <UFormField label="Older List" class="w-full sm:w-56">
+          <USelectMenu
+            v-model="listIdA"
+            :items="listOptions"
+            value-key="value"
+            placeholder="Select list..."
+          />
+        </UFormField>
+        <UIcon name="i-lucide-arrow-right" class="hidden sm:block text-(--ui-text-muted) mb-1.5" />
+        <UFormField label="Newer List" class="w-full sm:w-56">
+          <USelectMenu
+            v-model="listIdB"
+            :items="listOptions"
+            value-key="value"
+            placeholder="Select list..."
+          />
+        </UFormField>
+      </div>
       <UAlert v-if="error" icon="i-lucide-alert-triangle" color="error" :title="error" />
 
       <div v-if="loading" class="flex justify-center py-12">

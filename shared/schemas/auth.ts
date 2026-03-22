@@ -3,14 +3,14 @@ import { withPasswordConfirmation } from './common'
 
 export const LoginSchema = z.object({
   email: z.string().email(),
-  password: z.string().min(8),
+  password: z.string().min(8, 'Password must be at least 8 characters'),
 })
 export type LoginState = z.infer<typeof LoginSchema>
 
 export const SignUpSchema = withPasswordConfirmation(z.object({
   email: z.string().email('Please enter a valid email address'),
   password: z.string().min(8, 'Password must be at least 8 characters'),
-  confirmPassword: z.string().min(8),
+  confirmPassword: z.string().min(8, 'Password must be at least 8 characters'),
   icaoCode: z.string().optional(),
 }))
 export type SignUpState = z.infer<typeof SignUpSchema>
@@ -25,7 +25,7 @@ export type ResetPasswordState = z.infer<typeof ResetPasswordSchema>
 
 export const RecoveryPasswordSchema = withPasswordConfirmation(z.object({
   password: z.string().min(8, 'Password must be at least 8 characters'),
-  confirmPassword: z.string().min(8),
+  confirmPassword: z.string().min(8, 'Password must be at least 8 characters'),
 }))
 export type RecoveryPasswordState = z.infer<typeof RecoveryPasswordSchema>
 

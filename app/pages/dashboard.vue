@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import type { TabsItem } from '@nuxt/ui';
 import { useSeniorityStore } from '~/stores/seniority';
 import { useUserStore } from '~/stores/user';
 import { useDashboardStats } from '~/composables/useDashboardStats';
-import { resolveTab, DEFAULT_TAB } from '~/utils/dashboard-tabs';
+import { useDashboardTabs } from '~/composables/useDashboardTabs';
+import { DEFAULT_TAB } from '~/utils/dashboard-tabs';
 
 definePageMeta({
   middleware: 'auth',
@@ -12,15 +12,7 @@ definePageMeta({
 
 const route = useRoute();
 
-const tabs: TabsItem[] = [
-  { label: 'My Status', icon: 'i-lucide-user', value: 'status' },
-  { label: 'Demographics', icon: 'i-lucide-users', value: 'demographics' },
-  { label: 'Position', icon: 'i-lucide-map-pin', value: 'position' },
-  { label: 'Trajectory', icon: 'i-lucide-trending-up', value: 'trajectory' },
-  { label: 'Seniority List', icon: 'i-lucide-list-ordered', value: 'seniority' },
-];
-
-const activeTab = ref(resolveTab(route.query.tab as string | undefined));
+const { activeTab, tabs } = useDashboardTabs();
 
 watch(activeTab, (tab) => {
   const query: Record<string, string> = {};
@@ -109,7 +101,7 @@ onMounted(async () => {
     <template #header>
       <SeniorityNavbar title="Dashboard" :description="navbarDescription" />
 
-      <UDashboardToolbar>
+      <UDashboardToolbar class="hidden sm:flex">
         <UTabs v-model="activeTab" :items="tabs" :content="false" variant="link" />
 
         <template #right>

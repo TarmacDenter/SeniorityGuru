@@ -1,6 +1,6 @@
 <script setup lang="ts">
 const navItems = useSeniorityNav()
-const sidebarOpen = useState<boolean>('dashboardSidebarOpen', () => false)
+const sidebarOpen = useState<boolean>('dashboardSidebarOpen', () => false) // shared with nav composable
 </script>
 
 <template>
