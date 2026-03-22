@@ -90,9 +90,9 @@ const qualTrajectoryDeltas = projections.trajectoryDeltas
       />
 
       <!-- Retirement Wave + Percentile Threshold -->
-      <div class="grid grid-cols-11 gap-6">
-        <div class="col-span-6">
-          <UCard>
+      <div class="grid grid-cols-1 sm:grid-cols-11 gap-6">
+        <div class="sm:col-span-6">
+          <UCard :ui="{ body: 'px-0 py-0 sm:px-4 sm:py-5' }">
             <template #header>
               <h3 class="font-semibold">Retirement Wave{{ demographics.qualLabel.value ? ` — ${demographics.qualLabel.value}` : '' }}</h3>
             </template>
@@ -103,8 +103,8 @@ const qualTrajectoryDeltas = projections.trajectoryDeltas
             />
           </UCard>
         </div>
-        <div class="col-span-5">
-          <UCard>
+        <div class="sm:col-span-5">
+          <UCard :ui="{ body: 'px-0 py-0 sm:px-4 sm:py-5' }">
             <template #header>
               <h3 class="font-semibold">Percentile Threshold{{ demographics.qualLabel.value ? ` — ${demographics.qualLabel.value}` : '' }}</h3>
             </template>

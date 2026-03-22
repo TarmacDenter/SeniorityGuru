@@ -67,10 +67,12 @@ const pagination = ref({
 
 const columnVisibility = computed(() => ({
   expand: isMobile.value,
-  name: !isMobile.value,
-  employee_number: !isMobile.value,
+  // Mobile shows only: Sen #, Emp #, Name — everything else in expanded row
+  name: true,
+  employee_number: true,
+  seat: !isMobile.value,
+  base: !isMobile.value,
   hire_date: !isMobile.value,
-  // Also hide fleet and retire_date on mobile — shown in expanded row
   fleet: !isMobile.value,
   retire_date: !isMobile.value,
 }));
@@ -182,22 +184,21 @@ const tableData = computed<SeniorityRow[]>(() => {
               class="w-full overscroll-contain text-xs sm:text-md">
               <template #expanded="{ row }">
                 <div :class="['grid grid-cols-2 sm:grid-cols-3 gap-3 px-4 py-3 text-xs', row.original._isUser ? 'bg-primary/5' : '']">
-                  <div>
-                    <p class="text-muted text-xs mb-0.5">Name</p>
-                    <p :class="row.original._isUser ? 'font-bold text-primary' : 'font-medium'">{{ row.original.name }}
-                    </p>
+                  <div class="sm:hidden">
+                    <p class="text-muted text-xs mb-0.5">Seat</p>
+                    <p>{{ row.original.seat }}</p>
                   </div>
-                  <div>
-                    <p class="text-muted text-xs mb-0.5">Emp #</p>
-                    <p>{{ row.original.employee_number }}</p>
-                  </div>
-                  <div>
-                    <p class="text-muted text-xs mb-0.5">Hire Date</p>
-                    <p>{{ row.original.hire_date }}</p>
+                  <div class="sm:hidden">
+                    <p class="text-muted text-xs mb-0.5">Base</p>
+                    <p>{{ row.original.base }}</p>
                   </div>
                   <div class="sm:hidden">
                     <p class="text-muted text-xs mb-0.5">Fleet</p>
                     <p>{{ row.original.fleet }}</p>
+                  </div>
+                  <div>
+                    <p class="text-muted text-xs mb-0.5">Hire Date</p>
+                    <p>{{ row.original.hire_date }}</p>
                   </div>
                   <div class="sm:hidden">
                     <p class="text-muted text-xs mb-0.5">Retire Date</p>
