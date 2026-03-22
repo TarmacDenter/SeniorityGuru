@@ -7,6 +7,7 @@ import {
   ResetPasswordSchema,
   RecoveryPasswordSchema,
   ResendEmailSchema,
+  ConfirmEmailSchema,
 } from './auth'
 
 describe('LoginSchema', () => {
@@ -145,6 +146,39 @@ describe('ResendEmailSchema', () => {
 
   it('rejects an invalid email', () => {
     const result = ResendEmailSchema.safeParse({ email: 'not-valid' })
+    expect(result.success).toBe(false)
+  })
+})
+
+describe('ConfirmEmailSchema', () => {
+  it('accepts a valid email and 6-digit numeric token', () => {
+    const result = ConfirmEmailSchema.safeParse({ email: 'pilot@airline.com', token: '123456' })
+    expect(result.success).toBe(true)
+  })
+
+  it('rejects a token shorter than 6 digits', () => {
+    const result = ConfirmEmailSchema.safeParse({ email: 'pilot@airline.com', token: '12345' })
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.error.issues[0]?.message).toMatch(/6 digits/)
+    }
+  })
+
+  it('rejects a token longer than 6 digits', () => {
+    const result = ConfirmEmailSchema.safeParse({ email: 'pilot@airline.com', token: '1234567' })
+    expect(result.success).toBe(false)
+  })
+
+  it('rejects a non-numeric token', () => {
+    const result = ConfirmEmailSchema.safeParse({ email: 'pilot@airline.com', token: '12345a' })
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.error.issues[0]?.message).toMatch(/numeric/)
+    }
+  })
+
+  it('rejects an invalid email', () => {
+    const result = ConfirmEmailSchema.safeParse({ email: 'not-valid', token: '123456' })
     expect(result.success).toBe(false)
   })
 })

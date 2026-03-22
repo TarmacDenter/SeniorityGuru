@@ -24,6 +24,7 @@ pop3_port = 54326
 
 [auth]
 enabled = true
+enable_signup = true
 site_url = "http://localhost:3000"
 additional_redirect_urls = [
   "http://localhost:3000/auth/confirm",
@@ -42,6 +43,7 @@ jwt_expiry = 3600
 enable_signup = true
 double_confirm_changes = true
 enable_confirmations = true
+otp_length = 6
 
 [auth.email.template.invite]
 subject = "You're invited to SeniorityGuru"

@@ -37,3 +37,9 @@ export const AcceptInviteSchema = z.object({
   token: z.string().length(6, 'Invitation code must be 6 digits').regex(/^\d+$/, 'Code must be numeric'),
 })
 export type AcceptInviteState = z.infer<typeof AcceptInviteSchema>
+
+export const ConfirmEmailSchema = z.object({
+  email: z.string().email('Please enter a valid email address'),
+  token: z.string().length(6, 'Code must be 6 digits').regex(/^\d+$/, 'Code must be numeric'),
+})
+export type ConfirmEmailState = z.infer<typeof ConfirmEmailSchema>
