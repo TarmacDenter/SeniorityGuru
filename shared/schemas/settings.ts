@@ -25,7 +25,7 @@ export type UpdatePreferencesState = z.infer<typeof UpdatePreferencesSchema>
 export const ChangePasswordSchema = withPasswordConfirmation(z.object({
   currentPassword: z.string().min(8, 'Password must be at least 8 characters'),
   password: z.string().min(8, 'Password must be at least 8 characters'),
-  confirmPassword: z.string().min(8),
+  confirmPassword: z.string().min(8, 'Password must be at least 8 characters'),
 }))
 export type ChangePasswordState = z.infer<typeof ChangePasswordSchema>
 

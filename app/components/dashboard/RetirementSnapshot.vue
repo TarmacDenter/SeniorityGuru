@@ -90,7 +90,7 @@ function formatDate(dateStr: string): string {
 </script>
 
 <template>
-  <UCard>
+  <UCard :ui="{ body: 'px-0 py-0 sm:px-4 sm:py-5' }">
     <template #header>
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-3">
@@ -105,35 +105,33 @@ function formatDate(dateStr: string): string {
       </div>
     </template>
 
-    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 mb-4 sm:mb-6 px-3 pt-3 sm:px-0 sm:pt-0">
       <div class="text-center">
         <p class="text-xs text-[var(--ui-text-muted)]">Retire Date</p>
-        <p class="text-lg font-semibold font-mono text-highlighted">{{ formatDate(snapshot.retireDate) }}</p>
+        <p class="text-sm sm:text-lg font-semibold font-mono text-highlighted">{{ formatDate(snapshot.retireDate) }}</p>
       </div>
       <div class="text-center">
         <p class="text-xs text-[var(--ui-text-muted)]">Projected Rank</p>
-        <p class="text-lg font-semibold font-mono text-highlighted">#{{ snapshot.atRetirement.rank.toLocaleString() }}</p>
+        <p class="text-sm sm:text-lg font-semibold font-mono text-highlighted">#{{ snapshot.atRetirement.rank.toLocaleString() }}</p>
       </div>
       <div class="text-center">
         <p class="text-xs text-[var(--ui-text-muted)]">Percentile</p>
-        <p class="text-lg font-semibold font-mono text-highlighted">{{ snapshot.atRetirement.percentile }}%</p>
+        <p class="text-sm sm:text-lg font-semibold font-mono text-highlighted">{{ snapshot.atRetirement.percentile }}%</p>
       </div>
       <div class="text-center">
         <p class="text-xs text-[var(--ui-text-muted)]">Pilots Ahead</p>
-        <p class="text-lg font-semibold font-mono text-highlighted">{{ (snapshot.atRetirement.rank - 1).toLocaleString() }}</p>
+        <p class="text-sm sm:text-lg font-semibold font-mono text-highlighted">{{ (snapshot.atRetirement.rank - 1).toLocaleString() }}</p>
       </div>
     </div>
 
-    <USeparator class="mb-4" />
+    <USeparator class="mb-3 sm:mb-4" />
 
-    <div class="flex items-center gap-4 mb-4">
-      <label class="text-sm text-[var(--ui-text-muted)] whitespace-nowrap">Final years to show</label>
+    <div class="flex items-center gap-3 sm:gap-4 mb-3 sm:mb-4 px-3 sm:px-0">
+      <label class="text-xs sm:text-sm text-[var(--ui-text-muted)] whitespace-nowrap">Final years</label>
       <USlider v-model="yearsToShow" :min="3" :max="maxYears" :step="1" size="sm" class="flex-1" />
-      <span class="text-sm font-mono font-semibold text-highlighted w-6 text-right">{{ yearsToShow }}</span>
+      <span class="text-xs sm:text-sm font-mono font-semibold text-highlighted w-5 sm:w-6 text-right">{{ yearsToShow }}</span>
     </div>
 
-    <div class="overflow-x-auto">
-      <UTable :data="tableData" :columns="columns" />
-    </div>
+    <UTable :data="tableData" :columns="columns" class="text-xs sm:text-sm" />
   </UCard>
 </template>

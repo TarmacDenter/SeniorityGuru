@@ -54,6 +54,9 @@ const columnVisibility = computed(() => ({
   name: !isMobile.value,
   employee_number: !isMobile.value,
   hire_date: !isMobile.value,
+  // Also hide fleet and retire_date on mobile — shown in expanded row
+  fleet: !isMobile.value,
+  retire_date: !isMobile.value,
 }));
 
 const columns: TableColumn<SeniorityRow>[] = [
@@ -161,7 +164,7 @@ const tableData = computed<SeniorityRow[]>(() => {
               :pagination-options="{ getPaginationRowModel: getPaginationRowModel() }" sticky :meta="tableMeta"
               class="w-full overscroll-contain text-xs sm:text-md">
               <template #expanded="{ row }">
-                <div :class="['grid grid-cols-3 gap-3 px-4 py-3 text-xs', row.original._isUser ? 'bg-primary/5' : '']">
+                <div :class="['grid grid-cols-2 sm:grid-cols-3 gap-3 px-4 py-3 text-xs', row.original._isUser ? 'bg-primary/5' : '']">
                   <div>
                     <p class="text-muted text-xs mb-0.5">Name</p>
                     <p :class="row.original._isUser ? 'font-bold text-primary' : 'font-medium'">{{ row.original.name }}
@@ -174,6 +177,18 @@ const tableData = computed<SeniorityRow[]>(() => {
                   <div>
                     <p class="text-muted text-xs mb-0.5">Hire Date</p>
                     <p>{{ row.original.hire_date }}</p>
+                  </div>
+                  <div class="sm:hidden">
+                    <p class="text-muted text-xs mb-0.5">Fleet</p>
+                    <p>{{ row.original.fleet }}</p>
+                  </div>
+                  <div class="sm:hidden">
+                    <p class="text-muted text-xs mb-0.5">Retire Date</p>
+                    <p :class="[
+                      row.original._retirementTimeline === 'past' ? 'text-past/70' : '',
+                      row.original._retirementTimeline === 'imminent' ? 'text-imminent/70' : '',
+                      row.original._retirementTimeline === 'soon' ? 'text-soon' : '',
+                    ]">{{ row.original.retire_date ?? '—' }}</p>
                   </div>
                 </div>
               </template>

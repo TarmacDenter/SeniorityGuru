@@ -19,7 +19,7 @@ defineProps<{
 </script>
 
 <template>
-  <div class="p-4 sm:p-6">
+  <div class="sm:p-6">
     <!-- Loading state — skeleton -->
     <div v-if="loading" class="grid grid-cols-1 lg:grid-cols-4 gap-4 lg:gap-6 py-6">
       <USkeleton class="h-32 lg:[grid-column:1/-1]" />
