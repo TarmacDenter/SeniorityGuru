@@ -17,10 +17,7 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 404, statusMessage: 'User not found' })
   }
 
-  const origin = getRequestURL(event).origin
-  const { error } = await client.auth.resetPasswordForEmail(userData.user.email, {
-    redirectTo: `${origin}/auth/confirm?type=recovery`,
-  })
+  const { error } = await client.auth.resetPasswordForEmail(userData.user.email)
 
   if (error) {
     log.error('Failed to send recovery email', { userId, error: error.message })
