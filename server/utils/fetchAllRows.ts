@@ -7,13 +7,7 @@ interface RangeQuery<T> {
   range: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: { message: string } | null }>
 }
 
-/**
- * Fetch all rows from a Supabase query in batches to avoid PostgREST max_rows limit.
- * Server-side version for use in Nitro API routes.
- *
- * @param queryBuilder - A Supabase query with `.range()` support
- * @param context - Identifies the caller for structured logging (e.g. 'admin/seniority/lists')
- */
+/** Fetch all rows in batches to avoid PostgREST's max_rows limit (default 1000). */
 export async function fetchAllRows<T>(
   queryBuilder: RangeQuery<T>,
   context: string,

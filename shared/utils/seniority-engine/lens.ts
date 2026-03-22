@@ -48,7 +48,6 @@ export function createLens(
   const resolvedAnchor = anchor ?? null
   const entries = snapshot.entries
 
-  // Cache the anchor's entry via O(1) employee number lookup
   const anchorEntry = resolvedAnchor
     ? snapshot.byEmployeeNumber.get(resolvedAnchor.employeeNumber) ?? null
     : null
@@ -64,7 +63,6 @@ export function createLens(
     const retiredAbove = countRetiredAbove(entries, seniorityNumber, today)
     const adjustedRank = rank - retiredAbove
 
-    // Retirements this year
     const retiringThisYear = entries.filter(e => {
       if (!e.retire_date) return false
       return new Date(e.retire_date).getFullYear() === currentYear
@@ -74,7 +72,6 @@ export function createLens(
       e => e.seniority_number < seniorityNumber,
     ).length
 
-    // Cell breakdown from pre-computed byCell map
     const cellBreakdown: CellBreakdownRow[] = []
     for (const cellEntries of snapshot.byCell.values()) {
       const first = cellEntries[0]!

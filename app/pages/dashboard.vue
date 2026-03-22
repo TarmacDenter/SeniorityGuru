@@ -87,8 +87,7 @@ onMounted(async () => {
     selectedListId.value = seniorityStore.lists[0]?.id ?? undefined;
   }
 
-  // Single authoritative fetch — always runs on mount regardless of URL state.
-  if (selectedListId.value) {
+    if (selectedListId.value) {
     await seniorityStore.fetchEntries(selectedListId.value);
   }
 

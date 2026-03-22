@@ -15,7 +15,6 @@ export default defineEventHandler(async (event) => {
 
   const { entries, effective_date, title, targetUserId } = await validateBody(event, CreateSeniorityListSchema)
 
-  // --- Admin on-behalf-of path ---
   if (targetUserId) {
     await requireAdmin(event)
 
@@ -76,8 +75,6 @@ export default defineEventHandler(async (event) => {
 
     return parseResponse(CreateSeniorityListResponseSchema, { id: list.id, count: entries.length }, 'seniority-lists.post')
   }
-
-  // --- Standard user path ---
 
   log.info('Seniority list upload started', {
     userId: user.sub,

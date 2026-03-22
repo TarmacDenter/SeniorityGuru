@@ -4,9 +4,6 @@ import { uniqueEntryValues } from '#shared/utils/entry-filters'
 import { useSeniorityStore } from '~/stores/seniority'
 import { useUserStore } from '~/stores/user'
 import { useUserEntry } from './useUserEntry'
-// Intentionally uses the base engine — demographics reflect the real pilot population,
-// not the synthetic new-hire entry. Callers needing user-specific markers (YOS, holdable)
-// must fall back to newHireMode.syntheticEntry at the call site.
 import { useSeniorityEngine } from './useSeniorityEngine'
 
 export function useQualDemographics() {
@@ -22,7 +19,6 @@ export function useQualDemographics() {
   const availableFleets = computed(() => snapshot.value?.uniqueFleets ?? [])
   const availableSeats = computed(() => snapshot.value?.uniqueSeats ?? [])
   const availableBases = computed(() => {
-    // Bases are filtered by selected fleet/seat — can't use snapshot directly
     const filtered = seniorityStore.entries.filter((e) => {
       if (selectedFleet.value && e.fleet !== selectedFleet.value) return false
       if (selectedSeat.value && e.seat !== selectedSeat.value) return false
@@ -43,8 +39,6 @@ export function useQualDemographics() {
 
   const scenario = computed(() => createScenario({ scopeFilter: qualSpec.value }))
 
-  // Demographics doesn't need an anchor — use anchored lens if available,
-  // fall back to anchor-less lens for demographic-only queries
   const demographicsResult = computed(() => {
     if (!snapshot.value) return null
     const l = lens.value ?? createLens(snapshot.value)
@@ -77,7 +71,6 @@ export function useQualDemographics() {
     return label === 'Company-wide' ? '' : label
   })
 
-  // Auto-clear stale selections when the active list changes
   watch(availableFleets, (fleets) => {
     if (selectedFleet.value && !fleets.includes(selectedFleet.value))
       selectedFleet.value = null

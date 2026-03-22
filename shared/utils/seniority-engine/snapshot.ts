@@ -9,7 +9,6 @@ export class InvalidSnapshotDataError extends Error {
 }
 
 export function createSnapshot(entries: readonly SeniorityEntry[]): SenioritySnapshot {
-  // Validate entries — fail fast on data integrity issues
   const seenSenNums = new Set<number>()
   const seenEmpNums = new Set<string>()
   for (const e of entries) {
@@ -23,11 +22,9 @@ export function createSnapshot(entries: readonly SeniorityEntry[]): SenioritySna
     seenEmpNums.add(e.employee_number)
   }
 
-  // Sorted copy of entries by seniority number ascending
   const sortedEntries = entries
     .toSorted((a, b) => a.seniority_number - b.seniority_number)
 
-  // Group by cell key (base|seat|fleet)
   const byCell = new Map<string, SeniorityEntry[]>()
   for (const e of entries) {
     const key = `${e.base}|${e.seat}|${e.fleet}`
@@ -36,18 +33,15 @@ export function createSnapshot(entries: readonly SeniorityEntry[]): SenioritySna
     group.push(e)
   }
 
-  // Employee number index
   const byEmployeeNumber = new Map<string, SeniorityEntry>()
   for (const e of entries) {
     byEmployeeNumber.set(e.employee_number, e)
   }
 
-  // Unique filter values
   const uniqueBases = uniqueEntryValues(sortedEntries, 'base')
   const uniqueSeats = uniqueEntryValues(sortedEntries, 'seat')
   const uniqueFleets = uniqueEntryValues(sortedEntries, 'fleet')
 
-  // Qual labels (distinct seat/fleet/base combos)
   const qualSet = new Set<string>()
   const quals: Qual[] = []
   for (const e of entries) {

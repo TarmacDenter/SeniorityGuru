@@ -21,8 +21,6 @@ export function useDashboardStats() {
   const newHireMode = useNewHireMode()
   const { snapshot, lens } = useEffectiveSeniorityEngine()
 
-  // The effective engine handles the mode switch: in new-hire mode the snapshot
-  // includes the synthetic entry and the lens is anchored to it.
   const userEntry = computed(() => {
     if (!snapshot.value || !lens.value?.anchor) return undefined
     return snapshot.value.byEmployeeNumber.get(lens.value.anchor.employeeNumber)
@@ -127,7 +125,6 @@ export function useDashboardStats() {
     }))
   })
 
-  // Trajectory via engine
   const trajectoryResult = computed(() => lens.value?.trajectory() ?? null)
 
   const trajectoryChartData = computed(() =>

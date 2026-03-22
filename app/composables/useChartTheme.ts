@@ -41,13 +41,10 @@ export function useChartTheme() {
   }
 
   const colors = {
-    // Primary series — sky-400 (vibrant on dark, crisp on light)
     primary: '#38bdf8',
     primaryLight: 'rgba(56, 189, 248, 0.15)',
-    // Backward-compat aliases used by existing chart components
     amber: '#38bdf8',
     amberLight: 'rgba(56, 189, 248, 0.15)',
-    // Secondary series — indigo-400 (matches app secondary color)
     cyan: '#818cf8',
     cyanLight: 'rgba(129, 140, 248, 0.15)',
     peakHighlight: 'rgba(251, 191, 36, 0.7)',

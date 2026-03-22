@@ -24,7 +24,6 @@ const displayEntries = computed<IndexedEntry[]>(() => {
 
 const pageCount = computed(() => Math.ceil(displayEntries.value.length / pagination.value.pageSize))
 
-// Reset to page 1 when toggling error filter
 watch(() => props.showErrorsOnly, () => {
   pagination.value = { ...pagination.value, pageIndex: 0 }
 })

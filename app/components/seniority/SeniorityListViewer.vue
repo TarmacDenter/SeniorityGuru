@@ -67,7 +67,6 @@ const pagination = ref({
 
 const columnVisibility = computed(() => ({
   expand: isMobile.value,
-  // Mobile shows only: Sen #, Emp #, Name — everything else in expanded row
   name: true,
   employee_number: true,
   seat: !isMobile.value,

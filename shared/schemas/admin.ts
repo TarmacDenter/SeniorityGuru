@@ -1,8 +1,6 @@
 import { z } from 'zod'
 import { uuidField } from './common'
 
-// --- Admin Seniority List (includes uploaded_by for owner join) ---
-
 export const AdminSeniorityListResponseSchema = z.object({
   id: z.string().uuid(),
   airline: z.string(),
@@ -50,8 +48,6 @@ export const AdminGetUsersSeniorityListCountResponse = z.array(z.object({
 
 export type AdminGetUsersSeniorityListCountResponse = z.infer<typeof AdminGetUsersSeniorityListCountResponse>
 
-// --- Activity Feed ---
-
 export const AdminActivityItemSchema = z.object({
   id: z.string().uuid(),
   event_type: z.enum(['user_signup', 'list_upload']),
@@ -61,8 +57,6 @@ export const AdminActivityItemSchema = z.object({
 })
 export const AdminActivityResponseSchema = AdminActivityItemSchema.array()
 export type AdminActivityResponse = z.infer<typeof AdminActivityResponseSchema>
-
-// --- Stats ---
 
 export const AdminStatsResponseSchema = z.object({
   total_users: z.number(),
@@ -78,8 +72,6 @@ export const AdminStatsResponseSchema = z.object({
 })
 export type AdminStatsResponse = z.infer<typeof AdminStatsResponseSchema>
 
-// --- Transfer List Ownership ---
-
 export const TransferListBodySchema = z.object({
   targetUserId: z.string().uuid(),
 })
@@ -90,8 +82,6 @@ export const TransferListResponseSchema = z.object({
   uploaded_by: z.string().uuid(),
 })
 export type TransferListResponse = z.infer<typeof TransferListResponseSchema>
-
-// --- Single User Detail ---
 
 export const AdminUserDetailSchema = z.object({
   id: z.string().uuid(),

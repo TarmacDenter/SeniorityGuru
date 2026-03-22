@@ -11,10 +11,7 @@ export const DEFAULT_GROWTH_CONFIG: GrowthConfig = {
   annualRate: 0.03, // 3% default when first enabled
 }
 
-/**
- * Compound growth: round(initialTotal * ((1 + rate)^yearsElapsed - 1))
- * Returns 0 for negative elapsed time or zero rate.
- */
+/** Compound growth: `round(initialTotal * ((1 + rate)^yearsElapsed - 1))`. Returns 0 for negative elapsed time or zero rate. */
 export function computeAdditionalPilots(
   initialTotal: number,
   annualRate: number,

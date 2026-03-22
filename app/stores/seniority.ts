@@ -11,7 +11,6 @@ export const useSeniorityStore = defineStore('seniority', () => {
   const entriesLoading = ref(false)
   const listsError = ref<string | null>(null)
   const entriesError = ref<string | null>(null)
-  /** Track which list's entries are currently loaded */
   const currentListId = ref<string | null>(null)
 
   function clearStore() {

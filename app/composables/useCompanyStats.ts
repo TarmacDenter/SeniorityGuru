@@ -1,8 +1,6 @@
 import type { SeniorityEntryResponse } from '#shared/schemas/seniority-list'
 import { formatDateLabel } from '#shared/utils/seniority-math'
 import { useSeniorityStore } from '~/stores/seniority'
-// Intentionally uses the base engine — company aggregates should not include
-// the synthetic new-hire entry.
 import { useSeniorityEngine } from './useSeniorityEngine'
 
 type SeniorityEntry = SeniorityEntryResponse
@@ -58,7 +56,6 @@ export function useCompanyStats() {
     }))
   })
 
-  // Use snapshot quals instead of rebuilding from entries
   const quals = computed(() => {
     if (!snapshot.value) return []
     return [...snapshot.value.quals]

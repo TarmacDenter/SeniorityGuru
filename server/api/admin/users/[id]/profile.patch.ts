@@ -10,7 +10,6 @@ export default defineEventHandler(async (event) => {
   const { id } = await validateRouteParam(event, 'id', AdminUserIdSchema)
   const body = await validateBody(event, UpdateUserProfileSchema)
 
-  // Build partial update — only include fields that were explicitly provided
   const updates: Record<string, unknown> = {}
   if (body.icaoCode !== undefined) updates.icao_code = body.icaoCode
   if (body.employeeNumber !== undefined) updates.employee_number = body.employeeNumber

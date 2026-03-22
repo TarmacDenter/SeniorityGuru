@@ -20,7 +20,6 @@ const { scopeOptions, specForLabel } = useScopeFilter(entriesRef)
 
 const defaultScope = computed(() => {
   if (props.userBase && props.userSeat && props.userFleet) {
-    // Find the matching label from scope options
     return scopeOptions.value.find(label =>
       label !== 'Company-wide' && label.includes(props.userBase!) && label.includes(props.userSeat!) && label.includes(props.userFleet!),
     ) ?? 'Company-wide'

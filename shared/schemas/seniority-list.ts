@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { ISO_DATE_REGEX } from '#shared/constants'
 
-/** Strip leading zeroes from purely numeric strings. "007123" -> "7123", "0" -> "0" */
+/** Strip leading zeroes from purely numeric strings: "007123" → "7123", "0" → "0". */
 export function normalizeEmployeeNumber(value: string): string {
   if (/^\d+$/.test(value)) {
     const stripped = value.replace(/^0+/, '')
@@ -42,8 +42,6 @@ export const UpdateSeniorityListSchema = z.object({
   message: 'At least one field must be provided',
 })
 export type UpdateSeniorityList = z.infer<typeof UpdateSeniorityListSchema>
-
-// --- Response DTOs ---
 
 export const SeniorityListResponseSchema = z.object({
   id: z.string().uuid(),

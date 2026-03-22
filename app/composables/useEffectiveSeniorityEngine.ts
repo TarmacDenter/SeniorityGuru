@@ -4,13 +4,6 @@ import { useSeniorityStore } from '~/stores/seniority'
 import { useSeniorityEngine } from './useSeniorityEngine'
 import { useNewHireMode } from './useNewHireMode'
 
-/**
- * Sits above useSeniorityEngine and handles the mode switch:
- *   - Employee ID mode → delegates to the pure engine
- *   - New Hire mode → builds an augmented snapshot with the synthetic entry
- *
- * useSeniorityEngine stays pure; new-hire logic never crosses into the engine.
- */
 export function useEffectiveSeniorityEngine() {
   const seniorityStore = useSeniorityStore()
   const { snapshot: baseSnapshot, lens: baseLens } = useSeniorityEngine()

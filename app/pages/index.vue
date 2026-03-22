@@ -40,12 +40,7 @@ const dataOwnershipItems = [
   {
     icon: 'i-lucide-folder-open',
     title: 'See it whenever',
-    description: 'Your data stays live. No expiry, no gates.',
-  },
-  {
-    icon: 'i-lucide-credit-card',
-    title: 'Pay when you want a refresh',
-    description: 'Upload a new list when you want a fresh look at your data. Not on a monthly clock.',
+    description: 'Your data stays live and portable. No subscription fees.',
   },
 ]
 
@@ -53,17 +48,17 @@ const featureCards = [
   {
     icon: 'i-lucide-trending-up',
     title: 'Trajectory Projections',
-    description: 'Career-length percentile forecast under base, optimistic, and pessimistic retirement scenarios.',
+    description: 'Career-length percentile forecast based on retirements and company percentiles (much more realistic).',
   },
   {
     icon: 'i-lucide-calendar-clock',
     title: 'Retirement Forecasting',
-    description: 'See how many pilots senior to you are projected to retire in the next 1, 5, and 10 years.',
+    description: 'Drill down as deep as you want into retirement data.',
   },
   {
     icon: 'i-lucide-map-pin',
     title: 'Position by Base & Seat',
-    description: 'Drill into your rank within your base, seat category, and fleet — not just company-wide.',
+    description: 'Dig into your rank within your base, seat category, and fleet — not just company-wide.',
   },
   {
     icon: 'i-lucide-git-compare-arrows',
@@ -100,11 +95,6 @@ const wikiItems = [
   },
 ]
 
-// ── Qual scale demo data ──────────────────────────────────────────────────────
-
-// Demo pilot: ~3 years in, 35th percentile company-wide.
-// FO quals: density starts near 0% → plug at first bar (~2%) → holdable immediately.
-// CA quals: density starts above 40% → plug at first bar → not yet holdable, reachable via projection.
 const BASE_QUAL_SCALES = [
   {
     fleet: 'E175', seat: 'FO', base: 'DEN', activeCount: 142,
@@ -175,7 +165,6 @@ const demoQualScales = computed<QualDemographicScale[]>(() => {
   }))
 })
 
-// ── Analytics demo data ───────────────────────────────────────────────────────
 
 type DemoQual = 'all' | 'fo' | 'ca'
 const demoQual = useState<DemoQual>('landing-demo-qual', () => 'all')
@@ -309,18 +298,23 @@ const demoWaveBuckets = computed(() => demoWaveData[demoQual.value])
             <UButton to="#demo" size="xl" variant="ghost" icon="i-lucide-play-circle" trailing>
               See How It Works
             </UButton>
+            <div class="text-center mb-12">
+              <h2 class="text-2xl sm:text-3xl font-bold tracking-tight mt-2">
+                Free to use with limited uploads. But support is <span class="italic">GREATLY</span> appreciated.
+              </h2>
+            </div>
+            <div class="flex flex-wrap justify-center items-center gap-x-3 gap-y-1 text-sm text-muted">
+              <span>Any airline</span>
+              <span class="text-(--ui-border)" aria-hidden="true">•</span>
+              <span>Your number</span>
+              <span class="text-(--ui-border)" aria-hidden="true">•</span>
+              <span>Your trajectory</span>
+              <span class="text-(--ui-border)" aria-hidden="true">•</span>
+              <span>Your move</span>
+            </div>
           </div>
 
           <!-- Stat strip -->
-          <div class="flex flex-wrap justify-center items-center gap-x-3 gap-y-1 text-sm text-muted mt-2">
-            <span>Any airline</span>
-            <span class="text-(--ui-border)" aria-hidden="true">•</span>
-            <span>Your number</span>
-            <span class="text-(--ui-border)" aria-hidden="true">•</span>
-            <span>Your trajectory</span>
-            <span class="text-(--ui-border)" aria-hidden="true">•</span>
-            <span>Your move</span>
-          </div>
         </div>
       </UContainer>
     </section>
@@ -391,7 +385,7 @@ const demoWaveBuckets = computed(() => demoWaveData[demoQual.value])
               You're the plug. For now.
             </h2>
             <p class="text-muted leading-relaxed">
-              Day one, you're last on the list. That's not a problem — it's a starting point. Upload your company's list and see exactly where you stand, and how fast retirements will move you up.
+              Day one, you're last on the list. That's not a problem. Upload your company's list and see roughly where you will stand in any qual, and how fast retirements will move you up.
             </p>
           </div>
 
@@ -554,12 +548,6 @@ const demoWaveBuckets = computed(() => demoWaveData[demoQual.value])
     <!-- ── Section 6: Data Ownership ────────────────────────────────────── -->
     <section class="py-16 sm:py-20 bg-(--ui-bg)">
       <UContainer>
-        <div class="text-center mb-12">
-          <h2 class="text-2xl sm:text-3xl font-bold tracking-tight mb-3">
-            No subscription. Pay when it matters.
-          </h2>
-        </div>
-
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-8 max-w-3xl mx-auto">
           <div
             v-for="item in dataOwnershipItems"

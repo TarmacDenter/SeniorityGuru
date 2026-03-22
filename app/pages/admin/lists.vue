@@ -56,7 +56,6 @@ const columns: TableColumn<ListWithOwner>[] = [
   { id: 'actions', header: '' },
 ]
 
-// Transfer
 const transferOpen = ref(false)
 const transferTarget = ref<ListWithOwner | null>(null)
 const transferTargetUser = ref<string | undefined>(undefined)
@@ -86,7 +85,6 @@ async function doTransfer() {
   }
 }
 
-// Delete
 const deleteTarget = ref<ListWithOwner | null>(null)
 const deleteLoading = ref(false)
 
@@ -111,7 +109,6 @@ async function doDelete() {
   }
 }
 
-// Upload for user
 const uploadPickerOpen = ref(false)
 const uploadTargetUser = ref<string | undefined>(undefined)
 

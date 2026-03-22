@@ -2,10 +2,6 @@
 import { ConfirmEmailSchema } from '#shared/schemas/auth'
 import type { ConfirmEmailState } from '#shared/schemas/auth'
 
-// Handles two OTP-based flows:
-// 1. Signup confirmation — user enters 6-digit code from signup email (type: 'email')
-// 2. Recovery confirmation — user enters 6-digit code from recovery email (type: 'recovery')
-
 definePageMeta({ layout: 'auth' })
 
 const supabase = useSupabaseClient()

@@ -37,7 +37,6 @@ export function qualSpecEquals(a: QualSpec, b: QualSpec): boolean {
 export function enumerateQualSpecs(entries: readonly SeniorityEntry[]): QualSpec[] {
   if (entries.length === 0) return [{}]
 
-  // Collect all existing combos as a Set for O(1) lookup
   const existingCombos = new Set<string>()
   for (const e of entries) {
     existingCombos.add(`${e.base}|${e.seat}|${e.fleet}`)
@@ -49,12 +48,10 @@ export function enumerateQualSpecs(entries: readonly SeniorityEntry[]): QualSpec
 
   const specs: QualSpec[] = [{}]
 
-  // Single-dimension specs (always exist if values exist)
   for (const base of bases) specs.push({ base })
   for (const seat of seats) specs.push({ seat })
   for (const fleet of fleets) specs.push({ fleet })
 
-  // Two-dimension combos — only if they exist in data
   for (const base of bases) {
     for (const seat of seats) {
       if (entries.some(e => e.base === base && e.seat === seat)) {
@@ -75,13 +72,11 @@ export function enumerateQualSpecs(entries: readonly SeniorityEntry[]): QualSpec
     }
   }
 
-  // Three-dimension combos — only those in data
   for (const combo of existingCombos) {
     const [base, seat, fleet] = combo.split('|') as [string, string, string]
     specs.push({ base, seat, fleet })
   }
 
-  // Sort: company-wide first (already at index 0), then by dimension count, then alphabetically
   const companyWide = specs[0]!
   const rest = specs.slice(1).sort((a, b) => {
     const dimA = (a.base ? 1 : 0) + (a.seat ? 1 : 0) + (a.fleet ? 1 : 0)

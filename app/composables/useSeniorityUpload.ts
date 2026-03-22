@@ -15,12 +15,10 @@ import { createLogger } from '#shared/utils/logger'
 const log = createLogger('upload')
 
 export function useSeniorityUpload() {
-  // Step 1: Raw file data
   const fileName = ref<string>('')
   const rawHeaders = ref<string[]>([])
   const rawRows = ref<string[][]>([])
 
-  // Step 2: Column mapping
   const columnMap = ref<ColumnMap>({
     seniority_number: -1,
     employee_number: -1,
@@ -36,17 +34,14 @@ export function useSeniorityUpload() {
     retireMode: 'direct',
   })
 
-  // Step 3: Validated entries
   const entries = ref<Partial<SeniorityEntry>[]>([])
   const rowErrors = shallowRef<Map<number, string[]>>(new Map())
 
-  // Step 4: Upload metadata
   const effectiveDate = ref<DateValue | null>(null)
   const title = ref('')
   const saving = ref(false)
   const saveError = ref<string | null>(null)
 
-  /** Parse a file (CSV or XLSX) into raw headers + rows. */
   async function parseFile(file: File) {
     reset()
     const buffer = await file.arrayBuffer()
@@ -63,21 +58,17 @@ export function useSeniorityUpload() {
 
     log.info('File parsed', { fileName: file.name, rows: rows.length, columns: headers.length })
 
-    // Auto-detect column mapping
     columnMap.value = autoDetectColumnMap(headers)
   }
 
-  /** Apply column mapping and validate all rows. */
   function applyMapping() {
     const mapped = applyColumnMap(rawRows.value, columnMap.value, mappingOptions.value)
     entries.value = mapped
     validate()
 
-    // Default effective date to today
     effectiveDate.value = parseDate(new Date().toISOString().split('T')[0]!)
   }
 
-  /** Run Zod validation on each entry row, plus contiguous seniority number checks. */
   function validate() {
     const errors = new Map<number, string[]>()
     entries.value.forEach((entry, i) => {
@@ -87,7 +78,6 @@ export function useSeniorityUpload() {
       }
     })
 
-    // Check for duplicate and non-contiguous seniority numbers
     const senNumToIndices = new Map<number, number[]>()
     entries.value.forEach((entry, i) => {
       const num = entry.seniority_number
@@ -98,7 +88,6 @@ export function useSeniorityUpload() {
       }
     })
 
-    // Flag duplicates
     for (const [num, indices] of senNumToIndices) {
       if (indices.length > 1) {
         for (const i of indices) {
@@ -109,14 +98,11 @@ export function useSeniorityUpload() {
       }
     }
 
-    // Check for gaps in the sequence 1..N
     const allNums = Array.from(senNumToIndices.keys()).sort((a, b) => a - b)
     if (allNums.length > 0) {
       const expected = allNums.length
       const max = allNums[allNums.length - 1]!
       if (max !== expected || allNums[0] !== 1) {
-        // Find which numbers are out of place — flag entries whose seniority_number
-        // is outside the expected 1..N range or creates a gap
         const expectedSet = new Set(Array.from({ length: expected }, (_, i) => i + 1))
         for (const [num, indices] of senNumToIndices) {
           if (!expectedSet.has(num)) {
@@ -136,12 +122,10 @@ export function useSeniorityUpload() {
     }
   }
 
-  /** Update a single cell and re-validate that row. */
   function updateCell(rowIndex: number, field: keyof SeniorityEntry, value: string | number) {
     const entry = entries.value[rowIndex]
     if (!entry) return
     ;(entry as Record<string, unknown>)[field] = value
-    // Re-validate the single row
     const result = SeniorityEntrySchema.safeParse(entry)
     if (result.success) {
       rowErrors.value.delete(rowIndex)
@@ -151,10 +135,8 @@ export function useSeniorityUpload() {
     triggerRef(rowErrors)
   }
 
-  /** Delete a row. */
   function deleteRow(rowIndex: number) {
     entries.value.splice(rowIndex, 1)
-    // Rebuild error map with shifted indices
     const newErrors = new Map<number, string[]>()
     rowErrors.value.forEach((errs, idx) => {
       if (idx < rowIndex) newErrors.set(idx, errs)
@@ -173,7 +155,6 @@ export function useSeniorityUpload() {
     await parseFile(files[0]!)
   }
 
-  /** Save the seniority list to the server. Returns the entry count on success, or throws. */
   async function save(targetUserId?: string | null): Promise<number> {
     saving.value = true
     saveError.value = null
@@ -201,7 +182,6 @@ export function useSeniorityUpload() {
     }
   }
 
-  /** Reset all state. */
   function reset() {
     fileName.value = ''
     rawHeaders.value = []
@@ -217,7 +197,6 @@ export function useSeniorityUpload() {
   }
 
   return {
-    // State
     fileName,
     rawHeaders,
     rawRows,
@@ -229,9 +208,7 @@ export function useSeniorityUpload() {
     title,
     saving,
     saveError,
-    // Computed
     errorCount,
-    // Actions
     parseFile,
     setFiles,
     applyMapping,

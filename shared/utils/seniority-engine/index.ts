@@ -9,7 +9,6 @@ export {
   enumerateQualSpecs,
 } from './qual-spec'
 export type {
-  // Core primitives
   SenioritySnapshot,
   Scenario,
   ScenarioOptions,
@@ -17,7 +16,6 @@ export type {
   Qual,
   QualSpec,
   SeniorityLens,
-  // Result types
   StandingResult,
   CellBreakdownRow,
   TrajectoryPoint,
@@ -25,7 +23,6 @@ export type {
   ComparativeTrajectoryResult,
   RetirementProjectionResult,
   DemographicsResult,
-  // Re-exported from existing modules
   TrajectoryDelta,
   AgeBucket,
   MostJuniorCARow,

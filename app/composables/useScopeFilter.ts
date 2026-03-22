@@ -7,7 +7,6 @@ export function useScopeFilter(entries: Ref<readonly SeniorityEntry[]> | Compute
 
   const scopeOptions = computed(() => specs.value.map(qualSpecLabel))
 
-  // Reverse lookup: label → QualSpec (labels are unambiguous)
   const labelToSpec = computed(() => {
     const map = new Map<string, QualSpec>()
     for (const spec of specs.value) {

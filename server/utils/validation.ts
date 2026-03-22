@@ -4,10 +4,6 @@ import { createLogger } from '#shared/utils/logger'
 
 const log = createLogger('validation')
 
-/**
- * Validate a route parameter against a Zod schema wrapping it in `{ [paramName]: value }`.
- * Throws 422 on failure with Zod issues in the response data.
- */
 export async function validateRouteParam<T>(
   event: H3Event,
   paramName: string,
@@ -25,10 +21,7 @@ export async function validateRouteParam<T>(
   return result.data
 }
 
-/**
- * Validate data returned from the DB against a Zod schema.
- * Throws 500 on failure — a schema mismatch here is a server-side contract violation.
- */
+/** Validate DB data against a Zod schema. Throws 500 — a mismatch here is a server-side contract violation. */
 export function parseResponse<T>(schema: ZodSchema<T>, data: unknown, context?: string): T {
   const result = schema.safeParse(data)
   if (!result.success) {
@@ -38,10 +31,6 @@ export function parseResponse<T>(schema: ZodSchema<T>, data: unknown, context?: 
   return result.data
 }
 
-/**
- * Validate the request body against a Zod schema.
- * Throws 422 on failure with Zod issues in the response data.
- */
 export async function validateBody<T>(
   event: H3Event,
   schema: ZodSchema<T>,

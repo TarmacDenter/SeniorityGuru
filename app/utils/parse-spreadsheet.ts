@@ -27,7 +27,6 @@ export function parseSpreadsheetData(raw: string[][]): { headers: string[]; rows
   return { headers: headers ?? [], rows }
 }
 
-/** Fuzzy-match source headers to target fields. Returns column indices (-1 = not found). */
 export function autoDetectColumnMap(headers: string[]): ColumnMap {
   const lower = headers.map(h => h.toLowerCase().trim())
 
@@ -47,7 +46,6 @@ export function autoDetectColumnMap(headers: string[]): ColumnMap {
   }
 }
 
-/** Apply column mapping to raw rows, producing typed entry objects. */
 export function applyColumnMap(
   rows: string[][],
   map: ColumnMap,
@@ -63,7 +61,6 @@ export function applyColumnMap(
     const senStr = get(map.seniority_number)
     const empStr = get(map.employee_number)
 
-    // Name handling
     let name: string | undefined
     if (options.nameMode === 'separate' && options.lastNameCol != null && options.firstNameCol != null) {
       const last = get(options.lastNameCol)
@@ -73,7 +70,6 @@ export function applyColumnMap(
       name = get(map.name)
     }
 
-    // Retirement date handling
     let retire_date: string | undefined
     if (options.retireMode === 'dob' && options.dobCol != null) {
       const dob = get(options.dobCol)

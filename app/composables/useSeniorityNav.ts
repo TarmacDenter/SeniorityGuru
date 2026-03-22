@@ -14,11 +14,8 @@ export function useSeniorityNav(): ComputedRef<NavigationMenuItem[]> {
 
   return computed(() => {
     const onDashboard = route.path === '/dashboard'
-    // Only inject tab accordion on mobile — desktop users have the toolbar tabs
     const showTabChildren = isMobile.value && onDashboard
 
-    // When on mobile + on /dashboard: accordion trigger with tab children.
-    // All other cases: plain navigation link.
     const dashboardItem: NavigationMenuItem = showTabChildren
       ? {
           label: 'Dashboard',

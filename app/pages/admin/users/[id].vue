@@ -30,7 +30,6 @@ const listColumns: TableColumn<AdminSeniorityListResponse>[] = [
   { id: 'actions', header: '' },
 ]
 
-// Delete User
 const deleteLoading = ref(false)
 
 function confirmDelete() {
@@ -54,7 +53,6 @@ async function doDelete() {
   }
 }
 
-// Reset Password
 const resettingPassword = ref(false)
 
 async function resetPassword() {
@@ -69,10 +67,8 @@ async function resetPassword() {
   }
 }
 
-// Airline options for the edit modal
 const { options: airlineOptions, loading: airlinesLoading, load: loadAirlines } = useAirlineOptions()
 
-// Edit profile modal state
 const editProfileLoading = ref(false)
 const editProfileForm = ref<{
   icaoCode: string | null
@@ -134,7 +130,6 @@ async function saveProfile(overrides?: Record<string, unknown>) {
   }
 }
 
-// Delete List
 const deleteListOpen = ref(false)
 const deleteListTarget = ref<AdminSeniorityListResponse | null>(null)
 const deleteListLoading = ref(false)

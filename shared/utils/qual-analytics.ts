@@ -3,24 +3,17 @@ import type { FilterFn } from '#shared/utils/seniority-math'
 import type { GrowthConfig } from '#shared/types/growth-config'
 import { computeAdditionalPilots } from '#shared/types/growth-config'
 
-// Re-export TrajectoryPoint for consumers (matches buildTrajectory return shape)
 export interface TrajectoryPoint {
   date: string
   rank: number
   percentile: number
 }
 
-// ─── Qual key ────────────────────────────────────────────────────────────────
-// "737 CA", "320 FO" — groups analytics by fleet+seat; base is a filter dimension, not a grouping key.
-
 export function qualKey(entry: SeniorityEntry): string {
   return `${entry.fleet} ${entry.seat}`
 }
 
-// ─── Age derivation ───────────────────────────────────────────────────────────
-// Pilots retire at mandatory age, so we back-calculate approximate birth date.
-// Applied uniformly across all entries using the viewer's mandatory_retirement_age.
-
+/** Back-calculate approximate current age from retirement date and mandatory retirement age. */
 export function deriveAge(retireDate: string, mandatoryAge: number): number {
   const MS_PER_YEAR = 365.25 * 24 * 60 * 60 * 1000
   const retireMs = new Date(retireDate).getTime()
@@ -28,14 +21,10 @@ export function deriveAge(retireDate: string, mandatoryAge: number): number {
   return Math.floor((Date.now() - birthMs) / MS_PER_YEAR)
 }
 
-// ─── Years of service ─────────────────────────────────────────────────────────
-
 export function computeYOS(hireDateStr: string): number {
   const MS_PER_YEAR = 365.25 * 24 * 60 * 60 * 1000
   return (Date.now() - new Date(hireDateStr).getTime()) / MS_PER_YEAR
 }
-
-// ─── Age distribution ─────────────────────────────────────────────────────────
 
 export interface AgeBucket {
   label: string
@@ -76,8 +65,6 @@ export function computeAgeDistribution(
   }
 }
 
-// ─── Most junior CA per qual (fleet + seat + base) ───────────────────────────
-
 export interface MostJuniorCARow {
   qualKey: string       // e.g. "737 CA ATL"
   fleet: string
@@ -110,8 +97,6 @@ export function findMostJuniorCA(entries: readonly SeniorityEntry[]): MostJunior
     }))
     .sort((a, b) => a.qualKey.localeCompare(b.qualKey))
 }
-
-// ─── YOS distribution ─────────────────────────────────────────────────────────
 
 export interface YosDistribution {
   entryFloor: number
@@ -183,8 +168,6 @@ export function computeYosDistribution(
   }
 }
 
-// ─── Qual size & composition ──────────────────────────────────────────────────
-
 export interface QualCompositionRow {
   qualKey: string
   fleet: string
@@ -233,8 +216,6 @@ export function computeQualComposition(entries: readonly SeniorityEntry[]): Qual
   })
 }
 
-// ─── Retirement wave ──────────────────────────────────────────────────────────
-
 export interface RetirementWaveBucket {
   year: number
   count: number
@@ -265,11 +246,7 @@ export function computeRetirementWave(
     .map(([year, count]) => ({ year, count, isWave: count >= waveThreshold }))
 }
 
-// ─── Shared constants ─────────────────────────────────────────────────────────
-
 export const SEAT_ORDER: Record<string, number> = { CA: 0, FO: 1 }
-
-// ─── Power Index ──────────────────────────────────────────────────────────────
 
 export type PowerIndexCellState = 'green' | 'amber' | 'red'
 
@@ -384,8 +361,6 @@ export function computePowerIndexCells(
     }
   })
 }
-
-// ─── Qual demographic scale ──────────────────────────────────────────────────
 
 export interface DensityBucket {
   start: number
@@ -504,8 +479,6 @@ export function applyProjectionToSnapshots(
   }))
 }
 
-// ─── Percentile threshold calculator ─────────────────────────────────────────
-
 export interface ThresholdResult {
   year: string
 }
@@ -518,8 +491,6 @@ export function findThresholdYear(
   if (!year) return null
   return { year }
 }
-
-// ─── Upgrade transition detection ─────────────────────────────────────────────
 
 export interface UpgradeTransition {
   employeeNumber: string

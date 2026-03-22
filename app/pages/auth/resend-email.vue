@@ -11,7 +11,6 @@ const user = useSupabaseUser()
 const loading = ref(false)
 const rateLimited = ref(false)
 
-// Pre-fill email if the user is logged in but unverified
 const prefilled = user.value?.email ?? ''
 const state = reactive<ResendEmailState>({ email: prefilled })
 

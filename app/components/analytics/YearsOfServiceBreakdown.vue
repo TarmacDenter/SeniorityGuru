@@ -30,7 +30,6 @@ const props = defineProps<{
 
 const { defaults, colors } = useChartTheme()
 
-// Highlight the bucket containing the user's YOS
 const chartData = computed(() => ({
   labels: props.histogram.map((b) => b.label),
   datasets: [

@@ -35,7 +35,6 @@ const props = defineProps<{
 
 const { defaults, colors } = useChartTheme()
 
-// --- Wave chart ---
 const waveChartData = computed(() => ({
   labels: props.waveBuckets.map((b) => String(b.year)),
   datasets: [
@@ -78,7 +77,6 @@ const waveChartOptions = computed<ChartOptions<'bar'>>(() => ({
   },
 } as ChartOptions<'bar'>))
 
-// --- Trajectory chart ---
 const trajectoryChartData = computed(() => ({
   labels: props.trajectoryPoints.map((p) => p.date),
   datasets: [

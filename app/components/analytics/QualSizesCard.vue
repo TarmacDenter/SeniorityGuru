@@ -34,7 +34,6 @@ const rows = computed<SizeRow[]>(() => {
   const result: SizeRow[] = []
   for (const qual of props.composition) {
     if (!qual.byBase?.length) {
-      // No base breakdown — just show the qual totals without a base column
       result.push({ fleet: qual.fleet, seat: qual.seat, base: '—', count: qual.total })
     }
     else {

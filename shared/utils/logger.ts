@@ -1,14 +1,3 @@
-/**
- * Structured logger for Cloudflare Workers / browser console.
- *
- * On the server (Cloudflare Workers), `console.*` output is captured by
- * `wrangler tail` and the Workers dashboard. On the client it goes to
- * the browser devtools console.
- *
- * All log entries are JSON-structured so they can be parsed by a future
- * KV-based log collector or external log drain.
- */
-
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error'
 
 interface LogEntry {
@@ -26,7 +15,6 @@ const LOG_LEVELS: Record<LogLevel, number> = {
   error: 3,
 }
 
-// In production, suppress debug logs
 const MIN_LEVEL: LogLevel = process.env.NODE_ENV === 'production' ? 'info' : 'debug'
 
 function shouldLog(level: LogLevel): boolean {
@@ -60,11 +48,6 @@ export interface Logger {
   error: (message: string, data?: Record<string, unknown>) => void
 }
 
-/**
- * Create a scoped logger instance.
- *
- * @param scope - A short label identifying the subsystem (e.g. "auth", "seniority-api", "upload")
- */
 export function createLogger(scope: string): Logger {
   function log(level: LogLevel, message: string, data?: Record<string, unknown>) {
     if (!shouldLog(level)) return

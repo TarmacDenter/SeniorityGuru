@@ -6,9 +6,6 @@ function humanizeField(field: string): string {
     .replace(/^./, c => c.toUpperCase())
 }
 
-/**
- * Transform a Zod-style "field: message" error into a human-readable string.
- */
 export function formatRowError(raw: string): string {
   const colonIdx = raw.indexOf(': ')
   if (colonIdx === -1) return raw
