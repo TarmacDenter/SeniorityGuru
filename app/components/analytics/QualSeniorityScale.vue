@@ -63,7 +63,6 @@ function isProjecting(scale: QualDemographicScale) {
       <div class="w-32 sm:w-40 shrink-0 text-sm font-medium truncate">
         <span>{{ scale.fleet }} {{ scale.seat }}</span>
         <span class="text-[var(--ui-text-muted)] ml-1">{{ scale.base }}</span>
-        <span class="text-xs text-[var(--ui-text-muted)] ml-1">({{ scale.activeCount }})</span>
       </div>
 
       <div class="flex-1 relative h-10 min-w-[200px]">
