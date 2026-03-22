@@ -72,11 +72,11 @@ const columns: TableColumn<DisplayRow>[] = [
   { accessorKey: 'displayPercentile', header: 'TOP %', cell: ({ row }) => h('span', { class: highlightClass(row.original) }, `${row.original.displayPercentile}%`) },
 ];
 
+// 4 columns on mobile — Total dropped (Rank + TOP% convey the same standing)
 const mobileColumns: TableColumn<DisplayRow>[] = [
   { accessorKey: 'base', header: 'Base', cell: ({ row }) => h('span', { class: highlightClass(row.original) }, row.original.base) },
   { accessorKey: 'fleet', header: 'Fleet', cell: ({ row }) => h('span', { class: highlightClass(row.original) }, row.original.fleet) },
   { accessorKey: 'displayRank', header: 'Rank', cell: ({ row }) => h('span', { class: `font-mono ${highlightClass(row.original)}` }, row.original.displayRank) },
-  { accessorKey: 'displayTotal', header: 'Total', cell: ({ row }) => h('span', { class: `font-mono ${highlightClass(row.original)}` }, row.original.displayTotal) },
   { accessorKey: 'displayPercentile', header: 'TOP%', cell: ({ row }) => h('span', { class: `font-mono ${highlightClass(row.original)}` }, `${row.original.displayPercentile}%`) },
 ];
 </script>
@@ -113,7 +113,12 @@ const mobileColumns: TableColumn<DisplayRow>[] = [
       <UTable :data="displayData" :columns="columns" />
     </div>
 
-    <!-- Mobile: compact table with fewer columns -->
-    <UTable v-else :data="displayData" :columns="mobileColumns" class="text-xs" />
+    <!-- Mobile: compact table with fewer columns and tighter cell spacing -->
+    <UTable
+      v-else
+      :data="displayData"
+      :columns="mobileColumns"
+      :ui="{ th: 'px-2 py-2 text-xs font-semibold', td: 'px-2 py-2 text-xs whitespace-nowrap' }"
+    />
   </UCard>
 </template>
