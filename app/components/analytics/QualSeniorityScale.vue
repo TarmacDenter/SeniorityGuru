@@ -60,7 +60,7 @@ function isProjecting(scale: QualDemographicScale) {
       :key="`${scale.fleet} ${scale.seat} ${scale.base}`"
       class="flex items-center gap-3 py-2 border-b border-[var(--ui-border)] last:border-0"
     >
-      <div class="w-32 sm:w-40 shrink-0 text-sm font-medium truncate">
+      <div class="w-24 sm:w-28 shrink-0 text-sm font-medium truncate">
         <span>{{ scale.fleet }} {{ scale.seat }}</span>
         <span class="text-[var(--ui-text-muted)] ml-1">{{ scale.base }}</span>
       </div>
@@ -115,7 +115,7 @@ function isProjecting(scale: QualDemographicScale) {
     </div>
 
     <div v-if="sortedScales.length > 0" class="flex items-center gap-3 pt-1">
-      <div class="w-32 sm:w-40 shrink-0" />
+      <div class="w-24 sm:w-28 shrink-0" />
       <div class="flex-1 flex justify-between text-[10px] text-[var(--ui-text-muted)] min-w-[200px]">
         <span>Junior</span>
         <span>Senior</span>
