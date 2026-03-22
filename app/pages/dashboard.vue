@@ -101,9 +101,8 @@ onMounted(async () => {
     <template #header>
       <SeniorityNavbar title="Dashboard" :description="navbarDescription" />
 
-      <UDashboardToolbar>
-        <!-- Hidden on mobile — tabs move to sidebar on small screens -->
-        <UTabs v-model="activeTab" :items="tabs" :content="false" variant="link" class="hidden sm:flex" />
+      <UDashboardToolbar class="hidden sm:flex">
+        <UTabs v-model="activeTab" :items="tabs" :content="false" variant="link" />
 
         <template #right>
           <div class="flex items-center gap-2">
