@@ -1,4 +1,5 @@
 import type { NavigationMenuItem } from '@nuxt/ui'
+import { useMediaQuery } from '@vueuse/core'
 import { useUserStore } from '~/stores/user'
 import { useDashboardTabs, DASHBOARD_TABS } from '~/composables/useDashboardTabs'
 import type { DashboardTab } from '~/utils/dashboard-tabs'
@@ -8,14 +9,17 @@ export function useSeniorityNav(): ComputedRef<NavigationMenuItem[]> {
   const route = useRoute()
   const { activeTab } = useDashboardTabs()
   const sidebarOpen = useState<boolean>('dashboardSidebarOpen', () => false)
+  // SSR-safe: returns false on server, reactive on client
+  const isMobile = useMediaQuery('(max-width: 639px)')
 
   return computed(() => {
     const onDashboard = route.path === '/dashboard'
+    // Only inject tab accordion on mobile — desktop users have the toolbar tabs
+    const showTabChildren = isMobile.value && onDashboard
 
-    // When already on /dashboard, the Dashboard item becomes an accordion trigger
-    // (type: 'trigger' prevents navigation, defaultOpen expands it immediately).
-    // When navigating from elsewhere, it's a plain link.
-    const dashboardItem: NavigationMenuItem = onDashboard
+    // When on mobile + on /dashboard: accordion trigger with tab children.
+    // All other cases: plain navigation link.
+    const dashboardItem: NavigationMenuItem = showTabChildren
       ? {
           label: 'Dashboard',
           icon: 'i-lucide-layout-dashboard',
