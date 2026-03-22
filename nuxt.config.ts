@@ -35,11 +35,10 @@ export default defineNuxtConfig({
   routeRules: {
     // Redirect old /welcome URL to / (landing page)
     '/welcome': { redirect: '/' },
-    // Auth callback pages: CSR-only — these depend on URL hash/session state that is
-    // unavailable during SSR. Disabling SSR eliminates hydration mismatches entirely.
-    '/auth/confirm': { ssr: false },
-    '/auth/accept-invite': { ssr: false },
-    '/auth/update-password': { ssr: false },
+    // All auth pages: CSR-only — session state is unavailable during SSR,
+    // causing 401s on API calls made during setup. Disabling SSR eliminates
+    // hydration mismatches and session timing issues entirely.
+    '/auth/**': { ssr: false },
     // Auth-protected dashboard pages: no SSR needed (user-specific, not indexable)
     '/dashboard': { ssr: false },
     '/seniority': { ssr: false },
