@@ -1,6 +1,6 @@
 <script setup lang="ts">
 const navItems = useSeniorityNav()
-const sidebarOpen = useState<boolean>('dashboardSidebarOpen', () => false)
+const sidebarOpen = useState<boolean>('dashboardSidebarOpen', () => false) // shared with nav composable
 </script>
 
 <template>
@@ -19,8 +19,6 @@ const sidebarOpen = useState<boolean>('dashboardSidebarOpen', () => false)
           :ui="{ link: collapsed ? 'justify-center' : undefined }"
           class="p-2 flex-1"
         />
-        <!-- Mobile-only: dashboard tab shortcuts in sidebar, hidden when sidebar is collapsed -->
-        <DashboardSidebarTabNav v-if="!collapsed" />
       </template>
 
       <template #footer="{ collapsed }">

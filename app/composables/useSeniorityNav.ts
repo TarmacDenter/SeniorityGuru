@@ -1,17 +1,54 @@
 import type { NavigationMenuItem } from '@nuxt/ui'
 import { useUserStore } from '~/stores/user'
+import { useDashboardTabs, DASHBOARD_TABS } from '~/composables/useDashboardTabs'
+import type { DashboardTab } from '~/utils/dashboard-tabs'
 
 export function useSeniorityNav(): ComputedRef<NavigationMenuItem[]> {
   const userStore = useUserStore()
+  const route = useRoute()
+  const { activeTab } = useDashboardTabs()
+  const sidebarOpen = useState<boolean>('dashboardSidebarOpen', () => false)
 
   return computed(() => {
+    const onDashboard = route.path === '/dashboard'
+
+    // When already on /dashboard, the Dashboard item becomes an accordion trigger
+    // (type: 'trigger' prevents navigation, defaultOpen expands it immediately).
+    // When navigating from elsewhere, it's a plain link.
+    const dashboardItem: NavigationMenuItem = onDashboard
+      ? {
+          label: 'Dashboard',
+          icon: 'i-lucide-layout-dashboard',
+          type: 'trigger',
+          defaultOpen: true,
+          children: DASHBOARD_TABS.map(tab => ({
+            label: tab.label as string,
+            icon: tab.icon as string,
+            // NavigationMenuChildItem uses class for active indication (no active prop)
+            class: activeTab.value === tab.value
+              ? 'bg-primary/10 !text-primary font-medium'
+              : '',
+            onSelect: (e: Event) => {
+              e.preventDefault()
+              activeTab.value = tab.value as DashboardTab
+              sidebarOpen.value = false
+            },
+          })),
+        }
+      : {
+          label: 'Dashboard',
+          icon: 'i-lucide-layout-dashboard',
+          to: '/dashboard',
+        }
+
     const items: NavigationMenuItem[] = [
-      { label: 'Dashboard', icon: 'i-lucide-layout-dashboard', to: '/dashboard' },
+      dashboardItem,
       { label: 'My Lists', icon: 'i-lucide-list', to: '/seniority/lists' },
       { label: 'Upload', icon: 'i-lucide-upload', to: '/seniority/upload' },
       { label: 'Compare', icon: 'i-lucide-git-compare-arrows', to: '/seniority/compare' },
       { label: 'Settings', icon: 'i-lucide-settings', to: '/settings' },
     ]
+
     if (userStore.isAdmin) {
       items.push({
         label: 'Admin',
@@ -23,6 +60,7 @@ export function useSeniorityNav(): ComputedRef<NavigationMenuItem[]> {
         ],
       })
     }
+
     return items
   })
 }
