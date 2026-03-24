@@ -123,6 +123,15 @@ function getDropdownItems(list: SeniorityList): DropdownMenuItem[][] {
   ]]
 }
 
+// Mobile card list follows the same filter as the desktop table
+const filteredLists = computed(() => {
+  const q = globalFilter.value.trim().toLowerCase()
+  if (!q) return seniorityStore.lists
+  return seniorityStore.lists.filter(l =>
+    (l.title ?? '').toLowerCase().includes(q) || l.effectiveDate.toLowerCase().includes(q),
+  )
+})
+
 // --- Init ---
 onMounted(async () => {
   if (!seniorityStore.lists.length) {
@@ -154,7 +163,7 @@ onMounted(async () => {
 
         <!-- Mobile: card list with dropdown actions -->
         <div class="sm:hidden divide-y divide-(--ui-border) border border-(--ui-border) rounded-lg">
-          <div v-for="list in seniorityStore.lists" :key="list.id" class="flex items-center gap-3 px-4 py-3">
+          <div v-for="list in filteredLists" :key="list.id" class="flex items-center gap-3 px-4 py-3">
             <div class="flex-1 min-w-0">
               <p class="font-medium truncate">{{ list.title || list.effectiveDate }}</p>
               <p class="text-sm text-muted">{{ list.effectiveDate }}</p>
