@@ -1,0 +1,73 @@
+# Dependencies
+node_modules
+
+# Nuxt build output
+.nuxt
+.output
+.vercel
+dist
+
+# NuxtHub local state
+.hub
+
+# Nuxt cache
+.cache
+
+# TypeScript build cache
+*.tsbuildinfo
+
+# Environment variables
+.env
+.env.*
+!.env.example
+!.env.test
+
+# Logs
+logs
+*.log
+npm-debug.log*
+
+# Supabase CLI temp/local state
+supabase/.temp
+supabase/.branches
+supabase/snippets/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea
+.vscode/
+
+.claude/
+.data
+
+# MCP server config (local dev URLs)
+.mcp.json
+
+# Playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+.playwright-mcp/
+
+# Git worktrees
+.worktrees/
+
+# Local docs (how-tos, summaries, scratch notes)
+docs.local/
+
+# VSCode workspace (user-specific)
+*.code-workspace
+
+# Sandbox-created dotfiles (Claude Code bind-mounts these)
+.bash_profile
+.bashrc
+.profile
+.zprofile
+.zshrc
+.ripgreprc
+.gitconfig
+.gitmodules
