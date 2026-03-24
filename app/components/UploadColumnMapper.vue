@@ -96,7 +96,7 @@ function updateOption<K extends keyof MappingOptions>(key: K, value: MappingOpti
         </UFormField>
       </div>
 
-      <div v-else class="grid grid-cols-2 gap-4 max-w-lg">
+      <div v-else class="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-lg">
         <UFormField label="Last name column">
           <USelectMenu
             :model-value="mappingOptions.lastNameCol != null && mappingOptions.lastNameCol >= 0 ? mappingOptions.lastNameCol : undefined"
