@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useSeniorityStore } from '~/stores/seniority'
+import { useUserStore } from '~/stores/user'
 import { useSeniorityCompare } from '~/composables/seniority'
 import { retiredColumns, departedColumns, qualMoveColumns, rankChangeColumns, newHireColumns, qualMoveFilters } from '~/utils/column-definitions'
 
@@ -8,7 +9,10 @@ definePageMeta({
 })
 
 const seniorityStore = useSeniorityStore()
+const userStore = useUserStore()
 const route = useRoute()
+
+const userEmployeeNumber = computed(() => userStore.employeeNumber ?? undefined)
 
 const listIdA = ref<number | undefined>(route.query.a ? Number(route.query.a) : undefined)
 const listIdB = ref<number | undefined>(route.query.b ? Number(route.query.b) : undefined)
@@ -57,6 +61,7 @@ const summaryStats = computed(() => {
 })
 
 const tabs = [
+  { label: 'Diff', slot: 'diff' as const },
   { label: 'Retired', slot: 'retired' as const },
   { label: 'Departed', slot: 'departed' as const },
   { label: 'Qual Moves', slot: 'qual-moves' as const },
@@ -113,6 +118,9 @@ const tabs = [
 
         <!-- Detail tabs -->
         <UTabs :items="tabs" class="mt-4">
+          <template #diff>
+            <ComparisonDiffTab :comparison="comparison" :user-employee-number="userEmployeeNumber" />
+          </template>
           <template #retired>
             <ComparisonTab :data="comparison.retired" :columns="retiredColumns" search-placeholder="Search retired..." />
           </template>
