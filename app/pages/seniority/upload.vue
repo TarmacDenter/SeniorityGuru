@@ -95,108 +95,117 @@ async function onSave() {
 
     <template #body>
       <div class="max-w-5xl mx-auto p-4 sm:p-6">
+        <!-- Mobile: compact step indicator -->
+        <div class="sm:hidden text-sm text-muted text-center mb-6">
+          Step {{ currentStepIndex + 1 }} of {{ steps.length }}
+          <span class="mx-2">·</span>
+          <span class="font-medium text-(--ui-text)">{{ steps[currentStepIndex]?.title }}</span>
+        </div>
+
+        <!-- Desktop: full stepper (indicator only — content rendered below) -->
         <UStepper
           v-model="currentStep"
           :items="steps"
           disabled
-          class="w-full mb-8"
-        >
-          <template #content>
-            <!-- Step 1: Upload File -->
-            <div v-if="currentStep === 'upload'" class="space-y-6">
-              <UFileUpload
-                v-model="files"
-                accept=".csv,.xlsx,.xls"
-                variant="area"
-                icon="i-lucide-upload"
-                label="Drag & drop your CSV or XLSX file here"
-                description="or tap to choose a file"
-              />
+          class="hidden sm:flex w-full mb-8"
+        />
 
-              <UButton
-                v-if="files"
-                variant="ghost"
-                color="neutral"
-                icon="i-lucide-x"
-                class="mt-2"
-                @click="files = null"
-              >
-                Clear file
-              </UButton>
+        <!-- Step content (always rendered, shared by mobile and desktop) -->
+        <div class="mb-6">
+          <!-- Step 1: Upload File -->
+          <div v-if="currentStep === 'upload'" class="space-y-6">
+            <UFileUpload
+              v-model="files"
+              accept=".csv,.xlsx,.xls"
+              variant="area"
+              icon="i-lucide-upload"
+              label="Drag & drop your CSV or XLSX file here"
+              description="or tap to choose a file"
+            />
 
-              <UAlert
-                v-if="upload.fileName.value"
-                icon="i-lucide-file-check"
-                color="success"
-                variant="soft"
-                :title="`Loaded: ${upload.fileName.value}`"
-                :description="`${upload.rawRows.value.length} rows, ${upload.rawHeaders.value.length} columns`"
-              />
+            <UButton
+              v-if="files"
+              variant="ghost"
+              color="neutral"
+              icon="i-lucide-x"
+              class="mt-2"
+              @click="files = null"
+            >
+              Clear file
+            </UButton>
+
+            <UAlert
+              v-if="upload.fileName.value"
+              icon="i-lucide-file-check"
+              color="success"
+              variant="soft"
+              :title="`Loaded: ${upload.fileName.value}`"
+              :description="`${upload.rawRows.value.length} rows, ${upload.rawHeaders.value.length} columns`"
+            />
+          </div>
+
+          <!-- Step 2: Map Columns -->
+          <div v-else-if="currentStep === 'mapping'" class="space-y-6">
+            <UploadColumnMapper
+              :headers="upload.rawHeaders.value"
+              :column-map="upload.columnMap.value"
+              :mapping-options="upload.mappingOptions.value"
+              :sample-rows="sampleRows"
+              @update:column-map="upload.columnMap.value = $event"
+              @update:mapping-options="upload.mappingOptions.value = $event"
+            />
+          </div>
+
+          <!-- Step 3: Review & Validate -->
+          <div v-else-if="currentStep === 'review'" class="space-y-4">
+            <div class="flex items-center justify-between">
+              <p class="text-sm text-muted">
+                {{ upload.entries.value.length }} rows
+                <template v-if="upload.errorCount.value > 0">
+                  &middot;
+                  <UButton
+                    variant="link"
+                    color="error"
+                    size="xs"
+                    :icon="showErrorsOnly ? 'i-lucide-filter-x' : 'i-lucide-filter'"
+                    @click="showErrorsOnly = !showErrorsOnly"
+                  >
+                    {{ upload.errorCount.value }} errors{{ showErrorsOnly ? ' (filtered)' : '' }}
+                  </UButton>
+                </template>
+              </p>
             </div>
+            <UploadReviewTable
+              :entries="upload.entries.value"
+              :row-errors="upload.rowErrors.value"
+              :show-errors-only="showErrorsOnly"
+              @update-cell="upload.updateCell"
+              @delete-row="upload.deleteRow"
+            />
+          </div>
 
-            <!-- Step 2: Map Columns -->
-            <div v-else-if="currentStep === 'mapping'" class="space-y-6">
-              <UploadColumnMapper
-                :headers="upload.rawHeaders.value"
-                :column-map="upload.columnMap.value"
-                :mapping-options="upload.mappingOptions.value"
-                :sample-rows="sampleRows"
-                @update:column-map="upload.columnMap.value = $event"
-                @update:mapping-options="upload.mappingOptions.value = $event"
-              />
-            </div>
+          <!-- Step 4: Confirm & Save -->
+          <div v-else-if="currentStep === 'confirm'" class="space-y-6 max-w-md">
+            <UFormField label="Effective Date" name="effectiveDate" required>
+              <UInputDate v-model="effectiveDateModel" class="w-full" />
+            </UFormField>
 
-            <!-- Step 3: Review & Validate -->
-            <div v-else-if="currentStep === 'review'" class="space-y-4">
-              <div class="flex items-center justify-between">
-                <p class="text-sm text-muted">
-                  {{ upload.entries.value.length }} rows
-                  <template v-if="upload.errorCount.value > 0">
-                    &middot;
-                    <UButton
-                      variant="link"
-                      color="error"
-                      size="xs"
-                      :icon="showErrorsOnly ? 'i-lucide-filter-x' : 'i-lucide-filter'"
-                      @click="showErrorsOnly = !showErrorsOnly"
-                    >
-                      {{ upload.errorCount.value }} errors{{ showErrorsOnly ? ' (filtered)' : '' }}
-                    </UButton>
-                  </template>
-                </p>
+            <UFormField label="Title (optional)" name="title">
+              <UInput v-model="upload.title.value" placeholder="e.g. January 2026 Seniority List" class="w-full" />
+            </UFormField>
+
+            <div class="bg-elevated rounded-lg p-4 space-y-2 text-sm">
+              <div class="flex justify-between">
+                <span class="text-muted">Rows</span>
+                <span class="font-medium">{{ upload.entries.value.length }}</span>
               </div>
-              <UploadReviewTable
-                :entries="upload.entries.value"
-                :row-errors="upload.rowErrors.value"
-                :show-errors-only="showErrorsOnly"
-                @update-cell="upload.updateCell"
-                @delete-row="upload.deleteRow"
-              />
-            </div>
-
-            <!-- Step 4: Confirm & Save -->
-            <div v-else-if="currentStep === 'confirm'" class="space-y-6 max-w-md">
-              <UFormField label="Effective Date" name="effectiveDate" required>
-                <UInputDate v-model="effectiveDateModel" class="w-full" />
-              </UFormField>
-
-              <UFormField label="Title (optional)" name="title">
-                <UInput v-model="upload.title.value" placeholder="e.g. January 2026 Seniority List" class="w-full" />
-              </UFormField>
-
-              <div class="bg-elevated rounded-lg p-4 space-y-2 text-sm">
-                <div class="flex justify-between">
-                  <span class="text-muted">Rows</span>
-                  <span class="font-medium">{{ upload.entries.value.length }}</span>
-                </div>
-                <div class="flex justify-between">
-                  <span class="text-muted">File</span>
-                  <span class="font-medium">{{ upload.fileName.value }}</span>
-                </div>
+              <div class="flex justify-between">
+                <span class="text-muted">File</span>
+                <span class="font-medium">{{ upload.fileName.value }}</span>
               </div>
             </div>
-          </template>
-        </UStepper>
+          </div>
+        </div>
 
         <!-- Navigation buttons -->
         <div class="flex justify-between mt-6">
@@ -228,7 +237,7 @@ async function onSave() {
             color="success"
             @click="onSave"
           >
-            Save
+            Looks Good
           </UButton>
         </div>
       </div>

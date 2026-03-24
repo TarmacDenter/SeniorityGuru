@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { TableColumn } from '@nuxt/ui'
+import type { TableColumn, DropdownMenuItem } from '@nuxt/ui'
 import type { LocalSeniorityList } from '~/utils/db'
 import { sortableHeader } from '~/utils/sortableHeader'
 import { useSeniorityStore } from '~/stores/seniority'
@@ -101,6 +101,28 @@ async function doDelete() {
   }
 }
 
+// --- Dropdown ---
+function getDropdownItems(list: SeniorityList): DropdownMenuItem[][] {
+  return [[
+    {
+      label: 'Dashboard',
+      icon: 'i-lucide-layout-dashboard',
+      onSelect: () => navigateTo({ path: '/dashboard', query: { list: String(list.id) } }),
+    },
+    {
+      label: 'Edit',
+      icon: 'i-lucide-pencil',
+      onSelect: () => openEdit(list),
+    },
+    {
+      label: 'Delete',
+      icon: 'i-lucide-trash-2',
+      color: 'error' as const,
+      onSelect: () => confirmDelete(list),
+    },
+  ]]
+}
+
 // --- Init ---
 onMounted(async () => {
   if (!seniorityStore.lists.length) {
@@ -130,7 +152,24 @@ onMounted(async () => {
           class="max-w-sm"
         />
 
-        <div class="overflow-x-auto">
+        <!-- Mobile: card list with dropdown actions -->
+        <div class="sm:hidden divide-y divide-(--ui-border) border border-(--ui-border) rounded-lg">
+          <div v-for="list in seniorityStore.lists" :key="list.id" class="flex items-center gap-3 px-4 py-3">
+            <div class="flex-1 min-w-0">
+              <p class="font-medium truncate">{{ list.title || list.effectiveDate }}</p>
+              <p class="text-sm text-muted">{{ list.effectiveDate }}</p>
+            </div>
+            <UDropdownMenu :items="getDropdownItems(list)">
+              <UButton icon="i-lucide-ellipsis" variant="ghost" size="xs" />
+            </UDropdownMenu>
+          </div>
+          <div v-if="seniorityStore.lists.length === 0" class="px-4 py-8 text-center text-muted text-sm">
+            No lists uploaded yet.
+          </div>
+        </div>
+
+        <!-- Desktop: full table -->
+        <div class="hidden sm:block overflow-x-auto">
           <UTable
             ref="listsTable"
             v-model:global-filter="globalFilter"
