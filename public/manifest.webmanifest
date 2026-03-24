@@ -2,7 +2,7 @@
   "name": "Seniority Guru",
   "short_name": "SeniorityGuru",
   "description": "Track and project your pilot seniority standing",
-  "start_url": "/",
+  "start_url": "/dashboard",
   "scope": "/",
   "display": "standalone",
   "theme_color": "#0ea5e9",

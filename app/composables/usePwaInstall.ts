@@ -1,4 +1,5 @@
 import { deferredInstallPrompt, sharedShowIosModal } from '~/utils/pwa-prompt'
+import { isStandaloneMode } from '~/utils/pwa-standalone'
 import { useUserStore } from '~/stores/user'
 
 export function usePwaInstall() {
@@ -10,9 +11,7 @@ export function usePwaInstall() {
     ? /iphone|ipad|ipod/i.test(navigator.userAgent)
     : false
 
-  const standalone = import.meta.client
-    ? window.matchMedia('(display-mode: standalone)').matches
-    : false
+  const standalone = isStandaloneMode()
 
   const showBanner = computed(() => {
     if (standalone) return false
