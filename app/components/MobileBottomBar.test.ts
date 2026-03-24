@@ -9,6 +9,9 @@ beforeEach(() => {
   mockRoute.path = '/dashboard'
 })
 
+// Note: env(safe-area-inset-bottom) is a browser CSS function that happy-dom strips
+// from inline styles. Safe-area padding is verified visually / via Playwright E2E.
+
 describe('MobileBottomBar', () => {
   it('renders 5 nav items', async () => {
     const wrapper = await mountSuspended(MobileBottomBar)

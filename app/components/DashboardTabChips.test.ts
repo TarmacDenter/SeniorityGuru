@@ -9,6 +9,15 @@ const tabs = [
 ]
 
 describe('DashboardTabChips', () => {
+  it('has overflow-x-auto and sm:hidden on wrapper', async () => {
+    const wrapper = await mountSuspended(DashboardTabChips, {
+      props: { tabs, modelValue: 'status' },
+    })
+    const root = wrapper.find('div')
+    expect(root.classes()).toContain('overflow-x-auto')
+    expect(root.classes()).toContain('sm:hidden')
+  })
+
   it('renders all provided tabs', async () => {
     const wrapper = await mountSuspended(DashboardTabChips, {
       props: { tabs, modelValue: 'status' },
