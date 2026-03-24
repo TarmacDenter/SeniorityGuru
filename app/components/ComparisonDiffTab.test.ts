@@ -89,23 +89,28 @@ describe('ComparisonDiffTab', () => {
     expect(wrapper.text()).toContain('J. Patel')
   })
 
-  it('shows rank change entry in output', async () => {
+  it('shows rank change with downward delta badge (↓N for negative delta)', async () => {
     const comparison: CompareResult = {
       ...emptyComparison,
       rankChanges: [
-        {
-          employee_number: '10005',
-          name: 'M. Torres',
-          old_rank: 200,
-          new_rank: 195,
-          delta: -5,
-        },
+        { employee_number: '10005', name: 'M. Torres', old_rank: 200, new_rank: 195, delta: -5 },
       ],
     }
-    const wrapper = await mountSuspended(ComparisonDiffTab, {
-      props: { comparison },
-    })
+    const wrapper = await mountSuspended(ComparisonDiffTab, { props: { comparison } })
     expect(wrapper.text()).toContain('M. Torres')
+    expect(wrapper.text()).toContain('↓5')
+  })
+
+  it('shows rank change with upward delta badge (↑N for positive delta)', async () => {
+    const comparison: CompareResult = {
+      ...emptyComparison,
+      rankChanges: [
+        { employee_number: '10006', name: 'P. Kim', old_rank: 100, new_rank: 103, delta: 3 },
+      ],
+    }
+    const wrapper = await mountSuspended(ComparisonDiffTab, { props: { comparison } })
+    expect(wrapper.text()).toContain('P. Kim')
+    expect(wrapper.text()).toContain('↑3')
   })
 
   it('highlights the user row when userEmployeeNumber matches', async () => {
