@@ -102,7 +102,7 @@ function currentQual(row: DiffRow): string {
     <!-- Diff list -->
     <div v-else class="border border-(--ui-border) rounded-lg overflow-hidden text-sm">
       <!-- Header -->
-      <div class="grid grid-cols-[3rem_1fr_auto_auto] bg-(--ui-bg-elevated) divide-x divide-(--ui-border) font-medium text-(--ui-text-muted) text-xs uppercase tracking-wide">
+      <div class="grid grid-cols-[3rem_1fr_auto_auto] bg-(--ui-bg-elevated) font-medium text-(--ui-text-muted) text-xs uppercase tracking-wide">
         <div class="px-3 py-2 text-right">#</div>
         <div class="px-3 py-2">Name</div>
         <div class="px-3 py-2 hidden sm:block">Qual</div>
@@ -115,7 +115,7 @@ function currentQual(row: DiffRow): string {
           v-for="row in paginatedRows"
           :key="`${row.kind}-${row.employee_number}`"
           :data-kind="row.kind"
-          class="grid grid-cols-[3rem_1fr_auto_auto] divide-x divide-(--ui-border) items-center transition-colors"
+          class="grid grid-cols-[3rem_1fr_auto_auto] items-center transition-colors"
           :class="rowBgClass(row)"
         >
           <!-- Seniority number -->
