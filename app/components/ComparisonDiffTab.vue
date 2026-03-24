@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { CompareResult, RetiredPilot, DepartedPilot, QualMove, RankChange, NewHire } from '~/utils/seniority-compare'
+import type { CompareResult } from '~/utils/seniority-compare'
 
 const props = defineProps<{
   comparison: CompareResult

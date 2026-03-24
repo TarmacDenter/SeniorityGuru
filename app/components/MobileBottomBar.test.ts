@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { mountSuspended } from '@nuxt/test-utils/runtime'
-import { mockNuxtImport } from '@nuxt/test-utils/runtime'
+import { mountSuspended, mockNuxtImport } from '@nuxt/test-utils/runtime'
 import MobileBottomBar from './MobileBottomBar.vue'
 
 mockNuxtImport('useRoute', () => () => ({ path: '/dashboard', query: {} }))
