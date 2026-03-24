@@ -27,9 +27,9 @@ const qualTrajectoryDeltas = demographics.trajectoryDeltas
 </script>
 
 <template>
-  <div class="-m-4 sm:-m-6 flex flex-col h-[calc(100%+2rem)] sm:h-[calc(100%+3rem)]">
+  <div class="sm:-m-6 sm:flex sm:flex-col sm:h-[calc(100%+3rem)]">
     <!-- Loading skeleton -->
-    <div v-if="loading" class="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
+    <div v-if="loading" class="p-4 sm:p-6 space-y-4">
       <USkeleton class="h-10 w-48" />
       <USkeleton class="h-64" />
       <USkeleton class="h-48" />
@@ -51,7 +51,7 @@ const qualTrajectoryDeltas = demographics.trajectoryDeltas
     <DashboardGrowthBar v-model="growthConfig" />
 
     <!-- Scrollable content -->
-    <div class="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
+    <div class="p-4 sm:p-6 space-y-6">
       <!-- About this view collapsible -->
       <UCollapsible class="flex flex-col gap-2">
         <UButton

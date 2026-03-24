@@ -113,10 +113,8 @@ onMounted(async () => {
         </template>
       </UDashboardToolbar>
 
-      <!-- Mobile-only: tab bar and list selector (desktop uses UDashboardToolbar above) -->
-      <div class="sm:hidden overflow-x-auto border-b border-(--ui-border)">
-        <UTabs v-model="activeTab" :items="tabs" :content="false" variant="link" size="sm" class="min-w-max px-2" />
-      </div>
+      <!-- Mobile-only: scrollable tab chip row -->
+      <DashboardTabChips v-model="activeTab" :tabs="tabs" />
       <div v-if="listOptions.length > 1" class="sm:hidden flex items-center gap-2 px-3 py-1.5 border-b border-(--ui-border)">
         <USelectMenu
           v-model="selectedListId"
