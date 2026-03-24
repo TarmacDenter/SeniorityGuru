@@ -23,6 +23,12 @@ describe('MobileBottomBar', () => {
     expect(wrapper.find('nav').classes()).toContain('sm:hidden')
   })
 
+  it('sets aria-current="page" on the active link', async () => {
+    const wrapper = await mountSuspended(MobileBottomBar)
+    expect(wrapper.find('a[href="/dashboard"]').attributes('aria-current')).toBe('page')
+    expect(wrapper.find('a[href="/settings"]').attributes('aria-current')).toBeUndefined()
+  })
+
   it('marks Dashboard active on /dashboard', async () => {
     const wrapper = await mountSuspended(MobileBottomBar)
     expect(wrapper.find('a[href="/dashboard"]').classes()).toContain('text-primary')

@@ -25,6 +25,7 @@ function isActive(to: string) {
       :to="item.to"
       class="flex flex-col items-center justify-center flex-1 py-2 gap-0.5 text-xs transition-colors"
       :class="isActive(item.to) ? 'text-primary' : 'text-(--ui-text-muted)'"
+      :aria-current="isActive(item.to) ? 'page' : undefined"
     >
       <UIcon :name="item.icon" class="size-5" />
       <span>{{ item.label }}</span>
