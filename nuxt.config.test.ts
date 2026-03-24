@@ -18,7 +18,7 @@ describe('nuxt.config pwa manifest', () => {
   it('has required top-level fields', () => {
     expect(manifest.name).toBeTruthy()
     expect(manifest.short_name).toBeTruthy()
-    expect(manifest.start_url).toBe('/')
+    expect(manifest.start_url).toBe('/dashboard')
     expect(manifest.display).toBe('standalone')
     expect(manifest.theme_color).toBeTruthy()
     expect(manifest.background_color).toBeTruthy()
