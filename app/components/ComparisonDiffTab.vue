@@ -6,22 +6,24 @@ const props = defineProps<{
   userEmployeeNumber?: string
 }>()
 
-const PAGE_SIZE = 50
+const PAGE_SIZE_OPTIONS = [25, 50, 100, 200]
 
 const showRankChanges = ref(false)
 const page = ref(1)
+const pageSize = ref(50)
 
 const filteredRows = computed(() =>
   props.rows.filter(r => showRankChanges.value || r.kind !== 'rankChange'),
 )
 
 const paginatedRows = computed(() =>
-  filteredRows.value.slice((page.value - 1) * PAGE_SIZE, page.value * PAGE_SIZE),
+  filteredRows.value.slice((page.value - 1) * pageSize.value, page.value * pageSize.value),
 )
 
 const isEmpty = computed(() => filteredRows.value.length === 0)
 
 watch(showRankChanges, () => { page.value = 1 })
+watch(pageSize, () => { page.value = 1 })
 
 function rowBgClass(row: DiffRow): string {
   if (row.kind === 'retired') return 'bg-error/10'
@@ -219,12 +221,23 @@ function currentQual(row: DiffRow): string {
     </div>
 
     <!-- Pagination -->
-    <div v-if="filteredRows.length > PAGE_SIZE" class="flex items-center justify-between mt-3 text-sm text-(--ui-text-muted)">
-      <span>{{ filteredRows.length }} changes</span>
+    <div v-if="filteredRows.length > 0" class="flex items-center justify-between mt-3 text-sm text-(--ui-text-muted)">
+      <div class="flex items-center gap-2">
+        <span>Rows per page</span>
+        <USelect
+          v-model="pageSize"
+          :items="PAGE_SIZE_OPTIONS"
+          size="xs"
+          color="neutral"
+          variant="subtle"
+          class="w-16"
+        />
+      </div>
       <UPagination
+        v-if="filteredRows.length > pageSize"
         v-model:page="page"
         :total="filteredRows.length"
-        :items-per-page="PAGE_SIZE"
+        :items-per-page="pageSize"
         size="sm"
         color="neutral"
         variant="subtle"
