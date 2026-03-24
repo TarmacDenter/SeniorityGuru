@@ -1,14 +1,13 @@
 <script setup lang="ts">
 import { useSeniorityCore, useQualAnalytics } from '~/composables/seniority'
-import { useUserStore } from '~/stores/user'
 import { DEFAULT_GROWTH_CONFIG } from '~/utils/growth-config'
 import type { GrowthConfig } from '~/utils/growth-config'
 
 defineProps<{ loading?: boolean }>()
 
-const userStore = useUserStore()
 const { hasData, newHire } = useSeniorityCore()
-const hasEmployeeNumber = computed(() => !!userStore.employeeNumber || !!newHire.syntheticEntry.value)
+const { employeeNumber } = useUser()
+const hasEmployeeNumber = computed(() => !!employeeNumber.value || !!newHire.syntheticEntry.value)
 
 const growthConfig = ref<GrowthConfig>({ ...DEFAULT_GROWTH_CONFIG })
 const projections = useQualAnalytics(growthConfig)

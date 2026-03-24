@@ -1,19 +1,16 @@
 <script setup lang="ts">
-import { useSeniorityStore } from '~/stores/seniority'
 import { useSeniorityCore, useStanding, useTrajectory, useQualAnalytics } from '~/composables/seniority'
 import { DEFAULT_GROWTH_CONFIG } from '~/utils/growth-config'
 import type { GrowthConfig } from '~/utils/growth-config'
 
 defineProps<{ loading?: boolean }>()
 
-const seniorityStore = useSeniorityStore()
-const { hasData, hasAnchor, newHire } = useSeniorityCore()
+const { hasData, hasAnchor, newHire, entries } = useSeniorityCore()
 const hasEmployeeNumber = computed(() => hasAnchor.value || !!newHire.syntheticEntry.value)
 
 const growthConfig = ref<GrowthConfig>({ ...DEFAULT_GROWTH_CONFIG })
 
 const { rankCard } = useStanding()
-const entries = computed(() => seniorityStore.entries)
 
 const {
   chartData: trajectoryChartData,

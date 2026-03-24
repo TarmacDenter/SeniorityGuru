@@ -1,15 +1,12 @@
 <script setup lang="ts">
 import type { TableColumn } from '@nuxt/ui'
-import { useSeniorityStore } from '~/stores/seniority'
-import { useUserStore } from '~/stores/user'
 import { useSeniorityCore } from '~/composables/seniority'
 import type { UpcomingRetirementRow } from '~/utils/seniority-engine'
 
-const seniorityStore = useSeniorityStore()
-const userStore = useUserStore()
-const { lens, hasData } = useSeniorityCore()
+const { lens, hasData, entries } = useSeniorityCore()
+const { employeeNumber } = useUser()
 
-const hasEmployeeNumber = computed(() => !!userStore.employeeNumber)
+const hasEmployeeNumber = computed(() => !!employeeNumber.value)
 
 // ── Filter state ────────────────────────────────────────────────────────────
 const yearsHorizon = ref<1 | 2 | 3 | 5 | number>(2)
@@ -36,13 +33,13 @@ function toggleSort(key: SortKey) {
 
 // ── Qual options ─────────────────────────────────────────────────────────────
 const availableBases = computed(() =>
-  [...new Set(seniorityStore.entries.map(e => e.base).filter(Boolean))].sort(),
+  [...new Set(entries.value.map(e => e.base).filter(Boolean))].sort(),
 )
 const availableSeats = computed(() =>
-  [...new Set(seniorityStore.entries.map(e => e.seat).filter(Boolean))].sort(),
+  [...new Set(entries.value.map(e => e.seat).filter(Boolean))].sort(),
 )
 const availableFleets = computed(() =>
-  [...new Set(seniorityStore.entries.map(e => e.fleet).filter(Boolean))].sort(),
+  [...new Set(entries.value.map(e => e.fleet).filter(Boolean))].sort(),
 )
 
 // ── Rows ─────────────────────────────────────────────────────────────────────

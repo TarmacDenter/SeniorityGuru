@@ -2,7 +2,7 @@
 import type { TableColumn, DropdownMenuItem } from '@nuxt/ui'
 import type { LocalSeniorityList } from '~/utils/db'
 import { sortableHeader } from '~/utils/sortableHeader'
-import { useSeniorityStore } from '~/stores/seniority'
+import { useSeniorityLists } from '~/composables/seniority'
 
 definePageMeta({
   layout: 'dashboard',
@@ -10,7 +10,7 @@ definePageMeta({
 
 type SeniorityList = LocalSeniorityList
 
-const seniorityStore = useSeniorityStore()
+const { lists, listsLoading, listsError, fetchLists, deleteList: storeDeleteList, updateList: storeUpdateList } = useSeniorityLists()
 const toast = useToast()
 
 const {
@@ -59,7 +59,7 @@ async function saveEdit() {
 
   saving.value = true
   try {
-    await seniorityStore.updateList(editListId.value, {
+    await storeUpdateList(editListId.value, {
       ...(editState.title && { title: editState.title }),
       effectiveDate: editState.effectiveDate,
     })
@@ -89,7 +89,7 @@ async function doDelete() {
 
   deleting.value = deleteTarget.value.id
   try {
-    await seniorityStore.deleteList(deleteTarget.value.id)
+    await storeDeleteList(deleteTarget.value.id)
     toast.add({ title: 'List deleted', color: 'success' })
     deleteOpen.value = false
   }
@@ -126,17 +126,15 @@ function getDropdownItems(list: SeniorityList): DropdownMenuItem[][] {
 // Mobile card list follows the same filter as the desktop table
 const filteredLists = computed(() => {
   const q = globalFilter.value.trim().toLowerCase()
-  if (!q) return seniorityStore.lists
-  return seniorityStore.lists.filter(l =>
+  if (!q) return lists.value
+  return lists.value.filter(l =>
     (l.title ?? '').toLowerCase().includes(q) || l.effectiveDate.toLowerCase().includes(q),
   )
 })
 
 // --- Init ---
 onMounted(async () => {
-  if (!seniorityStore.lists.length) {
-    await seniorityStore.fetchLists()
-  }
+  await fetchLists()
 })
 </script>
 
@@ -152,7 +150,7 @@ onMounted(async () => {
 
     <template #body>
       <div class="p-4 space-y-3">
-        <UAlert v-if="seniorityStore.listsError" icon="i-lucide-alert-triangle" color="error" :title="seniorityStore.listsError" />
+        <UAlert v-if="listsError" icon="i-lucide-alert-triangle" color="error" :title="listsError" />
 
         <UInput
           v-model="globalFilter"
@@ -172,7 +170,7 @@ onMounted(async () => {
               <UButton icon="i-lucide-ellipsis" variant="ghost" size="xs" />
             </UDropdownMenu>
           </div>
-          <div v-if="seniorityStore.lists.length === 0" class="px-4 py-8 text-center text-muted text-sm">
+          <div v-if="lists.length === 0" class="px-4 py-8 text-center text-muted text-sm">
             No lists uploaded yet.
           </div>
           <div v-else-if="filteredLists.length === 0" class="px-4 py-8 text-center text-muted text-sm">
@@ -187,9 +185,9 @@ onMounted(async () => {
             v-model:global-filter="globalFilter"
             v-model:pagination="pagination"
             v-model:sorting="sorting"
-            :data="seniorityStore.lists"
+            :data="lists"
             :columns="columns"
-            :loading="seniorityStore.listsLoading"
+            :loading="listsLoading"
             :pagination-options="paginationOptions"
           >
             <template #actions-cell="{ row }">

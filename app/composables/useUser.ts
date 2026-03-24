@@ -29,5 +29,13 @@ export function useUser() {
     }
   }
 
-  return { employeeNumber, retirementAge, loading, error, entry, savePreference }
+  async function loadPreferences() {
+    await store.loadPreferences()
+  }
+
+  function clearPreferences() {
+    store.clearPreferences()
+  }
+
+  return { employeeNumber, retirementAge, loading, error, entry, savePreference, loadPreferences, clearPreferences }
 }

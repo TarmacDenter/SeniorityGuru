@@ -14,18 +14,14 @@ const { mockHasData, mockLens } = vi.hoisted(() => {
 
 const mockStoreState = { employeeNumber: null as string | null, entries: [] as unknown[] }
 
-mockNuxtImport('useSeniorityStore', () => () => ({
-  get entries() { return mockStoreState.entries },
-  lists: [],
-}))
-
-mockNuxtImport('useUserStore', () => () => ({
-  get employeeNumber() { return mockStoreState.employeeNumber },
-}))
-
 mockNuxtImport('useSeniorityCore', () => () => ({
   hasData: mockHasData,
   lens: mockLens,
+  get entries() { return { value: mockStoreState.entries } },
+}))
+
+mockNuxtImport('useUser', () => () => ({
+  get employeeNumber() { return { value: mockStoreState.employeeNumber } },
 }))
 
 const sampleRows: UpcomingRetirementRow[] = [

@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { db } from '~/utils/db'
-import { useSeniorityStore } from '~/stores/seniority'
-import { useUserStore } from '~/stores/user'
+import { useSeniorityLists } from '~/composables/seniority'
 
 const toast = useToast()
 const confirm = ref(false)
 const loading = ref(false)
+
+const { clearStore } = useSeniorityLists()
+const { clearPreferences } = useUser()
 
 async function clearAll() {
   loading.value = true
@@ -13,10 +15,8 @@ async function clearAll() {
   await db.seniorityEntries.clear()
   await db.preferences.clear()
 
-  const seniorityStore = useSeniorityStore()
-  const userStore = useUserStore()
-  seniorityStore.clearStore()
-  userStore.clearPreferences()
+  clearStore()
+  clearPreferences()
 
   loading.value = false
   confirm.value = false

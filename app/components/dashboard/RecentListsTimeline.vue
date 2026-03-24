@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useSeniorityStore } from '~/stores/seniority'
+import { useSeniorityLists } from '~/composables/seniority'
 
 interface ListItem {
   id: number
@@ -13,14 +13,14 @@ defineProps<{
   lists: ListItem[]
 }>()
 
-const seniorityStore = useSeniorityStore()
+const { deleteList } = useSeniorityLists()
 const toast = useToast()
 const deletingId = ref<number | null>(null)
 
 async function confirmDelete(list: ListItem) {
   deletingId.value = list.id
   try {
-    await seniorityStore.deleteList(list.id)
+    await deleteList(list.id)
     toast.add({ title: 'List deleted', description: list.title, color: 'success' })
   }
   catch {

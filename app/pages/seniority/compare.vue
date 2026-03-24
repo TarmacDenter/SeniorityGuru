@@ -1,18 +1,16 @@
 <script setup lang="ts">
-import { useSeniorityStore } from '~/stores/seniority'
-import { useUserStore } from '~/stores/user'
-import { useSeniorityCompare } from '~/composables/seniority'
+import { useSeniorityCompare, useSeniorityLists } from '~/composables/seniority'
 import { retiredColumns, departedColumns, qualMoveColumns, rankChangeColumns, newHireColumns, qualMoveFilters } from '~/utils/column-definitions'
 
 definePageMeta({
   layout: 'dashboard',
 })
 
-const seniorityStore = useSeniorityStore()
-const userStore = useUserStore()
+const { lists, listOptions, fetchLists } = useSeniorityLists()
+const { employeeNumber } = useUser()
 const route = useRoute()
 
-const userEmployeeNumber = computed(() => userStore.employeeNumber ?? undefined)
+const userEmployeeNumber = computed(() => employeeNumber.value ?? undefined)
 
 const listIdA = ref<number | undefined>(route.query.a ? Number(route.query.a) : undefined)
 const listIdB = ref<number | undefined>(route.query.b ? Number(route.query.b) : undefined)
@@ -31,23 +29,14 @@ watch([listIdA, listIdB], async ([a, b], [oldA, oldB]) => {
 
 // Load lists for the selectors
 onMounted(async () => {
-  if (!seniorityStore.lists.length) {
-    await seniorityStore.fetchLists()
-  }
+  await fetchLists()
   // Auto-select most recent two if not already set.
   // Fires watcher but oldA/oldB are both undefined → guard catches it.
-  if (!listIdA.value && !listIdB.value && seniorityStore.lists.length >= 2) {
-    listIdA.value = seniorityStore.lists[1]!.id // second most recent = older
-    listIdB.value = seniorityStore.lists[0]!.id // most recent = newer
+  if (!listIdA.value && !listIdB.value && lists.value.length >= 2) {
+    listIdA.value = lists.value[1]!.id // second most recent = older
+    listIdB.value = lists.value[0]!.id // most recent = newer
   }
 })
-
-const listOptions = computed(() =>
-  seniorityStore.lists.map(l => ({
-    label: l.title ? `${l.title} — ${l.effectiveDate}` : l.effectiveDate,
-    value: l.id,
-  })),
-)
 
 const summaryStats = computed(() => {
   if (!comparison.value) return []

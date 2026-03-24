@@ -5,6 +5,8 @@ import { mountSuspended, mockNuxtImport } from '@nuxt/test-utils/runtime'
 // ---------------------------------------------------------------------------
 // Hoisted mocks
 // ---------------------------------------------------------------------------
+type ListItem = { id: number; title: string | null; effectiveDate: string; createdAt: string }
+
 const {
   mockNavigateTo,
   mockRouteQuery,
@@ -12,16 +14,17 @@ const {
   mockFetchLists,
   mockFetchEntries,
   mockLists,
-  mockCurrentListId,
-} = vi.hoisted(() => ({
-  mockNavigateTo: vi.fn(),
-  mockRouteQuery: { value: {} as Record<string, string> },
-  mockLoadPreferences: vi.fn(),
-  mockFetchLists: vi.fn(),
-  mockFetchEntries: vi.fn(),
-  mockLists: { value: [] as { id: number; title: string | null; effectiveDate: string; createdAt: string }[] },
-  mockCurrentListId: { value: null as number | null },
-}))
+} = vi.hoisted(() => {
+  const { ref: vRef } = require('vue')
+  return {
+    mockNavigateTo: vi.fn(),
+    mockRouteQuery: { value: {} as Record<string, string> },
+    mockLoadPreferences: vi.fn(),
+    mockFetchLists: vi.fn(),
+    mockFetchEntries: vi.fn(),
+    mockLists: vRef([] as ListItem[]),
+  }
+})
 
 // ---------------------------------------------------------------------------
 // Nuxt auto-import mocks
@@ -37,10 +40,7 @@ mockNuxtImport('useRoute', () => () => ({
 // ---------------------------------------------------------------------------
 vi.mock('~/stores/seniority', () => ({
   useSeniorityStore: () => ({
-    get lists() { return mockLists.value },
-    get currentListId() { return mockCurrentListId.value },
-    fetchLists: mockFetchLists,
-    fetchEntries: mockFetchEntries,
+    entries: [],
   }),
 }))
 
@@ -48,6 +48,16 @@ vi.mock('~/stores/user', () => ({
   useUserStore: () => ({
     employeeNumber: null,
     loadPreferences: mockLoadPreferences,
+  }),
+}))
+
+vi.mock('~/composables/seniority/modules/useSeniorityLists', () => ({
+  useSeniorityLists: () => ({
+    lists: mockLists,
+    listsLoading: ref(false),
+    listsError: ref(null),
+    fetchLists: mockFetchLists,
+    fetchEntries: mockFetchEntries,
   }),
 }))
 
@@ -92,7 +102,6 @@ describe('dashboard.vue — route-synced ref / watcher race condition', () => {
     vi.clearAllMocks()
     mockRouteQuery.value = {}
     mockLists.value = []
-    mockCurrentListId.value = null
     mockFetchLists.mockResolvedValue(undefined)
     mockLoadPreferences.mockResolvedValue(undefined)
     mockFetchEntries.mockResolvedValue(undefined)
