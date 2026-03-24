@@ -48,7 +48,7 @@ describe('ComparisonDiffTab', () => {
     expect(wrapper.text()).toContain('K. Foster')
   })
 
-  it('shows qual move entry in output', async () => {
+  it('shows qual move with seat-change badge label (FO→CA)', async () => {
     const comparison: CompareResult = {
       ...emptyComparison,
       qualMoves: [
@@ -65,10 +65,31 @@ describe('ComparisonDiffTab', () => {
         },
       ],
     }
-    const wrapper = await mountSuspended(ComparisonDiffTab, {
-      props: { comparison },
-    })
+    const wrapper = await mountSuspended(ComparisonDiffTab, { props: { comparison } })
     expect(wrapper.text()).toContain('R. Chen')
+    expect(wrapper.text()).toContain('FO→CA')
+  })
+
+  it('shows qual move with generic badge when only base changes', async () => {
+    const comparison: CompareResult = {
+      ...emptyComparison,
+      qualMoves: [
+        {
+          employee_number: '10007',
+          name: 'A. Reyes',
+          seniority_number: 900,
+          old_seat: 'CA',
+          new_seat: 'CA',
+          old_fleet: '737',
+          new_fleet: '737',
+          old_base: 'DFW',
+          new_base: 'ORD',
+        },
+      ],
+    }
+    const wrapper = await mountSuspended(ComparisonDiffTab, { props: { comparison } })
+    expect(wrapper.text()).toContain('A. Reyes')
+    expect(wrapper.text()).toContain('Qual Move')
   })
 
   it('shows new hire entry in output', async () => {
