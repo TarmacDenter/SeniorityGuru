@@ -59,4 +59,11 @@ describe('MobileBottomBar', () => {
     const wrapper = await mountSuspended(MobileBottomBar)
     expect(wrapper.find('a[href="/settings"]').classes()).toContain('text-primary')
   })
+
+  it('marks Upload active on nested path /seniority/upload/step', async () => {
+    mockRoute.path = '/seniority/upload/step'
+    const wrapper = await mountSuspended(MobileBottomBar)
+    expect(wrapper.find('a[href="/seniority/upload"]').classes()).toContain('text-primary')
+    expect(wrapper.find('a[href="/seniority/lists"]').classes()).not.toContain('text-primary')
+  })
 })

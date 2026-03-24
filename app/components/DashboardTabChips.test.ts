@@ -36,6 +36,17 @@ describe('DashboardTabChips', () => {
     expect(demographicsBtn?.classes()).toContain('text-primary')
   })
 
+  it('inactive tabs do not have the active class', async () => {
+    const wrapper = await mountSuspended(DashboardTabChips, {
+      props: { tabs, modelValue: 'demographics' },
+    })
+    const buttons = wrapper.findAll('button')
+    const statusBtn = buttons.find(b => b.text().includes('My Status'))
+    const trajectoryBtn = buttons.find(b => b.text().includes('Trajectory'))
+    expect(statusBtn?.classes()).not.toContain('text-primary')
+    expect(trajectoryBtn?.classes()).not.toContain('text-primary')
+  })
+
   it('emits update:modelValue when a tab is clicked', async () => {
     const wrapper = await mountSuspended(DashboardTabChips, {
       props: { tabs, modelValue: 'status' },
