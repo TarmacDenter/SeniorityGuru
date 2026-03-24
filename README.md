@@ -1,38 +1,125 @@
-# Seniority Guru
+# SeniorityGuru
 
-Track your seniority number, project where it's headed, and stop guessing when you'll hold a line.
+A local-first progressive web app for airline pilots to track seniority standing, project career trajectory, and understand retirement-driven rank movement. No accounts, no server, no data ever leaves the device.
 
-Upload your airline's seniority list (CSV or XLSX), and the app parses it, maps columns, and gives you:
+Live at [seniorityguru.com](https://seniorityguru.com) · Built with Nuxt 4 + Dexie + Vercel
 
-- **Your rank** across the entire list and within each base/seat/fleet
-- **Seniority trajectory** — projected rank over time as retirements open slots
-- **Retirement projections** — who's aging out and when, charted by year
-- **Base/seat breakdown** — how you stack up in each domicile
-- **Comparison tools** — side-by-side diff across two lists with categorized changes
-- **List management** — view, edit, and delete your uploaded lists
+---
 
-All data lives on your device. Nothing is sent to a server.
+## What it does
 
-## Shipped
+Pilots upload their airline's seniority list (CSV or XLSX). The app parses it, maps columns, validates entries, and derives a full analytics picture:
 
-- CSV/XLSX upload with column mapping and validation
-- Seniority dashboard with rank, demographics, position, retirements, and projections
-- List comparison with diff categories and upgrade tracking
-- List management (view, edit, delete)
-- Settings (employee number, retirement age, clear all data)
-- PWA — installable, works offline
+- **Rank & standing** — seniority number, percentile, position by base/seat/fleet
+- **Trajectory** — projected rank over time as retirements open slots above you
+- **Retirement analysis** — who's aging out, when, and how it affects your rank
+- **Demographics** — age distribution, years of service, cohort breakdowns
+- **List comparison** — unified diff between two lists: retirements, departures, upgrades, new hires
+- **List management** — upload, view, and delete historical lists
 
-## Roadmap
+---
 
-- Historical trend tracking (your actual rank across multiple lists over time)
-- Data export (CSV/PDF)
-- Notifications (retirement milestones)
-- Saved scenarios / bookmarks
-- Advanced analytics (cohort analysis, attrition forecasting, cross-list trend tracking)
+## Architecture
+
+### Local-first, no SSR
+
+`ssr: false` globally. Pure SPA. No server routes, no Nitro, no auth, no database. All data lives in the user's browser via IndexedDB.
+
+This is an intentional constraint — pilots are cautious about where their employer's data goes. Zero-server means zero data risk.
+
+### Data layer — Dexie (IndexedDB)
+
+`app/utils/db.ts` defines `SeniorityGuruDB` with three tables:
+
+| Table | Contents |
+|---|---|
+| `seniorityLists` | List metadata: title, effective date, created at |
+| `seniorityEntries` | Individual pilot rows linked to a list by `listId` |
+| `preferences` | Key-value store for user settings |
+
+Schema changes are handled by Dexie version blocks. Never remove or reorder a version — Dexie needs the full history to upgrade users already on old versions.
+
+### Module boundary
+
+The codebase enforces a strict layering rule: **components never touch `db` directly**.
+
+```
+Component → composable/store → db
+```
+
+- `useSeniorityStore()` — exposes lists, entries, fetch/delete actions. Calls `db` internally.
+- `useUser()` — exposes preferences (employee number, retirement age). Calls `db` internally.
+- `useSeniorityUpload()` — orchestrates the upload wizard. Writes to `db` on confirm.
+
+Components call composables and read store refs. If a component imports `db`, something has leaked through the wrong layer.
+
+### Seniority engine
+
+`app/utils/seniority-engine/` is the analytical core — pure functions with no side effects:
+
+- **Snapshot** — builds a point-in-time view of the list with computed rank and percentile
+- **Lens** — filters the snapshot by qual (base/seat/fleet) and anchors it to the user
+- **Trajectory** — projects rank over time using retirement dates and a growth model
+
+The engine operates on validated `SeniorityEntry` objects. All computation is pure — no store access, no Dexie calls, easily unit-testable.
+
+### Validation boundary
+
+Zod schemas live in `app/utils/schemas/`. Validation happens once at the upload boundary. Downstream code can trust the types.
+
+---
 
 ## Stack
 
-Nuxt 4 · Nuxt UI · Pinia · Dexie (IndexedDB) · Vercel · Zod · Chart.js · Vitest
+| | |
+|---|---|
+| **Framework** | Nuxt 4 (SPA mode) |
+| **UI** | Nuxt UI v3 (Tailwind CSS) |
+| **State** | Pinia |
+| **Persistence** | Dexie.js (IndexedDB) |
+| **Validation** | Zod |
+| **Charts** | Chart.js |
+| **Testing** | Vitest + @nuxt/test-utils + Playwright |
+| **Deploy** | Vercel |
+
+---
+
+## Project layout
+
+```
+app/
+  pages/
+    index.vue               # Landing/marketing page
+    dashboard.vue           # Main analytics hub (6 tabs)
+    settings.vue            # User preferences
+    seniority/
+      upload.vue            # 4-step upload wizard
+      lists.vue             # Uploaded list management
+      compare.vue           # Unified diff between two lists
+  layouts/
+    default.vue             # Marketing layout (header + footer)
+    dashboard.vue           # App layout (sidebar + content)
+  composables/
+    seniority.ts            # useSeniorityUpload, useSeniorityCompare, useStanding
+    user.ts                 # useUser (preferences boundary)
+    nav.ts                  # useSeniorityNav (sidebar navigation items)
+  stores/
+    seniority.ts            # Lists + entries state
+    user.ts                 # Preferences state
+  components/
+    dashboard/              # Tab components, cards, charts
+    analytics/              # Chart.js wrappers
+    demo/                   # Interactive landing page demos
+  utils/
+    db.ts                   # Dexie database + schema
+    db-adapters.ts          # Raw DB rows → domain types
+    schemas/                # Zod entry + preference schemas
+    seniority-engine/       # Snapshot, lens, trajectory (pure functions)
+    column-definitions.ts   # UTable column configs for compare views
+e2e/                        # Playwright end-to-end specs
+```
+
+---
 
 ## Setup
 
@@ -43,54 +130,51 @@ npm run dev    # http://localhost:3000
 
 No environment variables required for local development.
 
+---
+
 ## Commands
 
 | Command | What it does |
 |---|---|
 | `npm run dev` | Dev server |
-| `npm test` | Vitest |
-| `npm run typecheck` | `vue-tsc` |
+| `npm test` | Vitest (unit + component) |
+| `npm run typecheck` | vue-tsc |
 | `npm run lint` | ESLint |
 | `npm run build` | Production build |
+| `npm run test:e2e` | Playwright (requires dev server running) |
 
-## Project Layout
+---
 
+## Testing
+
+Tests live next to the files they test (co-location). Three environments:
+
+- `@vitest-environment node` — schema and engine tests. Fast, no Nuxt startup. Use for pure functions and Zod schemas.
+- `@vitest-environment node` with `fake-indexeddb/auto` — Dexie unit tests. Tests the data layer in isolation.
+- Default (`nuxt` environment) — composable and component tests. Use `mountSuspended` for components, `mockNuxtImport` for Nuxt auto-imports, `vi.mock('~/utils/db')` to avoid IndexedDB in happy-dom.
+
+All features and bug fixes require tests. Before merging:
+
+```bash
+npm run lint && npm run typecheck && npm test
 ```
-app/
-  pages/          # seniority/, index.vue, dashboard.vue, settings.vue
-  composables/    # useStanding, useSeniorityUpload, useTrajectory, etc.
-  stores/         # Pinia — seniority.ts, user.ts
-  components/     # Dashboard cards, upload flow, navbar, settings
-  utils/
-    db.ts         # Dexie database definition (IndexedDB)
-    db-adapters.ts
-    schemas/      # Zod schemas
-    seniority-engine/  # Pure computation — snapshot, lens, trajectory
-e2e/              # Playwright specs
-```
 
-## Architecture Notes
+---
 
-**Data:** All seniority data is stored in IndexedDB via Dexie.js (`app/utils/db.ts`). No server, no database, no account required. `db.seniorityLists`, `db.seniorityEntries`, and `db.preferences` are the three tables.
+## Git workflow
 
-**Rendering:** Pure SPA (`ssr: false` globally). No server routes.
+Linear dev with rebase. Conventional Commits enforced by commitlint + husky.
 
-**Validation:** Zod schemas in `app/utils/schemas/` validate at the upload boundary. The seniority engine operates on validated `SeniorityEntry` objects.
+| Branch | Purpose |
+|---|---|
+| `main` | Production. Protected. Auto-tagged by semantic-release. |
+| `dev` | Integration. Unprotected — push directly, force-push for history revision. |
+| `feature/*` | Branch from `dev`, rebase + fast-forward merge back. |
+| `hotfix/*` | Branch from `main`, cherry-pick to `dev` after. |
 
-**Schema migrations:** Handled by Dexie version declarations in `db.ts`. Never remove a version block — Dexie needs the full history to upgrade users on old versions.
+Pre-push hook runs typecheck + tests. CI runs both on push to `dev` and PRs to `main`. After a squash merge to `main`, `sync-dev.yml` automatically rebases `dev` onto `main` — no manual realignment needed.
 
-**Testing:** Co-located test files. Schema and engine tests use `// @vitest-environment node` to skip Nuxt startup. All features and fixes require tests — `npm test` must pass before merge.
-
-## Git Workflow
-
-Linear dev with rebase. Conventional Commits enforced by commitlint.
-
-- `main` — production, protected, auto-tagged by semantic-release
-- `dev` — integration, unprotected (push directly, force-push for history revision)
-- `feature/*` — branch from `dev`, rebase + fast-forward merge back
-- `hotfix/*` — branch from `main` for emergencies, cherry-pick to `dev` after
-
-Quality gates: pre-push hook runs typecheck + tests. CI runs both on push to `dev` and PRs to `main`.
+---
 
 ## License
 

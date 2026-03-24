@@ -1,6 +1,6 @@
 <script setup lang="ts">
-const navItems = useSeniorityNav()
-const sidebarOpen = useState<boolean>('dashboardSidebarOpen', () => false) // shared with nav composable
+const navItems = useSeniorityNav();
+const sidebarOpen = useState<boolean>('dashboardSidebarOpen', () => false); // shared with nav composable
 </script>
 
 <template>
@@ -12,14 +12,8 @@ const sidebarOpen = useState<boolean>('dashboardSidebarOpen', () => false) // sh
         </template>
 
         <template #default="{ collapsed }">
-          <UNavigationMenu
-            orientation="vertical"
-            :items="navItems"
-            highlight
-            color="primary"
-            :ui="{ link: collapsed ? 'justify-center' : undefined }"
-            class="p-2 flex-1"
-          />
+          <UNavigationMenu orientation="vertical" :items="navItems" highlight color="primary"
+            :ui="{ link: collapsed ? 'justify-center' : undefined }" class="p-2 flex-1" />
         </template>
 
         <template #footer="{ collapsed }">
