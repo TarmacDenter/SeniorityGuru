@@ -11,20 +11,22 @@ A local-first PWA for airline pilots to track and project their seniority standi
 - **No server, no auth, no accounts** — pure SPA (`ssr: false` globally). All data lives in the user's browser via IndexedDB. No Nitro routes, no Supabase, no RLS.
 - **Dexie.js for persistence** — `app/utils/db.ts` defines `SeniorityGuruDB` with three tables: `seniorityLists`, `seniorityEntries`, `preferences`. The singleton `db` export is the only way to read/write data.
 - **Schema migrations via Dexie versions** — add `this.version(N).stores({...}).upgrade(tx => {...})` for each schema change. Never remove or reorder existing version blocks.
-- **Deep module composables** — components call composables and stores; composables call `db` directly or via stores. Components never import `db` directly.
+- **Deep module composables** — pages and components call composables only; stores are internal infrastructure. Composables call `db` directly or via stores. Pages and components never import `db` or `use*Store` directly.
 - **No Docker** — there is no local database to run. `npm install && npm run dev` is the full setup.
 
 ---
 
 ## Data Layer
 
-**Reading data in components and pages:** use store refs — `useSeniorityStore()` for lists and entries, `useUserStore()` for preferences.
+**Reading data in components and pages:** call composables — never import `use*Store` directly in a `.vue` file.
 
 **Writing data:** call composable actions (`useSeniorityUpload`, `useUser`) which write to Dexie and update store state. Do not call `db.*` from component `<script setup>`.
 
-**Composable boundary:** `useUser()` exposes `employeeNumber`, `retirementAge`, `loadPreferences()`, `savePreference()`, `clearPreferences()`. Components call `useUser()`, not `useUserStore` or `db` directly.
+**Composable boundary (hard rule):** Pages and components call composables only — stores are internal infrastructure. If the UI needs data from a store, the fix is to expose it through an existing composable or create a new one.
 
-**Store boundary:** `useSeniorityStore()` exposes `lists`, `entries`, `currentListId`, `fetchLists()`, `fetchEntries()`, `deleteList()`. Components use the store refs; stores call `db`.
+- User/preference data → `useUser()` — exposes `employeeNumber`, `retirementAge`, `loadPreferences()`, `savePreference()`, `clearPreferences()`
+- Seniority list CRUD → `useSeniorityLists()` — exposes `lists`, `listsLoading`, `listsError`, `entriesLoading`, `listOptions`, `fetchLists()`, `fetchEntries()`, `deleteList()`, `updateList()`, `clearStore()`
+- Entries / snapshot / lens → `useSeniorityCore()` — exposes `entries`, `snapshot`, `lens`, `userEntry`, `hasData`, `hasAnchor`, `isNewHireMode`, `newHire`
 
 ### Dexie patterns
 

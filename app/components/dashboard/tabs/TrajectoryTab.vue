@@ -1,19 +1,16 @@
 <script setup lang="ts">
-import { useSeniorityStore } from '~/stores/seniority'
 import { useSeniorityCore, useStanding, useTrajectory, useQualAnalytics } from '~/composables/seniority'
 import { DEFAULT_GROWTH_CONFIG } from '~/utils/growth-config'
 import type { GrowthConfig } from '~/utils/growth-config'
 
 defineProps<{ loading?: boolean }>()
 
-const seniorityStore = useSeniorityStore()
-const { hasData, hasAnchor, newHire } = useSeniorityCore()
+const { hasData, hasAnchor, newHire, entries } = useSeniorityCore()
 const hasEmployeeNumber = computed(() => hasAnchor.value || !!newHire.syntheticEntry.value)
 
 const growthConfig = ref<GrowthConfig>({ ...DEFAULT_GROWTH_CONFIG })
 
 const { rankCard } = useStanding()
-const entries = computed(() => seniorityStore.entries)
 
 const {
   chartData: trajectoryChartData,
@@ -27,9 +24,9 @@ const qualTrajectoryDeltas = demographics.trajectoryDeltas
 </script>
 
 <template>
-  <div class="-m-4 sm:-m-6 flex flex-col h-[calc(100%+2rem)] sm:h-[calc(100%+3rem)]">
+  <div class="sm:-m-6 sm:flex sm:flex-col sm:h-[calc(100%+3rem)]">
     <!-- Loading skeleton -->
-    <div v-if="loading" class="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
+    <div v-if="loading" class="p-4 sm:p-6 space-y-4">
       <USkeleton class="h-10 w-48" />
       <USkeleton class="h-64" />
       <USkeleton class="h-48" />
@@ -51,7 +48,7 @@ const qualTrajectoryDeltas = demographics.trajectoryDeltas
     <DashboardGrowthBar v-model="growthConfig" />
 
     <!-- Scrollable content -->
-    <div class="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
+    <div class="p-4 sm:p-6 space-y-6">
       <!-- About this view collapsible -->
       <UCollapsible class="flex flex-col gap-2">
         <UButton

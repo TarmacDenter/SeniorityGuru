@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useSeniorityCore } from '~/composables/seniority'
 const { newHire: newHireMode } = useSeniorityCore()
-const userStore = useUserStore()
+const { employeeNumber } = useUser()
 </script>
 
 <template>
@@ -11,9 +11,9 @@ const userStore = useUserStore()
     icon="i-lucide-alert-triangle"
     color="warning"
     variant="subtle"
-    :title="userStore.employeeNumber ? 'Employee Number Not Found' : 'No Employee Number Set'"
-    :description="userStore.employeeNumber
-      ? `Employee number '${userStore.employeeNumber}' was not found in the current seniority list.`
+    :title="employeeNumber ? 'Employee Number Not Found' : 'No Employee Number Set'"
+    :description="employeeNumber
+      ? `Employee number '${employeeNumber}' was not found in the current seniority list.`
       : 'Enable New Hire Mode to see projected seniority data as a new hire at the bottom of the list.'"
   >
     <template #actions>

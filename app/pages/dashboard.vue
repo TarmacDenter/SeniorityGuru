@@ -1,7 +1,5 @@
 <script setup lang="ts">
-import { useSeniorityStore } from '~/stores/seniority';
-import { useUserStore } from '~/stores/user';
-import { useSeniorityCore, useStanding } from '~/composables/seniority';
+import { useSeniorityCore, useStanding, useSeniorityLists } from '~/composables/seniority';
 import { useDashboardTabs } from '~/composables/useDashboardTabs';
 import { DEFAULT_TAB } from '~/utils/dashboard-tabs';
 
@@ -20,8 +18,8 @@ watch(activeTab, (tab) => {
   navigateTo({ path: '/dashboard', query }, { replace: true });
 });
 
-const seniorityStore = useSeniorityStore();
-const userStore = useUserStore();
+const { lists, fetchLists, fetchEntries } = useSeniorityLists();
+const { employeeNumber, loadPreferences } = useUser();
 const loading = ref(true);
 
 // Initialize synchronously from the URL so the watcher never sees this as a
@@ -31,7 +29,7 @@ const selectedListId = ref<number | undefined>(
 );
 
 const listOptions = computed(() =>
-  seniorityStore.lists.map((l, i) => ({
+  lists.value.map((l, i) => ({
     id: l.id,
     label: l.title ? `${l.title} (${l.effectiveDate})` : l.effectiveDate,
     isLatest: i === 0,
@@ -44,7 +42,7 @@ const isHistorical = computed(() => {
 });
 
 const selectedList = computed(() =>
-  seniorityStore.lists.find(l => l.id === selectedListId.value),
+  lists.value.find(l => l.id === selectedListId.value),
 );
 
 const navbarDescription = computed(() => {
@@ -55,7 +53,7 @@ const navbarDescription = computed(() => {
 });
 
 const { hasData, hasAnchor: userFound, isNewHireMode, newHire, lens } = useSeniorityCore();
-const hasEmployeeNumber = computed(() => !!userStore.employeeNumber || !!newHire.syntheticEntry.value);
+const hasEmployeeNumber = computed(() => !!employeeNumber.value || !!newHire.syntheticEntry.value);
 const { rankCard, statCards: stats, retirementSnapshot, baseStatus: baseStatusData } = useStanding();
 const trajectoryResult = computed(() => lens.value?.trajectory() ?? null);
 const trajectoryChartData = computed(() =>
@@ -68,7 +66,7 @@ const trajectoryDeltas = computed(() => trajectoryResult.value?.deltas ?? []);
 watch(selectedListId, async (id, oldId) => {
   if (!id || !oldId) return;
   loading.value = true;
-  await seniorityStore.fetchEntries(id);
+  await fetchEntries(id);
   const query: Record<string, string> = { list: String(id) };
   if (activeTab.value !== DEFAULT_TAB) query.tab = activeTab.value;
   await navigateTo({ path: '/dashboard', query }, { replace: true });
@@ -76,17 +74,17 @@ watch(selectedListId, async (id, oldId) => {
 });
 
 onMounted(async () => {
-  await userStore.loadPreferences();
-  await seniorityStore.fetchLists();
+  await loadPreferences();
+  await fetchLists();
 
   // Set a default if the URL had no ?list= param.
   // This fires the watcher but oldId=undefined → the guard catches it.
   if (!selectedListId.value) {
-    selectedListId.value = seniorityStore.lists[0]?.id ?? undefined;
+    selectedListId.value = lists.value[0]?.id ?? undefined;
   }
 
   if (selectedListId.value) {
-    await seniorityStore.fetchEntries(selectedListId.value);
+    await fetchEntries(selectedListId.value);
   }
 
   loading.value = false;
@@ -113,10 +111,8 @@ onMounted(async () => {
         </template>
       </UDashboardToolbar>
 
-      <!-- Mobile-only: tab bar and list selector (desktop uses UDashboardToolbar above) -->
-      <div class="sm:hidden overflow-x-auto border-b border-(--ui-border)">
-        <UTabs v-model="activeTab" :items="tabs" :content="false" variant="link" size="sm" class="min-w-max px-2" />
-      </div>
+      <!-- Mobile-only: scrollable tab chip row -->
+      <DashboardTabChips v-model="activeTab" :tabs="tabs" />
       <div v-if="listOptions.length > 1" class="sm:hidden flex items-center gap-2 px-3 py-1.5 border-b border-(--ui-border)">
         <USelectMenu
           v-model="selectedListId"
@@ -137,7 +133,7 @@ onMounted(async () => {
     <template #body>
       <!-- Empty state: no lists imported yet -->
       <div
-        v-if="!loading && seniorityStore.lists.length === 0"
+        v-if="!loading && lists.length === 0"
         class="flex flex-col items-center justify-center h-full gap-6 py-24 text-center px-4"
       >
         <UIcon name="i-lucide-upload-cloud" class="size-16 text-muted" />

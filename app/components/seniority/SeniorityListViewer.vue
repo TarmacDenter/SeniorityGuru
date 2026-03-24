@@ -5,8 +5,7 @@ import { getPaginationRowModel } from '@tanstack/vue-table';
 import type { Table, Row } from '@tanstack/vue-table';
 import type { TableColumn } from '@nuxt/ui';
 import type { SeniorityEntry } from '~/utils/schemas/seniority-list';
-import { useSeniorityStore } from '~/stores/seniority';
-import { useUserStore } from '~/stores/user';
+import { useSeniorityCore, useSeniorityLists } from '~/composables/seniority';
 
 defineProps<{
   loading?: boolean;
@@ -24,8 +23,9 @@ function retirementTimeline(now: Date, retireDate: Date): RetirementTimeline {
   return null;
 }
 
-const seniorityStore = useSeniorityStore();
-const userStore = useUserStore();
+const { lists, entriesLoading } = useSeniorityLists();
+const { entries } = useSeniorityCore();
+const { employeeNumber } = useUser();
 const table = useTemplateRef<{ tableApi: Table<SeniorityRow>; }>('table');
 
 const globalFilter = ref('');
@@ -109,13 +109,13 @@ const columns: TableColumn<SeniorityRow>[] = [
   },
 ];
 
-const latestList = computed(() => seniorityStore.lists[0] ?? null);
+const latestList = computed(() => lists.value[0] ?? null);
 
 const currentPage = computed(() => (table.value?.tableApi?.getState().pagination.pageIndex ?? 0) + 1);
 const pageCount = computed(() => table.value?.tableApi?.getPageCount() ?? 1);
 const totalRows = computed(() => table.value?.tableApi?.getFilteredRowModel().rows.length ?? 0);
 
-const userEmployeeNumber = computed(() => userStore.employeeNumber ?? null);
+const userEmployeeNumber = computed(() => employeeNumber.value ?? null);
 
 const tableMeta = {
   class: {
@@ -133,7 +133,7 @@ const tableMeta = {
 
 const tableData = computed<SeniorityRow[]>(() => {
   const now = new Date();
-  return seniorityStore.entries.map(entry => ({
+  return entries.value.map(entry => ({
     ...entry,
     _isUser: !!userEmployeeNumber.value && entry.employee_number === userEmployeeNumber.value,
     _retirementTimeline: entry.retire_date ? retirementTimeline(now, new Date(entry.retire_date)) : null,
@@ -170,13 +170,13 @@ const tableData = computed<SeniorityRow[]>(() => {
           <!-- Metadata -->
           <p v-if="latestList" class="text-sm text-muted mb-4">
             Effective {{ latestList.effectiveDate }}
-            &middot; {{ seniorityStore.entries.length }} pilots
+            &middot; {{ entries.length }} pilots
           </p>
 
           <div class="overflow-x-auto">
             <UTable ref="table" v-model:global-filter="globalFilter" v-model:pagination="pagination"
               v-model:expanded="expanded" v-model:column-visibility="columnVisibility" :data="tableData"
-              :columns="columns" :loading="loading || seniorityStore.entriesLoading"
+              :columns="columns" :loading="loading || entriesLoading"
               :expanded-options="{ getRowCanExpand: () => true }"
               :pagination-options="{ getPaginationRowModel: getPaginationRowModel() }" sticky :meta="tableMeta"
               :ui="isMobile ? { th: 'px-2 py-2 text-xs', td: 'px-2 py-1.5 text-xs' } : {}"

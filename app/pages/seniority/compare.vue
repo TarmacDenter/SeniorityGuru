@@ -1,19 +1,26 @@
 <script setup lang="ts">
-import { useSeniorityStore } from '~/stores/seniority'
-import { useSeniorityCompare } from '~/composables/seniority'
+import { useSeniorityCompare, useSeniorityLists } from '~/composables/seniority'
 import { retiredColumns, departedColumns, qualMoveColumns, rankChangeColumns, newHireColumns, qualMoveFilters } from '~/utils/column-definitions'
+import { buildDiffRows } from '~/utils/build-diff-rows'
 
 definePageMeta({
   layout: 'dashboard',
 })
 
-const seniorityStore = useSeniorityStore()
+const { lists, listOptions, fetchLists } = useSeniorityLists()
+const { employeeNumber } = useUser()
 const route = useRoute()
+
+const userEmployeeNumber = computed(() => employeeNumber.value ?? undefined)
 
 const listIdA = ref<number | undefined>(route.query.a ? Number(route.query.a) : undefined)
 const listIdB = ref<number | undefined>(route.query.b ? Number(route.query.b) : undefined)
 
 const { loading, error, comparison } = useSeniorityCompare(listIdA, listIdB)
+
+const diffRows = computed(() =>
+  comparison.value ? buildDiffRows(comparison.value, { includeRankChanges: true }) : [],
+)
 
 // Keep query params in sync — only for user-initiated changes after mount.
 // When onMounted sets defaults, oldA and oldB are both undefined → guard skips.
@@ -27,23 +34,14 @@ watch([listIdA, listIdB], async ([a, b], [oldA, oldB]) => {
 
 // Load lists for the selectors
 onMounted(async () => {
-  if (!seniorityStore.lists.length) {
-    await seniorityStore.fetchLists()
-  }
+  await fetchLists()
   // Auto-select most recent two if not already set.
   // Fires watcher but oldA/oldB are both undefined → guard catches it.
-  if (!listIdA.value && !listIdB.value && seniorityStore.lists.length >= 2) {
-    listIdA.value = seniorityStore.lists[1]!.id // second most recent = older
-    listIdB.value = seniorityStore.lists[0]!.id // most recent = newer
+  if (!listIdA.value && !listIdB.value && lists.value.length >= 2) {
+    listIdA.value = lists.value[1]!.id // second most recent = older
+    listIdB.value = lists.value[0]!.id // most recent = newer
   }
 })
-
-const listOptions = computed(() =>
-  seniorityStore.lists.map(l => ({
-    label: l.title ? `${l.title} — ${l.effectiveDate}` : l.effectiveDate,
-    value: l.id,
-  })),
-)
 
 const summaryStats = computed(() => {
   if (!comparison.value) return []
@@ -56,13 +54,16 @@ const summaryStats = computed(() => {
   ]
 })
 
-const tabs = [
-  { label: 'Retired', slot: 'retired' as const },
-  { label: 'Departed', slot: 'departed' as const },
-  { label: 'Qual Moves', slot: 'qual-moves' as const },
-  { label: 'Rank Changes', slot: 'rank-changes' as const },
-  { label: 'New Hires', slot: 'new-hires' as const },
+const compareTabs = [
+  { label: 'Diff', value: 'diff' },
+  { label: 'Retired', value: 'retired' },
+  { label: 'Departed', value: 'departed' },
+  { label: 'Qual Moves', value: 'qual-moves' },
+  { label: 'Rank Changes', value: 'rank-changes' },
+  { label: 'New Hires', value: 'new-hires' },
 ]
+
+const activeCompareTab = ref('diff')
 
 </script>
 
@@ -111,24 +112,19 @@ const tabs = [
           </UCard>
         </div>
 
-        <!-- Detail tabs -->
-        <UTabs :items="tabs" class="mt-4">
-          <template #retired>
-            <ComparisonTab :data="comparison.retired" :columns="retiredColumns" search-placeholder="Search retired..." />
-          </template>
-          <template #departed>
-            <ComparisonTab :data="comparison.departed" :columns="departedColumns" search-placeholder="Search departed..." />
-          </template>
-          <template #qual-moves>
-            <ComparisonTab :data="comparison.qualMoves" :columns="qualMoveColumns" :filters="qualMoveFilters" search-placeholder="Search qual moves..." />
-          </template>
-          <template #rank-changes>
-            <ComparisonTab :data="comparison.rankChanges" :columns="rankChangeColumns" search-placeholder="Search rank changes..." />
-          </template>
-          <template #new-hires>
-            <ComparisonTab :data="comparison.newHires" :columns="newHireColumns" search-placeholder="Search new hires..." />
-          </template>
-        </UTabs>
+        <!-- Tab selector: chip row on mobile, link tabs on desktop -->
+        <DashboardTabChips v-model="activeCompareTab" :tabs="compareTabs" />
+        <UTabs v-model="activeCompareTab" :items="compareTabs" :content="false" variant="link" class="hidden sm:flex mt-2" />
+
+        <!-- Tab content -->
+        <div class="mt-4">
+          <ComparisonDiffTab v-if="activeCompareTab === 'diff'" :rows="diffRows" :user-employee-number="userEmployeeNumber" />
+          <ComparisonTab v-else-if="activeCompareTab === 'retired'" :data="comparison.retired" :columns="retiredColumns" search-placeholder="Search retired..." />
+          <ComparisonTab v-else-if="activeCompareTab === 'departed'" :data="comparison.departed" :columns="departedColumns" search-placeholder="Search departed..." />
+          <ComparisonTab v-else-if="activeCompareTab === 'qual-moves'" :data="comparison.qualMoves" :columns="qualMoveColumns" :filters="qualMoveFilters" search-placeholder="Search qual moves..." />
+          <ComparisonTab v-else-if="activeCompareTab === 'rank-changes'" :data="comparison.rankChanges" :columns="rankChangeColumns" search-placeholder="Search rank changes..." />
+          <ComparisonTab v-else-if="activeCompareTab === 'new-hires'" :data="comparison.newHires" :columns="newHireColumns" search-placeholder="Search new hires..." />
+        </div>
       </template>
 
       <div v-else-if="!listIdA || !listIdB" class="text-center py-12 text-(--ui-text-muted)">

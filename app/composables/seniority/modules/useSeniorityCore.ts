@@ -209,5 +209,7 @@ export function useSeniorityCore() {
   const hasAnchor = computed(() => lens.value !== null)
   const isNewHireMode = computed(() => enabled.value)
 
-  return { snapshot, lens, userEntry, hasData, hasAnchor, isNewHireMode, newHire }
+  const entries = computed(() => seniorityStore.entries)
+
+  return { snapshot, lens, userEntry, entries, hasData, hasAnchor, isNewHireMode, newHire }
 }

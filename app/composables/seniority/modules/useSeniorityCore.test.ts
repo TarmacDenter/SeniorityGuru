@@ -173,4 +173,12 @@ describe('useSeniorityCore', () => {
     newHire.enabled.value = false
     expect(isNewHireMode.value).toBe(false)
   })
+
+  it('entries mirrors store entries', () => {
+    const e1 = makeEntry({ employee_number: 'E1', seniority_number: 1 })
+    mockStore.entries = [e1]
+    const { entries } = useSeniorityCore()
+    expect(entries.value).toHaveLength(1)
+    expect(entries.value[0]!.employee_number).toBe('E1')
+  })
 })

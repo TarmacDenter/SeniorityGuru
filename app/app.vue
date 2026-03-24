@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { appTheme } from '~/theme'
+import { appTheme } from '~/theme';
 </script>
 
 <template>
-  <UApp>
+  <UApp :scroll-body="false">
     <UTheme :ui="appTheme">
       <NuxtLayout>
         <NuxtPage />

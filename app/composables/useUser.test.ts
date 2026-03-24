@@ -4,6 +4,7 @@ import type { SeniorityEntry } from '~/utils/schemas/seniority-list'
 // ── Store mocks ────────────────────────────────────────────────────────────
 
 const mockSavePreference = vi.fn()
+const mockLoadPreferences = vi.fn()
 
 const mockUserStore = {
   employeeNumber: null as string | null,
@@ -11,6 +12,7 @@ const mockUserStore = {
   loading: false,
   error: null as string | null,
   savePreference: mockSavePreference,
+  loadPreferences: mockLoadPreferences,
 }
 
 const mockSeniorityEntries: SeniorityEntry[] = []
@@ -33,6 +35,7 @@ describe('useUser', () => {
     mockUserStore.error = null
     mockSeniorityEntries.length = 0
     mockSavePreference.mockReset().mockResolvedValue(undefined)
+    mockLoadPreferences.mockReset().mockResolvedValue(undefined)
   })
 
   describe('state', () => {
@@ -83,6 +86,15 @@ describe('useUser', () => {
       const { useUser } = await import('./useUser')
       const user = useUser()
       expect(user.entry.value).toBeUndefined()
+    })
+  })
+
+  describe('loadPreferences', () => {
+    it('delegates to store.loadPreferences', async () => {
+      const { useUser } = await import('./useUser')
+      const user = useUser()
+      await user.loadPreferences()
+      expect(mockLoadPreferences).toHaveBeenCalledOnce()
     })
   })
 
