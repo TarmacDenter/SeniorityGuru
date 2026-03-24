@@ -13,11 +13,15 @@ const mockDb = vi.hoisted(() => ({
     toArray: vi.fn(),
     update: vi.fn(),
     get: vi.fn(),
+    add: vi.fn(),
+    clear: vi.fn(),
   },
   seniorityEntries: {
     where: vi.fn(),
     equals: vi.fn(),
     toArray: vi.fn(),
+    bulkAdd: vi.fn(),
+    clear: vi.fn(),
   },
   deleteList: vi.fn(),
 }))
@@ -257,6 +261,132 @@ describe('seniority store (Dexie)', () => {
 
       expect(store.currentListId).toBe(1)
       expect(store.entries).toHaveLength(1)
+    })
+  })
+
+  describe('addList', () => {
+    it('writes list and entries to Dexie and pushes list onto reactive array', async () => {
+      mockDb.seniorityLists.add.mockResolvedValue(42)
+      mockDb.seniorityEntries.bulkAdd.mockResolvedValue(undefined)
+
+      const { useSeniorityStore } = await import('./seniority')
+      const store = useSeniorityStore()
+      store.clearStore()
+
+      const listId = await store.addList(
+        { title: 'March List', effectiveDate: '2026-03-15' },
+        [
+          { seniorityNumber: 1, employeeNumber: 'E001', name: 'Smith', seat: 'CA', base: 'LAX', fleet: '737', hireDate: '2010-01-01', retireDate: '2040-01-01' },
+        ],
+      )
+
+      expect(listId).toBe(42)
+      expect(mockDb.seniorityLists.add).toHaveBeenCalledWith(
+        expect.objectContaining({ title: 'March List', effectiveDate: '2026-03-15' }),
+      )
+      expect(mockDb.seniorityEntries.bulkAdd).toHaveBeenCalledWith(
+        expect.arrayContaining([
+          expect.objectContaining({ listId: 42, employeeNumber: 'E001' }),
+        ]),
+      )
+      expect(store.lists).toHaveLength(1)
+      expect(store.lists[0]!.id).toBe(42)
+      expect(store.lists[0]!.title).toBe('March List')
+    })
+
+    it('does not change currentListId or entries', async () => {
+      mockDb.seniorityLists.add.mockResolvedValue(42)
+      mockDb.seniorityEntries.bulkAdd.mockResolvedValue(undefined)
+      mockDb.seniorityEntries.toArray.mockResolvedValue([mockLocalEntry])
+
+      const { useSeniorityStore } = await import('./seniority')
+      const store = useSeniorityStore()
+      store.clearStore()
+
+      // Load existing entries for list 1
+      await store.fetchEntries(1)
+      expect(store.currentListId).toBe(1)
+      expect(store.entries).toHaveLength(1)
+
+      // Add a new list — should NOT touch current selection
+      await store.addList(
+        { title: 'New List', effectiveDate: '2026-04-01' },
+        [{ seniorityNumber: 1, employeeNumber: 'E999', name: null, seat: 'FO', base: 'ORD', fleet: 'A320', hireDate: '2020-01-01', retireDate: '2050-01-01' }],
+      )
+
+      expect(store.currentListId).toBe(1)
+      expect(store.entries).toHaveLength(1)
+      expect(store.entries[0]!.employee_number).toBe('12345')
+    })
+  })
+
+  describe('getEntriesForList', () => {
+    it('returns adapted entries without changing store.entries', async () => {
+      mockDb.seniorityEntries.toArray.mockResolvedValue([mockLocalEntry])
+
+      const { useSeniorityStore } = await import('./seniority')
+      const store = useSeniorityStore()
+      store.clearStore()
+
+      const result = await store.getEntriesForList(1)
+
+      expect(mockDb.seniorityEntries.where).toHaveBeenCalledWith('listId')
+      expect(mockDb.seniorityEntries.equals).toHaveBeenCalledWith(1)
+      expect(result).toHaveLength(1)
+      expect(result[0]).toEqual(expectedAdaptedEntry)
+      // Store entries should remain empty — not cached
+      expect(store.entries).toHaveLength(0)
+      expect(store.currentListId).toBeNull()
+    })
+  })
+
+  describe('getList', () => {
+    it('returns a single list by id from Dexie', async () => {
+      mockDb.seniorityLists.get.mockResolvedValue(mockList1)
+
+      const { useSeniorityStore } = await import('./seniority')
+      const store = useSeniorityStore()
+
+      const result = await store.getList(1)
+
+      expect(mockDb.seniorityLists.get).toHaveBeenCalledWith(1)
+      expect(result).toEqual(mockList1)
+    })
+
+    it('returns undefined when list not found', async () => {
+      mockDb.seniorityLists.get.mockResolvedValue(undefined)
+
+      const { useSeniorityStore } = await import('./seniority')
+      const store = useSeniorityStore()
+
+      const result = await store.getList(999)
+
+      expect(result).toBeUndefined()
+    })
+  })
+
+  describe('clearAll', () => {
+    it('wipes Dexie tables and resets all store state', async () => {
+      mockDb.seniorityLists.clear.mockResolvedValue(undefined)
+      mockDb.seniorityEntries.clear.mockResolvedValue(undefined)
+      mockDb.seniorityLists.toArray.mockResolvedValue([mockList1])
+      mockDb.seniorityEntries.toArray.mockResolvedValue([mockLocalEntry])
+
+      const { useSeniorityStore } = await import('./seniority')
+      const store = useSeniorityStore()
+      await store.fetchLists()
+      await store.fetchEntries(1)
+
+      expect(store.lists).toHaveLength(1)
+      expect(store.entries).toHaveLength(1)
+
+      await store.clearAll()
+
+      expect(mockDb.seniorityLists.clear).toHaveBeenCalled()
+      expect(mockDb.seniorityEntries.clear).toHaveBeenCalled()
+      expect(store.lists).toHaveLength(0)
+      expect(store.entries).toHaveLength(0)
+      expect(store.currentListId).toBeNull()
     })
   })
 

@@ -11,7 +11,9 @@ A local-first PWA for airline pilots to track and project their seniority standi
 - **No server, no auth, no accounts** — pure SPA (`ssr: false` globally). All data lives in the user's browser via IndexedDB. No Nitro routes, no Supabase, no RLS.
 - **Dexie.js for persistence** — `app/utils/db.ts` defines `SeniorityGuruDB` with three tables: `seniorityLists`, `seniorityEntries`, `preferences`. The singleton `db` export is the only way to read/write data.
 - **Schema migrations via Dexie versions** — add `this.version(N).stores({...}).upgrade(tx => {...})` for each schema change. Never remove or reorder existing version blocks.
-- **Deep module composables** — pages and components call composables only; stores are internal infrastructure. Composables call `db` directly or via stores. Pages and components never import `db` or `use*Store` directly.
+- **Deep module composables** — pages and components call composables only; stores are internal infrastructure. Pages and components never import `db` or `use*Store` directly.
+- **Stores own all `db` access** — only Pinia stores may import `db` from `~/utils/db`. Composables call store methods, never `db.*` directly. This ensures Dexie writes always update reactive store state, so downstream computeds and UI re-render automatically.
+- **No cross-store dependencies** — stores must never import other stores. When an operation spans multiple stores (e.g., clearing all data), use a higher-order composable that coordinates the stores. A store that imports another store is a signal that logic belongs in a composable.
 - **No Docker** — there is no local database to run. `npm install && npm run dev` is the full setup.
 
 ---
@@ -20,13 +22,21 @@ A local-first PWA for airline pilots to track and project their seniority standi
 
 **Reading data in components and pages:** call composables — never import `use*Store` directly in a `.vue` file.
 
-**Writing data:** call composable actions (`useSeniorityUpload`, `useUser`) which write to Dexie and update store state. Do not call `db.*` from component `<script setup>`.
+**Writing data:** composable actions call store methods, which write to Dexie and update reactive state in one place. No layer may call `db.*` except stores.
 
 **Composable boundary (hard rule):** Pages and components call composables only — stores are internal infrastructure. If the UI needs data from a store, the fix is to expose it through an existing composable or create a new one.
 
 - User/preference data → `useUser()` — exposes `employeeNumber`, `retirementAge`, `loadPreferences()`, `savePreference()`, `clearPreferences()`
 - Seniority list CRUD → `useSeniorityLists()` — exposes `lists`, `listsLoading`, `listsError`, `entriesLoading`, `listOptions`, `fetchLists()`, `fetchEntries()`, `deleteList()`, `updateList()`, `clearStore()`
 - Entries / snapshot / lens → `useSeniorityCore()` — exposes `entries`, `snapshot`, `lens`, `userEntry`, `hasData`, `hasAnchor`, `isNewHireMode`, `newHire`
+
+### Store design patterns
+
+- **Write-through**: store methods that mutate Dexie must also update their own reactive refs (e.g., `addList` writes to Dexie then pushes onto `store.lists`). This is what makes the event system unnecessary — Vue reactivity propagates the change.
+- **Return without caching**: when a composable needs transient data (e.g., comparison entries for two lists), the store provides a method that reads from Dexie and returns the result without storing it in reactive state. The composable holds the data in its own local refs.
+- **`useUserStore` owns all preferences**: general-purpose key-value persistence via `savePreference(key, value)` / `getPreference(key)`. Feature-specific composables (new-hire config, PWA install state) call the store — they do not read/write `db.preferences` directly.
+- **Upload does not auto-select**: `addList` adds the list to the store's `lists` array but does not change `currentListId` or populate `entries`. The dashboard decides what to display based on the user's most recent selection or the most recently effective list.
+- **Cross-store coordination**: when an action spans multiple stores, a higher-order composable orchestrates the calls. Stores never import other stores.
 
 ### Dexie patterns
 

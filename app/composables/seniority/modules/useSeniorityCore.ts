@@ -5,7 +5,6 @@ import { createSnapshot, createLens } from '~/utils/seniority-engine'
 import { uniqueEntryValues } from '~/utils/entry-filters'
 import { useSeniorityStore } from '~/stores/seniority'
 import { useUserStore } from '~/stores/user'
-import { db } from '~/utils/db'
 
 export interface NewHireControls {
   enabled: Ref<boolean>
@@ -50,17 +49,17 @@ export function useSeniorityCore() {
       },
     )
 
-    // Async hydration from Dexie preferences
+    // Async hydration from preferences via user store
     Promise.all([
-      db.preferences.get(PREF_KEY_ENABLED),
-      db.preferences.get(PREF_KEY_CONFIG),
-    ]).then(([enabledPref, configPref]) => {
-      if (enabledPref?.value === 'true') {
+      userStore.getPreference(PREF_KEY_ENABLED),
+      userStore.getPreference(PREF_KEY_CONFIG),
+    ]).then(([enabledVal, configVal]) => {
+      if (enabledVal === 'true') {
         enabled.value = true
       }
-      if (configPref?.value) {
+      if (configVal) {
         try {
-          const parsed = JSON.parse(configPref.value)
+          const parsed = JSON.parse(configVal)
           if (parsed.birthDate) birthDate.value = parsed.birthDate
           if (parsed.selectedBase) selectedBase.value = parsed.selectedBase
           if (parsed.selectedSeat) selectedSeat.value = parsed.selectedSeat
@@ -71,23 +70,20 @@ export function useSeniorityCore() {
         }
       }
     }).catch(() => {
-      // ignore db errors during hydration
+      // ignore errors during hydration
     })
 
     watch(enabled, (val) => {
-      db.preferences.put({ key: PREF_KEY_ENABLED, value: String(val) }).catch(() => {})
+      userStore.savePreference(PREF_KEY_ENABLED, String(val)).catch(() => {})
     })
 
     watch([birthDate, selectedBase, selectedSeat, selectedFleet], () => {
-      db.preferences.put({
-        key: PREF_KEY_CONFIG,
-        value: JSON.stringify({
-          birthDate: birthDate.value,
-          selectedBase: selectedBase.value,
-          selectedSeat: selectedSeat.value,
-          selectedFleet: selectedFleet.value,
-        }),
-      }).catch(() => {})
+      userStore.savePreference(PREF_KEY_CONFIG, JSON.stringify({
+        birthDate: birthDate.value,
+        selectedBase: selectedBase.value,
+        selectedSeat: selectedSeat.value,
+        selectedFleet: selectedFleet.value,
+      })).catch(() => {})
     })
   }
 

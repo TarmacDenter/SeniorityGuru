@@ -2,21 +2,18 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { useSeniorityCore } from './useSeniorityCore'
 
 const mockStore = vi.hoisted(() => ({ entries: [] as any[] }))
-const mockUserStore = vi.hoisted(() => ({ employeeNumber: null as string | null, retirementAge: 65 }))
+const mockUserStore = vi.hoisted(() => ({
+  employeeNumber: null as string | null,
+  retirementAge: 65,
+  getPreference: vi.fn().mockResolvedValue(null),
+  savePreference: vi.fn().mockResolvedValue(undefined),
+}))
 
 vi.mock('~/stores/seniority', () => ({
   useSeniorityStore: () => mockStore,
 }))
 vi.mock('~/stores/user', () => ({
   useUserStore: () => mockUserStore,
-}))
-vi.mock('~/utils/db', () => ({
-  db: {
-    preferences: {
-      get: vi.fn().mockResolvedValue(undefined),
-      put: vi.fn().mockResolvedValue('key'),
-    },
-  },
 }))
 
 const { makeEntry } = await import('~/test-utils/factories')
@@ -26,6 +23,8 @@ beforeEach(() => {
   mockStore.entries = []
   mockUserStore.employeeNumber = null
   mockUserStore.retirementAge = 65
+  mockUserStore.getPreference.mockResolvedValue(null)
+  mockUserStore.savePreference.mockResolvedValue(undefined)
   // Reset new-hire module-level singletons via the composable's reset()
   const { newHire } = useSeniorityCore()
   newHire.reset()

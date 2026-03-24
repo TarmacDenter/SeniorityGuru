@@ -1,8 +1,7 @@
 import * as XLSX from 'xlsx'
 import type { SeniorityEntry } from '~/utils/schemas/seniority-list'
 import { SeniorityEntrySchema } from '~/utils/schemas/seniority-list'
-import { db } from '~/utils/db'
-import type { LocalSeniorityEntry } from '~/utils/db'
+import { useSeniorityStore } from '~/stores/seniority'
 import { parseDate } from '@internationalized/date'
 import type { DateValue } from 'reka-ui'
 import {
@@ -162,14 +161,8 @@ export function useSeniorityUpload() {
     saveError.value = null
     log.info('Upload started', { entryCount: entries.value.length, effectiveDate: effectiveDate.value?.toString() })
     try {
-      const listId = await db.seniorityLists.add({
-        title: title.value || null,
-        effectiveDate: effectiveDate.value ? effectiveDate.value.toString() : '',
-        createdAt: new Date().toISOString(),
-      })
-
-      const localEntries: LocalSeniorityEntry[] = (entries.value as SeniorityEntry[]).map(e => ({
-        listId,
+      const store = useSeniorityStore()
+      const localEntries = (entries.value as SeniorityEntry[]).map(e => ({
         seniorityNumber: e.seniority_number,
         employeeNumber: e.employee_number,
         name: e.name ?? null,
@@ -180,7 +173,11 @@ export function useSeniorityUpload() {
         retireDate: e.retire_date,
       }))
 
-      await db.seniorityEntries.bulkAdd(localEntries)
+      await store.addList(
+        { title: title.value || null, effectiveDate: effectiveDate.value ? effectiveDate.value.toString() : '' },
+        localEntries,
+      )
+
       log.info('Upload succeeded', { count: localEntries.length })
       return localEntries.length
     } catch (err: unknown) {

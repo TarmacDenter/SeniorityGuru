@@ -33,8 +33,8 @@ export function useUser() {
     await store.loadPreferences()
   }
 
-  function clearPreferences() {
-    store.clearPreferences()
+  async function clearPreferences() {
+    await store.clearPreferences()
   }
 
   return { employeeNumber, retirementAge, loading, error, entry, savePreference, loadPreferences, clearPreferences }
