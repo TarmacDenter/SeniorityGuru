@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useSeniorityCompare, useSeniorityLists } from '~/composables/seniority'
 import { retiredColumns, departedColumns, qualMoveColumns, rankChangeColumns, newHireColumns, qualMoveFilters } from '~/utils/column-definitions'
+import { buildDiffRows } from '~/utils/build-diff-rows'
 
 definePageMeta({
   layout: 'dashboard',
@@ -16,6 +17,10 @@ const listIdA = ref<number | undefined>(route.query.a ? Number(route.query.a) : 
 const listIdB = ref<number | undefined>(route.query.b ? Number(route.query.b) : undefined)
 
 const { loading, error, comparison } = useSeniorityCompare(listIdA, listIdB)
+
+const diffRows = computed(() =>
+  comparison.value ? buildDiffRows(comparison.value, { includeRankChanges: true }) : [],
+)
 
 // Keep query params in sync — only for user-initiated changes after mount.
 // When onMounted sets defaults, oldA and oldB are both undefined → guard skips.
@@ -113,7 +118,7 @@ const activeCompareTab = ref('diff')
 
         <!-- Tab content -->
         <div class="mt-4">
-          <ComparisonDiffTab v-if="activeCompareTab === 'diff'" :comparison="comparison" :user-employee-number="userEmployeeNumber" />
+          <ComparisonDiffTab v-if="activeCompareTab === 'diff'" :rows="diffRows" :user-employee-number="userEmployeeNumber" />
           <ComparisonTab v-else-if="activeCompareTab === 'retired'" :data="comparison.retired" :columns="retiredColumns" search-placeholder="Search retired..." />
           <ComparisonTab v-else-if="activeCompareTab === 'departed'" :data="comparison.departed" :columns="departedColumns" search-placeholder="Search departed..." />
           <ComparisonTab v-else-if="activeCompareTab === 'qual-moves'" :data="comparison.qualMoves" :columns="qualMoveColumns" :filters="qualMoveFilters" search-placeholder="Search qual moves..." />

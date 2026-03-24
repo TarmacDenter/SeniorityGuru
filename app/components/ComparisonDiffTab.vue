@@ -1,111 +1,28 @@
 <script setup lang="ts">
-import type { CompareResult } from '~/utils/seniority-compare'
+import type { DiffRow } from '~/utils/build-diff-rows'
 
 const props = defineProps<{
-  comparison: CompareResult
+  rows: DiffRow[]
   userEmployeeNumber?: string
 }>()
 
-type RowType = 'retired' | 'departed' | 'qualMove' | 'rankChange' | 'newHire'
+const showRankChanges = ref(false)
 
-interface DiffRow {
-  key: string
-  type: RowType
-  employee_number: string
-  name: string | undefined
-  rank: number | undefined
-  base?: string
-  seat?: string
-  fleet?: string
-  badgeLabel: string
-}
-
-const rows = computed<DiffRow[]>(() => {
-  const result: DiffRow[] = []
-
-  for (const p of props.comparison.retired) {
-    result.push({
-      key: `retired-${p.employee_number}`,
-      type: 'retired',
-      employee_number: p.employee_number,
-      name: p.name,
-      rank: p.seniority_number,
-      badgeLabel: 'Retired',
-    })
-  }
-
-  for (const p of props.comparison.departed) {
-    result.push({
-      key: `departed-${p.employee_number}`,
-      type: 'departed',
-      employee_number: p.employee_number,
-      name: p.name,
-      rank: p.seniority_number,
-      badgeLabel: 'Departed',
-    })
-  }
-
-  for (const p of props.comparison.qualMoves) {
-    const seatChanged = p.old_seat !== p.new_seat
-    const badgeLabel = seatChanged ? `${p.old_seat}→${p.new_seat}` : 'Qual Move'
-    result.push({
-      key: `qualMove-${p.employee_number}`,
-      type: 'qualMove',
-      employee_number: p.employee_number,
-      name: p.name,
-      rank: p.seniority_number,
-      base: p.new_base,
-      seat: `${p.old_seat}→${p.new_seat}`,
-      fleet: p.new_fleet,
-      badgeLabel,
-    })
-  }
-
-  for (const p of props.comparison.rankChanges) {
-    const deltaLabel = p.delta > 0 ? `↑${p.delta}` : `↓${Math.abs(p.delta)}`
-    result.push({
-      key: `rankChange-${p.employee_number}`,
-      type: 'rankChange',
-      employee_number: p.employee_number,
-      name: p.name,
-      rank: p.new_rank,
-      badgeLabel: deltaLabel,
-    })
-  }
-
-  for (const p of props.comparison.newHires) {
-    result.push({
-      key: `newHire-${p.employee_number}`,
-      type: 'newHire',
-      employee_number: p.employee_number,
-      name: p.name,
-      rank: p.seniority_number,
-      badgeLabel: 'New Hire',
-    })
-  }
-
-  return result
-})
-
-const isEmpty = computed(() =>
-  props.comparison.retired.length === 0 &&
-  props.comparison.departed.length === 0 &&
-  props.comparison.qualMoves.length === 0 &&
-  props.comparison.rankChanges.length === 0 &&
-  props.comparison.newHires.length === 0,
+const filteredRows = computed(() =>
+  props.rows.filter(r => showRankChanges.value || r.kind !== 'rankChange'),
 )
 
-function rowClass(row: DiffRow): string {
-  const classes: string[] = []
-  if (row.type === 'retired') classes.push('opacity-50')
-  if (props.userEmployeeNumber && row.employee_number === props.userEmployeeNumber) {
-    classes.push('bg-primary/5')
-  }
-  return classes.join(' ')
+const isEmpty = computed(() => props.rows.length === 0)
+
+function rowBgClass(row: DiffRow): string {
+  if (row.kind === 'retired') return 'bg-error/10'
+  if (row.kind === 'departed') return 'bg-warning/10'
+  if (props.userEmployeeNumber && row.employee_number === props.userEmployeeNumber) return 'bg-primary/5'
+  return ''
 }
 
-function badgeColor(type: RowType): 'error' | 'warning' | 'info' | 'primary' | 'success' {
-  switch (type) {
+function badgeColor(kind: DiffRow['kind']): 'error' | 'warning' | 'info' | 'primary' | 'success' {
+  switch (kind) {
     case 'retired': return 'error'
     case 'departed': return 'warning'
     case 'qualMove': return 'info'
@@ -113,70 +30,180 @@ function badgeColor(type: RowType): 'error' | 'warning' | 'info' | 'primary' | '
     case 'newHire': return 'success'
   }
 }
+
+function qualMoveBadgeLabel(row: Extract<DiffRow, { kind: 'qualMove' }>): string {
+  const parts: string[] = []
+  if (row.old_seat !== row.new_seat) parts.push(`${row.old_seat}→${row.new_seat}`)
+  if (row.old_fleet !== row.new_fleet) parts.push(`${row.old_fleet}→${row.new_fleet}`)
+  if (row.old_base !== row.new_base) parts.push(`${row.old_base}→${row.new_base}`)
+  return parts.join(' / ') || 'Qual Move'
+}
+
+function badgeLabel(row: DiffRow): string {
+  switch (row.kind) {
+    case 'retired': return 'Retired'
+    case 'departed': return 'Departed'
+    case 'qualMove': return qualMoveBadgeLabel(row)
+    case 'rankChange': return `↑${row.delta}`
+    case 'newHire': return 'New Hire'
+  }
+}
+
+function currentQual(row: DiffRow): string {
+  switch (row.kind) {
+    case 'qualMove': return `${row.new_seat} / ${row.new_fleet} / ${row.new_base}`
+    case 'rankChange': return `${row.seat} / ${row.fleet} / ${row.base}`
+    case 'retired':
+    case 'departed':
+    case 'newHire': return `${row.seat} / ${row.fleet} / ${row.base}`
+  }
+}
 </script>
 
 <template>
   <div>
+    <!-- Filter bar -->
+    <div class="flex items-center gap-3 mb-3 pb-3 border-b border-(--ui-border)">
+      <button
+        data-testid="rank-change-toggle"
+        type="button"
+        class="flex items-center gap-2 text-sm text-(--ui-text-muted) hover:text-(--ui-text) transition-colors cursor-pointer select-none"
+        @click="showRankChanges = !showRankChanges"
+      >
+        <span
+          class="inline-flex items-center justify-center w-8 h-4 rounded-full transition-colors"
+          :class="showRankChanges ? 'bg-primary' : 'bg-(--ui-border)'"
+        >
+          <span
+            class="w-3 h-3 rounded-full bg-white shadow transition-transform"
+            :class="showRankChanges ? 'translate-x-2' : '-translate-x-2'"
+          />
+        </span>
+        Show rank changes
+      </button>
+    </div>
+
     <!-- Empty state -->
     <div v-if="isEmpty" class="flex justify-center items-center py-16 text-(--ui-text-muted)">
       No changes between these lists
     </div>
 
-    <!-- Table -->
+    <!-- Diff list -->
     <div v-else class="border border-(--ui-border) rounded-lg overflow-hidden text-sm">
       <!-- Header -->
-      <div class="grid grid-cols-[3rem_1fr_auto] sm:grid-cols-[3rem_1fr_4rem_5rem_5rem_auto] bg-(--ui-bg-elevated) divide-x divide-(--ui-border) font-medium text-muted text-xs uppercase tracking-wide">
+      <div class="grid grid-cols-[3rem_1fr_auto_auto] bg-(--ui-bg-elevated) divide-x divide-(--ui-border) font-medium text-(--ui-text-muted) text-xs uppercase tracking-wide">
         <div class="px-3 py-2 text-right">#</div>
         <div class="px-3 py-2">Name</div>
-        <div class="px-3 py-2 hidden sm:block">Base</div>
-        <div class="px-3 py-2 hidden md:block">Seat</div>
-        <div class="px-3 py-2 hidden md:block">Fleet</div>
+        <div class="px-3 py-2 hidden sm:block">Qual</div>
         <div class="px-3 py-2 text-right">Change</div>
       </div>
 
       <!-- Rows -->
       <div class="divide-y divide-(--ui-border)">
         <div
-          v-for="row in rows"
-          :key="row.key"
-          class="grid grid-cols-[3rem_1fr_auto] sm:grid-cols-[3rem_1fr_4rem_5rem_5rem_auto] divide-x divide-(--ui-border) items-center transition-colors"
-          :class="rowClass(row)"
+          v-for="row in filteredRows"
+          :key="`${row.kind}-${row.employee_number}`"
+          :data-kind="row.kind"
+          class="grid grid-cols-[3rem_1fr_auto_auto] divide-x divide-(--ui-border) items-center transition-colors"
+          :class="rowBgClass(row)"
         >
-          <!-- Rank -->
-          <div class="px-3 py-2.5 text-right font-mono text-xs text-muted">
-            {{ row.rank ?? '—' }}
+          <!-- Seniority number -->
+          <div class="px-3 py-2.5 text-right font-mono text-xs text-(--ui-text-muted)">
+            {{ row.seniority_number }}
           </div>
 
           <!-- Name -->
           <div
             class="px-3 py-2.5 font-medium"
-            :class="row.type === 'retired' ? 'line-through text-muted' : ''"
+            :class="row.kind === 'retired' || row.kind === 'departed' ? 'line-through text-(--ui-text-muted)' : ''"
           >
             {{ row.name ?? row.employee_number }}
           </div>
 
-          <!-- Base (hidden mobile) -->
-          <div class="px-3 py-2.5 text-muted hidden sm:block font-mono text-xs">
-            {{ row.base ?? '—' }}
+          <!-- Current qual -->
+          <div class="px-3 py-2.5 hidden sm:block text-xs text-(--ui-text-muted) font-mono">
+            {{ currentQual(row) }}
           </div>
 
-          <!-- Seat (hidden mobile) -->
-          <div class="px-3 py-2.5 hidden md:block text-xs">
-            <span :class="row.type === 'qualMove' ? 'text-info font-semibold' : 'text-muted'">
-              {{ row.seat ?? '—' }}
-            </span>
-          </div>
-
-          <!-- Fleet (hidden mobile) -->
-          <div class="px-3 py-2.5 hidden md:block text-xs font-mono text-muted">
-            {{ row.fleet ?? '—' }}
-          </div>
-
-          <!-- Change badge -->
+          <!-- Badge with popover -->
           <div class="px-3 py-2.5 flex justify-end">
-            <UBadge :color="badgeColor(row.type)" variant="subtle" size="xs">
-              {{ row.badgeLabel }}
-            </UBadge>
+            <UPopover>
+              <UBadge
+                :color="badgeColor(row.kind)"
+                variant="subtle"
+                size="xs"
+                class="cursor-pointer"
+              >
+                {{ badgeLabel(row) }}
+              </UBadge>
+
+              <template #content>
+                <div class="p-3 text-xs space-y-1.5 min-w-48">
+                  <div class="font-semibold text-(--ui-text) mb-2">
+                    {{ row.name ?? row.employee_number }}
+                  </div>
+
+                  <!-- Retired pilot card -->
+                  <template v-if="row.kind === 'retired'">
+                    <div class="text-(--ui-text-muted)">Seniority: <span class="text-(--ui-text)">{{ row.seniority_number }}</span></div>
+                    <div class="text-(--ui-text-muted)">Seat: <span class="text-(--ui-text)">{{ row.seat }}</span></div>
+                    <div class="text-(--ui-text-muted)">Fleet: <span class="text-(--ui-text)">{{ row.fleet }}</span></div>
+                    <div class="text-(--ui-text-muted)">Base: <span class="text-(--ui-text)">{{ row.base }}</span></div>
+                    <div class="text-(--ui-text-muted)">Hired: <span class="text-(--ui-text)">{{ row.hire_date }}</span></div>
+                    <div class="text-(--ui-text-muted)">Retired: <span class="text-(--ui-text)">{{ row.retire_date }}</span></div>
+                  </template>
+
+                  <!-- Departed pilot card -->
+                  <template v-else-if="row.kind === 'departed'">
+                    <div class="text-(--ui-text-muted)">Seniority: <span class="text-(--ui-text)">{{ row.seniority_number }}</span></div>
+                    <div class="text-(--ui-text-muted)">Seat: <span class="text-(--ui-text)">{{ row.seat }}</span></div>
+                    <div class="text-(--ui-text-muted)">Fleet: <span class="text-(--ui-text)">{{ row.fleet }}</span></div>
+                    <div class="text-(--ui-text-muted)">Base: <span class="text-(--ui-text)">{{ row.base }}</span></div>
+                    <div class="text-(--ui-text-muted)">Hired: <span class="text-(--ui-text)">{{ row.hire_date }}</span></div>
+                    <div v-if="row.retire_date" class="text-(--ui-text-muted)">Retire date: <span class="text-(--ui-text)">{{ row.retire_date }}</span></div>
+                  </template>
+
+                  <!-- Qual move card -->
+                  <template v-else-if="row.kind === 'qualMove'">
+                    <div class="text-(--ui-text-muted)">Seniority: <span class="text-(--ui-text)">{{ row.seniority_number }}</span></div>
+                    <div class="text-(--ui-text-muted)">Seat:
+                      <span v-if="row.old_seat !== row.new_seat" class="text-info font-semibold">{{ row.old_seat }}→{{ row.new_seat }}</span>
+                      <span v-else class="text-(--ui-text)">{{ row.new_seat }}</span>
+                    </div>
+                    <div class="text-(--ui-text-muted)">Fleet:
+                      <span v-if="row.old_fleet !== row.new_fleet" class="text-info font-semibold">{{ row.old_fleet }}→{{ row.new_fleet }}</span>
+                      <span v-else class="text-(--ui-text)">{{ row.new_fleet }}</span>
+                    </div>
+                    <div class="text-(--ui-text-muted)">Base:
+                      <span v-if="row.old_base !== row.new_base" class="text-info font-semibold">{{ row.old_base }}→{{ row.new_base }}</span>
+                      <span v-else class="text-(--ui-text)">{{ row.new_base }}</span>
+                    </div>
+                    <div class="text-(--ui-text-muted)">Hired: <span class="text-(--ui-text)">{{ row.hire_date }}</span></div>
+                    <div class="text-(--ui-text-muted)">Retire date: <span class="text-(--ui-text)">{{ row.retire_date }}</span></div>
+                  </template>
+
+                  <!-- Rank change card -->
+                  <template v-else-if="row.kind === 'rankChange'">
+                    <div class="text-(--ui-text-muted)">Rank: <span class="text-primary font-semibold">{{ row.old_rank }}→{{ row.seniority_number }} (↑{{ row.delta }})</span></div>
+                    <div class="text-(--ui-text-muted)">Seat: <span class="text-(--ui-text)">{{ row.seat }}</span></div>
+                    <div class="text-(--ui-text-muted)">Fleet: <span class="text-(--ui-text)">{{ row.fleet }}</span></div>
+                    <div class="text-(--ui-text-muted)">Base: <span class="text-(--ui-text)">{{ row.base }}</span></div>
+                    <div class="text-(--ui-text-muted)">Hired: <span class="text-(--ui-text)">{{ row.hire_date }}</span></div>
+                    <div class="text-(--ui-text-muted)">Retire date: <span class="text-(--ui-text)">{{ row.retire_date }}</span></div>
+                  </template>
+
+                  <!-- New hire card -->
+                  <template v-else-if="row.kind === 'newHire'">
+                    <div class="text-(--ui-text-muted)">Seniority: <span class="text-(--ui-text)">{{ row.seniority_number }}</span></div>
+                    <div class="text-(--ui-text-muted)">Seat: <span class="text-(--ui-text)">{{ row.seat }}</span></div>
+                    <div class="text-(--ui-text-muted)">Fleet: <span class="text-(--ui-text)">{{ row.fleet }}</span></div>
+                    <div class="text-(--ui-text-muted)">Base: <span class="text-(--ui-text)">{{ row.base }}</span></div>
+                    <div class="text-(--ui-text-muted)">Hired: <span class="text-(--ui-text) text-success font-semibold">{{ row.hire_date }}</span></div>
+                    <div class="text-(--ui-text-muted)">Retire date: <span class="text-(--ui-text)">{{ row.retire_date }}</span></div>
+                  </template>
+                </div>
+              </template>
+            </UPopover>
           </div>
         </div>
       </div>

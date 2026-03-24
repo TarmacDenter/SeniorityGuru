@@ -7,6 +7,10 @@ export interface RetiredPilot {
   name: string | undefined
   seniority_number: number
   retire_date: string
+  seat: string
+  fleet: string
+  base: string
+  hire_date: string
 }
 
 export interface DepartedPilot {
@@ -14,6 +18,10 @@ export interface DepartedPilot {
   name: string | undefined
   seniority_number: number
   retire_date: string | undefined
+  seat: string
+  fleet: string
+  base: string
+  hire_date: string
 }
 
 export interface QualMove {
@@ -26,6 +34,8 @@ export interface QualMove {
   new_fleet: string
   old_base: string
   new_base: string
+  hire_date: string
+  retire_date: string
 }
 
 export interface RankChange {
@@ -34,6 +44,11 @@ export interface RankChange {
   old_rank: number
   new_rank: number
   delta: number
+  seat: string
+  fleet: string
+  base: string
+  hire_date: string
+  retire_date: string
 }
 
 export interface NewHire {
@@ -41,6 +56,10 @@ export interface NewHire {
   name: string | undefined
   seniority_number: number
   hire_date: string
+  seat: string
+  fleet: string
+  base: string
+  retire_date: string
 }
 
 export interface CompareResult {
@@ -76,6 +95,10 @@ export function computeComparison(
           name: old.name,
           seniority_number: old.seniority_number,
           retire_date: old.retire_date,
+          seat: old.seat,
+          fleet: old.fleet,
+          base: old.base,
+          hire_date: old.hire_date,
         })
       } else {
         departed.push({
@@ -83,6 +106,10 @@ export function computeComparison(
           name: old.name,
           seniority_number: old.seniority_number,
           retire_date: old.retire_date,
+          seat: old.seat,
+          fleet: old.fleet,
+          base: old.base,
+          hire_date: old.hire_date,
         })
       }
     }
@@ -103,6 +130,8 @@ export function computeComparison(
         new_fleet: newer.fleet,
         old_base: older.base,
         new_base: newer.base,
+        hire_date: newer.hire_date,
+        retire_date: newer.retire_date,
       })
     }
 
@@ -113,6 +142,11 @@ export function computeComparison(
         old_rank: older.seniority_number,
         new_rank: newer.seniority_number,
         delta: older.seniority_number - newer.seniority_number,
+        seat: newer.seat,
+        fleet: newer.fleet,
+        base: newer.base,
+        hire_date: newer.hire_date,
+        retire_date: newer.retire_date,
       })
     }
   }
@@ -124,6 +158,10 @@ export function computeComparison(
         name: entry.name,
         seniority_number: entry.seniority_number,
         hire_date: entry.hire_date,
+        seat: entry.seat,
+        fleet: entry.fleet,
+        base: entry.base,
+        retire_date: entry.retire_date,
       })
     }
   }
