@@ -47,7 +47,13 @@ export const useUserStore = defineStore('user', () => {
     log.debug('Preference saved', { key, value })
   }
 
-  function clearPreferences() {
+  async function getPreference(key: string): Promise<string | null> {
+    const pref = await db.preferences.get(key)
+    return pref?.value ?? null
+  }
+
+  async function clearPreferences() {
+    await db.preferences.clear()
     employeeNumber.value = null
     retirementAge.value = 65
     error.value = null
@@ -61,6 +67,7 @@ export const useUserStore = defineStore('user', () => {
     error,
     loadPreferences,
     savePreference,
+    getPreference,
     clearPreferences,
   }
 })

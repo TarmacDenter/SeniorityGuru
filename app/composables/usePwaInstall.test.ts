@@ -4,17 +4,17 @@ import { mountSuspended } from '@nuxt/test-utils/runtime'
 import { defineComponent } from 'vue'
 
 // ---------------------------------------------------------------------------
-// Mock db module
+// Mock user store
 // ---------------------------------------------------------------------------
 
-const mockDb = vi.hoisted(() => ({
-  preferences: {
-    get: vi.fn(),
-    put: vi.fn(),
-  },
+const mockUserStore = vi.hoisted(() => ({
+  getPreference: vi.fn(),
+  savePreference: vi.fn(),
 }))
 
-vi.mock('~/utils/db', () => ({ db: mockDb }))
+vi.mock('~/stores/user', () => ({
+  useUserStore: () => mockUserStore,
+}))
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -50,15 +50,15 @@ async function mountComposable() {
 describe('usePwaInstall', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mockDb.preferences.get.mockResolvedValue(undefined)
-    mockDb.preferences.put.mockResolvedValue('key')
+    mockUserStore.getPreference.mockResolvedValue(null)
+    mockUserStore.savePreference.mockResolvedValue(undefined)
   })
 
   describe('showBanner', () => {
-    it('is false when pwa-dismissed is true in db', async () => {
-      mockDb.preferences.get.mockImplementation(async (key: string) => {
-        if (key === 'pwa-dismissed') return { key: 'pwa-dismissed', value: 'true' }
-        return undefined
+    it('is false when pwa-dismissed is true in store', async () => {
+      mockUserStore.getPreference.mockImplementation(async (key: string) => {
+        if (key === 'pwa-dismissed') return 'true'
+        return null
       })
 
       const { showBanner } = await mountComposable()
@@ -70,9 +70,9 @@ describe('usePwaInstall', () => {
       const future = new Date()
       future.setDate(future.getDate() + 3)
 
-      mockDb.preferences.get.mockImplementation(async (key: string) => {
-        if (key === 'pwa-snoozed-until') return { key: 'pwa-snoozed-until', value: future.toISOString() }
-        return undefined
+      mockUserStore.getPreference.mockImplementation(async (key: string) => {
+        if (key === 'pwa-snoozed-until') return future.toISOString()
+        return null
       })
 
       const { showBanner } = await mountComposable()
@@ -84,9 +84,9 @@ describe('usePwaInstall', () => {
       const past = new Date()
       past.setDate(past.getDate() - 1)
 
-      mockDb.preferences.get.mockImplementation(async (key: string) => {
-        if (key === 'pwa-snoozed-until') return { key: 'pwa-snoozed-until', value: past.toISOString() }
-        return undefined
+      mockUserStore.getPreference.mockImplementation(async (key: string) => {
+        if (key === 'pwa-snoozed-until') return past.toISOString()
+        return null
       })
 
       // showBanner also requires a deferred prompt or iOS — in test env neither
@@ -100,18 +100,18 @@ describe('usePwaInstall', () => {
   })
 
   describe('snooze()', () => {
-    it('writes a 7-day future ISO date to db.preferences', async () => {
+    it('saves a 7-day future ISO date via userStore.savePreference', async () => {
       const { snooze } = await mountComposable()
       const before = Date.now()
 
       await snooze()
 
-      expect(mockDb.preferences.put).toHaveBeenCalledWith(
-        expect.objectContaining({ key: 'pwa-snoozed-until' }),
+      expect(mockUserStore.savePreference).toHaveBeenCalledWith(
+        'pwa-snoozed-until',
+        expect.any(String),
       )
 
-      const call = mockDb.preferences.put.mock.calls[0]![0]
-      const writtenDate = new Date(call.value)
+      const writtenDate = new Date(mockUserStore.savePreference.mock.calls[0]![1])
       const daysFromNow = (writtenDate.getTime() - before) / (1000 * 60 * 60 * 24)
       expect(daysFromNow).toBeGreaterThanOrEqual(6.9)
       expect(daysFromNow).toBeLessThanOrEqual(7.1)
@@ -128,12 +128,12 @@ describe('usePwaInstall', () => {
   })
 
   describe('dismiss()', () => {
-    it('writes pwa-dismissed=true to db.preferences', async () => {
+    it('saves pwa-dismissed=true via userStore.savePreference', async () => {
       const { dismiss } = await mountComposable()
 
       await dismiss()
 
-      expect(mockDb.preferences.put).toHaveBeenCalledWith({ key: 'pwa-dismissed', value: 'true' })
+      expect(mockUserStore.savePreference).toHaveBeenCalledWith('pwa-dismissed', 'true')
     })
 
     it('updates dismissed ref so showBanner reacts immediately', async () => {
@@ -156,18 +156,18 @@ describe('usePwaInstall', () => {
       await install()
 
       // No native prompt available — nothing should throw or error.
-      expect(mockDb.preferences.put).not.toHaveBeenCalled()
+      expect(mockUserStore.savePreference).not.toHaveBeenCalled()
       // showIosModal stays false because isIos is false in test env — expected.
       expect(showIosModal.value).toBe(false)
     })
   })
 
   describe('preferences loaded on mount', () => {
-    it('reads both pwa-dismissed and pwa-snoozed-until from db', async () => {
+    it('reads both pwa-dismissed and pwa-snoozed-until from userStore', async () => {
       await mountComposable()
 
-      expect(mockDb.preferences.get).toHaveBeenCalledWith('pwa-dismissed')
-      expect(mockDb.preferences.get).toHaveBeenCalledWith('pwa-snoozed-until')
+      expect(mockUserStore.getPreference).toHaveBeenCalledWith('pwa-dismissed')
+      expect(mockUserStore.getPreference).toHaveBeenCalledWith('pwa-snoozed-until')
     })
   })
 })

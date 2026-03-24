@@ -2,12 +2,13 @@ import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest'
 import { useSeniorityUpload } from './useSeniorityUpload'
 import { makePartialEntry, makeDomainEntry } from '~/test-utils/factories'
 
-const mockDb = vi.hoisted(() => ({
-  seniorityLists: { add: vi.fn() },
-  seniorityEntries: { bulkAdd: vi.fn() },
+const mockStore = vi.hoisted(() => ({
+  addList: vi.fn(),
 }))
 
-vi.mock('~/utils/db', () => ({ db: mockDb }))
+vi.mock('~/stores/seniority', () => ({
+  useSeniorityStore: () => mockStore,
+}))
 
 describe('useSeniorityUpload', () => {
   describe('deleteRow — uses original index, not filtered index', () => {
@@ -194,11 +195,10 @@ describe('useSeniorityUpload', () => {
 
   describe('save', () => {
     beforeEach(() => {
-      mockDb.seniorityLists.add.mockResolvedValue(99)
-      mockDb.seniorityEntries.bulkAdd.mockResolvedValue(undefined)
+      mockStore.addList.mockResolvedValue(99)
     })
 
-    it('writes list and entries to Dexie and returns entry count', async () => {
+    it('calls store.addList with list data and mapped entries, returns entry count', async () => {
       const { entries, effectiveDate, title, save } = useSeniorityUpload()
 
       entries.value = [
@@ -210,19 +210,17 @@ describe('useSeniorityUpload', () => {
 
       const count = await save()
 
-      expect(mockDb.seniorityLists.add).toHaveBeenCalledWith(
-        expect.objectContaining({ title: 'Jan 2025', effectiveDate: '2025-01-01' }),
-      )
-      expect(mockDb.seniorityEntries.bulkAdd).toHaveBeenCalledWith(
+      expect(mockStore.addList).toHaveBeenCalledWith(
+        { title: 'Jan 2025', effectiveDate: '2025-01-01' },
         expect.arrayContaining([
-          expect.objectContaining({ listId: 99, employeeNumber: 'E001', seniorityNumber: 1 }),
-          expect.objectContaining({ listId: 99, employeeNumber: 'E002', seniorityNumber: 2 }),
+          expect.objectContaining({ employeeNumber: 'E001', seniorityNumber: 1 }),
+          expect.objectContaining({ employeeNumber: 'E002', seniorityNumber: 2 }),
         ]),
       )
       expect(count).toBe(2)
     })
 
-    it('uses empty string for title when title is blank', async () => {
+    it('uses null for title when title is blank', async () => {
       const { entries, effectiveDate, title, save } = useSeniorityUpload()
 
       entries.value = [makeDomainEntry({ seniority_number: 1, employee_number: 'E001', seat: 'CA', base: 'LAX', fleet: 'B737', hire_date: '2010-01-01', retire_date: '2040-01-01' })]
@@ -231,8 +229,9 @@ describe('useSeniorityUpload', () => {
 
       await save()
 
-      expect(mockDb.seniorityLists.add).toHaveBeenCalledWith(
+      expect(mockStore.addList).toHaveBeenCalledWith(
         expect.objectContaining({ title: null }),
+        expect.any(Array),
       )
     })
   })

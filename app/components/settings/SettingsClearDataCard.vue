@@ -1,23 +1,15 @@
 <script setup lang="ts">
-import { db } from '~/utils/db'
-import { useSeniorityLists } from '~/composables/seniority'
+import { useClearAllData } from '~/composables/useClearAllData'
 
 const toast = useToast()
 const confirm = ref(false)
 const loading = ref(false)
 
-const { clearStore } = useSeniorityLists()
-const { clearPreferences } = useUser()
+const { clearAllData } = useClearAllData()
 
 async function clearAll() {
   loading.value = true
-  await db.seniorityLists.clear()
-  await db.seniorityEntries.clear()
-  await db.preferences.clear()
-
-  clearStore()
-  clearPreferences()
-
+  await clearAllData()
   loading.value = false
   confirm.value = false
   toast.add({ title: 'All local data cleared', color: 'success' })

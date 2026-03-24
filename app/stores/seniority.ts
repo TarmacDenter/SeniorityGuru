@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import type { LocalSeniorityList } from '~/utils/db'
+import type { LocalSeniorityList, LocalSeniorityEntry } from '~/utils/db'
 import { db } from '~/utils/db'
 import { localEntryToSeniorityEntry } from '~/utils/db-adapters'
 import type { SeniorityEntry } from '~/utils/schemas/seniority-list'
@@ -15,6 +15,13 @@ export const useSeniorityStore = defineStore('seniority', () => {
   const listsError = ref<string | null>(null)
   const entriesError = ref<string | null>(null)
   const currentListId = ref<number | null>(null)
+
+  async function clearAll() {
+    await db.seniorityLists.clear()
+    await db.seniorityEntries.clear()
+    clearStore()
+    log.info('All seniority data cleared from Dexie and store')
+  }
 
   function clearStore() {
     lists.value = []
@@ -64,6 +71,33 @@ export const useSeniorityStore = defineStore('seniority', () => {
     entriesLoading.value = false
   }
 
+  async function addList(
+    listData: { title: string | null; effectiveDate: string },
+    entries: Omit<LocalSeniorityEntry, 'id' | 'listId'>[],
+  ): Promise<number> {
+    const listId = await db.seniorityLists.add({
+      title: listData.title,
+      effectiveDate: listData.effectiveDate,
+      createdAt: new Date().toISOString(),
+    })
+
+    const localEntries: LocalSeniorityEntry[] = entries.map(e => ({ ...e, listId }))
+    await db.seniorityEntries.bulkAdd(localEntries)
+
+    lists.value.push({ id: listId, ...listData, createdAt: new Date().toISOString() })
+    log.info('List added', { listId, entryCount: entries.length })
+    return listId
+  }
+
+  async function getEntriesForList(listId: number): Promise<SeniorityEntry[]> {
+    const localEntries = await db.seniorityEntries.where('listId').equals(listId).toArray()
+    return localEntries.map(localEntryToSeniorityEntry)
+  }
+
+  async function getList(listId: number): Promise<LocalSeniorityList | undefined> {
+    return db.seniorityLists.get(listId)
+  }
+
   async function updateList(id: number, updates: { title?: string | null; effectiveDate?: string }) {
     await db.seniorityLists.update(id, updates)
     const idx = lists.value.findIndex(l => l.id === id)
@@ -91,9 +125,13 @@ export const useSeniorityStore = defineStore('seniority', () => {
     entriesLoading,
     listsError,
     entriesError,
+    clearAll,
     clearStore,
     fetchLists,
     fetchEntries,
+    addList,
+    getEntriesForList,
+    getList,
     updateList,
     deleteList,
   }

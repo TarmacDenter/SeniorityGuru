@@ -4,7 +4,7 @@ import { useSeniorityCore } from './useSeniorityCore'
 import { useQualAnalytics } from './useQualAnalytics'
 
 const mockStore = vi.hoisted(() => ({ entries: [] as any[], lists: [] as any[] }))
-const mockUserStore = vi.hoisted(() => ({ employeeNumber: null as string | null, retirementAge: 65 }))
+const mockUserStore = vi.hoisted(() => ({ employeeNumber: null as string | null, retirementAge: 65, getPreference: vi.fn().mockResolvedValue(null), savePreference: vi.fn().mockResolvedValue(undefined) }))
 
 vi.mock('~/stores/seniority', () => ({
   useSeniorityStore: () => mockStore,

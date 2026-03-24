@@ -9,6 +9,7 @@ const mockDb = vi.hoisted(() => ({
   preferences: {
     get: vi.fn(),
     put: vi.fn(),
+    clear: vi.fn(),
     toCollection: vi.fn(),
   },
 }))
@@ -35,7 +36,7 @@ describe('user store (Dexie preferences)', () => {
 
       const { useUserStore } = await import('./user')
       const store = useUserStore()
-      store.clearPreferences()
+      await store.clearPreferences()
 
       await store.loadPreferences()
 
@@ -50,7 +51,7 @@ describe('user store (Dexie preferences)', () => {
 
       const { useUserStore } = await import('./user')
       const store = useUserStore()
-      store.clearPreferences()
+      await store.clearPreferences()
 
       await store.loadPreferences()
 
@@ -62,7 +63,7 @@ describe('user store (Dexie preferences)', () => {
 
       const { useUserStore } = await import('./user')
       const store = useUserStore()
-      store.clearPreferences()
+      await store.clearPreferences()
 
       await store.loadPreferences()
 
@@ -74,7 +75,7 @@ describe('user store (Dexie preferences)', () => {
 
       const { useUserStore } = await import('./user')
       const store = useUserStore()
-      store.clearPreferences()
+      await store.clearPreferences()
 
       await store.loadPreferences()
 
@@ -86,7 +87,7 @@ describe('user store (Dexie preferences)', () => {
 
       const { useUserStore } = await import('./user')
       const store = useUserStore()
-      store.clearPreferences()
+      await store.clearPreferences()
 
       await store.loadPreferences()
 
@@ -109,7 +110,7 @@ describe('user store (Dexie preferences)', () => {
     it('updates employeeNumber ref when key is employeeNumber', async () => {
       const { useUserStore } = await import('./user')
       const store = useUserStore()
-      store.clearPreferences()
+      await store.clearPreferences()
 
       await store.savePreference('employeeNumber', '54321')
 
@@ -119,7 +120,7 @@ describe('user store (Dexie preferences)', () => {
     it('updates retirementAge ref when key is retirementAge', async () => {
       const { useUserStore } = await import('./user')
       const store = useUserStore()
-      store.clearPreferences()
+      await store.clearPreferences()
 
       await store.savePreference('retirementAge', '62')
 
@@ -127,8 +128,56 @@ describe('user store (Dexie preferences)', () => {
     })
   })
 
+  describe('getPreference', () => {
+    it('returns the raw string value for a known key', async () => {
+      mockDb.preferences.get.mockResolvedValue({ key: 'newHireEnabled', value: 'true' })
+
+      const { useUserStore } = await import('./user')
+      const store = useUserStore()
+
+      const result = await store.getPreference('newHireEnabled')
+
+      expect(mockDb.preferences.get).toHaveBeenCalledWith('newHireEnabled')
+      expect(result).toBe('true')
+    })
+
+    it('returns null when key does not exist', async () => {
+      mockDb.preferences.get.mockResolvedValue(undefined)
+
+      const { useUserStore } = await import('./user')
+      const store = useUserStore()
+
+      const result = await store.getPreference('nonexistent')
+
+      expect(result).toBeNull()
+    })
+  })
+
   describe('clearPreferences', () => {
+    it('wipes db.preferences and resets reactive refs', async () => {
+      mockDb.preferences.clear.mockResolvedValue(undefined)
+      mockDb.preferences.get.mockImplementation(async (key: string) => {
+        if (key === 'employeeNumber') return { key: 'employeeNumber', value: '99999' }
+        if (key === 'retirementAge') return { key: 'retirementAge', value: '60' }
+        return undefined
+      })
+
+      const { useUserStore } = await import('./user')
+      const store = useUserStore()
+      await store.loadPreferences()
+
+      expect(store.employeeNumber).toBe('99999')
+
+      await store.clearPreferences()
+
+      expect(mockDb.preferences.clear).toHaveBeenCalled()
+      expect(store.employeeNumber).toBeNull()
+      expect(store.retirementAge).toBe(65)
+      expect(store.error).toBeNull()
+    })
+
     it('resets employeeNumber to null and retirementAge to 65', async () => {
+      mockDb.preferences.clear.mockResolvedValue(undefined)
       mockDb.preferences.get.mockImplementation(async (key: string) => {
         if (key === 'employeeNumber') return { key: 'employeeNumber', value: '99999' }
         if (key === 'retirementAge') return { key: 'retirementAge', value: '60' }
@@ -142,7 +191,7 @@ describe('user store (Dexie preferences)', () => {
       expect(store.employeeNumber).toBe('99999')
       expect(store.retirementAge).toBe(60)
 
-      store.clearPreferences()
+      await store.clearPreferences()
 
       expect(store.employeeNumber).toBeNull()
       expect(store.retirementAge).toBe(65)
