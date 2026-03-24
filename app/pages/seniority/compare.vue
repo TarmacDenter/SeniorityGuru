@@ -60,14 +60,16 @@ const summaryStats = computed(() => {
   ]
 })
 
-const tabs = [
-  { label: 'Diff', slot: 'diff' as const },
-  { label: 'Retired', slot: 'retired' as const },
-  { label: 'Departed', slot: 'departed' as const },
-  { label: 'Qual Moves', slot: 'qual-moves' as const },
-  { label: 'Rank Changes', slot: 'rank-changes' as const },
-  { label: 'New Hires', slot: 'new-hires' as const },
+const compareTabs = [
+  { label: 'Diff', value: 'diff' },
+  { label: 'Retired', value: 'retired' },
+  { label: 'Departed', value: 'departed' },
+  { label: 'Qual Moves', value: 'qual-moves' },
+  { label: 'Rank Changes', value: 'rank-changes' },
+  { label: 'New Hires', value: 'new-hires' },
 ]
+
+const activeCompareTab = ref('diff')
 
 </script>
 
@@ -116,27 +118,19 @@ const tabs = [
           </UCard>
         </div>
 
-        <!-- Detail tabs -->
-        <UTabs :items="tabs" class="mt-4">
-          <template #diff>
-            <ComparisonDiffTab :comparison="comparison" :user-employee-number="userEmployeeNumber" />
-          </template>
-          <template #retired>
-            <ComparisonTab :data="comparison.retired" :columns="retiredColumns" search-placeholder="Search retired..." />
-          </template>
-          <template #departed>
-            <ComparisonTab :data="comparison.departed" :columns="departedColumns" search-placeholder="Search departed..." />
-          </template>
-          <template #qual-moves>
-            <ComparisonTab :data="comparison.qualMoves" :columns="qualMoveColumns" :filters="qualMoveFilters" search-placeholder="Search qual moves..." />
-          </template>
-          <template #rank-changes>
-            <ComparisonTab :data="comparison.rankChanges" :columns="rankChangeColumns" search-placeholder="Search rank changes..." />
-          </template>
-          <template #new-hires>
-            <ComparisonTab :data="comparison.newHires" :columns="newHireColumns" search-placeholder="Search new hires..." />
-          </template>
-        </UTabs>
+        <!-- Tab selector: chip row on mobile, link tabs on desktop -->
+        <DashboardTabChips v-model="activeCompareTab" :tabs="compareTabs" />
+        <UTabs v-model="activeCompareTab" :items="compareTabs" :content="false" variant="link" class="hidden sm:flex mt-2" />
+
+        <!-- Tab content -->
+        <div class="mt-4">
+          <ComparisonDiffTab v-if="activeCompareTab === 'diff'" :comparison="comparison" :user-employee-number="userEmployeeNumber" />
+          <ComparisonTab v-else-if="activeCompareTab === 'retired'" :data="comparison.retired" :columns="retiredColumns" search-placeholder="Search retired..." />
+          <ComparisonTab v-else-if="activeCompareTab === 'departed'" :data="comparison.departed" :columns="departedColumns" search-placeholder="Search departed..." />
+          <ComparisonTab v-else-if="activeCompareTab === 'qual-moves'" :data="comparison.qualMoves" :columns="qualMoveColumns" :filters="qualMoveFilters" search-placeholder="Search qual moves..." />
+          <ComparisonTab v-else-if="activeCompareTab === 'rank-changes'" :data="comparison.rankChanges" :columns="rankChangeColumns" search-placeholder="Search rank changes..." />
+          <ComparisonTab v-else-if="activeCompareTab === 'new-hires'" :data="comparison.newHires" :columns="newHireColumns" search-placeholder="Search new hires..." />
+        </div>
       </template>
 
       <div v-else-if="!listIdA || !listIdB" class="text-center py-12 text-(--ui-text-muted)">
