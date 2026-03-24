@@ -144,7 +144,7 @@ Use **Zod** at the upload boundary. Schemas live in `app/utils/schemas/`.
 - **Branches**: `main` (production, protected), `dev` (integration, unprotected), `feature/*`, `hotfix/*`
 - **Never** commit directly to `main`
 - **Feature integration**: rebase onto `dev`, fast-forward merge (push directly to `dev`)
-- **Releases**: squash merge `dev` → `main` via PR; semantic-release runs automatically
+- **Releases**: squash merge `dev` → `main` via PR; `sync-dev.yml` auto-resets dev to main after CI passes
 - **Hotfixes**: squash merge to `main` via PR, then cherry-pick to `dev`
 - **History revision**: `dev` has admin bypass — owner can rebase and force-push; other devs must PR
 - **Commit format**: Conventional Commits (`type(scope): description`) — enforced via husky + commitlint
