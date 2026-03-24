@@ -6,13 +6,22 @@ const props = defineProps<{
   userEmployeeNumber?: string
 }>()
 
+const PAGE_SIZE = 50
+
 const showRankChanges = ref(false)
+const page = ref(1)
 
 const filteredRows = computed(() =>
   props.rows.filter(r => showRankChanges.value || r.kind !== 'rankChange'),
 )
 
-const isEmpty = computed(() => props.rows.length === 0)
+const paginatedRows = computed(() =>
+  filteredRows.value.slice((page.value - 1) * PAGE_SIZE, page.value * PAGE_SIZE),
+)
+
+const isEmpty = computed(() => filteredRows.value.length === 0)
+
+watch(showRankChanges, () => { page.value = 1 })
 
 function rowBgClass(row: DiffRow): string {
   if (row.kind === 'retired') return 'bg-error/10'
@@ -101,7 +110,7 @@ function currentQual(row: DiffRow): string {
       <!-- Rows -->
       <div class="divide-y divide-(--ui-border)">
         <div
-          v-for="row in filteredRows"
+          v-for="row in paginatedRows"
           :key="`${row.kind}-${row.employee_number}`"
           :data-kind="row.kind"
           class="grid grid-cols-[3rem_1fr_auto_auto] divide-x divide-(--ui-border) items-center transition-colors"
@@ -207,6 +216,20 @@ function currentQual(row: DiffRow): string {
           </div>
         </div>
       </div>
+    </div>
+
+    <!-- Pagination -->
+    <div v-if="filteredRows.length > PAGE_SIZE" class="flex items-center justify-between mt-3 text-sm text-(--ui-text-muted)">
+      <span>{{ filteredRows.length }} changes</span>
+      <UPagination
+        v-model:page="page"
+        :total="filteredRows.length"
+        :items-per-page="PAGE_SIZE"
+        size="sm"
+        color="neutral"
+        variant="subtle"
+        :sibling-count="1"
+      />
     </div>
   </div>
 </template>
