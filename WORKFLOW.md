@@ -1,6 +1,6 @@
 # Git Workflow
 
-## Strategy: Linear Dev with Rebase (Solo Dev)
+## Strategy: Squash-at-Every-Boundary (Solo Dev)
 
 ```
 main ──────────────────────────────────────────► (production, tagged releases)
@@ -18,7 +18,7 @@ main ─────────────────────────
 |---|---|---|---|
 | `main` | Production code; every merge triggers a release | — | — |
 | `dev` | Integration & staging; all feature work lands here | `main` | `main` (squash merge via PR) |
-| `feature/*` | New features or improvements | `dev` | `dev` (rebase + fast-forward merge) |
+| `feature/*` | New features or improvements | `dev` | `dev` (squash merge) |
 | `hotfix/*` | Emergency fixes for production | `main` | `main` (squash merge via PR, then cherry-pick to `dev`) |
 
 ---
@@ -66,18 +66,20 @@ git checkout dev
 git pull origin dev
 git checkout -b feature/my-feature
 
-# ... work, commit with conventional messages ...
+# ... work, commit as many granular commits as you like ...
 
-# When ready to integrate:
-git fetch origin dev
-git rebase origin/dev
+# When ready to integrate — squash merge into dev:
 git checkout dev
-git merge --ff-only feature/my-feature
+git pull origin dev
+git merge --squash feature/my-feature
+git commit -m "feat(scope): summary of the feature"
 git push origin dev
 
 # Clean up
-git branch -d feature/my-feature
+git branch -D feature/my-feature
 ```
+
+**Why squash merge (not rebase + fast-forward)?** After `/ship`, `sync-dev.yml` resets `origin/dev` to `main`. If dev has 20 individual commits but main has one squash, the histories diverge and local dev becomes incompatible with origin/dev. Squashing features into dev keeps both sides at the same granularity — one commit per feature — so the post-ship reset produces compatible history.
 
 For small changes, pushing directly to `dev` is fine.
 
@@ -99,16 +101,15 @@ Use the `/ship` Claude slash command to automate steps 2-4.
 
 **Always squash merge** the PR on GitHub (never regular merge or rebase merge).
 
-### After merge — realign dev manually
+### After merge — automatic realignment
 
-Squash merge creates a new commit on `main` not in `dev`'s history, so `dev` diverges after every ship. Realign immediately after the merge:
+Squash merge creates a new commit on `main` not in `dev`'s history. `sync-dev.yml` handles realignment automatically:
 
-```bash
-git checkout dev
-git fetch origin
-git reset --hard origin/main
-git push --force origin dev
-```
+1. CI passes on `main`
+2. `sync-dev.yml` fires and force-resets `origin/dev` to `main`
+3. Locally, run `git pull origin dev` (or `git reset --hard origin/dev` if local dev has stale branches)
+
+Because features are squash-merged into dev (one commit per feature), the post-ship reset produces compatible history — no orphaned commits, no divergence.
 
 semantic-release runs automatically on every push to `main` and:
 1. Analyzes the squash commit message

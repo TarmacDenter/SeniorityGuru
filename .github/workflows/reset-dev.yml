@@ -1,10 +1,9 @@
 name: Reset dev to main
 
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
-
-permissions:
-  contents: write
 
 jobs:
   reset:
@@ -15,5 +14,6 @@ jobs:
         with:
           ref: main
           fetch-depth: 0
+          token: ${{ secrets.FORCE_PUSH_TOKEN }}
 
       - run: git push origin main:dev --force
