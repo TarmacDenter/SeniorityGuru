@@ -89,6 +89,39 @@ describe('ComparisonDiffTab', () => {
     expect(wrapper.text()).toContain('J. Patel')
   })
 
+  it('shows rank change entry in output', async () => {
+    const comparison: CompareResult = {
+      ...emptyComparison,
+      rankChanges: [
+        {
+          employee_number: '10005',
+          name: 'M. Torres',
+          old_rank: 200,
+          new_rank: 195,
+          delta: -5,
+        },
+      ],
+    }
+    const wrapper = await mountSuspended(ComparisonDiffTab, {
+      props: { comparison },
+    })
+    expect(wrapper.text()).toContain('M. Torres')
+  })
+
+  it('highlights the user row when userEmployeeNumber matches', async () => {
+    const comparison: CompareResult = {
+      ...emptyComparison,
+      newHires: [
+        { employee_number: '10004', name: 'J. Patel', seniority_number: 852, hire_date: '2025-06-01' },
+      ],
+    }
+    const wrapper = await mountSuspended(ComparisonDiffTab, {
+      props: { comparison, userEmployeeNumber: '10004' },
+    })
+    const highlighted = wrapper.find('.bg-primary\\/5')
+    expect(highlighted.exists()).toBe(true)
+  })
+
   it('shows empty state message when all arrays are empty', async () => {
     const wrapper = await mountSuspended(ComparisonDiffTab, {
       props: { comparison: emptyComparison },
