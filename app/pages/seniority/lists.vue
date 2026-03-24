@@ -175,6 +175,9 @@ onMounted(async () => {
           <div v-if="seniorityStore.lists.length === 0" class="px-4 py-8 text-center text-muted text-sm">
             No lists uploaded yet.
           </div>
+          <div v-else-if="filteredLists.length === 0" class="px-4 py-8 text-center text-muted text-sm">
+            No results for "{{ globalFilter }}"
+          </div>
         </div>
 
         <!-- Desktop: full table -->
