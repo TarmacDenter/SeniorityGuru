@@ -150,13 +150,12 @@ Use **Zod** at the upload boundary. Schemas live in `app/utils/schemas/`.
 
 ## Git Workflow
 
-- **Strategy**: Linear dev with rebase — see [WORKFLOW.md](WORKFLOW.md) for full reference
+- **Strategy**: Squash-at-every-boundary — see [WORKFLOW.md](WORKFLOW.md) for full reference
 - **Branches**: `main` (production, protected), `dev` (integration, unprotected), `feature/*`, `hotfix/*`
 - **Never** commit directly to `main`
-- **Feature integration**: rebase onto `dev`, fast-forward merge (push directly to `dev`)
+- **Feature integration**: squash merge `feature/*` → `dev` (`git merge --squash feature/foo && git commit`). This keeps dev's history at one commit per feature, which prevents divergence when `sync-dev.yml` resets dev to main after ship.
 - **Releases**: squash merge `dev` → `main` via PR; `sync-dev.yml` auto-resets dev to main after CI passes
 - **Hotfixes**: squash merge to `main` via PR, then cherry-pick to `dev`
-- **History revision**: `dev` has admin bypass — owner can rebase and force-push; other devs must PR
 - **Commit format**: Conventional Commits (`type(scope): description`) — enforced via husky + commitlint
 - **Quality gates**: pre-push hook runs typecheck + tests; CI runs both on push to `dev` and PRs to `main`
 
