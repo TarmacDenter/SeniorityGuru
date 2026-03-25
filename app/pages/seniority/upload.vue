@@ -71,8 +71,14 @@ async function nextStep() {
   if (currentStep.value === 'upload' && upload.autoDetectSucceeded.value) {
     processing.value = true
     await new Promise(resolve => setTimeout(resolve, 0))
-    upload.applyMapping()
-    processing.value = false
+    try {
+      upload.applyMapping()
+    } catch {
+      toast.add({ title: 'Failed to process file', color: 'error' })
+      return
+    } finally {
+      processing.value = false
+    }
     mappingSkipped.value = true
     currentStep.value = 'review'
     toast.add({ title: 'All columns auto-detected — skipped to review', color: 'info' })
@@ -81,8 +87,14 @@ async function nextStep() {
   if (currentStep.value === 'mapping') {
     processing.value = true
     await new Promise(resolve => setTimeout(resolve, 0))
-    upload.applyMapping()
-    processing.value = false
+    try {
+      upload.applyMapping()
+    } catch {
+      toast.add({ title: 'Failed to process file', color: 'error' })
+      return
+    } finally {
+      processing.value = false
+    }
   }
   const nextIdx = currentStepIndex.value + 1
   if (nextIdx < stepOrder.length) {
