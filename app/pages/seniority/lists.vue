@@ -3,6 +3,9 @@ import type { TableColumn, DropdownMenuItem } from '@nuxt/ui'
 import type { LocalSeniorityList } from '~/utils/db'
 import { sortableHeader } from '~/utils/sortableHeader'
 import { useSeniorityLists } from '~/composables/seniority'
+import { createLogger } from '~/utils/logger'
+
+const log = createLogger('lists-page')
 
 definePageMeta({
   layout: 'dashboard',
@@ -66,7 +69,8 @@ async function saveEdit() {
     toast.add({ title: 'List updated', color: 'success' })
     editOpen.value = false
   }
-  catch {
+  catch (e: unknown) {
+    log.error('Failed to update list', { listId: editListId.value, error: String(e) })
     toast.add({ title: 'Failed to update list', color: 'error' })
   }
   finally {
@@ -93,7 +97,8 @@ async function doDelete() {
     toast.add({ title: 'List deleted', color: 'success' })
     deleteOpen.value = false
   }
-  catch {
+  catch (e: unknown) {
+    log.error('Failed to delete list', { listId: deleteTarget.value?.id, error: String(e) })
     toast.add({ title: 'Failed to delete list', color: 'error' })
   }
   finally {

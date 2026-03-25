@@ -1,8 +1,10 @@
 import { deferredInstallPrompt, sharedShowIosModal } from '~/utils/pwa-prompt'
 import { isStandaloneMode } from '~/utils/pwa-standalone'
 import { useUserStore } from '~/stores/user'
+import { createLogger } from '~/utils/logger'
 
 export function usePwaInstall() {
+  const log = createLogger('pwa-install')
   const userStore = useUserStore()
   const dismissed = ref(false)
   const snoozedUntil = ref<Date | null>(null)
@@ -38,11 +40,12 @@ export function usePwaInstall() {
     }
     const prompt = deferredInstallPrompt.value
     if (!prompt) {
-      if (import.meta.dev) console.info('[PWA] No install prompt available — in production, Chrome fires beforeinstallprompt here')
+      log.debug('No install prompt available — beforeinstallprompt not yet fired')
       return
     }
     await prompt.prompt()
     const { outcome } = await prompt.userChoice
+    log.info('PWA install prompt outcome', { outcome })
     if (outcome === 'accepted') {
       deferredInstallPrompt.value = null
     }
@@ -53,11 +56,13 @@ export function usePwaInstall() {
     until.setDate(until.getDate() + 7)
     await userStore.savePreference('pwa-snoozed-until', until.toISOString())
     snoozedUntil.value = until
+    log.info('PWA banner snoozed', { until: until.toISOString() })
   }
 
   async function dismiss() {
     await userStore.savePreference('pwa-dismissed', 'true')
     dismissed.value = true
+    log.info('PWA banner dismissed')
   }
 
   return { showBanner, isIos, showIosModal: sharedShowIosModal, standalone, install, snooze, dismiss }
