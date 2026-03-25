@@ -543,8 +543,196 @@ const demoWaveBuckets = computed(() => demoWaveData[demoQual.value])
       </UContainer>
     </section>
 
-    <!-- ── Section 7: Feature Cards ─────────────────────────────────────── -->
+    <!-- ── Section 7: Supported Airlines ──────────────────────────────── -->
     <section class="py-16 sm:py-20 bg-(--ui-bg-elevated)">
+      <UContainer>
+        <div class="text-center mb-12">
+          <h2 class="text-2xl sm:text-3xl font-bold tracking-tight mb-3">
+            Supported Airlines
+          </h2>
+          <p class="text-muted max-w-xl mx-auto">
+            Native parsing for Delta, with a generic importer for any airline that gives you a spreadsheet.
+          </p>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-3xl mx-auto mb-10">
+          <UCard>
+            <div class="flex flex-col gap-3">
+              <div class="flex items-center gap-3">
+                <div class="size-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <UIcon name="i-lucide-graduation-cap" class="size-5 text-primary" />
+                </div>
+                <div>
+                  <h3 class="font-semibold">Delta Air Lines</h3>
+                  <p class="text-xs text-muted">Native parser</p>
+                </div>
+              </div>
+              <ul class="text-sm text-muted space-y-1.5">
+                <li class="flex items-start gap-2">
+                  <UIcon name="i-lucide-check" class="size-4 text-primary shrink-0 mt-0.5" />
+                  <span>Auto-parses PBS seniority list exports</span>
+                </li>
+                <li class="flex items-start gap-2">
+                  <UIcon name="i-lucide-check" class="size-4 text-primary shrink-0 mt-0.5" />
+                  <span>Category column split into Base, Fleet, and Seat</span>
+                </li>
+                <li class="flex items-start gap-2">
+                  <UIcon name="i-lucide-check" class="size-4 text-primary shrink-0 mt-0.5" />
+                  <span>Effective date extracted from preamble</span>
+                </li>
+              </ul>
+            </div>
+          </UCard>
+
+          <UCard>
+            <div class="flex flex-col gap-3">
+              <div class="flex items-center gap-3">
+                <div class="size-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <UIcon name="i-lucide-file-spreadsheet" class="size-5 text-primary" />
+                </div>
+                <div>
+                  <h3 class="font-semibold">Generic / Other Airline</h3>
+                  <p class="text-xs text-muted">CSV or XLSX</p>
+                </div>
+              </div>
+              <ul class="text-sm text-muted space-y-1.5">
+                <li class="flex items-start gap-2">
+                  <UIcon name="i-lucide-check" class="size-4 text-primary shrink-0 mt-0.5" />
+                  <span>Standard CSV or Excel with column headers</span>
+                </li>
+                <li class="flex items-start gap-2">
+                  <UIcon name="i-lucide-check" class="size-4 text-primary shrink-0 mt-0.5" />
+                  <span>Auto-detects common column names</span>
+                </li>
+                <li class="flex items-start gap-2">
+                  <UIcon name="i-lucide-check" class="size-4 text-primary shrink-0 mt-0.5" />
+                  <span>Manual column mapping available as fallback</span>
+                </li>
+              </ul>
+            </div>
+          </UCard>
+        </div>
+
+        <!-- Required Data Format -->
+        <div class="max-w-3xl mx-auto mb-10">
+          <UCollapsible class="flex flex-col gap-2">
+            <UButton
+              label="Required Data Format"
+              color="neutral"
+              variant="subtle"
+              trailing-icon="i-lucide-chevron-down"
+              block
+            />
+
+            <template #content>
+              <UCard variant="subtle">
+                <div class="space-y-4">
+                  <p class="text-sm text-muted">
+                    Your spreadsheet needs these columns (names are flexible — you can map them during upload):
+                  </p>
+
+                  <div class="overflow-x-auto">
+                    <table class="w-full text-sm border-collapse">
+                      <thead>
+                        <tr class="border-b border-(--ui-border)">
+                          <th class="text-left py-2 px-3 font-semibold text-xs uppercase tracking-wide text-muted">Sen. #</th>
+                          <th class="text-left py-2 px-3 font-semibold text-xs uppercase tracking-wide text-muted">Emp. #</th>
+                          <th class="text-left py-2 px-3 font-semibold text-xs uppercase tracking-wide text-muted">Seat</th>
+                          <th class="text-left py-2 px-3 font-semibold text-xs uppercase tracking-wide text-muted">Base</th>
+                          <th class="text-left py-2 px-3 font-semibold text-xs uppercase tracking-wide text-muted">Fleet</th>
+                          <th class="text-left py-2 px-3 font-semibold text-xs uppercase tracking-wide text-muted">Hire Date</th>
+                          <th class="text-left py-2 px-3 font-semibold text-xs uppercase tracking-wide text-muted">Retire Date</th>
+                        </tr>
+                      </thead>
+                      <tbody class="font-mono text-xs">
+                        <tr class="border-b border-(--ui-border)/50">
+                          <td class="py-2 px-3">1</td>
+                          <td class="py-2 px-3">90142</td>
+                          <td class="py-2 px-3">CA</td>
+                          <td class="py-2 px-3">ATL</td>
+                          <td class="py-2 px-3">B777</td>
+                          <td class="py-2 px-3">1988-06-15</td>
+                          <td class="py-2 px-3">2028-03-01</td>
+                        </tr>
+                        <tr class="border-b border-(--ui-border)/50">
+                          <td class="py-2 px-3">2</td>
+                          <td class="py-2 px-3">90287</td>
+                          <td class="py-2 px-3">FO</td>
+                          <td class="py-2 px-3">MSP</td>
+                          <td class="py-2 px-3">A320</td>
+                          <td class="py-2 px-3">1990-01-22</td>
+                          <td class="py-2 px-3">2030-07-14</td>
+                        </tr>
+                        <tr>
+                          <td class="py-2 px-3">3</td>
+                          <td class="py-2 px-3">90415</td>
+                          <td class="py-2 px-3">CA</td>
+                          <td class="py-2 px-3">LAX</td>
+                          <td class="py-2 px-3">B737</td>
+                          <td class="py-2 px-3">1992-09-03</td>
+                          <td class="py-2 px-3">2032-11-20</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <p class="text-xs text-muted">
+                    All data shown is fabricated for illustration purposes. <strong>Name</strong> is optional.
+                  </p>
+
+                  <NuxtLink
+                    to="/how-it-works#data-compatibility"
+                    class="text-sm text-primary hover:underline inline-flex items-center gap-1"
+                  >
+                    Full format details
+                    <UIcon name="i-lucide-arrow-right" class="size-3.5" />
+                  </NuxtLink>
+                </div>
+              </UCard>
+            </template>
+          </UCollapsible>
+        </div>
+
+        <!-- CTA: Your airline not listed? -->
+        <div class="max-w-3xl mx-auto text-center">
+          <h3 class="font-semibold mb-2">Your airline not listed?</h3>
+          <p class="text-sm text-muted mb-4">
+            We're adding parsers for more airlines. Request one, or contribute your own.
+          </p>
+          <div class="flex flex-wrap justify-center gap-3 mb-3">
+            <UButton
+              to="https://github.com/TarmacDenter/SeniorityGuru/issues/new?title=Parser%20request%3A%20%5BAirline%20Name%5D"
+              target="_blank"
+              color="primary"
+              variant="outline"
+              icon="i-lucide-github"
+            >
+              Request a Parser
+            </UButton>
+            <!-- TODO: Replace placeholder email with real contact address -->
+            <UButton
+              to="mailto:contact@seniorityguru.com"
+              color="neutral"
+              variant="outline"
+              icon="i-lucide-mail"
+            >
+              Email Me
+            </UButton>
+          </div>
+          <p class="text-xs text-muted">
+            Or
+            <a
+              href="https://github.com/TarmacDenter/SeniorityGuru/blob/main/CONTRIBUTING.md"
+              target="_blank"
+              class="text-primary hover:underline"
+            >contribute a parser yourself</a>.
+          </p>
+        </div>
+      </UContainer>
+    </section>
+
+    <!-- ── Section 8: Feature Cards ─────────────────────────────────────── -->
+    <section class="py-16 sm:py-20 bg-(--ui-bg)">
       <UContainer>
         <div class="text-center mb-12">
           <h2 class="text-2xl sm:text-3xl font-bold tracking-tight">
@@ -568,7 +756,7 @@ const demoWaveBuckets = computed(() => demoWaveData[demoQual.value])
     </section>
 
 
-    <!-- ── Section 8: CTA ────────────────────────────────────────────────── -->
+    <!-- ── Section 9: CTA ────────────────────────────────────────────────── -->
     <section class="py-20 sm:py-28 bg-(--ui-bg-elevated) text-center">
       <UContainer>
         <div class="max-w-xl mx-auto space-y-6">

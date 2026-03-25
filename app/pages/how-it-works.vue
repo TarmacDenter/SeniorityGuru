@@ -8,6 +8,7 @@ const sections = [
   { id: 'growth-model', title: 'Growth Modeling' },
   { id: 'projection-limits', title: 'Projection Limitations' },
   { id: 'threshold-calculator', title: 'Percentile Threshold Calculator' },
+  { id: 'data-compatibility', title: 'Data Compatibility' },
 ] as const
 </script>
 
@@ -207,6 +208,154 @@ const sections = [
               icon="i-lucide-info"
               title="Modeling convention"
               description="The ±10% scaling is a modeling convention. If the threshold isn't crossed within 15 years, the calculator shows &quot;not projected within 15 years.&quot;"
+            />
+          </div>
+        </section>
+        <!-- Data Compatibility -->
+        <section id="data-compatibility">
+          <h2 class="text-xl font-bold mb-3">Data Compatibility</h2>
+          <USeparator class="mb-4" />
+          <div class="space-y-6 text-sm text-[--ui-text]">
+            <p>
+              SeniorityGuru accepts CSV and Excel files (.csv, .xlsx, .xls). Choose the parser that
+              matches your airline when uploading, or use the generic importer for any spreadsheet.
+            </p>
+
+            <!-- Delta -->
+            <div class="space-y-3">
+              <h3 class="font-semibold text-base flex items-center gap-2">
+                <UIcon name="i-lucide-graduation-cap" class="size-5 text-primary" />
+                Delta Air Lines (Native Support)
+              </h3>
+              <p class="text-[--ui-text-muted]">
+                The Delta parser auto-detects and processes PBS seniority list exports. It handles:
+              </p>
+              <ul class="list-disc list-inside space-y-1 text-[--ui-text-muted]">
+                <li>
+                  <strong>Header detection</strong> — finds the row containing
+                  <code class="text-xs bg-(--ui-bg-elevated) px-1 py-0.5 rounded">SENIORITY_NBR</code>,
+                  skipping any preamble rows above it
+                </li>
+                <li>
+                  <strong>Column mapping</strong> — maps Delta-specific column names
+                  (<code class="text-xs bg-(--ui-bg-elevated) px-1 py-0.5 rounded">Emp_Nbr</code>,
+                  <code class="text-xs bg-(--ui-bg-elevated) px-1 py-0.5 rounded">Pilot_Hire_Date</code>,
+                  etc.) to the standard format automatically
+                </li>
+                <li>
+                  <strong>Category decomposition</strong> — splits the Category column (e.g.
+                  <code class="text-xs bg-(--ui-bg-elevated) px-1 py-0.5 rounded">ATL350A</code>)
+                  into Base (ATL), Fleet (350), and Seat (CA/FO)
+                </li>
+                <li>
+                  <strong>Effective date extraction</strong> — reads the list date from preamble rows
+                  (e.g. "Seniority List 01Mar2026")
+                </li>
+                <li>
+                  <strong>Missing retire dates</strong> — rows with blank or placeholder retirement dates
+                  are set to a far-future sentinel value, flagged, and editable during review
+                </li>
+              </ul>
+            </div>
+
+            <!-- Generic -->
+            <div class="space-y-3">
+              <h3 class="font-semibold text-base flex items-center gap-2">
+                <UIcon name="i-lucide-file-spreadsheet" class="size-5 text-primary" />
+                Generic / Other Airlines
+              </h3>
+              <p class="text-[--ui-text-muted]">
+                The generic importer works with any airline's spreadsheet. It expects a header row
+                followed by data rows.
+              </p>
+
+              <div class="space-y-2">
+                <h4 class="font-medium">Required Columns</h4>
+                <div class="overflow-x-auto">
+                  <table class="w-full text-sm border-collapse">
+                    <thead>
+                      <tr class="border-b border-(--ui-border)">
+                        <th class="text-left py-2 px-3 font-semibold text-xs uppercase tracking-wide text-[--ui-text-muted]">Column</th>
+                        <th class="text-left py-2 px-3 font-semibold text-xs uppercase tracking-wide text-[--ui-text-muted]">Description</th>
+                      </tr>
+                    </thead>
+                    <tbody class="text-[--ui-text-muted]">
+                      <tr class="border-b border-(--ui-border)/50">
+                        <td class="py-2 px-3 font-medium">Seniority Number</td>
+                        <td class="py-2 px-3">Integer rank on the seniority list (1 = most senior)</td>
+                      </tr>
+                      <tr class="border-b border-(--ui-border)/50">
+                        <td class="py-2 px-3 font-medium">Employee Number</td>
+                        <td class="py-2 px-3">Unique pilot identifier used to track you across lists</td>
+                      </tr>
+                      <tr class="border-b border-(--ui-border)/50">
+                        <td class="py-2 px-3 font-medium">Seat</td>
+                        <td class="py-2 px-3">CA (Captain) or FO (First Officer)</td>
+                      </tr>
+                      <tr class="border-b border-(--ui-border)/50">
+                        <td class="py-2 px-3 font-medium">Base</td>
+                        <td class="py-2 px-3">Domicile / crew base (e.g. ATL, ORD, LAX)</td>
+                      </tr>
+                      <tr class="border-b border-(--ui-border)/50">
+                        <td class="py-2 px-3 font-medium">Fleet</td>
+                        <td class="py-2 px-3">Aircraft type (e.g. B737, A320, E175)</td>
+                      </tr>
+                      <tr class="border-b border-(--ui-border)/50">
+                        <td class="py-2 px-3 font-medium">Hire Date</td>
+                        <td class="py-2 px-3">Date the pilot was hired (most date formats accepted)</td>
+                      </tr>
+                      <tr>
+                        <td class="py-2 px-3 font-medium">Retire Date</td>
+                        <td class="py-2 px-3">Projected retirement date (required for trajectory projections)</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <p class="text-xs text-[--ui-text-muted]">
+                  <strong>Name</strong> is optional and never leaves your device. If your data includes a date of birth
+                  instead of a retirement date, the upload wizard can derive the retirement date using the FAA mandatory
+                  retirement age of 65.
+                </p>
+              </div>
+
+              <p class="text-[--ui-text-muted]">
+                The importer auto-detects common column names (e.g. "Seniority Number", "Sen Nbr", "SEN_NUM").
+                If auto-detection fails, you can manually map each column in the column mapper step.
+              </p>
+            </div>
+
+            <!-- Tips -->
+            <div class="space-y-3">
+              <h3 class="font-semibold text-base">Tips for Preparing Your Data</h3>
+              <ul class="list-disc list-inside space-y-1 text-[--ui-text-muted]">
+                <li>
+                  <strong>Export a single sheet</strong> — if your workbook has multiple sheets, select the one
+                  containing the seniority data. Multi-sheet files will prompt you to pick a sheet during upload.
+                </li>
+                <li>
+                  <strong>Preamble rows are OK</strong> — title rows, blank rows, and metadata above the header
+                  are automatically detected and skipped.
+                </li>
+                <li>
+                  <strong>Date formats</strong> — most common formats are accepted: YYYY-MM-DD, MM/DD/YYYY,
+                  DD-Mon-YYYY, and more. Consistency within a column helps but is not required.
+                </li>
+                <li>
+                  <strong>DOB to retire date</strong> — if your list has date of birth instead of retirement date,
+                  the upload wizard offers a "Derive from DOB" option that calculates retirement at age 65.
+                </li>
+                <li>
+                  <strong>File formats</strong> — CSV (.csv), Excel (.xlsx), and legacy Excel (.xls) are all supported.
+                </li>
+              </ul>
+            </div>
+
+            <UAlert
+              color="info"
+              variant="soft"
+              icon="i-lucide-info"
+              title="Parser contributions welcome"
+              description="If your airline's format isn't supported natively, we accept community-contributed parsers. See the CONTRIBUTING guide on GitHub for details."
             />
           </div>
         </section>
