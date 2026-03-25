@@ -44,6 +44,7 @@ export function useSeniorityUpload() {
   const extractedEffectiveDate = ref<string | null>(null)
   const extractedTitle = ref<string | null>(null)
   const syntheticNote = ref<string | null>(null)
+  const syntheticIndices = ref<Set<number>>(new Set())
   const autoDetectSucceeded = ref(false)
 
   const effectiveDate = ref<DateValue | null>(null)
@@ -67,6 +68,7 @@ export function useSeniorityUpload() {
     extractedEffectiveDate.value = preResult.metadata.effectiveDate
     extractedTitle.value = preResult.metadata.title
     syntheticNote.value = preResult.metadata.syntheticNote ?? null
+    syntheticIndices.value = new Set(preResult.metadata.syntheticIndices ?? [])
 
     const { headers, rows } = parseSpreadsheetData(preResult.rows)
     rawHeaders.value = headers
@@ -236,6 +238,7 @@ export function useSeniorityUpload() {
     extractedEffectiveDate.value = null
     extractedTitle.value = null
     syntheticNote.value = null
+    syntheticIndices.value = new Set()
     autoDetectSucceeded.value = false
     effectiveDate.value = null
     title.value = ''
@@ -255,6 +258,7 @@ export function useSeniorityUpload() {
     extractedEffectiveDate,
     extractedTitle,
     syntheticNote,
+    syntheticIndices,
     autoDetectSucceeded,
     effectiveDate,
     title,

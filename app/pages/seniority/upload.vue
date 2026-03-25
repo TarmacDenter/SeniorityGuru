@@ -12,6 +12,7 @@ const upload = useSeniorityUpload()
 const toast = useToast()
 const files = ref<File | null>(null)
 const showErrorsOnly = ref(false)
+const showEstimatedOnly = ref(false)
 const mappingSkipped = ref(false)
 
 const stepOrder = ['upload', 'mapping', 'review', 'confirm'] as const
@@ -217,7 +218,18 @@ async function onSave() {
                 variant="subtle"
                 title="Some data was estimated"
                 :description="upload.syntheticNote.value"
-              />
+              >
+                <template #actions>
+                  <UButton
+                    size="sm"
+                    color="info"
+                    :icon="showEstimatedOnly ? 'i-lucide-filter-x' : 'i-lucide-filter'"
+                    @click="showEstimatedOnly = !showEstimatedOnly; showErrorsOnly = false"
+                  >
+                    {{ showEstimatedOnly ? 'Show all rows' : 'Show estimated rows' }}
+                  </UButton>
+                </template>
+              </UAlert>
 
               <UAlert
                 v-if="upload.errorCount.value > 0"
@@ -261,6 +273,8 @@ async function onSave() {
                 :entries="upload.entries.value"
                 :row-errors="upload.rowErrors.value"
                 :show-errors-only="showErrorsOnly"
+                :show-estimated-only="showEstimatedOnly"
+                :estimated-indices="upload.syntheticIndices.value"
                 @update-cell="upload.updateCell"
                 @delete-row="upload.deleteRow"
               />

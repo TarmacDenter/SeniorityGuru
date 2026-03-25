@@ -50,7 +50,7 @@ export const deltaParser: PreParser = {
   id: 'delta',
   label: 'Delta Air Lines',
   description: 'Delta PBS seniority list export with Category column.',
-  icon: 'i-lucide-plane',
+  icon: 'i-lucide-graduation-cap',
   formatDescription: 'Expects a Delta Air Lines PBS seniority list export. Columns: SENIORITY_NBR, Emp_Nbr, Name, Category, Pilot_Hire_Date, Scheduled_Retire_Date. The Category column (e.g. ATL350A) is automatically split into Base, Fleet, and Seat. Preamble rows before the header are skipped automatically.',
 
   parse(raw: string[][]): PreParserResult {
@@ -78,9 +78,9 @@ export const deltaParser: PreParser = {
 
     const retireHeaderIdx = standardHeaders.indexOf('Retire Date')
 
-    let syntheticCount = 0
+    const syntheticIndices: number[] = []
     const dataRows = raw.slice(headerIdx + 1).filter(row => row.some(cell => String(cell).trim() !== ''))
-    const transformedRows = dataRows.map((row) => {
+    const transformedRows = dataRows.map((row, rowIdx) => {
       const mapped = sourceIndices.map(i => String(row[i] ?? ''))
       const cat = catIdx >= 0 ? String(row[catIdx] ?? '') : ''
       const { base, fleet, seat } = decomposeCategory(cat)
@@ -90,7 +90,7 @@ export const deltaParser: PreParser = {
         const retireVal = mapped[retireHeaderIdx]?.trim()
         if (!retireVal || retireVal === '.') {
           mapped[retireHeaderIdx] = UNKNOWN_RETIRE_SENTINEL
-          syntheticCount++
+          syntheticIndices.push(rowIdx)
         }
       }
 
@@ -98,9 +98,9 @@ export const deltaParser: PreParser = {
     })
 
     const fullMetadata: PreParserMetadata = { ...metadata }
-    if (syntheticCount > 0) {
-      fullMetadata.syntheticCount = syntheticCount
-      fullMetadata.syntheticNote = `${syntheticCount} row${syntheticCount === 1 ? '' : 's'} had unknown retirement dates and were set to ${UNKNOWN_RETIRE_SENTINEL}. You can edit these in the review table.`
+    if (syntheticIndices.length > 0) {
+      fullMetadata.syntheticIndices = syntheticIndices
+      fullMetadata.syntheticNote = `${syntheticIndices.length} row${syntheticIndices.length === 1 ? '' : 's'} had unknown retirement dates and were set to ${UNKNOWN_RETIRE_SENTINEL}. You can edit these in the review table.`
     }
 
     return {

@@ -167,7 +167,7 @@ describe('deltaParser.parse — full integration', () => {
     const retireIdx = headers.indexOf('Retire Date')
     expect(result.rows[1]![retireIdx]).toBe('15Jan2164') // normal row unchanged
     expect(result.rows[2]![retireIdx]).toBe('2099-12-31') // dot replaced with sentinel
-    expect(result.metadata.syntheticCount).toBe(1)
+    expect(result.metadata.syntheticIndices).toEqual([1])
     expect(result.metadata.syntheticNote).toContain('2099-12-31')
   })
 

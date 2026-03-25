@@ -286,11 +286,11 @@ describe('useSeniorityUpload', () => {
         base: 3, fleet: 4, name: 5, hire_date: 6, retire_date: 7,
       }
       mappingOptions.value = { nameMode: 'single', retireMode: 'direct' }
-      extractedTitle.value = 'Seniority List 01MAR2026'
+      extractedTitle.value = 'Seniority List 01MAR2099'
 
       applyMapping()
 
-      expect(title.value).toBe('Seniority List 01MAR2026')
+      expect(title.value).toBe('Seniority List 01MAR2099')
 
       vi.useRealTimers()
     })
