@@ -30,22 +30,14 @@ function emit(entry: LogEntry) {
     ringBuffer.shift()
   }
 
-  const { level } = entry
-  const serialized = JSON.stringify(entry)
+  const { level, scope, message, data } = entry
+  const prefix = `[${level.toUpperCase()}] [${scope}]`
+  const consoleMethod = level === 'debug' ? console.debug : level === 'info' ? console.info : level === 'warn' ? console.warn : console.error
 
-  switch (level) {
-    case 'debug':
-      console.debug(serialized)
-      break
-    case 'info':
-      console.info(serialized)
-      break
-    case 'warn':
-      console.warn(serialized)
-      break
-    case 'error':
-      console.error(serialized)
-      break
+  if (data) {
+    consoleMethod(prefix, message, data)
+  } else {
+    consoleMethod(prefix, message)
   }
 }
 

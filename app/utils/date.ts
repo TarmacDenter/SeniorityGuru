@@ -82,6 +82,16 @@ export function normalizeDate(value: string): string {
   const slashResult = parseSlashDate(s)
   if (slashResult) return slashResult
 
+  // Compact DDMonYYYY (e.g. "27Sep1985") — mobile Safari rejects this without spaces
+  const compactMatch = s.match(/^(\d{1,2})([A-Za-z]{3})(\d{4})$/)
+  if (compactMatch) {
+    const expanded = `${compactMatch[1]} ${compactMatch[2]} ${compactMatch[3]} UTC`
+    const parsed = new Date(expanded)
+    if (!isNaN(parsed.getTime())) {
+      return formatDate(parsed, true)
+    }
+  }
+
   // Named month ("15 Jan 2010", "Jan 15, 2010", etc.) — force UTC to avoid timezone shift
   if (s.match(/[a-zA-Z]/)) {
     const parsed = new Date(s + ' UTC')

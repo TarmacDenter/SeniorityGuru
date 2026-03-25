@@ -45,6 +45,10 @@ function computeValidationErrors(entries: Partial<SeniorityEntry>[]): Map<number
     const result = SeniorityEntrySchema.safeParse(entry)
     if (!result.success) {
       errors.set(i, result.error.issues.map(issue => `${issue.path.join('.')}: ${issue.message}`))
+      if (i === 0) {
+        // Log first failing entry for debugging
+        console.debug('[validation] first failing entry:', JSON.stringify(entry), result.error.issues)
+      }
     }
   })
 
@@ -234,6 +238,7 @@ export function useSeniorityUpload() {
 
     columnMap.value = autoDetectColumnMap(headers)
     autoDetectSucceeded.value = isColumnMapComplete(columnMap.value)
+    log.debug('Column map result', { columnMap: columnMap.value, autoDetectSucceeded: autoDetectSucceeded.value, headers })
   }
 
   function resetMappingState() {
@@ -267,8 +272,10 @@ export function useSeniorityUpload() {
         },
       )
       entries.value = mapped
+      log.debug('Mapping complete', { entryCount: mapped.length, sampleEntry: mapped[0] })
 
       await validateAsync()
+      log.debug('Validation complete', { errorCount: rowErrors.value.size, sampleErrors: [...rowErrors.value.entries()].slice(0, 3) })
 
       if (extractedEffectiveDate.value) {
         effectiveDate.value = parseDate(extractedEffectiveDate.value)

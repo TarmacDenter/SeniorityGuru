@@ -182,6 +182,17 @@ describe('normalizeDate', () => {
     expect(normalizeDate('January 15, 2010')).toBe('2010-01-15')
   })
 
+  // Compact DDMonYYYY (Delta format — mobile Safari rejects without spaces)
+  it('converts "27Sep1985" (compact, no spaces)', () => {
+    expect(normalizeDate('27Sep1985')).toBe('1985-09-27')
+  })
+  it('converts "03May2026" (compact, no spaces)', () => {
+    expect(normalizeDate('03May2026')).toBe('2026-05-03')
+  })
+  it('converts "01Mar2026" (compact, no spaces)', () => {
+    expect(normalizeDate('01Mar2026')).toBe('2026-03-01')
+  })
+
   // Calendar validation
   it('returns invalid ISO date as-is for downstream error', () => {
     expect(normalizeDate('2010-13-32')).toBe('2010-13-32')
