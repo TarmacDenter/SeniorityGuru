@@ -1,6 +1,6 @@
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error'
 
-interface LogEntry {
+export interface LogEntry {
   level: LogLevel
   scope: string
   message: string
@@ -15,6 +15,9 @@ const LOG_LEVELS: Record<LogLevel, number> = {
   error: 3,
 }
 
+const MAX_BUFFER_SIZE = 500
+const ringBuffer: LogEntry[] = []
+
 const MIN_LEVEL: LogLevel = process.env.NODE_ENV === 'production' ? 'info' : 'debug'
 
 function shouldLog(level: LogLevel): boolean {
@@ -22,6 +25,11 @@ function shouldLog(level: LogLevel): boolean {
 }
 
 function emit(entry: LogEntry) {
+  ringBuffer.push(entry)
+  if (ringBuffer.length > MAX_BUFFER_SIZE) {
+    ringBuffer.shift()
+  }
+
   const { level } = entry
   const serialized = JSON.stringify(entry)
 
@@ -66,4 +74,26 @@ export function createLogger(scope: string): Logger {
     warn: (message, data?) => log('warn', message, data),
     error: (message, data?) => log('error', message, data),
   }
+}
+
+/** Returns a copy of the ring buffer contents, oldest first. */
+export function getLogBuffer(): LogEntry[] {
+  return [...ringBuffer]
+}
+
+/** Clears all entries from the ring buffer. */
+export function clearLogBuffer(): void {
+  ringBuffer.length = 0
+}
+
+/** Formats the ring buffer as a human-readable text block. */
+export function exportLogAsText(): string {
+  return ringBuffer
+    .map((entry) => {
+      const level = `[${entry.level.toUpperCase()}]`
+      const scope = `[${entry.scope}]`
+      const data = entry.data ? `\n  ${JSON.stringify(entry.data, null, 2)}` : ''
+      return `${entry.timestamp} ${level} ${scope} ${entry.message}${data}`
+    })
+    .join('\n')
 }
