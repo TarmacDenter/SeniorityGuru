@@ -233,7 +233,7 @@ async function onSave() {
               <div v-if="upload.sheetNames.value.length > 1" class="space-y-2">
                 <UFormField label="Select Sheet" name="sheet">
                   <USelectMenu
-                    :model-value="upload.selectedSheet.value"
+                    :model-value="upload.selectedSheet.value ?? undefined"
                     :items="upload.sheetNames.value"
                     placeholder="Choose a sheet..."
                     :search-input="false"
