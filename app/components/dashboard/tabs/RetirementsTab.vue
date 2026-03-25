@@ -128,7 +128,7 @@ const horizonOptions = [
 
         <!-- Senior only toggle -->
         <div class="flex items-center gap-2">
-          <UToggle v-model="seniorOnly" :disabled="!hasEmployeeNumber" size="sm" />
+          <USwitch v-model="seniorOnly" :disabled="!hasEmployeeNumber" size="sm" />
           <span class="text-sm" :class="!hasEmployeeNumber ? 'text-muted' : ''">
             Senior to me only
           </span>
