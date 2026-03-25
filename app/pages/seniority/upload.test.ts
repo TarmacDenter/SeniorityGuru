@@ -3,13 +3,14 @@ import { mountSuspended, mockNuxtImport } from '@nuxt/test-utils/runtime'
 import type { DOMWrapper } from '@vue/test-utils'
 import UploadPage from './upload.vue'
 
-const { mockSave, mockReset, mockNavigateTo, mockColumnMap, mockMappingOptions, mockRawRows } = vi.hoisted(() => ({
+const { mockSave, mockReset, mockNavigateTo, mockColumnMap, mockMappingOptions, mockRawRows, mockSelectedParserId } = vi.hoisted(() => ({
   mockSave: vi.fn(),
   mockReset: vi.fn(),
   mockNavigateTo: vi.fn(),
   mockColumnMap: { value: { seniority_number: -1, employee_number: -1, seat: -1, base: -1, fleet: -1, hire_date: -1, retire_date: -1, name: -1 } },
   mockMappingOptions: { value: {} as Record<string, unknown> },
   mockRawRows: { value: [] as unknown[] },
+  mockSelectedParserId: { value: 'generic' as string | null },
 }))
 
 mockNuxtImport('navigateTo', () => mockNavigateTo)
@@ -26,6 +27,10 @@ mockNuxtImport('useSeniorityUpload', () => () => ({
   rowErrors: { value: new Map() },
   columnMap: mockColumnMap,
   mappingOptions: mockMappingOptions,
+  selectedParserId: mockSelectedParserId,
+  autoDetectSucceeded: { value: false },
+  extractedEffectiveDate: { value: null },
+  extractedTitle: { value: null },
   effectiveDate: { value: null },
   title: { value: '' },
   setFiles: vi.fn().mockResolvedValue(undefined),

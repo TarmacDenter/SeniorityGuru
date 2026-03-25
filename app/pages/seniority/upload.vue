@@ -2,6 +2,7 @@
 import type { StepperItem } from '@nuxt/ui'
 import type { DateValue } from '@internationalized/date'
 import { useSeniorityUpload } from '~/composables/seniority'
+import { parsers } from '~/utils/parsers/registry'
 
 definePageMeta({ layout: 'dashboard' })
 
@@ -11,6 +12,7 @@ const upload = useSeniorityUpload()
 const toast = useToast()
 const files = ref<File | null>(null)
 const showErrorsOnly = ref(false)
+const mappingSkipped = ref(false)
 
 const stepOrder = ['upload', 'mapping', 'review', 'confirm'] as const
 type Step = typeof stepOrder[number]
@@ -54,10 +56,29 @@ const canAdvance = computed(() => {
   return true
 })
 
+function selectParser(parserId: string) {
+  upload.selectedParserId.value = parserId
+}
+
+function changeFormat() {
+  upload.reset()
+  files.value = null
+  mappingSkipped.value = false
+}
+
 async function nextStep() {
+  if (currentStep.value === 'upload' && upload.autoDetectSucceeded.value) {
+    processing.value = true
+    await new Promise(resolve => setTimeout(resolve, 0))
+    upload.applyMapping()
+    processing.value = false
+    mappingSkipped.value = true
+    currentStep.value = 'review'
+    toast.add({ title: 'All columns auto-detected — skipped to review', color: 'info' })
+    return
+  }
   if (currentStep.value === 'mapping') {
     processing.value = true
-    // Yield to let the UI update with the loading state before heavy work
     await new Promise(resolve => setTimeout(resolve, 0))
     upload.applyMapping()
     processing.value = false
@@ -69,6 +90,11 @@ async function nextStep() {
 }
 
 function prevStep() {
+  if (currentStep.value === 'review' && mappingSkipped.value) {
+    mappingSkipped.value = false
+    currentStep.value = 'upload'
+    return
+  }
   const prevIdx = currentStepIndex.value - 1
   if (prevIdx >= 0) {
     currentStep.value = stepOrder[prevIdx]!
@@ -95,151 +121,171 @@ async function onSave() {
 
     <template #body>
       <div class="max-w-5xl mx-auto p-4 sm:p-6">
-        <!-- Mobile: compact step indicator -->
-        <div class="sm:hidden text-sm text-muted text-center mb-6">
-          Step {{ currentStepIndex + 1 }} of {{ steps.length }}
-          <span class="mx-2">·</span>
-          <span class="font-medium text-(--ui-text)">{{ steps[currentStepIndex]?.title }}</span>
-        </div>
+        <!-- State 1: Parser Selection (before wizard) -->
+        <template v-if="!upload.selectedParserId.value">
+          <ParserSelector :parsers="parsers" @select="selectParser" />
+        </template>
 
-        <!-- Desktop: full stepper (indicator only — content rendered below) -->
-        <UStepper
-          v-model="currentStep"
-          :items="steps"
-          disabled
-          class="hidden sm:flex w-full mb-8"
-        />
-
-        <!-- Step content (always rendered, shared by mobile and desktop) -->
-        <div class="mb-6">
-          <!-- Step 1: Upload File -->
-          <div v-if="currentStep === 'upload'" class="space-y-6">
-            <UFileUpload
-              v-model="files"
-              accept=".csv,.xlsx,.xls"
-              variant="area"
-              icon="i-lucide-upload"
-              label="Drag & drop your CSV or XLSX file here"
-              description="or tap to choose a file"
+        <!-- State 2: Upload Wizard (after parser selected) -->
+        <template v-else>
+          <!-- Change format link -->
+          <div class="mb-4">
+            <UButton
+              variant="link"
+              color="neutral"
+              icon="i-lucide-arrow-left"
+              size="sm"
+              label="Change format"
+              @click="changeFormat"
             />
+          </div>
+
+          <!-- Mobile: compact step indicator -->
+          <div class="sm:hidden text-sm text-muted text-center mb-6">
+            Step {{ currentStepIndex + 1 }} of {{ steps.length }}
+            <span class="mx-2">&middot;</span>
+            <span class="font-medium text-(--ui-text)">{{ steps[currentStepIndex]?.title }}</span>
+          </div>
+
+          <!-- Desktop: full stepper (indicator only — content rendered below) -->
+          <UStepper
+            v-model="currentStep"
+            :items="steps"
+            disabled
+            class="hidden sm:flex w-full mb-8"
+          />
+
+          <!-- Step content (always rendered, shared by mobile and desktop) -->
+          <div class="mb-6">
+            <!-- Step 1: Upload File -->
+            <div v-if="currentStep === 'upload'" class="space-y-6">
+              <UFileUpload
+                v-model="files"
+                accept=".csv,.xlsx,.xls"
+                variant="area"
+                icon="i-lucide-upload"
+                label="Drag & drop your CSV or XLSX file here"
+                description="or tap to choose a file"
+              />
+
+              <UButton
+                v-if="files"
+                variant="ghost"
+                color="neutral"
+                icon="i-lucide-x"
+                class="mt-2"
+                @click="files = null"
+              >
+                Clear file
+              </UButton>
+
+              <UAlert
+                v-if="upload.fileName.value"
+                icon="i-lucide-file-check"
+                color="success"
+                variant="soft"
+                :title="`Loaded: ${upload.fileName.value}`"
+                :description="`${upload.rawRows.value.length} rows, ${upload.rawHeaders.value.length} columns`"
+              />
+            </div>
+
+            <!-- Step 2: Map Columns -->
+            <div v-else-if="currentStep === 'mapping'" class="space-y-6">
+              <UploadColumnMapper
+                :headers="upload.rawHeaders.value"
+                :column-map="upload.columnMap.value"
+                :mapping-options="upload.mappingOptions.value"
+                :sample-rows="sampleRows"
+                @update:column-map="upload.columnMap.value = $event"
+                @update:mapping-options="upload.mappingOptions.value = $event"
+              />
+            </div>
+
+            <!-- Step 3: Review & Validate -->
+            <div v-else-if="currentStep === 'review'" class="space-y-4">
+              <div class="flex items-center justify-between">
+                <p class="text-sm text-muted">
+                  {{ upload.entries.value.length }} rows
+                  <template v-if="upload.errorCount.value > 0">
+                    &middot;
+                    <UButton
+                      variant="link"
+                      color="error"
+                      size="xs"
+                      :icon="showErrorsOnly ? 'i-lucide-filter-x' : 'i-lucide-filter'"
+                      @click="showErrorsOnly = !showErrorsOnly"
+                    >
+                      {{ upload.errorCount.value }} errors{{ showErrorsOnly ? ' (filtered)' : '' }}
+                    </UButton>
+                  </template>
+                </p>
+              </div>
+              <UploadReviewTable
+                :entries="upload.entries.value"
+                :row-errors="upload.rowErrors.value"
+                :show-errors-only="showErrorsOnly"
+                @update-cell="upload.updateCell"
+                @delete-row="upload.deleteRow"
+              />
+            </div>
+
+            <!-- Step 4: Confirm & Save -->
+            <div v-else-if="currentStep === 'confirm'" class="space-y-6 max-w-md">
+              <UFormField label="Effective Date" name="effectiveDate" required>
+                <UInputDate v-model="effectiveDateModel" class="w-full" />
+              </UFormField>
+
+              <UFormField label="Title (optional)" name="title">
+                <UInput v-model="upload.title.value" placeholder="e.g. January 2026 Seniority List" class="w-full" />
+              </UFormField>
+
+              <div class="bg-elevated rounded-lg p-4 space-y-2 text-sm">
+                <div class="flex justify-between">
+                  <span class="text-muted">Rows</span>
+                  <span class="font-medium">{{ upload.entries.value.length }}</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-muted">File</span>
+                  <span class="font-medium">{{ upload.fileName.value }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Navigation buttons -->
+          <div class="flex justify-between mt-6">
+            <UButton
+              v-if="currentStep !== 'upload'"
+              variant="ghost"
+              icon="i-lucide-arrow-left"
+              @click="prevStep"
+            >
+              Back
+            </UButton>
+            <div v-else />
 
             <UButton
-              v-if="files"
-              variant="ghost"
-              color="neutral"
-              icon="i-lucide-x"
-              class="mt-2"
-              @click="files = null"
+              v-if="currentStep !== 'confirm'"
+              :disabled="!canAdvance || processing"
+              :loading="processing"
+              icon="i-lucide-arrow-right"
+              trailing
+              @click="nextStep"
             >
-              Clear file
+              Next
             </UButton>
-
-            <UAlert
-              v-if="upload.fileName.value"
-              icon="i-lucide-file-check"
+            <UButton
+              v-else
+              :disabled="!upload.effectiveDate.value || upload.saving.value"
+              :loading="upload.saving.value"
+              icon="i-lucide-check"
               color="success"
-              variant="soft"
-              :title="`Loaded: ${upload.fileName.value}`"
-              :description="`${upload.rawRows.value.length} rows, ${upload.rawHeaders.value.length} columns`"
-            />
+              @click="onSave"
+            >
+              Looks Good
+            </UButton>
           </div>
-
-          <!-- Step 2: Map Columns -->
-          <div v-else-if="currentStep === 'mapping'" class="space-y-6">
-            <UploadColumnMapper
-              :headers="upload.rawHeaders.value"
-              :column-map="upload.columnMap.value"
-              :mapping-options="upload.mappingOptions.value"
-              :sample-rows="sampleRows"
-              @update:column-map="upload.columnMap.value = $event"
-              @update:mapping-options="upload.mappingOptions.value = $event"
-            />
-          </div>
-
-          <!-- Step 3: Review & Validate -->
-          <div v-else-if="currentStep === 'review'" class="space-y-4">
-            <div class="flex items-center justify-between">
-              <p class="text-sm text-muted">
-                {{ upload.entries.value.length }} rows
-                <template v-if="upload.errorCount.value > 0">
-                  &middot;
-                  <UButton
-                    variant="link"
-                    color="error"
-                    size="xs"
-                    :icon="showErrorsOnly ? 'i-lucide-filter-x' : 'i-lucide-filter'"
-                    @click="showErrorsOnly = !showErrorsOnly"
-                  >
-                    {{ upload.errorCount.value }} errors{{ showErrorsOnly ? ' (filtered)' : '' }}
-                  </UButton>
-                </template>
-              </p>
-            </div>
-            <UploadReviewTable
-              :entries="upload.entries.value"
-              :row-errors="upload.rowErrors.value"
-              :show-errors-only="showErrorsOnly"
-              @update-cell="upload.updateCell"
-              @delete-row="upload.deleteRow"
-            />
-          </div>
-
-          <!-- Step 4: Confirm & Save -->
-          <div v-else-if="currentStep === 'confirm'" class="space-y-6 max-w-md">
-            <UFormField label="Effective Date" name="effectiveDate" required>
-              <UInputDate v-model="effectiveDateModel" class="w-full" />
-            </UFormField>
-
-            <UFormField label="Title (optional)" name="title">
-              <UInput v-model="upload.title.value" placeholder="e.g. January 2026 Seniority List" class="w-full" />
-            </UFormField>
-
-            <div class="bg-elevated rounded-lg p-4 space-y-2 text-sm">
-              <div class="flex justify-between">
-                <span class="text-muted">Rows</span>
-                <span class="font-medium">{{ upload.entries.value.length }}</span>
-              </div>
-              <div class="flex justify-between">
-                <span class="text-muted">File</span>
-                <span class="font-medium">{{ upload.fileName.value }}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Navigation buttons -->
-        <div class="flex justify-between mt-6">
-          <UButton
-            v-if="currentStep !== 'upload'"
-            variant="ghost"
-            icon="i-lucide-arrow-left"
-            @click="prevStep"
-          >
-            Back
-          </UButton>
-          <div v-else />
-
-          <UButton
-            v-if="currentStep !== 'confirm'"
-            :disabled="!canAdvance || processing"
-            :loading="processing"
-            icon="i-lucide-arrow-right"
-            trailing
-            @click="nextStep"
-          >
-            Next
-          </UButton>
-          <UButton
-            v-else
-            :disabled="!upload.effectiveDate.value || upload.saving.value"
-            :loading="upload.saving.value"
-            icon="i-lucide-check"
-            color="success"
-            @click="onSave"
-          >
-            Looks Good
-          </UButton>
-        </div>
+        </template>
       </div>
     </template>
   </UDashboardPanel>
