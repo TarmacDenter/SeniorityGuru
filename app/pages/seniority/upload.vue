@@ -3,6 +3,9 @@ import type { StepperItem } from '@nuxt/ui'
 import type { DateValue } from '@internationalized/date'
 import { useSeniorityUpload } from '~/composables/seniority'
 import { parsers } from '~/utils/parsers/registry'
+import { createLogger } from '~/utils/logger'
+
+const log = createLogger('upload-page')
 
 definePageMeta({ layout: 'dashboard' })
 
@@ -90,11 +93,13 @@ async function nextStep() {
     try {
       await upload.applyMapping()
     } catch {
+      log.error('applyMapping failed during auto-detect step')
       toast.add({ title: 'Failed to process file', color: 'error' })
       return
     }
     mappingSkipped.value = true
     currentStep.value = 'review'
+    log.info('Upload step advanced (mapping skipped)', { step: 'review' })
     toast.add({ title: 'All columns auto-detected — skipped to review', color: 'info' })
     return
   }
@@ -102,6 +107,7 @@ async function nextStep() {
     try {
       await upload.applyMapping()
     } catch {
+      log.error('applyMapping failed during mapping step')
       toast.add({ title: 'Failed to process file', color: 'error' })
       return
     }
@@ -109,6 +115,7 @@ async function nextStep() {
   const nextIdx = currentStepIndex.value + 1
   if (nextIdx < stepOrder.length) {
     currentStep.value = stepOrder[nextIdx]!
+    log.info('Upload step advanced', { step: currentStep.value })
   }
 }
 

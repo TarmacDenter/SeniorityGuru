@@ -5,6 +5,9 @@ import { createSnapshot, createLens } from '~/utils/seniority-engine'
 import { uniqueEntryValues } from '~/utils/entry-filters'
 import { useSeniorityStore } from '~/stores/seniority'
 import { useUserStore } from '~/stores/user'
+import { createLogger } from '~/utils/logger'
+
+const log = createLogger('seniority-core')
 
 export interface NewHireControls {
   enabled: Ref<boolean>
@@ -83,16 +86,26 @@ export function useSeniorityCore() {
           if (parsed.selectedSeat) selectedSeat.value = parsed.selectedSeat
           if (parsed.selectedFleet) selectedFleet.value = parsed.selectedFleet
         }
-        catch {
-          // ignore invalid JSON
+        catch (e) {
+          log.warn('Failed to parse new-hire config from preferences', { error: String(e) })
         }
       }
-    }).catch(() => {
-      // ignore errors during hydration
+      log.debug('New-hire preferences hydrated', {
+        enabled: enabled.value,
+        selectedBase: selectedBase.value,
+        selectedSeat: selectedSeat.value,
+        selectedFleet: selectedFleet.value,
+        hasBirthDate: birthDate.value !== null,
+      })
+    }).catch((e: unknown) => {
+      log.warn('Failed to hydrate new-hire preferences', { error: String(e) })
     })
 
     watch(enabled, (val) => {
-      userStore.savePreference(PREF_KEY_ENABLED, String(val)).catch(() => {})
+      log.info('New-hire mode toggled', { enabled: val })
+      userStore.savePreference(PREF_KEY_ENABLED, String(val)).catch((e: unknown) => {
+        log.error('Failed to persist newHireEnabled preference', { error: String(e) })
+      })
     })
 
     watch([birthDate, selectedBase, selectedSeat, selectedFleet], () => {
@@ -101,7 +114,9 @@ export function useSeniorityCore() {
         selectedBase: selectedBase.value,
         selectedSeat: selectedSeat.value,
         selectedFleet: selectedFleet.value,
-      })).catch(() => {})
+      })).catch((e: unknown) => {
+        log.error('Failed to persist growthConfig preference', { error: String(e) })
+      })
     })
   }
 

@@ -2,8 +2,10 @@ import type { LocalSeniorityList } from '~/utils/db'
 import { useSeniorityStore } from '~/stores/seniority'
 import type { SeniorityEntry } from '~/utils/schemas/seniority-list'
 import { computeComparison, type CompareResult } from '~/utils/seniority-compare'
+import { createLogger } from '~/utils/logger'
 
 export function useSeniorityCompare(listIdA: Ref<number | null | undefined>, listIdB: Ref<number | null | undefined>) {
+  const log = createLogger('seniority-compare')
   const store = useSeniorityStore()
   const loading = ref(false)
   const error = ref<string | null>(null)
@@ -50,9 +52,11 @@ export function useSeniorityCompare(listIdA: Ref<number | null | undefined>, lis
       entriesB.value = dataB.entries
       listMetaA.value = dataA.meta
       listMetaB.value = dataB.meta
+      log.info('Comparison loaded', { listIdA: idA, listIdB: idB, countA: dataA.entries.length, countB: dataB.entries.length })
     }
     catch (e: unknown) {
       error.value = e instanceof Error ? e.message : 'Failed to load comparison'
+      log.error('Failed to load comparison data', { listIdA: idA, listIdB: idB, error: error.value })
     }
     finally {
       loading.value = false
