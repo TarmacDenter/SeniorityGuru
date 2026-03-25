@@ -34,6 +34,24 @@ const birthDate = ref<string | null>(null)
 
 let _dbInitialized = false
 
+// Lazy singleton computeds — created once on first call, shared by all callers.
+// Prevents re-evaluating createSnapshot(17k entries) on every tab switch.
+let _userEntry: ComputedRef<SeniorityEntry | undefined> | null = null
+let _baseSnapshot: ComputedRef<SenioritySnapshot | null> | null = null
+let _snapshot: ComputedRef<SenioritySnapshot | null> | null = null
+let _baseLens: ComputedRef<SeniorityLens | null> | null = null
+let _lens: ComputedRef<SeniorityLens | null> | null = null
+
+/** Reset singleton computeds. Called by tests that create fresh Pinia instances. */
+export function _resetCoreSingletons() {
+  _userEntry = null
+  _baseSnapshot = null
+  _snapshot = null
+  _baseLens = null
+  _lens = null
+  _dbInitialized = false
+}
+
 export function useSeniorityCore() {
   const seniorityStore = useSeniorityStore()
   const userStore = useUserStore()
@@ -157,49 +175,63 @@ export function useSeniorityCore() {
     reset,
   }
 
-  // Core engine: user entry lookup
-  const userEntry = computed<SeniorityEntry | undefined>(() => {
-    const empNum = userStore.employeeNumber
-    if (!empNum) return undefined
-    return seniorityStore.entries.find(e => e.employee_number === empNum)
-  })
+  // Lazy singleton computeds — created once, reused by all callers.
+  // This avoids re-evaluating createSnapshot(17k entries) on every tab switch.
+  if (!_userEntry) {
+    _userEntry = computed<SeniorityEntry | undefined>(() => {
+      const empNum = userStore.employeeNumber
+      if (!empNum) return undefined
+      return seniorityStore.entries.find(e => e.employee_number === empNum)
+    })
+  }
 
-  // Effective snapshot: includes synthetic entry when new-hire mode is active
-  const baseSnapshot = computed<SenioritySnapshot | null>(() => {
-    if (seniorityStore.entries.length === 0) return null
-    return createSnapshot([...seniorityStore.entries])
-  })
+  if (!_baseSnapshot) {
+    _baseSnapshot = computed<SenioritySnapshot | null>(() => {
+      if (seniorityStore.entries.length === 0) return null
+      return createSnapshot([...seniorityStore.entries])
+    })
+  }
 
-  const snapshot = computed<SenioritySnapshot | null>(() => {
-    const synthetic = syntheticEntry.value
-    if (!synthetic) return baseSnapshot.value
-    if (seniorityStore.entries.length === 0) return null
-    return createSnapshot([...seniorityStore.entries, synthetic])
-  })
+  if (!_snapshot) {
+    _snapshot = computed<SenioritySnapshot | null>(() => {
+      const synthetic = syntheticEntry.value
+      if (!synthetic) return _baseSnapshot!.value
+      if (seniorityStore.entries.length === 0) return null
+      return createSnapshot([...seniorityStore.entries, synthetic])
+    })
+  }
 
-  // Effective lens: re-anchors to synthetic entry when new-hire mode is active
-  const baseLens = computed<SeniorityLens | null>(() => {
-    if (!baseSnapshot.value) return null
-    const entry = userEntry.value
-    if (!entry) return null
-    const anchor: PilotAnchor = {
-      seniorityNumber: entry.seniority_number,
-      retireDate: entry.retire_date,
-      employeeNumber: entry.employee_number,
-    }
-    return createLens(baseSnapshot.value, anchor)
-  })
+  if (!_baseLens) {
+    _baseLens = computed<SeniorityLens | null>(() => {
+      if (!_baseSnapshot!.value) return null
+      const entry = _userEntry!.value
+      if (!entry) return null
+      const anchor: PilotAnchor = {
+        seniorityNumber: entry.seniority_number,
+        retireDate: entry.retire_date,
+        employeeNumber: entry.employee_number,
+      }
+      return createLens(_baseSnapshot!.value, anchor)
+    })
+  }
 
-  const lens = computed<SeniorityLens | null>(() => {
-    const synthetic = syntheticEntry.value
-    if (!snapshot.value || !synthetic) return baseLens.value
-    const anchor: PilotAnchor = {
-      seniorityNumber: synthetic.seniority_number,
-      retireDate: synthetic.retire_date,
-      employeeNumber: synthetic.employee_number,
-    }
-    return createLens(snapshot.value, anchor)
-  })
+  if (!_lens) {
+    _lens = computed<SeniorityLens | null>(() => {
+      const synthetic = syntheticEntry.value
+      if (!_snapshot!.value || !synthetic) return _baseLens!.value
+      const anchor: PilotAnchor = {
+        seniorityNumber: synthetic.seniority_number,
+        retireDate: synthetic.retire_date,
+        employeeNumber: synthetic.employee_number,
+      }
+      return createLens(_snapshot!.value, anchor)
+    })
+  }
+
+  const userEntry = _userEntry
+  const baseSnapshot = _baseSnapshot
+  const snapshot = _snapshot
+  const lens = _lens
 
   const hasData = computed(() => snapshot.value !== null)
   const hasAnchor = computed(() => lens.value !== null)

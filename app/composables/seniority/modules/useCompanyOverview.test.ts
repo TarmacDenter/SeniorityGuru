@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { useSeniorityCore } from './useSeniorityCore'
+import { useSeniorityCore, _resetCoreSingletons } from './useSeniorityCore'
 import { useCompanyOverview } from './useCompanyOverview'
 
 const mockStore = vi.hoisted(() => ({ entries: [] as any[], lists: [] as any[] }))
@@ -23,6 +23,7 @@ vi.mock('~/utils/db', () => ({
 const { makeEntry } = await import('~/test-utils/factories')
 
 beforeEach(() => {
+  _resetCoreSingletons()
   mockStore.entries = []
   mockStore.lists = []
   mockUserStore.employeeNumber = null

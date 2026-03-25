@@ -15,6 +15,7 @@ export const useSeniorityStore = defineStore('seniority', () => {
   const listsError = ref<string | null>(null)
   const entriesError = ref<string | null>(null)
   const currentListId = ref<number | null>(null)
+  const entryCache = new Map<number, SeniorityEntry[]>()
 
   async function clearAll() {
     await db.seniorityLists.clear()
@@ -31,6 +32,7 @@ export const useSeniorityStore = defineStore('seniority', () => {
     listsError.value = null
     entriesError.value = null
     currentListId.value = null
+    entryCache.clear()
     log.info('Seniority store cleared')
   }
 
@@ -85,13 +87,19 @@ export const useSeniorityStore = defineStore('seniority', () => {
     await db.seniorityEntries.bulkAdd(localEntries)
 
     lists.value.push({ id: listId, ...listData, createdAt: new Date().toISOString() })
+    entryCache.clear()
     log.info('List added', { listId, entryCount: entries.length })
     return listId
   }
 
   async function getEntriesForList(listId: number): Promise<SeniorityEntry[]> {
+    const cached = entryCache.get(listId)
+    if (cached) return cached
+
     const localEntries = await db.seniorityEntries.where('listId').equals(listId).toArray()
-    return localEntries.map(localEntryToSeniorityEntry)
+    const result = localEntries.map(localEntryToSeniorityEntry)
+    entryCache.set(listId, result)
+    return result
   }
 
   async function getList(listId: number): Promise<LocalSeniorityList | undefined> {
@@ -110,6 +118,7 @@ export const useSeniorityStore = defineStore('seniority', () => {
   async function deleteList(id: number) {
     await db.deleteList(id)
     lists.value = lists.value.filter(l => l.id !== id)
+    entryCache.delete(id)
     if (currentListId.value === id) {
       entries.value = []
       currentListId.value = null

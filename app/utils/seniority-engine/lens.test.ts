@@ -331,6 +331,44 @@ describe('demographics()', () => {
   })
 })
 
+describe('memoization', () => {
+  it('trajectory() returns same reference on same scenario', () => {
+    const lens = createLens(snapshot, anchor)
+    const scenario = createScenario()
+    const first = lens.trajectory(scenario)
+    const second = lens.trajectory(scenario)
+    expect(first).toBe(second) // referential equality — cache hit
+  })
+
+  it('trajectory() returns different reference on different scenario', () => {
+    const lens = createLens(snapshot, anchor)
+    const a = createScenario()
+    const b = createScenario({ scopeFilter: { seat: 'CA' } })
+    const first = lens.trajectory(a)
+    const second = lens.trajectory(b)
+    expect(first).not.toBe(second)
+  })
+
+  it('two lens instances have independent caches', () => {
+    const lensA = createLens(snapshot, anchor)
+    const lensB = createLens(snapshot, anchor)
+    const scenario = createScenario()
+    const resultA = lensA.trajectory(scenario)
+    const resultB = lensB.trajectory(scenario)
+    // Both computed fresh — not the same reference
+    expect(resultA).not.toBe(resultB)
+    // But structurally equivalent
+    expect(resultA).toEqual(resultB)
+  })
+
+  it('standing() returns same reference on repeat calls', () => {
+    const lens = createLens(snapshot, anchor)
+    const first = lens.standing()
+    const second = lens.standing()
+    expect(first).toBe(second)
+  })
+})
+
 // Test date is 2026-06-15 (from beforeAll above)
 // E2 retires 2026-12-01 (~6 months away), E3 retires 2040-01-01, E4 retires 2045-01-01 (user), E5 retires 2050-01-01
 describe('upcomingRetirements()', () => {

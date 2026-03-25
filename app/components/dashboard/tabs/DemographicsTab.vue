@@ -19,6 +19,8 @@ const userSeniorityNumber = computed(() =>
   newHire.syntheticEntry.value?.seniority_number
   ?? demographics.userEntry.value?.seniority_number,
 )
+
+const ready = useDeferredReady()
 </script>
 
 <template>
@@ -47,7 +49,8 @@ const userSeniorityNumber = computed(() =>
     </div>
 
     <!-- Most Junior Captain by Qual — full width, own row -->
-    <UCard :ui="{ body: 'px-0 py-0 sm:px-4 sm:py-5' }">
+    <USkeleton v-if="!ready || !demographics.mostJuniorCAs.value.length" class="h-48 rounded-lg" />
+    <UCard v-else :ui="{ body: 'px-0 py-0 sm:px-4 sm:py-5' }">
       <template #header>
         <h3 class="font-semibold">Most Junior Captain by Qual</h3>
       </template>
@@ -58,10 +61,12 @@ const userSeniorityNumber = computed(() =>
     </UCard>
 
     <!-- Base / Fleet / Seat Sizes — own row -->
-    <AnalyticsQualSizesCard :composition="demographics.qualComposition.value" />
+    <USkeleton v-if="!ready || !demographics.qualComposition.value.length" class="h-32 rounded-lg" />
+    <AnalyticsQualSizesCard v-else :composition="demographics.qualComposition.value" />
 
     <!-- Qual Composition list — full width, own row -->
-    <UCard>
+    <USkeleton v-if="!ready || !demographics.qualComposition.value.length" class="h-64 rounded-lg" />
+    <UCard v-else>
       <template #header>
         <h3 class="font-semibold">Qual Composition</h3>
       </template>
@@ -75,7 +80,8 @@ const userSeniorityNumber = computed(() =>
     </UCard>
 
     <!-- Age distribution -->
-    <UCard>
+    <USkeleton v-if="!ready || !demographics.ageDistribution.value.buckets.length" class="h-64 rounded-lg" />
+    <UCard v-else>
       <template #header>
         <h3 class="font-semibold">Age Distribution{{ demographics.qualLabel.value ? ` — ${demographics.qualLabel.value}` : '' }}</h3>
       </template>
@@ -86,7 +92,8 @@ const userSeniorityNumber = computed(() =>
     </UCard>
 
     <!-- YOS breakdown -->
-    <UCard>
+    <USkeleton v-if="!ready || !demographics.yosHistogram.value.length" class="h-48 rounded-lg" />
+    <UCard v-else>
       <template #header>
         <h3 class="font-semibold">Years of Service{{ demographics.qualLabel.value ? ` — ${demographics.qualLabel.value}` : '' }}</h3>
       </template>

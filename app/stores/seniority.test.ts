@@ -334,9 +334,120 @@ describe('seniority store (Dexie)', () => {
       expect(mockDb.seniorityEntries.equals).toHaveBeenCalledWith(1)
       expect(result).toHaveLength(1)
       expect(result[0]).toEqual(expectedAdaptedEntry)
-      // Store entries should remain empty — not cached
+      // Store entries should remain empty — not cached in reactive state
       expect(store.entries).toHaveLength(0)
       expect(store.currentListId).toBeNull()
+    })
+
+    it('second call to same listId returns cached result without querying Dexie', async () => {
+      mockDb.seniorityEntries.toArray.mockResolvedValue([mockLocalEntry])
+
+      const { useSeniorityStore } = await import('./seniority')
+      const store = useSeniorityStore()
+      store.clearStore()
+
+      await store.getEntriesForList(100)
+      await store.getEntriesForList(100)
+
+      // Dexie where() should only have been called once for listId 100
+      const whereCallsFor100 = mockDb.seniorityEntries.equals.mock.calls.filter(
+        (args: number[]) => args[0] === 100,
+      )
+      expect(whereCallsFor100).toHaveLength(1)
+    })
+
+    it('different listId triggers a new Dexie query', async () => {
+      mockDb.seniorityEntries.toArray.mockResolvedValue([mockLocalEntry])
+
+      const { useSeniorityStore } = await import('./seniority')
+      const store = useSeniorityStore()
+      store.clearStore()
+
+      await store.getEntriesForList(100)
+      await store.getEntriesForList(200)
+
+      expect(mockDb.seniorityEntries.equals).toHaveBeenCalledWith(100)
+      expect(mockDb.seniorityEntries.equals).toHaveBeenCalledWith(200)
+    })
+  })
+
+  describe('entry cache invalidation', () => {
+    it('deleteList invalidates cache for that listId', async () => {
+      mockDb.seniorityEntries.toArray.mockResolvedValue([mockLocalEntry])
+      mockDb.seniorityLists.toArray.mockResolvedValue([mockList1])
+
+      const { useSeniorityStore } = await import('./seniority')
+      const store = useSeniorityStore()
+      store.clearStore()
+      await store.fetchLists()
+
+      // Populate cache
+      await store.getEntriesForList(1)
+      vi.clearAllMocks()
+
+      // Re-setup mock chain after clearAllMocks
+      mockDb.seniorityEntries.where.mockReturnValue(mockDb.seniorityEntries)
+      mockDb.seniorityEntries.equals.mockReturnValue(mockDb.seniorityEntries)
+      mockDb.seniorityEntries.toArray.mockResolvedValue([mockLocalEntry])
+      mockDb.deleteList.mockResolvedValue(undefined)
+
+      // Delete list 1 — should invalidate its cache
+      await store.deleteList(1)
+
+      // Next getEntriesForList should query Dexie again
+      await store.getEntriesForList(1)
+      expect(mockDb.seniorityEntries.where).toHaveBeenCalled()
+    })
+
+    it('addList clears entire entry cache', async () => {
+      mockDb.seniorityEntries.toArray.mockResolvedValue([mockLocalEntry])
+
+      const { useSeniorityStore } = await import('./seniority')
+      const store = useSeniorityStore()
+      store.clearStore()
+
+      // Populate cache
+      await store.getEntriesForList(100)
+      vi.clearAllMocks()
+
+      // Re-setup mock chain
+      mockDb.seniorityEntries.where.mockReturnValue(mockDb.seniorityEntries)
+      mockDb.seniorityEntries.equals.mockReturnValue(mockDb.seniorityEntries)
+      mockDb.seniorityEntries.toArray.mockResolvedValue([mockLocalEntry])
+      mockDb.seniorityLists.add.mockResolvedValue(42)
+      mockDb.seniorityEntries.bulkAdd.mockResolvedValue(undefined)
+
+      // Add a new list — clears all cache
+      await store.addList(
+        { title: 'New', effectiveDate: '2026-04-01' },
+        [{ seniorityNumber: 1, employeeNumber: 'E999', name: null, seat: 'FO', base: 'ORD', fleet: 'A320', hireDate: '2020-01-01', retireDate: '2050-01-01' }],
+      )
+
+      // Next call should query Dexie
+      await store.getEntriesForList(100)
+      expect(mockDb.seniorityEntries.where).toHaveBeenCalled()
+    })
+
+    it('clearStore clears entire entry cache', async () => {
+      mockDb.seniorityEntries.toArray.mockResolvedValue([mockLocalEntry])
+
+      const { useSeniorityStore } = await import('./seniority')
+      const store = useSeniorityStore()
+
+      // Populate cache
+      await store.getEntriesForList(100)
+      vi.clearAllMocks()
+
+      // Re-setup mock chain
+      mockDb.seniorityEntries.where.mockReturnValue(mockDb.seniorityEntries)
+      mockDb.seniorityEntries.equals.mockReturnValue(mockDb.seniorityEntries)
+      mockDb.seniorityEntries.toArray.mockResolvedValue([mockLocalEntry])
+
+      store.clearStore()
+
+      // Next call should query Dexie
+      await store.getEntriesForList(100)
+      expect(mockDb.seniorityEntries.where).toHaveBeenCalled()
     })
   })
 

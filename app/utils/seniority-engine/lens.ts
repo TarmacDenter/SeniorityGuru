@@ -23,6 +23,7 @@ import {
   computeTrajectoryDeltas,
 } from '~/utils/seniority-math'
 import { createScenario } from './scenario'
+import { memoizeLast } from './memoize'
 import { qualSpecToFilter } from './qual-spec'
 import type {
   PowerIndexCell,
@@ -253,15 +254,15 @@ export function createLens(
   }
 
   return {
-    standing,
-    trajectory,
-    compareTrajectories,
-    percentileCrossing,
-    holdability,
-    qualScales,
-    retirementWave,
-    retirementProjection,
-    demographics,
+    standing: memoizeLast(standing, () => 'standing'),
+    trajectory: memoizeLast(trajectory),
+    compareTrajectories: memoizeLast(compareTrajectories),
+    percentileCrossing: memoizeLast(percentileCrossing),
+    holdability: memoizeLast(holdability),
+    qualScales: memoizeLast(qualScales),
+    retirementWave: memoizeLast(retirementWave),
+    retirementProjection: memoizeLast(retirementProjection),
+    demographics: memoizeLast(demographics),
     upcomingRetirements,
     snapshot,
     anchor: resolvedAnchor,

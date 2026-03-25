@@ -21,6 +21,8 @@ const {
 
 const demographics = useQualAnalytics(growthConfig)
 const qualTrajectoryDeltas = demographics.trajectoryDeltas
+
+const ready = useDeferredReady()
 </script>
 
 <template>
@@ -69,8 +71,9 @@ const qualTrajectoryDeltas = demographics.trajectoryDeltas
       </UCollapsible>
 
       <!-- Full Trajectory Chart -->
+      <USkeleton v-if="hasAnchor && (!ready || !trajectoryChartData?.labels?.length)" class="h-64 rounded-lg" />
       <DashboardTrajectoryChart
-        v-if="hasAnchor"
+        v-else-if="hasAnchor"
         :data="trajectoryChartData"
       >
         <template v-if="growthConfig.enabled" #badge>
@@ -101,7 +104,11 @@ const qualTrajectoryDeltas = demographics.trajectoryDeltas
       />
 
       <!-- Retirement Wave + Percentile Threshold -->
-      <div class="grid grid-cols-1 sm:grid-cols-11 gap-6">
+      <div v-if="!ready || !demographics.retirementWave.value.length" class="grid grid-cols-1 sm:grid-cols-11 gap-6">
+        <USkeleton class="sm:col-span-6 h-64 rounded-lg" />
+        <USkeleton class="sm:col-span-5 h-64 rounded-lg" />
+      </div>
+      <div v-else class="grid grid-cols-1 sm:grid-cols-11 gap-6">
         <div class="sm:col-span-6">
           <UCard :ui="{ body: 'px-0 py-0 sm:px-4 sm:py-5' }">
             <template #header>

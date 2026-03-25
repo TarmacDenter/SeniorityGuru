@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { useSeniorityCore } from './useSeniorityCore'
+import { useSeniorityCore, _resetCoreSingletons } from './useSeniorityCore'
 
 const mockStore = vi.hoisted(() => ({ entries: [] as any[] }))
 const mockUserStore = vi.hoisted(() => ({
@@ -25,6 +25,7 @@ beforeEach(() => {
   mockUserStore.retirementAge = 65
   mockUserStore.getPreference.mockResolvedValue(null)
   mockUserStore.savePreference.mockResolvedValue(undefined)
+  _resetCoreSingletons()
   // Reset new-hire module-level singletons via the composable's reset()
   const { newHire } = useSeniorityCore()
   newHire.reset()
