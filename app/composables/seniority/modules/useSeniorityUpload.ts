@@ -175,7 +175,6 @@ export function useSeniorityUpload() {
     const count = errorIndices.size
     entries.value = entries.value.filter((_, i) => !errorIndices.has(i))
     rowErrors.value = new Map()
-    validate()
     return count
   }
 
