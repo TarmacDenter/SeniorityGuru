@@ -250,6 +250,10 @@ const demoQualOptions: { key: DemoQual; label: string }[] = [
 
 const demoAgeBuckets = computed(() => demoAgeData[demoQual.value])
 const demoWaveBuckets = computed(() => demoWaveData[demoQual.value])
+
+const config = useRuntimeConfig()
+const feedbackEmail = config.public.feedbackEmail as string
+const parserRequestMailto = `mailto:${feedbackEmail}?subject=${encodeURIComponent('SeniorityGuru: Airline Parser Request')}`
 </script>
 
 <template>
@@ -709,9 +713,8 @@ const demoWaveBuckets = computed(() => demoWaveData[demoQual.value])
             >
               Request a Parser
             </UButton>
-            <!-- TODO: Replace placeholder email with real contact address -->
             <UButton
-              to="mailto:contact@seniorityguru.com"
+              :to="parserRequestMailto"
               color="neutral"
               variant="outline"
               icon="i-lucide-mail"
