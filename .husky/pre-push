@@ -1,3 +1,10 @@
+# Skip checks for branch deletions (local sha is all zeros)
+while read local_ref local_sha remote_ref remote_sha; do
+  if [ "$local_sha" = "0000000000000000000000000000000000000000" ]; then
+    exit 0
+  fi
+done
+
 npm run lint
 npm run typecheck
 npm test

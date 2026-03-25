@@ -150,20 +150,20 @@ Use **Zod** at the upload boundary. Schemas live in `app/utils/schemas/`.
 
 ## Git Workflow
 
-- **Strategy**: Squash-at-every-boundary — see [WORKFLOW.md](WORKFLOW.md) for full reference
-- **Branches**: `main` (production, protected), `dev` (integration, unprotected), `feature/*`, `hotfix/*`
+- **Strategy**: Trunk-based development — see [WORKFLOW.md](WORKFLOW.md) for full reference
+- **Branches**: `main` (production, protected), `feature/*`, `hotfix/*`
 - **Never** commit directly to `main`
-- **Feature integration**: squash merge `feature/*` → `dev` (`git merge --squash feature/foo && git commit`). This keeps dev's history at one commit per feature, which prevents divergence when `sync-dev.yml` resets dev to main after ship.
-- **Releases**: squash merge `dev` → `main` via PR; `sync-dev.yml` auto-resets dev to main after CI passes
-- **Hotfixes**: squash merge to `main` via PR, then cherry-pick to `dev`
+- **Feature integration**: squash merge `feature/*` → `main` directly via PR
+- **Hotfixes**: squash merge `hotfix/*` → `main` via PR
 - **Commit format**: Conventional Commits (`type(scope): description`) — enforced via husky + commitlint
-- **Quality gates**: pre-push hook runs typecheck + tests; CI runs both on push to `dev` and PRs to `main`
+- **Quality gates**: pre-push hook runs typecheck + tests; CI runs both on push to `feature/*`/`hotfix/*` and PRs to `main`
+- **Parallel agents**: use worktrees — each agent gets `git worktree add .worktrees/<name> -b feature/<name>`. The `WorktreeCreate` hook symlinks `.claude/` automatically so all agents share permissions, MCPs, and slash commands.
 
 ### Claude Slash Commands
 
 | Command | Purpose |
 |---|---|
-| `/feature` | Create a feature branch from dev |
+| `/feature` | Create a feature branch from main |
 | `/pr` | Draft and open a PR for the current branch |
 | `/hotfix` | Create a hotfix branch from main |
-| `/ship` | Promote dev → main via squash-merge PR |
+| `/ship` | Promote current feature branch → main via squash-merge PR |
