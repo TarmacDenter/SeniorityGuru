@@ -31,6 +31,7 @@ mockNuxtImport('useSeniorityUpload', () => () => ({
   autoDetectSucceeded: { value: false },
   extractedEffectiveDate: { value: null },
   extractedTitle: { value: null },
+  syntheticNote: { value: null },
   effectiveDate: { value: null },
   title: { value: '' },
   setFiles: vi.fn().mockResolvedValue(undefined),

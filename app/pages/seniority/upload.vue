@@ -211,6 +211,15 @@ async function onSave() {
             <!-- Step 3: Review & Validate -->
             <div v-else-if="currentStep === 'review'" class="space-y-4">
               <UAlert
+                v-if="upload.syntheticNote.value"
+                icon="i-lucide-info"
+                color="info"
+                variant="subtle"
+                title="Some data was estimated"
+                :description="upload.syntheticNote.value"
+              />
+
+              <UAlert
                 v-if="upload.errorCount.value > 0"
                 icon="i-lucide-alert-triangle"
                 color="warning"

@@ -43,6 +43,7 @@ export function useSeniorityUpload() {
   const selectedParserId = ref<string | null>(null)
   const extractedEffectiveDate = ref<string | null>(null)
   const extractedTitle = ref<string | null>(null)
+  const syntheticNote = ref<string | null>(null)
   const autoDetectSucceeded = ref(false)
 
   const effectiveDate = ref<DateValue | null>(null)
@@ -65,6 +66,7 @@ export function useSeniorityUpload() {
     const preResult = parser.parse(raw)
     extractedEffectiveDate.value = preResult.metadata.effectiveDate
     extractedTitle.value = preResult.metadata.title
+    syntheticNote.value = preResult.metadata.syntheticNote ?? null
 
     const { headers, rows } = parseSpreadsheetData(preResult.rows)
     rawHeaders.value = headers
@@ -233,6 +235,7 @@ export function useSeniorityUpload() {
     selectedParserId.value = null
     extractedEffectiveDate.value = null
     extractedTitle.value = null
+    syntheticNote.value = null
     autoDetectSucceeded.value = false
     effectiveDate.value = null
     title.value = ''
@@ -251,6 +254,7 @@ export function useSeniorityUpload() {
     selectedParserId,
     extractedEffectiveDate,
     extractedTitle,
+    syntheticNote,
     autoDetectSucceeded,
     effectiveDate,
     title,

@@ -1,5 +1,7 @@
-import type { PreParser, PreParserResult } from './types'
+import type { PreParser, PreParserResult, PreParserMetadata } from './types'
 import { normalizeDate } from '~/utils/date'
+
+const UNKNOWN_RETIRE_SENTINEL = '2099-12-31'
 
 const SEAT_MAP: Record<string, string> = { A: 'CA', B: 'FO' }
 
@@ -74,18 +76,36 @@ export const deltaParser: PreParser = {
     }
     standardHeaders.push('Base', 'Fleet', 'Seat')
 
+    const retireHeaderIdx = standardHeaders.indexOf('Retire Date')
+
+    let syntheticCount = 0
     const dataRows = raw.slice(headerIdx + 1).filter(row => row.some(cell => String(cell).trim() !== ''))
     const transformedRows = dataRows.map((row) => {
       const mapped = sourceIndices.map(i => String(row[i] ?? ''))
       const cat = catIdx >= 0 ? String(row[catIdx] ?? '') : ''
       const { base, fleet, seat } = decomposeCategory(cat)
       mapped.push(base, fleet, seat)
+
+      if (retireHeaderIdx >= 0) {
+        const retireVal = mapped[retireHeaderIdx]?.trim()
+        if (!retireVal || retireVal === '.') {
+          mapped[retireHeaderIdx] = UNKNOWN_RETIRE_SENTINEL
+          syntheticCount++
+        }
+      }
+
       return mapped
     })
 
+    const fullMetadata: PreParserMetadata = { ...metadata }
+    if (syntheticCount > 0) {
+      fullMetadata.syntheticCount = syntheticCount
+      fullMetadata.syntheticNote = `${syntheticCount} row${syntheticCount === 1 ? '' : 's'} had unknown retirement dates and were set to ${UNKNOWN_RETIRE_SENTINEL}. You can edit these in the review table.`
+    }
+
     return {
       rows: [standardHeaders, ...transformedRows],
-      metadata,
+      metadata: fullMetadata,
     }
   },
 }

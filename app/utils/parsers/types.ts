@@ -1,6 +1,10 @@
 export interface PreParserMetadata {
   effectiveDate: string | null
   title: string | null
+  /** Number of rows where the parser had to synthesize missing data. */
+  syntheticCount?: number
+  /** Human-readable description of what was synthesized. */
+  syntheticNote?: string
 }
 
 export interface PreParserResult {

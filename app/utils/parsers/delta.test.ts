@@ -156,6 +156,21 @@ describe('deltaParser.parse — full integration', () => {
     expect(result.metadata.effectiveDate).toBeNull()
   })
 
+  it('replaces "." retire date with sentinel and sets syntheticNote', () => {
+    const dotFixture = [
+      ['SENIORITY_NBR', 'Emp_Nbr', 'Name', 'Category', 'Pilot_Hire_Date', 'Scheduled_Retire_Date'],
+      ['1', '900001', 'MCFLYGUY, MARTY J', 'ATL350A', '15Jan2099', '15Jan2164'],
+      ['2', '900002', 'SKYWALKER, LUKE A', 'ATL73NB', '27Jun2099', '.'],
+    ]
+    const result = deltaParser.parse(dotFixture)
+    const headers = result.rows[0]!
+    const retireIdx = headers.indexOf('Retire Date')
+    expect(result.rows[1]![retireIdx]).toBe('15Jan2164') // normal row unchanged
+    expect(result.rows[2]![retireIdx]).toBe('2099-12-31') // dot replaced with sentinel
+    expect(result.metadata.syntheticCount).toBe(1)
+    expect(result.metadata.syntheticNote).toContain('2099-12-31')
+  })
+
   it('filters out blank trailing rows', () => {
     const withBlanks = [
       ...fixture,
