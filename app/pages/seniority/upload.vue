@@ -101,6 +101,13 @@ function prevStep() {
   }
 }
 
+function onDeleteErrorRows() {
+  const count = upload.deleteErrorRows()
+  if (count > 0) {
+    toast.add({ title: `Removed ${count} malformed row${count === 1 ? '' : 's'}`, color: 'success' })
+  }
+}
+
 async function onSave() {
   try {
     const count = await upload.save()
@@ -203,20 +210,41 @@ async function onSave() {
 
             <!-- Step 3: Review & Validate -->
             <div v-else-if="currentStep === 'review'" class="space-y-4">
+              <UAlert
+                v-if="upload.errorCount.value > 0"
+                icon="i-lucide-alert-triangle"
+                color="warning"
+                variant="subtle"
+                :title="`${upload.errorCount.value} row${upload.errorCount.value === 1 ? '' : 's'} could not be parsed`"
+                description="These rows have missing or malformed data and must be fixed or removed before saving."
+              >
+                <template #actions>
+                  <UButton
+                    size="sm"
+                    color="warning"
+                    icon="i-lucide-trash-2"
+                    @click="onDeleteErrorRows"
+                  >
+                    Remove {{ upload.errorCount.value }} malformed row{{ upload.errorCount.value === 1 ? '' : 's' }}
+                  </UButton>
+                  <UButton
+                    size="sm"
+                    variant="ghost"
+                    color="neutral"
+                    :icon="showErrorsOnly ? 'i-lucide-filter-x' : 'i-lucide-filter'"
+                    @click="showErrorsOnly = !showErrorsOnly"
+                  >
+                    {{ showErrorsOnly ? 'Show all rows' : 'Show only errors' }}
+                  </UButton>
+                </template>
+              </UAlert>
+
               <div class="flex items-center justify-between">
                 <p class="text-sm text-muted">
                   {{ upload.entries.value.length }} rows
                   <template v-if="upload.errorCount.value > 0">
                     &middot;
-                    <UButton
-                      variant="link"
-                      color="error"
-                      size="xs"
-                      :icon="showErrorsOnly ? 'i-lucide-filter-x' : 'i-lucide-filter'"
-                      @click="showErrorsOnly = !showErrorsOnly"
-                    >
-                      {{ upload.errorCount.value }} errors{{ showErrorsOnly ? ' (filtered)' : '' }}
-                    </UButton>
+                    <span class="text-warning">{{ upload.errorCount.value }} with errors</span>
                   </template>
                 </p>
               </div>

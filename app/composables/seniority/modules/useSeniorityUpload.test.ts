@@ -61,6 +61,45 @@ describe('useSeniorityUpload', () => {
     })
   })
 
+  describe('deleteErrorRows — bulk removes all rows with validation errors', () => {
+    it('removes all rows that have errors and keeps clean rows', () => {
+      const { entries, rowErrors, deleteErrorRows } = useSeniorityUpload()
+
+      entries.value = [
+        makePartialEntry({ seniority_number: 1, employee_number: '900001' }),
+        makePartialEntry({ seniority_number: 2, employee_number: '900002' }),
+        makePartialEntry({ seniority_number: 3, employee_number: '900003' }),
+        makePartialEntry({ seniority_number: 4, employee_number: '900004' }),
+        makePartialEntry({ seniority_number: 5, employee_number: '900005' }),
+      ]
+      rowErrors.value = new Map([
+        [1, ['retire_date: Invalid']],
+        [3, ['retire_date: Invalid']],
+      ])
+
+      const deleted = deleteErrorRows()
+
+      expect(deleted).toBe(2)
+      expect(entries.value).toHaveLength(3)
+      expect(entries.value.map(e => e.employee_number)).toEqual(['900001', '900003', '900005'])
+    })
+
+    it('returns 0 when no errors exist', () => {
+      const { entries, rowErrors, deleteErrorRows } = useSeniorityUpload()
+
+      entries.value = [
+        makePartialEntry({ seniority_number: 1 }),
+        makePartialEntry({ seniority_number: 2 }),
+      ]
+      rowErrors.value = new Map()
+
+      const deleted = deleteErrorRows()
+
+      expect(deleted).toBe(0)
+      expect(entries.value).toHaveLength(2)
+    })
+  })
+
   describe('updateCell — modifies the correct entry', () => {
     it('updates the cell at the given original index', () => {
       const { entries, updateCell } = useSeniorityUpload()

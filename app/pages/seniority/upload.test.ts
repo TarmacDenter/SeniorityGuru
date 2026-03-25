@@ -37,6 +37,7 @@ mockNuxtImport('useSeniorityUpload', () => () => ({
   applyMapping: vi.fn(),
   updateCell: vi.fn(),
   deleteRow: vi.fn(),
+  deleteErrorRows: vi.fn().mockReturnValue(0),
 }))
 
 /** Returns true when the "Next" button exists and is NOT disabled. */

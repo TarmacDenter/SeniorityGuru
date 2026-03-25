@@ -169,6 +169,16 @@ export function useSeniorityUpload() {
     rowErrors.value = newErrors
   }
 
+  function deleteErrorRows(): number {
+    const errorIndices = new Set(rowErrors.value.keys())
+    if (errorIndices.size === 0) return 0
+    const count = errorIndices.size
+    entries.value = entries.value.filter((_, i) => !errorIndices.has(i))
+    rowErrors.value = new Map()
+    validate()
+    return count
+  }
+
   const errorCount = computed(() => rowErrors.value.size)
 
   async function setFiles(files: File[] | null | undefined) {
@@ -254,6 +264,7 @@ export function useSeniorityUpload() {
     validate,
     updateCell,
     deleteRow,
+    deleteErrorRows,
     save,
     reset,
   }
