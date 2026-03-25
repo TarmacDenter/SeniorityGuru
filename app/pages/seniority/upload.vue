@@ -28,7 +28,7 @@ const steps: StepperItem[] = [
 ]
 
 const currentStep = ref<Step | number>('upload')
-const processing = computed(() => upload.processingPhase.value !== 'idle')
+const currentStepIndex = computed(() => stepOrder.indexOf(currentStep.value as Step))
 
 const phaseLabels: Record<string, string> = {
   reading: 'Reading file...',
@@ -36,45 +36,23 @@ const phaseLabels: Record<string, string> = {
   mapping: 'Mapping columns...',
   validating: 'Validating rows...',
 }
-const progressPercent = computed(() => {
-  const p = upload.processingProgress.value
-  if (!p || p.total === 0) return null
-  return Math.round((p.current / p.total) * 100)
-})
+
 watch(files, async (next) => {
-  if (!next) {
-    currentStep.value = 'upload'
-    await upload.setFiles([])
-    return
-  }
   currentStep.value = 'upload'
-  await upload.setFiles([next])
+  await upload.file.setFile(next ?? null)
 })
 
-const currentStepIndex = computed(() => stepOrder.indexOf(currentStep.value as Step))
-const sampleRows = computed(() => upload.rawRows.value.slice(0, 3))
 const effectiveDateModel = computed({
-  get: () => (upload.effectiveDate.value ?? undefined) as DateValue | undefined,
+  get: () => (upload.confirm.effectiveDate.value ?? undefined) as DateValue | undefined,
   set: (value: DateValue | undefined) => {
-    upload.effectiveDate.value = value ?? null
+    upload.confirm.effectiveDate.value = value ?? null
   },
 })
 
-const needsSheetSelection = computed(() => upload.sheetNames.value.length > 1 && upload.rawRows.value.length === 0)
-
-function onSheetSelect(name: string) {
-  upload.selectSheet(name)
-}
-
 const canAdvance = computed(() => {
-  if (currentStep.value === 'upload') return upload.rawRows.value.length > 0 && !needsSheetSelection.value
-  if (currentStep.value === 'mapping') {
-    const m = upload.columnMap.value
-    const dobDerivationModeActive = upload.mappingOptions.value.retireMode === 'dob'
-    const retireDateSatisfied = m.retire_date >= 0 || dobDerivationModeActive
-    return m.seniority_number >= 0 && m.employee_number >= 0 && m.seat >= 0 && m.base >= 0 && m.fleet >= 0 && m.hire_date >= 0 && retireDateSatisfied
-  }
-  if (currentStep.value === 'review') return upload.errorCount.value === 0 && upload.entries.value.length > 0
+  if (currentStep.value === 'upload') return upload.file.hasData.value
+  if (currentStep.value === 'mapping') return upload.mapping.canAdvance.value
+  if (currentStep.value === 'review') return upload.review.canAdvance.value
   return true
 })
 
@@ -89,9 +67,9 @@ function changeFormat() {
 }
 
 async function nextStep() {
-  if (currentStep.value === 'upload' && upload.autoDetectSucceeded.value) {
+  if (currentStep.value === 'upload' && upload.file.autoDetected.value) {
     try {
-      await upload.applyMapping()
+      await upload.mapping.apply()
     } catch {
       log.error('applyMapping failed during auto-detect step')
       toast.add({ title: 'Failed to process file', color: 'error' })
@@ -105,7 +83,7 @@ async function nextStep() {
   }
   if (currentStep.value === 'mapping') {
     try {
-      await upload.applyMapping()
+      await upload.mapping.apply()
     } catch {
       log.error('applyMapping failed during mapping step')
       toast.add({ title: 'Failed to process file', color: 'error' })
@@ -132,7 +110,7 @@ function prevStep() {
 }
 
 function onDeleteErrorRows() {
-  const count = upload.deleteErrorRows()
+  const count = upload.review.deleteErrorRows()
   if (count > 0) {
     toast.add({ title: `Removed ${count} malformed row${count === 1 ? '' : 's'}`, color: 'success' })
   }
@@ -140,12 +118,12 @@ function onDeleteErrorRows() {
 
 async function onSave() {
   try {
-    const count = await upload.save()
+    const count = await upload.confirm.save(upload.review.entries.value)
     toast.add({ title: `Uploaded ${count} entries`, color: 'success' })
     upload.reset()
     await navigateTo({ path: '/dashboard', query: { tab: 'seniority' } })
   } catch {
-    toast.add({ title: upload.saveError.value ?? 'Upload failed', color: 'error' })
+    toast.add({ title: upload.confirm.error.value ?? 'Upload failed', color: 'error' })
   }
 }
 </script>
@@ -218,11 +196,11 @@ async function onSave() {
 
               <!-- Error alert for file/sheet issues -->
               <UAlert
-                v-if="upload.saveError.value && currentStep === 'upload'"
+                v-if="upload.file.error.value && currentStep === 'upload'"
                 icon="i-lucide-alert-circle"
                 color="error"
                 variant="soft"
-                :title="upload.saveError.value"
+                :title="upload.file.error.value"
               >
                 <template #actions>
                   <UButton
@@ -237,50 +215,50 @@ async function onSave() {
               </UAlert>
 
               <!-- Sheet selector for multi-sheet XLSX files -->
-              <div v-if="upload.sheetNames.value.length > 1" class="space-y-2">
+              <div v-if="upload.file.sheetNames.value.length > 1" class="space-y-2">
                 <UFormField label="Select Sheet" name="sheet">
                   <USelectMenu
-                    :model-value="upload.selectedSheet.value ?? undefined"
-                    :items="upload.sheetNames.value"
+                    :model-value="upload.file.selectedSheet.value ?? undefined"
+                    :items="upload.file.sheetNames.value"
                     placeholder="Choose a sheet..."
                     :search-input="false"
                     class="w-full"
-                    @update:model-value="onSheetSelect"
+                    @update:model-value="upload.file.selectSheet"
                   />
                 </UFormField>
               </div>
 
               <UAlert
-                v-if="upload.fileName.value && upload.rawRows.value.length > 0"
+                v-if="upload.file.fileName.value && upload.file.hasData.value"
                 icon="i-lucide-file-check"
                 color="success"
                 variant="soft"
-                :title="`Loaded: ${upload.fileName.value}${upload.selectedSheet.value ? ` — ${upload.selectedSheet.value}` : ''}`"
-                :description="`${upload.rawRows.value.length} rows, ${upload.rawHeaders.value.length} columns`"
+                :title="`Loaded: ${upload.file.fileName.value}${upload.file.selectedSheet.value ? ` — ${upload.file.selectedSheet.value}` : ''}`"
+                :description="`${upload.mapping.headers.value.length} columns detected`"
               />
             </div>
 
             <!-- Step 2: Map Columns -->
             <div v-else-if="currentStep === 'mapping'" class="space-y-6">
               <UploadColumnMapper
-                :headers="upload.rawHeaders.value"
-                :column-map="upload.columnMap.value"
-                :mapping-options="upload.mappingOptions.value"
-                :sample-rows="sampleRows"
-                @update:column-map="upload.columnMap.value = $event"
-                @update:mapping-options="upload.mappingOptions.value = $event"
+                :headers="upload.mapping.headers.value"
+                :column-map="upload.mapping.columnMap.value"
+                :mapping-options="upload.mapping.mappingOptions.value"
+                :sample-rows="upload.mapping.sampleRows.value"
+                @update:column-map="upload.mapping.columnMap.value = $event"
+                @update:mapping-options="upload.mapping.mappingOptions.value = $event"
               />
             </div>
 
             <!-- Step 3: Review & Validate -->
             <div v-else-if="currentStep === 'review'" class="space-y-4">
               <UAlert
-                v-if="upload.syntheticNote.value"
+                v-if="upload.review.syntheticNote.value"
                 icon="i-lucide-info"
                 color="info"
                 variant="subtle"
                 title="Some data was estimated"
-                :description="upload.syntheticNote.value"
+                :description="upload.review.syntheticNote.value"
               >
                 <template #actions>
                   <UButton
@@ -295,11 +273,11 @@ async function onSave() {
               </UAlert>
 
               <UAlert
-                v-if="upload.errorCount.value > 0"
+                v-if="upload.review.errorCount.value > 0"
                 icon="i-lucide-alert-triangle"
                 color="warning"
                 variant="subtle"
-                :title="`${upload.errorCount.value} of ${upload.entries.value.length.toLocaleString()} rows have validation errors`"
+                :title="`${upload.review.errorCount.value} of ${upload.review.entries.value.length.toLocaleString()} rows have validation errors`"
                 description="Fix or remove them to continue."
               >
                 <template #actions>
@@ -309,7 +287,7 @@ async function onSave() {
                     icon="i-lucide-trash-2"
                     @click="onDeleteErrorRows"
                   >
-                    Remove {{ upload.errorCount.value }} malformed row{{ upload.errorCount.value === 1 ? '' : 's' }}
+                    Remove {{ upload.review.errorCount.value }} malformed row{{ upload.review.errorCount.value === 1 ? '' : 's' }}
                   </UButton>
                   <UButton
                     size="sm"
@@ -325,21 +303,21 @@ async function onSave() {
 
               <div class="flex items-center justify-between">
                 <p class="text-sm text-muted">
-                  {{ upload.entries.value.length }} rows
-                  <template v-if="upload.errorCount.value > 0">
+                  {{ upload.review.entries.value.length }} rows
+                  <template v-if="upload.review.errorCount.value > 0">
                     &middot;
-                    <span class="text-warning">{{ upload.errorCount.value }} with errors</span>
+                    <span class="text-warning">{{ upload.review.errorCount.value }} with errors</span>
                   </template>
                 </p>
               </div>
               <UploadReviewTable
-                :entries="upload.entries.value"
-                :row-errors="upload.rowErrors.value"
+                :entries="upload.review.entries.value"
+                :row-errors="upload.review.rowErrors.value"
                 :show-errors-only="showErrorsOnly"
                 :show-estimated-only="showEstimatedOnly"
-                :estimated-indices="upload.syntheticIndices.value"
-                @update-cell="upload.updateCell"
-                @delete-row="upload.deleteRow"
+                :estimated-indices="upload.review.syntheticIndices.value"
+                @update-cell="upload.review.updateCell"
+                @delete-row="upload.review.deleteRow"
               />
             </div>
 
@@ -350,28 +328,28 @@ async function onSave() {
               </UFormField>
 
               <UFormField label="Title (optional)" name="title">
-                <UInput v-model="upload.title.value" placeholder="e.g. January 2026 Seniority List" class="w-full" />
+                <UInput v-model="upload.confirm.title.value" placeholder="e.g. January 2026 Seniority List" class="w-full" />
               </UFormField>
 
               <div class="bg-elevated rounded-lg p-4 space-y-2 text-sm">
                 <div class="flex justify-between">
                   <span class="text-muted">Rows</span>
-                  <span class="font-medium">{{ upload.entries.value.length }}</span>
+                  <span class="font-medium">{{ upload.review.entries.value.length }}</span>
                 </div>
                 <div class="flex justify-between">
                   <span class="text-muted">File</span>
-                  <span class="font-medium">{{ upload.fileName.value }}</span>
+                  <span class="font-medium">{{ upload.file.fileName.value }}</span>
                 </div>
               </div>
             </div>
           </div>
 
           <!-- Processing progress bar -->
-          <div v-if="processing" class="space-y-2 mb-6">
-            <p class="text-sm text-muted">{{ phaseLabels[upload.processingPhase.value] || 'Processing...' }}</p>
+          <div v-if="upload.progress.busy.value" class="space-y-2 mb-6">
+            <p class="text-sm text-muted">{{ phaseLabels[upload.progress.phase.value] || 'Processing...' }}</p>
             <UProgress
-              v-if="progressPercent !== null"
-              :model-value="progressPercent"
+              v-if="upload.progress.percent.value !== null"
+              :model-value="upload.progress.percent.value"
               size="sm"
             />
             <UProgress
@@ -394,8 +372,8 @@ async function onSave() {
 
             <UButton
               v-if="currentStep !== 'confirm'"
-              :disabled="!canAdvance || processing"
-              :loading="processing"
+              :disabled="!canAdvance || upload.progress.busy.value"
+              :loading="upload.progress.busy.value"
               icon="i-lucide-arrow-right"
               trailing
               @click="nextStep"
@@ -404,8 +382,8 @@ async function onSave() {
             </UButton>
             <UButton
               v-else
-              :disabled="!upload.effectiveDate.value || upload.saving.value"
-              :loading="upload.saving.value"
+              :disabled="!upload.confirm.effectiveDate.value || upload.confirm.saving.value"
+              :loading="upload.confirm.saving.value"
               icon="i-lucide-check"
               color="success"
               @click="onSave"
