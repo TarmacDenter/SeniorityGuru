@@ -20,10 +20,16 @@ With seniority lists reaching 17,000 entries (e.g., Delta Air Lines), the app ex
 **Solution:** Last-one-wins memoization on each lens method. Each method caches its most recent `(args → result)` pair. If the next call has the same arguments, it returns the cached result. If arguments differ, it recomputes and replaces the cache entry.
 
 **Key design decisions:**
-- **Cache key:** Stable serialization of the scenario argument (e.g., `JSON.stringify`). Scenarios are small plain objects — serialization cost is negligible.
-- **Cache scope:** Per-lens instance. When `useSeniorityCore` creates a new lens (because entries or anchor changed), the old cache is garbage collected with the old lens. No manual invalidation needed.
+- **Cache key:** Use `JSON.stringify(args, Object.keys(args).sort())` for stable serialization regardless of object property order. Scenario objects are small plain objects — serialization cost is negligible. Note: `JSON.stringify` drops `undefined` values, which is acceptable since scenario properties are always defined.
+- **Cache scope:** Per-lens instance. Each memoized method is a closure that captures its own `lastKey`/`lastResult` pair. When `useSeniorityCore` creates a new lens (because entries or anchor changed), the old cache is garbage collected with the old lens. No manual invalidation needed.
 - **Cache size:** Exactly one entry per method (last-one-wins). This solves the triple-call redundancy without unbounded memory growth.
 - **No cache sharing across lens instances.** Each lens is a closure over a specific snapshot + anchor. A new lens means new data — stale caches from old lenses are useless.
+- **Evaluation order doesn't matter.** When `useTrajectory`'s three computed refs (`chartData`, `fullTrajectory`, `deltas`) each call `lens.trajectory(scenario)`, the first call computes and caches; the other two get cache hits regardless of which runs first. When `scenario` changes, all three re-evaluate and the first one to run pays the compute cost — the others hit the fresh cache.
+
+**Testing requirements:** Memoization tests must verify:
+- Cache hit: same args → same referential result (`===`)
+- Cache miss: different args → fresh result
+- Per-instance isolation: two lens instances have independent caches
 
 **Affected lens methods:**
 - `standing()`
@@ -47,9 +53,10 @@ With seniority lists reaching 17,000 entries (e.g., Delta Air Lines), the app ex
 
 **Key design decisions:**
 - **Cache location:** `useSeniorityStore` — a `Map<number, SeniorityEntry[]>` alongside existing state.
-- **Invalidation:** Clear the entry for a listId when that list is deleted. Clear all when `clearStore()` is called.
+- **Invalidation:** Clear the entry for a listId when that list is deleted or when `addList()` is called (since a new upload could replace data for a list). Clear all when `clearStore()` is called.
 - **No size limit.** Seniority lists are the app's core data — users typically have 2–5 lists. Caching all loaded entries is fine.
 - **Store method change:** `getEntriesForList(listId)` checks the cache before querying Dexie.
+- **Automatic benefit for compare page:** `useSeniorityCompare` already calls `store.getEntriesForList()` — it will benefit from the cache automatically with no code changes.
 
 ### 2.3 Per-Section Skeleton Loading
 
@@ -57,7 +64,7 @@ With seniority lists reaching 17,000 entries (e.g., Delta Air Lines), the app ex
 
 **Solution:** Each expensive section in the dashboard tabs manages its own loading state. Sections that resolve from cache appear immediately; sections computing for the first time show a skeleton placeholder.
 
-**Implementation approach:** The composables (`useTrajectory`, `useQualAnalytics`) already return computed refs. The skeleton state is driven by whether the computed has resolved to a non-null value. No explicit loading flags needed — Vue's reactivity handles it. The existing skeleton markup in `TrajectoryTab.vue` and `DemographicsTab.vue` just needs its `v-if` condition updated from the single `loading` prop to per-section null checks.
+**Implementation approach:** The composables (`useTrajectory`, `useQualAnalytics`) already return computed refs. The skeleton state is driven by whether the computed has resolved to an empty/null value. No explicit loading flags needed — Vue's reactivity handles it. The existing skeleton markup in `TrajectoryTab.vue` and `DemographicsTab.vue` just needs its `v-if` condition updated from the single `loading` prop to per-section emptiness checks (e.g., `v-if="!chartData?.labels.length"` for charts, since composables return empty arrays rather than `null` for failed cases).
 
 ---
 
@@ -73,6 +80,7 @@ With seniority lists reaching 17,000 entries (e.g., Delta Air Lines), the app ex
 - Add `sheetNames: ref<string[]>([])` and `selectedSheet: ref<string | null>(null)` to the upload composable.
 - `parseFile()` reads the workbook, populates `sheetNames`, and if multiple sheets exist, pauses for user selection.
 - A new `selectSheet(name)` method continues the pipeline with the chosen sheet.
+- Selecting a different sheet resets column mapping and validation state. The user can switch sheets without re-uploading the file.
 - The upload page shows a `USelectMenu` for sheet selection between file upload and the column mapper step.
 
 ### 3.2 Generic Parser Preamble Heuristic
@@ -84,7 +92,7 @@ With seniority lists reaching 17,000 entries (e.g., Delta Air Lines), the app ex
 **Implementation:**
 - Add a `findHeaderRow(rows: string[][]): number` function to the generic parser.
 - The threshold of 5 non-empty cells is chosen because the minimum required columns (seniority number, employee number, seat, base, fleet, hire date, retire date) is 7. A header row will have at least that many. Title rows rarely have more than 2–3 populated cells.
-- Rows before the detected header are discarded. If no row meets the threshold, fall back to row 0 (current behavior).
+- Rows before the detected header are discarded. **Fallback:** If no row has 5+ non-empty cells, assume row 0 is the header (current behavior). This handles minimal-column CSVs that don't have preamble.
 - Extract metadata from preamble rows (title, effective date) using a pattern similar to Delta's `extractMetadata`, but with a more generic date-detection regex.
 
 ### 3.3 Batch Processing with Progress Reporting
@@ -99,6 +107,7 @@ With seniority lists reaching 17,000 entries (e.g., Delta Air Lines), the app ex
 - New reactive refs in the upload composable:
   - `processingPhase: ref<'idle' | 'reading' | 'parsing' | 'mapping' | 'validating'>('idle')`
   - `processingProgress: ref<{ current: number; total: number } | null>(null)`
+- **Progress semantics:** Progress is reported per-row batch. `current` increments by batch size (e.g., 500) after each batch completes. For validation, `current` counts rows validated regardless of error count. Progress resets to 0 at the start of each phase (mapping → validating).
 - The upload page shows:
   - Indeterminate spinner during `reading` and `parsing` phases (opaque library calls).
   - Determinate progress bar during `mapping` and `validating` phases.
@@ -112,6 +121,7 @@ With seniority lists reaching 17,000 entries (e.g., Delta Air Lines), the app ex
 | Stage | Example Error | User Message |
 |-------|--------------|--------------|
 | File read (`XLSX.read`) | Corrupt file | "Failed to read file. It may be corrupt or unsupported. Supported formats: .csv, .xlsx, .xls" |
+| File read (`XLSX.read`) | Empty file | "This file contains no data rows." |
 | Sheet selection | No sheets | "This file contains no data sheets." |
 | Pre-parser | Header not found | "Could not find a header row. Check that your file contains column headers." |
 | Column mapping | Required col missing | "Could not auto-detect column: Base. Please map it manually." |
@@ -132,7 +142,7 @@ All errors are also written to the debug log (see Workstream 3).
 **Design:**
 - **Buffer size:** 500 entries (configurable). At ~200 bytes per entry, this is ~100KB — negligible.
 - **Ring behavior:** When full, oldest entries are overwritten.
-- **API additions to `logger.ts`:**
+- **API additions to `logger.ts`:** These are module-level functions (not scoped to individual loggers) since the ring buffer is a global singleton shared by all scoped loggers.
   - `getLogBuffer(): LogEntry[]` — returns a copy of the buffer contents, oldest first.
   - `clearLogBuffer(): void` — clears the buffer.
   - `exportLogAsText(): string` — formats the buffer as a human-readable text block.
