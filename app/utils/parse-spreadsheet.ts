@@ -22,6 +22,8 @@ export interface MappingOptions {
   retirementAge?: number
 }
 
+const BATCH_SIZE = 500
+
 export function parseSpreadsheetData(raw: string[][]): { headers: string[]; rows: string[][] } {
   const [headers, ...rows] = raw
   return { headers: headers ?? [], rows }
@@ -46,55 +48,89 @@ export function autoDetectColumnMap(headers: string[]): ColumnMap {
   }
 }
 
+/** Map a single raw row to a partial SeniorityEntry using the given column map and options. */
+export function mapSingleRow(
+  row: string[],
+  map: ColumnMap,
+  options: MappingOptions,
+): Partial<SeniorityEntry> {
+  const get = (idx: number) => {
+    if (idx < 0 || idx >= row.length) return undefined
+    const val = row[idx]
+    return val != null ? String(val).trim() : undefined
+  }
+
+  const senStr = get(map.seniority_number)
+  const empStr = get(map.employee_number)
+
+  let name: string | undefined
+  if (options.nameMode === 'separate' && options.lastNameCol != null && options.firstNameCol != null) {
+    const last = get(options.lastNameCol)
+    const first = get(options.firstNameCol)
+    if (last || first) name = [last, first].filter(Boolean).join(', ')
+  } else if (map.name >= 0) {
+    name = get(map.name)
+  }
+
+  let retire_date: string | undefined
+  if (options.retireMode === 'dob' && options.dobCol != null) {
+    const dob = get(options.dobCol)
+    if (dob) retire_date = computeRetireDate(normalizeDate(dob), options.retirementAge ?? 65)
+  } else if (map.retire_date >= 0) {
+    const raw = get(map.retire_date)
+    if (raw) retire_date = normalizeDate(raw)
+  }
+
+  const entry: Partial<SeniorityEntry> = {
+    seniority_number: senStr ? parseInt(senStr, 10) : undefined,
+    employee_number: empStr ? normalizeEmployeeNumber(empStr) : undefined,
+    seat: get(map.seat) || undefined,
+    base: get(map.base) || undefined,
+    fleet: get(map.fleet) || undefined,
+  }
+
+  if (name) entry.name = name
+  const hireDateStr = get(map.hire_date)
+  if (hireDateStr) entry.hire_date = normalizeDate(hireDateStr)
+  else entry.hire_date = undefined // required field — will trigger validation error
+  if (retire_date) entry.retire_date = retire_date
+
+  return entry
+}
+
 export function applyColumnMap(
   rows: string[][],
   map: ColumnMap,
   options: MappingOptions,
 ): Partial<SeniorityEntry>[] {
-  return rows.map((row) => {
-    const get = (idx: number) => {
-      if (idx < 0 || idx >= row.length) return undefined
-      const val = row[idx]
-      return val != null ? String(val).trim() : undefined
+  return rows.map(row => mapSingleRow(row, map, options))
+}
+
+/**
+ * Async version of applyColumnMap that processes rows in batches,
+ * yielding to the event loop between batches for UI responsiveness.
+ */
+export async function applyColumnMapAsync(
+  rows: string[][],
+  map: ColumnMap,
+  options: MappingOptions,
+  onProgress?: (current: number, total: number) => void,
+): Promise<Partial<SeniorityEntry>[]> {
+  const total = rows.length
+  const result: Partial<SeniorityEntry>[] = []
+
+  for (let i = 0; i < total; i += BATCH_SIZE) {
+    const end = Math.min(i + BATCH_SIZE, total)
+    for (let j = i; j < end; j++) {
+      result.push(mapSingleRow(rows[j]!, map, options))
     }
-
-    const senStr = get(map.seniority_number)
-    const empStr = get(map.employee_number)
-
-    let name: string | undefined
-    if (options.nameMode === 'separate' && options.lastNameCol != null && options.firstNameCol != null) {
-      const last = get(options.lastNameCol)
-      const first = get(options.firstNameCol)
-      if (last || first) name = [last, first].filter(Boolean).join(', ')
-    } else if (map.name >= 0) {
-      name = get(map.name)
+    onProgress?.(end, total)
+    if (end < total) {
+      await new Promise(resolve => setTimeout(resolve, 0))
     }
+  }
 
-    let retire_date: string | undefined
-    if (options.retireMode === 'dob' && options.dobCol != null) {
-      const dob = get(options.dobCol)
-      if (dob) retire_date = computeRetireDate(normalizeDate(dob), options.retirementAge ?? 65)
-    } else if (map.retire_date >= 0) {
-      const raw = get(map.retire_date)
-      if (raw) retire_date = normalizeDate(raw)
-    }
-
-    const entry: Partial<SeniorityEntry> = {
-      seniority_number: senStr ? parseInt(senStr, 10) : undefined,
-      employee_number: empStr ? normalizeEmployeeNumber(empStr) : undefined,
-      seat: get(map.seat) || undefined,
-      base: get(map.base) || undefined,
-      fleet: get(map.fleet) || undefined,
-    }
-
-    if (name) entry.name = name
-    const hireDateStr = get(map.hire_date)
-    if (hireDateStr) entry.hire_date = normalizeDate(hireDateStr)
-    else entry.hire_date = undefined // required field — will trigger validation error
-    if (retire_date) entry.retire_date = retire_date
-
-    return entry
-  })
+  return result
 }
 
 /** Check if all required columns in a ColumnMap are mapped (index >= 0). Name is optional. */

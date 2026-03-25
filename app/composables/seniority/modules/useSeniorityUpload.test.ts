@@ -124,7 +124,7 @@ describe('useSeniorityUpload', () => {
       vi.useRealTimers()
     })
 
-    it('sets effectiveDate to today, not the most recent hire date', () => {
+    it('sets effectiveDate to today, not the most recent hire date', async () => {
       vi.useFakeTimers()
       vi.setSystemTime(new Date('2026-03-15T12:00:00Z'))
 
@@ -147,14 +147,14 @@ describe('useSeniorityUpload', () => {
       }
       mappingOptions.value = { nameMode: 'single', retireMode: 'direct' }
 
-      applyMapping()
+      await applyMapping()
 
       // Should be today (2026-03-15), NOT the most recent hire date (2023-11-01)
       expect(effectiveDate.value).not.toBeNull()
       expect(effectiveDate.value!.toString()).toBe('2026-03-15')
     })
 
-    it('sets effectiveDate even when no hire dates are present', () => {
+    it('sets effectiveDate even when no hire dates are present', async () => {
       vi.useFakeTimers()
       vi.setSystemTime(new Date('2026-03-15T12:00:00Z'))
 
@@ -175,7 +175,7 @@ describe('useSeniorityUpload', () => {
       }
       mappingOptions.value = { nameMode: 'single', retireMode: 'direct' }
 
-      applyMapping()
+      await applyMapping()
 
       expect(effectiveDate.value).not.toBeNull()
       expect(effectiveDate.value!.toString()).toBe('2026-03-15')
@@ -249,7 +249,7 @@ describe('useSeniorityUpload', () => {
       expect(extractedTitle.value).toBeNull()
     })
 
-    it('applyMapping uses extractedEffectiveDate when available', () => {
+    it('applyMapping uses extractedEffectiveDate when available', async () => {
       vi.useFakeTimers()
       vi.setSystemTime(new Date('2026-03-15T12:00:00Z'))
 
@@ -265,14 +265,14 @@ describe('useSeniorityUpload', () => {
       mappingOptions.value = { nameMode: 'single', retireMode: 'direct' }
       extractedEffectiveDate.value = '2026-03-01'
 
-      applyMapping()
+      await applyMapping()
 
       expect(effectiveDate.value!.toString()).toBe('2026-03-01')
 
       vi.useRealTimers()
     })
 
-    it('applyMapping uses extractedTitle when available', () => {
+    it('applyMapping uses extractedTitle when available', async () => {
       vi.useFakeTimers()
       vi.setSystemTime(new Date('2026-03-15T12:00:00Z'))
 
@@ -288,7 +288,7 @@ describe('useSeniorityUpload', () => {
       mappingOptions.value = { nameMode: 'single', retireMode: 'direct' }
       extractedTitle.value = 'Seniority List 01MAR2099'
 
-      applyMapping()
+      await applyMapping()
 
       expect(title.value).toBe('Seniority List 01MAR2099')
 

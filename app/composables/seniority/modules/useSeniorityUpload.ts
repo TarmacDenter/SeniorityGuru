@@ -7,7 +7,7 @@ import type { DateValue } from 'reka-ui'
 import {
   parseSpreadsheetData,
   autoDetectColumnMap,
-  applyColumnMap,
+  applyColumnMapAsync,
   isColumnMapComplete,
   type ColumnMap,
   type MappingOptions,
@@ -16,6 +16,10 @@ import { getParser } from '~/utils/parsers/registry'
 import { createLogger } from '~/utils/logger'
 
 const log = createLogger('upload')
+
+export type ProcessingPhase = 'idle' | 'reading' | 'parsing' | 'mapping' | 'validating'
+
+const VALIDATE_BATCH_SIZE = 500
 
 export function useSeniorityUpload() {
   const fileName = ref<string>('')
@@ -52,51 +56,248 @@ export function useSeniorityUpload() {
   const saving = ref(false)
   const saveError = ref<string | null>(null)
 
+  // Multi-sheet XLSX support
+  const sheetNames = ref<string[]>([])
+  const selectedSheet = ref<string | null>(null)
+  const workbookBuffer = ref<ArrayBuffer | null>(null)
+
+  // Processing progress
+  const processingPhase = ref<ProcessingPhase>('idle')
+  const processingProgress = ref<{ current: number; total: number } | null>(null)
+
   async function parseFile(file: File) {
     const parserId = selectedParserId.value
     reset()
     selectedParserId.value = parserId
-    const buffer = await file.arrayBuffer()
-    const workbook = XLSX.read(buffer, { type: 'array', raw: true })
-    const sheetName = workbook.SheetNames[0]
-    const sheet = sheetName ? workbook.Sheets[sheetName] : undefined
+    fileName.value = file.name
+
+    processingPhase.value = 'reading'
+    processingProgress.value = null
+
+    try {
+      let buffer: ArrayBuffer
+      try {
+        buffer = await file.arrayBuffer()
+      } catch (err) {
+        const msg = 'Failed to read file. It may be corrupt or too large.'
+        saveError.value = msg
+        log.error(msg, { error: err instanceof Error ? err.message : String(err) })
+        return
+      }
+
+      let workbook: XLSX.WorkBook
+      try {
+        workbook = XLSX.read(buffer, { type: 'array', raw: true })
+      } catch (err) {
+        const msg = 'Failed to parse file. Supported formats: .csv, .xlsx, .xls'
+        saveError.value = msg
+        log.error(msg, { error: err instanceof Error ? err.message : String(err) })
+        return
+      }
+
+      if (workbook.SheetNames.length === 0) {
+        saveError.value = 'This file contains no data sheets.'
+        log.error('File has no sheets', { fileName: file.name })
+        return
+      }
+
+      if (workbook.SheetNames.length > 1) {
+        // Multi-sheet: pause for user selection
+        sheetNames.value = [...workbook.SheetNames]
+        workbookBuffer.value = buffer
+        log.info('Multi-sheet file detected', { fileName: file.name, sheets: workbook.SheetNames })
+        return
+      }
+
+      // Single sheet: process immediately
+      processSheet(workbook, workbook.SheetNames[0]!)
+    } finally {
+      processingPhase.value = 'idle'
+      processingProgress.value = null
+    }
+  }
+
+  function selectSheet(name: string) {
+    if (!workbookBuffer.value) return
+
+    const workbook = XLSX.read(workbookBuffer.value, { type: 'array', raw: true })
+    if (!workbook.SheetNames.includes(name)) {
+      saveError.value = `Sheet '${name}' not found.`
+      log.error('Sheet not found', { sheet: name })
+      return
+    }
+
+    // Reset column mapping and validation state when switching sheets
+    resetMappingState()
+    selectedSheet.value = name
+    processSheet(workbook, name)
+  }
+
+  function processSheet(workbook: XLSX.WorkBook, sheetName: string) {
+    processingPhase.value = 'parsing'
+    const sheet = workbook.Sheets[sheetName]
     if (!sheet) return
+
     const raw: string[][] = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' })
 
+    if (raw.length === 0) {
+      saveError.value = 'This file contains no data rows.'
+      log.warn('Empty sheet', { sheet: sheetName })
+      return
+    }
+
     const parser = getParser(selectedParserId.value ?? 'generic')
-    const preResult = parser.parse(raw)
+    let preResult
+    try {
+      preResult = parser.parse(raw)
+    } catch (err) {
+      const detail = err instanceof Error ? err.message : String(err)
+      const msg = `Parser error: ${detail}. Check that your file matches the expected format.`
+      saveError.value = msg
+      log.error(msg, { parser: parser.id, error: detail })
+      return
+    }
+
     extractedEffectiveDate.value = preResult.metadata.effectiveDate
     extractedTitle.value = preResult.metadata.title
     syntheticNote.value = preResult.metadata.syntheticNote ?? null
     syntheticIndices.value = new Set(preResult.metadata.syntheticIndices ?? [])
 
     const { headers, rows } = parseSpreadsheetData(preResult.rows)
+
+    if (headers.length === 0 || rows.length === 0) {
+      saveError.value = 'Could not find a header row. Check that your file contains column headers.'
+      log.warn('No header/rows after parsing', { sheet: sheetName })
+      return
+    }
+
     rawHeaders.value = headers
     rawRows.value = rows
-    fileName.value = file.name
 
-    log.info('File parsed', { fileName: file.name, parser: parser.id, rows: rows.length, columns: headers.length })
+    log.info('Sheet parsed', { sheet: sheetName, parser: parser.id, rows: rows.length, columns: headers.length })
 
     columnMap.value = autoDetectColumnMap(headers)
     autoDetectSucceeded.value = isColumnMapComplete(columnMap.value)
   }
 
-  function applyMapping() {
-    const mapped = applyColumnMap(rawRows.value, columnMap.value, mappingOptions.value)
-    entries.value = mapped
-    validate()
+  function resetMappingState() {
+    rawHeaders.value = []
+    rawRows.value = []
+    columnMap.value = { seniority_number: -1, employee_number: -1, seat: -1, base: -1, fleet: -1, name: -1, hire_date: -1, retire_date: -1 }
+    mappingOptions.value = { nameMode: 'single', retireMode: 'direct' }
+    entries.value = []
+    rowErrors.value = new Map()
+    extractedEffectiveDate.value = null
+    extractedTitle.value = null
+    syntheticNote.value = null
+    syntheticIndices.value = new Set()
+    autoDetectSucceeded.value = false
+    effectiveDate.value = null
+    title.value = ''
+    saveError.value = null
+  }
 
-    if (extractedEffectiveDate.value) {
-      effectiveDate.value = parseDate(extractedEffectiveDate.value)
-    } else {
-      effectiveDate.value = parseDate(new Date().toISOString().split('T')[0]!)
-    }
+  async function applyMapping() {
+    try {
+      processingPhase.value = 'mapping'
+      processingProgress.value = { current: 0, total: rawRows.value.length }
 
-    if (extractedTitle.value && !title.value) {
-      title.value = extractedTitle.value
+      const mapped = await applyColumnMapAsync(
+        rawRows.value,
+        columnMap.value,
+        mappingOptions.value,
+        (current, total) => {
+          processingProgress.value = { current, total }
+        },
+      )
+      entries.value = mapped
+
+      await validateAsync()
+
+      if (extractedEffectiveDate.value) {
+        effectiveDate.value = parseDate(extractedEffectiveDate.value)
+      } else {
+        effectiveDate.value = parseDate(new Date().toISOString().split('T')[0]!)
+      }
+
+      if (extractedTitle.value && !title.value) {
+        title.value = extractedTitle.value
+      }
+    } finally {
+      processingPhase.value = 'idle'
+      processingProgress.value = null
     }
   }
 
+  async function validateAsync() {
+    processingPhase.value = 'validating'
+    const total = entries.value.length
+    processingProgress.value = { current: 0, total }
+
+    const errors = new Map<number, string[]>()
+
+    // Batch Zod validation with yield
+    for (let i = 0; i < total; i += VALIDATE_BATCH_SIZE) {
+      const end = Math.min(i + VALIDATE_BATCH_SIZE, total)
+      for (let j = i; j < end; j++) {
+        const entry = entries.value[j]!
+        const result = SeniorityEntrySchema.safeParse(entry)
+        if (!result.success) {
+          errors.set(j, result.error.issues.map(issue => `${issue.path.join('.')}: ${issue.message}`))
+        }
+      }
+      processingProgress.value = { current: end, total }
+      if (end < total) {
+        await new Promise(resolve => setTimeout(resolve, 0))
+      }
+    }
+
+    // Duplicate and contiguity checks (fast, no batching needed)
+    const senNumToIndices = new Map<number, number[]>()
+    entries.value.forEach((entry, i) => {
+      const num = entry.seniority_number
+      if (typeof num === 'number' && Number.isInteger(num) && num > 0) {
+        const indices = senNumToIndices.get(num) ?? []
+        indices.push(i)
+        senNumToIndices.set(num, indices)
+      }
+    })
+
+    for (const [num, indices] of senNumToIndices) {
+      if (indices.length > 1) {
+        for (const i of indices) {
+          const existing = errors.get(i) ?? []
+          existing.push(`seniority_number: Duplicate seniority number ${num}`)
+          errors.set(i, existing)
+        }
+      }
+    }
+
+    const allNums = Array.from(senNumToIndices.keys()).sort((a, b) => a - b)
+    if (allNums.length > 0) {
+      const expected = allNums.length
+      const max = allNums[allNums.length - 1]!
+      if (max !== expected || allNums[0] !== 1) {
+        const expectedSet = new Set(Array.from({ length: expected }, (_, i) => i + 1))
+        for (const [num, indices] of senNumToIndices) {
+          if (!expectedSet.has(num)) {
+            for (const i of indices) {
+              const existing = errors.get(i) ?? []
+              existing.push(`seniority_number: Non-contiguous sequence — expected 1..${expected}, found ${num}`)
+              errors.set(i, existing)
+            }
+          }
+        }
+      }
+    }
+
+    rowErrors.value = errors
+    if (errors.size > 0) {
+      log.warn('Validation errors found', { errorCount: errors.size, totalRows: entries.value.length })
+    }
+  }
+
+  /** Synchronous validate for single-cell edits (no batching needed). */
   function validate() {
     const errors = new Map<number, string[]>()
     entries.value.forEach((entry, i) => {
@@ -244,6 +445,11 @@ export function useSeniorityUpload() {
     title.value = ''
     saving.value = false
     saveError.value = null
+    sheetNames.value = []
+    selectedSheet.value = null
+    workbookBuffer.value = null
+    processingPhase.value = 'idle'
+    processingProgress.value = null
   }
 
   return {
@@ -265,8 +471,13 @@ export function useSeniorityUpload() {
     saving,
     saveError,
     errorCount,
+    sheetNames,
+    selectedSheet,
+    processingPhase,
+    processingProgress,
     parseFile,
     setFiles,
+    selectSheet,
     applyMapping,
     validate,
     updateCell,

@@ -25,7 +25,19 @@ const steps: StepperItem[] = [
 ]
 
 const currentStep = ref<Step | number>('upload')
-const processing = ref(false)
+const processing = computed(() => upload.processingPhase.value !== 'idle')
+
+const phaseLabels: Record<string, string> = {
+  reading: 'Reading file...',
+  parsing: 'Parsing spreadsheet...',
+  mapping: 'Mapping columns...',
+  validating: 'Validating rows...',
+}
+const progressPercent = computed(() => {
+  const p = upload.processingProgress.value
+  if (!p || p.total === 0) return null
+  return Math.round((p.current / p.total) * 100)
+})
 watch(files, async (next) => {
   if (!next) {
     currentStep.value = 'upload'
@@ -45,8 +57,14 @@ const effectiveDateModel = computed({
   },
 })
 
+const needsSheetSelection = computed(() => upload.sheetNames.value.length > 1 && upload.rawRows.value.length === 0)
+
+function onSheetSelect(name: string) {
+  upload.selectSheet(name)
+}
+
 const canAdvance = computed(() => {
-  if (currentStep.value === 'upload') return upload.rawRows.value.length > 0
+  if (currentStep.value === 'upload') return upload.rawRows.value.length > 0 && !needsSheetSelection.value
   if (currentStep.value === 'mapping') {
     const m = upload.columnMap.value
     const dobDerivationModeActive = upload.mappingOptions.value.retireMode === 'dob'
@@ -69,15 +87,11 @@ function changeFormat() {
 
 async function nextStep() {
   if (currentStep.value === 'upload' && upload.autoDetectSucceeded.value) {
-    processing.value = true
-    await new Promise(resolve => setTimeout(resolve, 0))
     try {
-      upload.applyMapping()
+      await upload.applyMapping()
     } catch {
       toast.add({ title: 'Failed to process file', color: 'error' })
       return
-    } finally {
-      processing.value = false
     }
     mappingSkipped.value = true
     currentStep.value = 'review'
@@ -85,15 +99,11 @@ async function nextStep() {
     return
   }
   if (currentStep.value === 'mapping') {
-    processing.value = true
-    await new Promise(resolve => setTimeout(resolve, 0))
     try {
-      upload.applyMapping()
+      await upload.applyMapping()
     } catch {
       toast.add({ title: 'Failed to process file', color: 'error' })
       return
-    } finally {
-      processing.value = false
     }
   }
   const nextIdx = currentStepIndex.value + 1
@@ -199,12 +209,46 @@ async function onSave() {
                 Clear file
               </UButton>
 
+              <!-- Error alert for file/sheet issues -->
               <UAlert
-                v-if="upload.fileName.value"
+                v-if="upload.saveError.value && currentStep === 'upload'"
+                icon="i-lucide-alert-circle"
+                color="error"
+                variant="soft"
+                :title="upload.saveError.value"
+              >
+                <template #actions>
+                  <UButton
+                    size="sm"
+                    color="error"
+                    icon="i-lucide-rotate-ccw"
+                    @click="changeFormat"
+                  >
+                    Try Again
+                  </UButton>
+                </template>
+              </UAlert>
+
+              <!-- Sheet selector for multi-sheet XLSX files -->
+              <div v-if="upload.sheetNames.value.length > 1" class="space-y-2">
+                <UFormField label="Select Sheet" name="sheet">
+                  <USelectMenu
+                    :model-value="upload.selectedSheet.value"
+                    :items="upload.sheetNames.value"
+                    placeholder="Choose a sheet..."
+                    :search-input="false"
+                    class="w-full"
+                    @update:model-value="onSheetSelect"
+                  />
+                </UFormField>
+              </div>
+
+              <UAlert
+                v-if="upload.fileName.value && upload.rawRows.value.length > 0"
                 icon="i-lucide-file-check"
                 color="success"
                 variant="soft"
-                :title="`Loaded: ${upload.fileName.value}`"
+                :title="`Loaded: ${upload.fileName.value}${upload.selectedSheet.value ? ` — ${upload.selectedSheet.value}` : ''}`"
                 :description="`${upload.rawRows.value.length} rows, ${upload.rawHeaders.value.length} columns`"
               />
             </div>
@@ -248,8 +292,8 @@ async function onSave() {
                 icon="i-lucide-alert-triangle"
                 color="warning"
                 variant="subtle"
-                :title="`${upload.errorCount.value} row${upload.errorCount.value === 1 ? '' : 's'} could not be parsed`"
-                description="These rows have missing or malformed data and must be fixed or removed before saving."
+                :title="`${upload.errorCount.value} of ${upload.entries.value.length.toLocaleString()} rows have validation errors`"
+                description="Fix or remove them to continue."
               >
                 <template #actions>
                   <UButton
@@ -313,6 +357,20 @@ async function onSave() {
                 </div>
               </div>
             </div>
+          </div>
+
+          <!-- Processing progress bar -->
+          <div v-if="processing" class="space-y-2 mb-6">
+            <p class="text-sm text-muted">{{ phaseLabels[upload.processingPhase.value] || 'Processing...' }}</p>
+            <UProgress
+              v-if="progressPercent !== null"
+              :model-value="progressPercent"
+              size="sm"
+            />
+            <UProgress
+              v-else
+              size="sm"
+            />
           </div>
 
           <!-- Navigation buttons -->
