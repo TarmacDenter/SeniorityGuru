@@ -229,7 +229,6 @@ export function useSeniorityCore() {
   }
 
   const userEntry = _userEntry
-  const baseSnapshot = _baseSnapshot
   const snapshot = _snapshot
   const lens = _lens
 
