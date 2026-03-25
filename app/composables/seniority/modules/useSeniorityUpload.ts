@@ -53,6 +53,7 @@ export function useSeniorityUpload() {
   const saveError = ref<string | null>(null)
 
   async function parseFile(file: File) {
+    log.debug('parseFile started', { fileName: file.name, parserId: selectedParserId.value ?? 'generic' })
     const parserId = selectedParserId.value
     reset()
     selectedParserId.value = parserId
@@ -82,9 +83,12 @@ export function useSeniorityUpload() {
   }
 
   function applyMapping() {
+    log.debug('applyMapping started', { rows: rawRows.value.length })
     const mapped = applyColumnMap(rawRows.value, columnMap.value, mappingOptions.value)
     entries.value = mapped
     validate()
+
+    log.info('Mapping applied', { mappedRows: entries.value.length, errorCount: rowErrors.value.size })
 
     if (extractedEffectiveDate.value) {
       effectiveDate.value = parseDate(extractedEffectiveDate.value)
