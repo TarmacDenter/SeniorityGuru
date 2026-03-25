@@ -12,19 +12,22 @@ const props = defineProps<{
   entries: Partial<SeniorityEntry>[]
   rowErrors: Map<number, string[]>
   showErrorsOnly?: boolean
+  showEstimatedOnly?: boolean
+  estimatedIndices?: Set<number>
 }>()
 
 const pagination = ref({ pageIndex: 0, pageSize: PAGE_SIZE })
 
 const displayEntries = computed<IndexedEntry[]>(() => {
   const indexed = props.entries.map((entry, i) => ({ ...entry, _originalIndex: i }))
-  if (!props.showErrorsOnly) return indexed
-  return indexed.filter(e => props.rowErrors.has(e._originalIndex))
+  if (props.showErrorsOnly) return indexed.filter(e => props.rowErrors.has(e._originalIndex))
+  if (props.showEstimatedOnly && props.estimatedIndices) return indexed.filter(e => props.estimatedIndices!.has(e._originalIndex))
+  return indexed
 })
 
 const pageCount = computed(() => Math.ceil(displayEntries.value.length / pagination.value.pageSize))
 
-watch(() => props.showErrorsOnly, () => {
+watch([() => props.showErrorsOnly, () => props.showEstimatedOnly], () => {
   pagination.value = { ...pagination.value, pageIndex: 0 }
 })
 const currentPage = computed({

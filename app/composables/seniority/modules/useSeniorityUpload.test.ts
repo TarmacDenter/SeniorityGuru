@@ -61,6 +61,45 @@ describe('useSeniorityUpload', () => {
     })
   })
 
+  describe('deleteErrorRows — bulk removes all rows with validation errors', () => {
+    it('removes all rows that have errors and keeps clean rows', () => {
+      const { entries, rowErrors, deleteErrorRows } = useSeniorityUpload()
+
+      entries.value = [
+        makePartialEntry({ seniority_number: 1, employee_number: '900001' }),
+        makePartialEntry({ seniority_number: 2, employee_number: '900002' }),
+        makePartialEntry({ seniority_number: 3, employee_number: '900003' }),
+        makePartialEntry({ seniority_number: 4, employee_number: '900004' }),
+        makePartialEntry({ seniority_number: 5, employee_number: '900005' }),
+      ]
+      rowErrors.value = new Map([
+        [1, ['retire_date: Invalid']],
+        [3, ['retire_date: Invalid']],
+      ])
+
+      const deleted = deleteErrorRows()
+
+      expect(deleted).toBe(2)
+      expect(entries.value).toHaveLength(3)
+      expect(entries.value.map(e => e.employee_number)).toEqual(['900001', '900003', '900005'])
+    })
+
+    it('returns 0 when no errors exist', () => {
+      const { entries, rowErrors, deleteErrorRows } = useSeniorityUpload()
+
+      entries.value = [
+        makePartialEntry({ seniority_number: 1 }),
+        makePartialEntry({ seniority_number: 2 }),
+      ]
+      rowErrors.value = new Map()
+
+      const deleted = deleteErrorRows()
+
+      expect(deleted).toBe(0)
+      expect(entries.value).toHaveLength(2)
+    })
+  })
+
   describe('updateCell — modifies the correct entry', () => {
     it('updates the cell at the given original index', () => {
       const { entries, updateCell } = useSeniorityUpload()
@@ -190,6 +229,86 @@ describe('useSeniorityUpload', () => {
       validate()
 
       expect(rowErrors.value.size).toBe(0)
+    })
+  })
+
+  describe('pre-parser integration', () => {
+    it('exposes selectedParserId defaulting to null', () => {
+      const { selectedParserId } = useSeniorityUpload()
+      expect(selectedParserId.value).toBeNull()
+    })
+
+    it('exposes autoDetectSucceeded defaulting to false', () => {
+      const { autoDetectSucceeded } = useSeniorityUpload()
+      expect(autoDetectSucceeded.value).toBe(false)
+    })
+
+    it('exposes extractedEffectiveDate and extractedTitle defaulting to null', () => {
+      const { extractedEffectiveDate, extractedTitle } = useSeniorityUpload()
+      expect(extractedEffectiveDate.value).toBeNull()
+      expect(extractedTitle.value).toBeNull()
+    })
+
+    it('applyMapping uses extractedEffectiveDate when available', () => {
+      vi.useFakeTimers()
+      vi.setSystemTime(new Date('2026-03-15T12:00:00Z'))
+
+      const { rawRows, columnMap, mappingOptions, effectiveDate, extractedEffectiveDate, applyMapping } = useSeniorityUpload()
+
+      rawRows.value = [
+        ['1', '900001', 'CA', 'LAX', '737', 'MCFLYGUY, MARTY J', '2099-01-15', '2164-01-15'],
+      ]
+      columnMap.value = {
+        seniority_number: 0, employee_number: 1, seat: 2,
+        base: 3, fleet: 4, name: 5, hire_date: 6, retire_date: 7,
+      }
+      mappingOptions.value = { nameMode: 'single', retireMode: 'direct' }
+      extractedEffectiveDate.value = '2026-03-01'
+
+      applyMapping()
+
+      expect(effectiveDate.value!.toString()).toBe('2026-03-01')
+
+      vi.useRealTimers()
+    })
+
+    it('applyMapping uses extractedTitle when available', () => {
+      vi.useFakeTimers()
+      vi.setSystemTime(new Date('2026-03-15T12:00:00Z'))
+
+      const { rawRows, columnMap, mappingOptions, title, extractedTitle, applyMapping } = useSeniorityUpload()
+
+      rawRows.value = [
+        ['1', '900001', 'CA', 'LAX', '737', 'SKYWALKER, LUKE A', '2099-01-15', '2164-01-15'],
+      ]
+      columnMap.value = {
+        seniority_number: 0, employee_number: 1, seat: 2,
+        base: 3, fleet: 4, name: 5, hire_date: 6, retire_date: 7,
+      }
+      mappingOptions.value = { nameMode: 'single', retireMode: 'direct' }
+      extractedTitle.value = 'Seniority List 01MAR2099'
+
+      applyMapping()
+
+      expect(title.value).toBe('Seniority List 01MAR2099')
+
+      vi.useRealTimers()
+    })
+
+    it('reset clears parser-related state', () => {
+      const { selectedParserId, extractedEffectiveDate, extractedTitle, autoDetectSucceeded, reset } = useSeniorityUpload()
+
+      selectedParserId.value = 'delta'
+      extractedEffectiveDate.value = '2026-03-01'
+      extractedTitle.value = 'Some title'
+      autoDetectSucceeded.value = true
+
+      reset()
+
+      expect(selectedParserId.value).toBeNull()
+      expect(extractedEffectiveDate.value).toBeNull()
+      expect(extractedTitle.value).toBeNull()
+      expect(autoDetectSucceeded.value).toBe(false)
     })
   })
 

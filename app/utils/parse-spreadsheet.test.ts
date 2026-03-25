@@ -4,6 +4,7 @@ import {
   parseSpreadsheetData,
   autoDetectColumnMap,
   applyColumnMap,
+  isColumnMapComplete,
   type ColumnMap,
 } from './parse-spreadsheet'
 
@@ -100,5 +101,39 @@ describe('applyColumnMap', () => {
       retirementAge: 65,
     })
     expect(entries[0]!.retire_date).toBe('2035-06-15')
+  })
+})
+
+describe('isColumnMapComplete', () => {
+  it('returns true when all required columns are mapped', () => {
+    const map: ColumnMap = {
+      seniority_number: 0, employee_number: 1, seat: 2,
+      base: 3, fleet: 4, name: 5, hire_date: 6, retire_date: 7,
+    }
+    expect(isColumnMapComplete(map)).toBe(true)
+  })
+
+  it('returns true when name is unmapped (optional)', () => {
+    const map: ColumnMap = {
+      seniority_number: 0, employee_number: 1, seat: 2,
+      base: 3, fleet: 4, name: -1, hire_date: 6, retire_date: 7,
+    }
+    expect(isColumnMapComplete(map)).toBe(true)
+  })
+
+  it('returns false when a required column is unmapped', () => {
+    const map: ColumnMap = {
+      seniority_number: 0, employee_number: 1, seat: -1,
+      base: 3, fleet: 4, name: 5, hire_date: 6, retire_date: 7,
+    }
+    expect(isColumnMapComplete(map)).toBe(false)
+  })
+
+  it('returns false when hire_date is unmapped', () => {
+    const map: ColumnMap = {
+      seniority_number: 0, employee_number: 1, seat: 2,
+      base: 3, fleet: 4, name: 5, hire_date: -1, retire_date: 7,
+    }
+    expect(isColumnMapComplete(map)).toBe(false)
   })
 })

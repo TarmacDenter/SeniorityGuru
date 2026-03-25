@@ -96,3 +96,14 @@ export function applyColumnMap(
     return entry
   })
 }
+
+/** Check if all required columns in a ColumnMap are mapped (index >= 0). Name is optional. */
+export function isColumnMapComplete(map: ColumnMap): boolean {
+  return map.seniority_number >= 0
+    && map.employee_number >= 0
+    && map.seat >= 0
+    && map.base >= 0
+    && map.fleet >= 0
+    && map.hire_date >= 0
+    && map.retire_date >= 0
+}

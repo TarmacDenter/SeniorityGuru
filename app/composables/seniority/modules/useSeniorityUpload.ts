@@ -8,9 +8,11 @@ import {
   parseSpreadsheetData,
   autoDetectColumnMap,
   applyColumnMap,
+  isColumnMapComplete,
   type ColumnMap,
   type MappingOptions,
 } from '~/utils/parse-spreadsheet'
+import { getParser } from '~/utils/parsers/registry'
 import { createLogger } from '~/utils/logger'
 
 const log = createLogger('upload')
@@ -38,13 +40,22 @@ export function useSeniorityUpload() {
   const entries = ref<Partial<SeniorityEntry>[]>([])
   const rowErrors = shallowRef<Map<number, string[]>>(new Map())
 
+  const selectedParserId = ref<string | null>(null)
+  const extractedEffectiveDate = ref<string | null>(null)
+  const extractedTitle = ref<string | null>(null)
+  const syntheticNote = ref<string | null>(null)
+  const syntheticIndices = ref<Set<number>>(new Set())
+  const autoDetectSucceeded = ref(false)
+
   const effectiveDate = ref<DateValue | null>(null)
   const title = ref('')
   const saving = ref(false)
   const saveError = ref<string | null>(null)
 
   async function parseFile(file: File) {
+    const parserId = selectedParserId.value
     reset()
+    selectedParserId.value = parserId
     const buffer = await file.arrayBuffer()
     const workbook = XLSX.read(buffer, { type: 'array', raw: true })
     const sheetName = workbook.SheetNames[0]
@@ -52,14 +63,22 @@ export function useSeniorityUpload() {
     if (!sheet) return
     const raw: string[][] = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' })
 
-    const { headers, rows } = parseSpreadsheetData(raw)
+    const parser = getParser(selectedParserId.value ?? 'generic')
+    const preResult = parser.parse(raw)
+    extractedEffectiveDate.value = preResult.metadata.effectiveDate
+    extractedTitle.value = preResult.metadata.title
+    syntheticNote.value = preResult.metadata.syntheticNote ?? null
+    syntheticIndices.value = new Set(preResult.metadata.syntheticIndices ?? [])
+
+    const { headers, rows } = parseSpreadsheetData(preResult.rows)
     rawHeaders.value = headers
     rawRows.value = rows
     fileName.value = file.name
 
-    log.info('File parsed', { fileName: file.name, rows: rows.length, columns: headers.length })
+    log.info('File parsed', { fileName: file.name, parser: parser.id, rows: rows.length, columns: headers.length })
 
     columnMap.value = autoDetectColumnMap(headers)
+    autoDetectSucceeded.value = isColumnMapComplete(columnMap.value)
   }
 
   function applyMapping() {
@@ -67,7 +86,15 @@ export function useSeniorityUpload() {
     entries.value = mapped
     validate()
 
-    effectiveDate.value = parseDate(new Date().toISOString().split('T')[0]!)
+    if (extractedEffectiveDate.value) {
+      effectiveDate.value = parseDate(extractedEffectiveDate.value)
+    } else {
+      effectiveDate.value = parseDate(new Date().toISOString().split('T')[0]!)
+    }
+
+    if (extractedTitle.value && !title.value) {
+      title.value = extractedTitle.value
+    }
   }
 
   function validate() {
@@ -146,6 +173,15 @@ export function useSeniorityUpload() {
     rowErrors.value = newErrors
   }
 
+  function deleteErrorRows(): number {
+    const errorIndices = new Set(rowErrors.value.keys())
+    if (errorIndices.size === 0) return 0
+    const count = errorIndices.size
+    entries.value = entries.value.filter((_, i) => !errorIndices.has(i))
+    rowErrors.value = new Map()
+    return count
+  }
+
   const errorCount = computed(() => rowErrors.value.size)
 
   async function setFiles(files: File[] | null | undefined) {
@@ -198,6 +234,12 @@ export function useSeniorityUpload() {
     mappingOptions.value = { nameMode: 'single', retireMode: 'direct' }
     entries.value = []
     rowErrors.value = new Map()
+    selectedParserId.value = null
+    extractedEffectiveDate.value = null
+    extractedTitle.value = null
+    syntheticNote.value = null
+    syntheticIndices.value = new Set()
+    autoDetectSucceeded.value = false
     effectiveDate.value = null
     title.value = ''
     saving.value = false
@@ -212,6 +254,12 @@ export function useSeniorityUpload() {
     mappingOptions,
     entries,
     rowErrors,
+    selectedParserId,
+    extractedEffectiveDate,
+    extractedTitle,
+    syntheticNote,
+    syntheticIndices,
+    autoDetectSucceeded,
     effectiveDate,
     title,
     saving,
@@ -223,6 +271,7 @@ export function useSeniorityUpload() {
     validate,
     updateCell,
     deleteRow,
+    deleteErrorRows,
     save,
     reset,
   }
