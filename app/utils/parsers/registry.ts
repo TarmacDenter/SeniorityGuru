@@ -1,8 +1,9 @@
 import type { PreParser } from './types'
+import { deltaParser } from './delta'
 import { genericParser } from './generic'
 
 /** All registered pre-parsers. Specific parsers first, generic last. */
-export const parsers: readonly PreParser[] = [genericParser]
+export const parsers: readonly PreParser[] = [deltaParser, genericParser]
 
 /** Dropdown-ready options derived from registered parsers. */
 export const parserOptions = parsers.map(p => ({

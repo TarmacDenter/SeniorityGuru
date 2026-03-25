@@ -33,4 +33,15 @@ describe('parser registry', () => {
     const last = parsers[parsers.length - 1]
     expect(last?.id).toBe('generic')
   })
+
+  it('getParser returns delta parser by id', () => {
+    const delta = getParser('delta')
+    expect(delta.id).toBe('delta')
+  })
+
+  it('delta parser is before generic in the list', () => {
+    const deltaIdx = parsers.findIndex(p => p.id === 'delta')
+    const genericIdx = parsers.findIndex(p => p.id === 'generic')
+    expect(deltaIdx).toBeLessThan(genericIdx)
+  })
 })
