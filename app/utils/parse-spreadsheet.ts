@@ -22,7 +22,7 @@ export interface MappingOptions {
   retirementAge?: number
 }
 
-const BATCH_SIZE = 500
+export const BATCH_SIZE = 500
 
 export function parseSpreadsheetData(raw: string[][]): { headers: string[]; rows: string[][] } {
   const [headers, ...rows] = raw

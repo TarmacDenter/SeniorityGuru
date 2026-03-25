@@ -5,10 +5,7 @@
  */
 export function useDeferredReady() {
   const ready = ref(false)
-  onMounted(() => {
-    // setTimeout(0) is a macrotask — runs after the browser paints the skeleton.
-    // nextTick (microtask) runs before paint, so the skeleton never actually shows.
-    setTimeout(() => { ready.value = true }, 0)
-  })
+  // Macrotask ensures the browser paints skeletons before expensive computeds evaluate
+  onMounted(() => setTimeout(() => { ready.value = true }, 0))
   return ready
 }

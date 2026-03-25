@@ -15,31 +15,87 @@ import {
 import { getParser } from '~/utils/parsers/registry'
 import { createLogger } from '~/utils/logger'
 
+import { BATCH_SIZE } from '~/utils/parse-spreadsheet'
+
 const log = createLogger('upload')
 
 export type ProcessingPhase = 'idle' | 'reading' | 'parsing' | 'mapping' | 'validating'
 
-const VALIDATE_BATCH_SIZE = 500
+const DEFAULT_COLUMN_MAP: ColumnMap = {
+  seniority_number: -1,
+  employee_number: -1,
+  seat: -1,
+  base: -1,
+  fleet: -1,
+  name: -1,
+  hire_date: -1,
+  retire_date: -1,
+}
+
+const DEFAULT_MAPPING_OPTIONS: MappingOptions = {
+  nameMode: 'single',
+  retireMode: 'direct',
+}
+
+/** Shared validation rules — Zod schema + duplicate/contiguity checks. */
+function computeValidationErrors(entries: Partial<SeniorityEntry>[]): Map<number, string[]> {
+  const errors = new Map<number, string[]>()
+
+  entries.forEach((entry, i) => {
+    const result = SeniorityEntrySchema.safeParse(entry)
+    if (!result.success) {
+      errors.set(i, result.error.issues.map(issue => `${issue.path.join('.')}: ${issue.message}`))
+    }
+  })
+
+  const senNumToIndices = new Map<number, number[]>()
+  entries.forEach((entry, i) => {
+    const num = entry.seniority_number
+    if (typeof num === 'number' && Number.isInteger(num) && num > 0) {
+      const indices = senNumToIndices.get(num) ?? []
+      indices.push(i)
+      senNumToIndices.set(num, indices)
+    }
+  })
+
+  for (const [num, indices] of senNumToIndices) {
+    if (indices.length > 1) {
+      for (const i of indices) {
+        const existing = errors.get(i) ?? []
+        existing.push(`seniority_number: Duplicate seniority number ${num}`)
+        errors.set(i, existing)
+      }
+    }
+  }
+
+  const allNums = Array.from(senNumToIndices.keys()).sort((a, b) => a - b)
+  if (allNums.length > 0) {
+    const expected = allNums.length
+    const max = allNums[allNums.length - 1]!
+    if (max !== expected || allNums[0] !== 1) {
+      const expectedSet = new Set(Array.from({ length: expected }, (_, i) => i + 1))
+      for (const [num, indices] of senNumToIndices) {
+        if (!expectedSet.has(num)) {
+          for (const i of indices) {
+            const existing = errors.get(i) ?? []
+            existing.push(`seniority_number: Non-contiguous sequence — expected 1..${expected}, found ${num}`)
+            errors.set(i, existing)
+          }
+        }
+      }
+    }
+  }
+
+  return errors
+}
 
 export function useSeniorityUpload() {
   const fileName = ref<string>('')
   const rawHeaders = ref<string[]>([])
   const rawRows = ref<string[][]>([])
 
-  const columnMap = ref<ColumnMap>({
-    seniority_number: -1,
-    employee_number: -1,
-    seat: -1,
-    base: -1,
-    fleet: -1,
-    name: -1,
-    hire_date: -1,
-    retire_date: -1,
-  })
-  const mappingOptions = ref<MappingOptions>({
-    nameMode: 'single',
-    retireMode: 'direct',
-  })
+  const columnMap = ref<ColumnMap>({ ...DEFAULT_COLUMN_MAP })
+  const mappingOptions = ref<MappingOptions>({ ...DEFAULT_MAPPING_OPTIONS })
 
   const entries = ref<Partial<SeniorityEntry>[]>([])
   const rowErrors = shallowRef<Map<number, string[]>>(new Map())
@@ -183,8 +239,8 @@ export function useSeniorityUpload() {
   function resetMappingState() {
     rawHeaders.value = []
     rawRows.value = []
-    columnMap.value = { seniority_number: -1, employee_number: -1, seat: -1, base: -1, fleet: -1, name: -1, hire_date: -1, retire_date: -1 }
-    mappingOptions.value = { nameMode: 'single', retireMode: 'direct' }
+    columnMap.value = { ...DEFAULT_COLUMN_MAP }
+    mappingOptions.value = { ...DEFAULT_MAPPING_OPTIONS }
     entries.value = []
     rowErrors.value = new Map()
     extractedEffectiveDate.value = null
@@ -234,16 +290,15 @@ export function useSeniorityUpload() {
     const total = entries.value.length
     processingProgress.value = { current: 0, total }
 
-    const errors = new Map<number, string[]>()
-
-    // Batch Zod validation with yield
-    for (let i = 0; i < total; i += VALIDATE_BATCH_SIZE) {
-      const end = Math.min(i + VALIDATE_BATCH_SIZE, total)
+    // Batch Zod validation with yield for UI responsiveness
+    const schemaErrors = new Map<number, string[]>()
+    for (let i = 0; i < total; i += BATCH_SIZE) {
+      const end = Math.min(i + BATCH_SIZE, total)
       for (let j = i; j < end; j++) {
         const entry = entries.value[j]!
         const result = SeniorityEntrySchema.safeParse(entry)
         if (!result.success) {
-          errors.set(j, result.error.issues.map(issue => `${issue.path.join('.')}: ${issue.message}`))
+          schemaErrors.set(j, result.error.issues.map(issue => `${issue.path.join('.')}: ${issue.message}`))
         }
       }
       processingProgress.value = { current: end, total }
@@ -252,102 +307,24 @@ export function useSeniorityUpload() {
       }
     }
 
-    // Duplicate and contiguity checks (fast, no batching needed)
-    const senNumToIndices = new Map<number, number[]>()
-    entries.value.forEach((entry, i) => {
-      const num = entry.seniority_number
-      if (typeof num === 'number' && Number.isInteger(num) && num > 0) {
-        const indices = senNumToIndices.get(num) ?? []
-        indices.push(i)
-        senNumToIndices.set(num, indices)
-      }
-    })
-
-    for (const [num, indices] of senNumToIndices) {
-      if (indices.length > 1) {
-        for (const i of indices) {
-          const existing = errors.get(i) ?? []
-          existing.push(`seniority_number: Duplicate seniority number ${num}`)
-          errors.set(i, existing)
-        }
-      }
-    }
-
-    const allNums = Array.from(senNumToIndices.keys()).sort((a, b) => a - b)
-    if (allNums.length > 0) {
-      const expected = allNums.length
-      const max = allNums[allNums.length - 1]!
-      if (max !== expected || allNums[0] !== 1) {
-        const expectedSet = new Set(Array.from({ length: expected }, (_, i) => i + 1))
-        for (const [num, indices] of senNumToIndices) {
-          if (!expectedSet.has(num)) {
-            for (const i of indices) {
-              const existing = errors.get(i) ?? []
-              existing.push(`seniority_number: Non-contiguous sequence — expected 1..${expected}, found ${num}`)
-              errors.set(i, existing)
-            }
-          }
-        }
-      }
+    // Run full validation (duplicate/contiguity) then merge with schema errors
+    const errors = computeValidationErrors(entries.value)
+    for (const [idx, msgs] of schemaErrors) {
+      const existing = errors.get(idx)
+      if (existing) existing.unshift(...msgs)
+      else errors.set(idx, msgs)
     }
 
     rowErrors.value = errors
     if (errors.size > 0) {
-      log.warn('Validation errors found', { errorCount: errors.size, totalRows: entries.value.length })
+      log.warn('Validation errors found', { errorCount: errors.size, totalRows: total })
     }
   }
 
-  /** Synchronous validate for single-cell edits (no batching needed). */
   function validate() {
-    const errors = new Map<number, string[]>()
-    entries.value.forEach((entry, i) => {
-      const result = SeniorityEntrySchema.safeParse(entry)
-      if (!result.success) {
-        errors.set(i, result.error.issues.map(issue => `${issue.path.join('.')}: ${issue.message}`))
-      }
-    })
-
-    const senNumToIndices = new Map<number, number[]>()
-    entries.value.forEach((entry, i) => {
-      const num = entry.seniority_number
-      if (typeof num === 'number' && Number.isInteger(num) && num > 0) {
-        const indices = senNumToIndices.get(num) ?? []
-        indices.push(i)
-        senNumToIndices.set(num, indices)
-      }
-    })
-
-    for (const [num, indices] of senNumToIndices) {
-      if (indices.length > 1) {
-        for (const i of indices) {
-          const existing = errors.get(i) ?? []
-          existing.push(`seniority_number: Duplicate seniority number ${num}`)
-          errors.set(i, existing)
-        }
-      }
-    }
-
-    const allNums = Array.from(senNumToIndices.keys()).sort((a, b) => a - b)
-    if (allNums.length > 0) {
-      const expected = allNums.length
-      const max = allNums[allNums.length - 1]!
-      if (max !== expected || allNums[0] !== 1) {
-        const expectedSet = new Set(Array.from({ length: expected }, (_, i) => i + 1))
-        for (const [num, indices] of senNumToIndices) {
-          if (!expectedSet.has(num)) {
-            for (const i of indices) {
-              const existing = errors.get(i) ?? []
-              existing.push(`seniority_number: Non-contiguous sequence — expected 1..${expected}, found ${num}`)
-              errors.set(i, existing)
-            }
-          }
-        }
-      }
-    }
-
-    rowErrors.value = errors
-    if (errors.size > 0) {
-      log.warn('Validation errors found', { errorCount: errors.size, totalRows: entries.value.length })
+    rowErrors.value = computeValidationErrors(entries.value)
+    if (rowErrors.value.size > 0) {
+      log.warn('Validation errors found', { errorCount: rowErrors.value.size, totalRows: entries.value.length })
     }
   }
 
@@ -429,27 +406,14 @@ export function useSeniorityUpload() {
 
   function reset() {
     fileName.value = ''
-    rawHeaders.value = []
-    rawRows.value = []
-    columnMap.value = { seniority_number: -1, employee_number: -1, seat: -1, base: -1, fleet: -1, name: -1, hire_date: -1, retire_date: -1 }
-    mappingOptions.value = { nameMode: 'single', retireMode: 'direct' }
-    entries.value = []
-    rowErrors.value = new Map()
     selectedParserId.value = null
-    extractedEffectiveDate.value = null
-    extractedTitle.value = null
-    syntheticNote.value = null
-    syntheticIndices.value = new Set()
-    autoDetectSucceeded.value = false
-    effectiveDate.value = null
-    title.value = ''
     saving.value = false
-    saveError.value = null
     sheetNames.value = []
     selectedSheet.value = null
     workbookBuffer.value = null
     processingPhase.value = 'idle'
     processingProgress.value = null
+    resetMappingState()
   }
 
   return {
