@@ -40,7 +40,13 @@ Thumbs.db
 .idea
 .vscode/
 
-.claude/
+# Claude Code — ignore local/runtime data, track settings and commands
+.claude/settings.local.json
+.claude/agent-memory/
+.claude/plans/
+.claude/worktrees/
+.claude/agents
+.claude/skills
 .data
 
 # MCP server config (local dev URLs)
@@ -55,6 +61,9 @@ Thumbs.db
 
 # Git worktrees
 .worktrees/
+
+# Active plans (per-worktree, untracked)
+plans/
 
 # Local docs (how-tos, summaries, scratch notes)
 docs.local/

@@ -5,6 +5,7 @@ while read local_ref local_sha remote_ref remote_sha; do
   fi
 done
 
+mkdir -p "${TMPDIR:-/tmp}"
 npm run lint
 npm run typecheck
 npm test

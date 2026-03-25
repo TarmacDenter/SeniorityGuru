@@ -148,6 +148,13 @@ Use **Zod** at the upload boundary. Schemas live in `app/utils/schemas/`.
 
 ---
 
+## Plans
+
+- **Active plans** → `plans/` at the worktree root — untracked, isolated per worktree. Each worktree has its own `plans/` so agents working in parallel don't collide. The `superpowers:writing-plans` and `prd-to-plan` skills save here by default.
+- **Completed plans** → `docs.local/plans/` — permanent local archive in the main worktree. Move plans here when the work ships.
+
+---
+
 ## Git Workflow
 
 - **Strategy**: Trunk-based development — see [WORKFLOW.md](WORKFLOW.md) for full reference

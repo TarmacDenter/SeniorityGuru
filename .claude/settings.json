@@ -1,0 +1,12 @@
+{
+  "enabledPlugins": {
+    "nuxtui@local": true,
+    "playwright@claude-plugins-official": true,
+    "github@claude-plugins-official": true
+  },
+  "permissions": {
+    "allow": [
+      "Read"
+    ]
+  }
+}
