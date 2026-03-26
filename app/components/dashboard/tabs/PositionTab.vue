@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useSeniorityCore, useQualAnalytics } from '~/composables/seniority'
+import { diffYears, todayISO } from '~/utils/date'
 import { DEFAULT_GROWTH_CONFIG } from '~/utils/growth-config'
 import type { GrowthConfig } from '~/utils/growth-config'
 
@@ -25,7 +26,7 @@ let positionDebounceTimer: ReturnType<typeof setTimeout> | null = null
 const positionSliderMax = computed(() => {
   const retireDate = projections.userEntry.value?.retire_date
   if (!retireDate) return 30
-  const years = Math.ceil((new Date(retireDate).getTime() - Date.now()) / (365.25 * 24 * 60 * 60 * 1000))
+  const years = Math.ceil(diffYears(todayISO(), retireDate))
   return Math.max(1, years)
 })
 

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { computeYOS } from '~/utils/date'
+
 const props = defineProps<{
   rank: {
     seniorityNumber: number
@@ -15,9 +17,7 @@ const animatedPercentile = ref(0)
 
 const yearsOfService = computed(() => {
   if (!props.rank.hireDate) return null
-  const hire = new Date(props.rank.hireDate)
-  const now = new Date()
-  const years = Math.floor((now.getTime() - hire.getTime()) / (365.25 * 24 * 60 * 60 * 1000))
+  const years = Math.floor(computeYOS(props.rank.hireDate))
   return years >= 0 ? years : null
 })
 

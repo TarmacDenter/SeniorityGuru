@@ -1,5 +1,6 @@
 import { parseDate } from '@internationalized/date'
 import type { SeniorityEntry } from '~/utils/schemas/seniority-list'
+import { todayISO } from '~/utils/date'
 import type { ColumnMap } from '~/utils/parse-spreadsheet'
 import type { SeniorityUpload } from './types'
 import { _useProgressTracker } from './_useProgressTracker'
@@ -83,7 +84,7 @@ export function useSeniorityUpload(): SeniorityUpload {
       if (date) {
         confirm.effectiveDate.value = parseDate(date)
       } else {
-        confirm.effectiveDate.value = parseDate(new Date().toISOString().split('T')[0]!)
+        confirm.effectiveDate.value = parseDate(todayISO())
       }
       if (title && !confirm.title.value) {
         confirm.title.value = title

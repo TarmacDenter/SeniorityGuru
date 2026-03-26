@@ -116,6 +116,12 @@ describe('extractMetadata', () => {
     expect(result.effectiveDate).toBe('2026-03-15')
   })
 
+  it('extracts MM/DD/YY date from preamble', () => {
+    const preamble = [['Effective 03/15/26', '', '']]
+    const result = extractMetadata(preamble)
+    expect(result.effectiveDate).toBe('2026-03-15')
+  })
+
   it('returns null when no date found in preamble', () => {
     const preamble = [['Some Random Title', '', '']]
     const result = extractMetadata(preamble)

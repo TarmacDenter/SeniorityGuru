@@ -2,6 +2,8 @@ import type { SeniorityEntry } from '~/utils/schemas/seniority-list'
 import type { FilterFn } from '~/utils/seniority-math'
 import type { GrowthConfig } from '~/utils/growth-config'
 import { computeAdditionalPilots } from '~/utils/growth-config'
+import { deriveAge, computeYOS, isRetiredBy, extractYear, todayISO } from '~/utils/date'
+
 
 export interface TrajectoryPoint {
   date: string
@@ -11,19 +13,6 @@ export interface TrajectoryPoint {
 
 export function qualKey(entry: SeniorityEntry): string {
   return `${entry.fleet} ${entry.seat}`
-}
-
-/** Back-calculate approximate current age from retirement date and mandatory retirement age. */
-export function deriveAge(retireDate: string, mandatoryAge: number): number {
-  const MS_PER_YEAR = 365.25 * 24 * 60 * 60 * 1000
-  const retireMs = new Date(retireDate).getTime()
-  const birthMs = retireMs - mandatoryAge * MS_PER_YEAR
-  return Math.floor((Date.now() - birthMs) / MS_PER_YEAR)
-}
-
-export function computeYOS(hireDateStr: string): number {
-  const MS_PER_YEAR = 365.25 * 24 * 60 * 60 * 1000
-  return (Date.now() - new Date(hireDateStr).getTime()) / MS_PER_YEAR
 }
 
 export interface AgeBucket {
@@ -231,7 +220,7 @@ export function computeRetirementWave(
 
   const countByYear = new Map<number, number>()
   for (const e of withDates) {
-    const year = new Date(e.retire_date!).getUTCFullYear()
+    const year = extractYear(e.retire_date!)
     countByYear.set(year, (countByYear.get(year) ?? 0) + 1)
   }
 
@@ -265,9 +254,9 @@ export interface PowerIndexCell {
   userPercentile: number
 }
 
-function isActiveAt(e: SeniorityEntry, projectionDate: Date): boolean {
+function isActiveAt(e: SeniorityEntry, projectionDate: string): boolean {
   if (!e.retire_date) return true
-  return new Date(e.retire_date) > projectionDate
+  return !isRetiredBy(e.retire_date, projectionDate)
 }
 
 function lowerBound(sorted: number[], target: number): number {
@@ -294,7 +283,7 @@ function companyPercentile(senNum: number, sortedNums: number[], total: number):
 export function computePowerIndexCells(
   entries: readonly SeniorityEntry[],
   userSenNum: number,
-  projectionDate: Date,
+  projectionDate: string,
   growthConfig?: GrowthConfig,
 ): PowerIndexCell[] {
   const withQual = entries
@@ -302,7 +291,7 @@ export function computePowerIndexCells(
   const activeSorted = sortedSenNums(activeCompany)
   const totalCompany = activeCompany.length
   const additional = growthConfig?.enabled
-    ? computeAdditionalPilots(entries.length, growthConfig.annualRate, new Date(), projectionDate)
+    ? computeAdditionalPilots(entries.length, growthConfig.annualRate, todayISO(), projectionDate)
     : 0
   const projectedTotalCompany = totalCompany + additional
   const userPctl = companyPercentile(userSenNum, activeSorted, projectedTotalCompany)
@@ -388,8 +377,8 @@ export interface QualDemographicScale extends QualDemographicSnapshot {
 }
 
 export function computeQualSnapshots(entries: readonly SeniorityEntry[]): QualDemographicSnapshot[] {
-  const today = new Date()
-  const todayActive = entries.filter((e) => isActiveAt(e, today))
+  const todayStr = todayISO()
+  const todayActive = entries.filter((e) => isActiveAt(e, todayStr))
   if (todayActive.length === 0) return []
 
   const activeSorted = sortedSenNums(todayActive)
@@ -443,28 +432,24 @@ export function applyProjectionToSnapshots(
   snapshots: QualDemographicSnapshot[],
   entries: readonly SeniorityEntry[],
   userSenNum: number,
-  projectionDate: Date,
+  projectionDate: string,
   growthConfig?: GrowthConfig,
 ): QualDemographicScale[] {
-  // Use the same rank-based projection as buildTrajectory: fix total at original
-  // list size and subtract retirements from rank. The previous approach (re-filter
-  // to active entries, re-sort, lowerBound) kept the most junior pilot pinned at
-  // the bottom regardless of retirements above them.
-  const today = new Date()
+  const todayStr = todayISO()
   const totalPilots = entries.length
   const aheadOfUser = entries.filter(e => e.seniority_number < userSenNum)
   const initialRank = aheadOfUser.length + 1
 
-  const retiredAheadToday = aheadOfUser.filter(e => e.retire_date && new Date(e.retire_date) <= today).length
+  const retiredAheadToday = aheadOfUser.filter(e => e.retire_date && isRetiredBy(e.retire_date, todayStr)).length
   const currentRank = initialRank - retiredAheadToday
   const currentPctl = totalPilots > 0
     ? Math.round(((totalPilots - currentRank + 1) / totalPilots) * 100 * 10) / 10
     : 0
 
-  const retiredAheadProjected = aheadOfUser.filter(e => e.retire_date && new Date(e.retire_date) <= projectionDate).length
+  const retiredAheadProjected = aheadOfUser.filter(e => e.retire_date && isRetiredBy(e.retire_date, projectionDate)).length
   const projectedRank = initialRank - retiredAheadProjected
   const additional = growthConfig?.enabled
-    ? computeAdditionalPilots(totalPilots, growthConfig.annualRate, today, projectionDate)
+    ? computeAdditionalPilots(totalPilots, growthConfig.annualRate, todayStr, projectionDate)
     : 0
   const projectedTotal = totalPilots + additional
   const userPctl = projectedTotal > 0

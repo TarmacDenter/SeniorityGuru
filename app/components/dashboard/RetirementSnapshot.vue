@@ -2,6 +2,7 @@
 import { h } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
 import { formatRankDelta } from '~/utils/seniority-math'
+import { formatMonthYear, formatYear } from '~/utils/date'
 
 interface TrajectoryPoint {
   date: string
@@ -50,7 +51,7 @@ const tableData = computed<TableRow[]>(() => {
     const delta = prev ? point.rank - prev.rank : 0
 
     return {
-      year: new Date(point.date).getFullYear().toString(),
+      year: formatYear(point.date),
       rank: point.rank,
       percentile: point.percentile,
       rankDelta: formatRankDelta(delta),
@@ -84,8 +85,7 @@ const columns: TableColumn<TableRow>[] = [
 ]
 
 function formatDate(dateStr: string): string {
-  const d = new Date(dateStr)
-  return d.toLocaleDateString('en-US', { month: 'short', year: 'numeric', timeZone: 'UTC' })
+  return formatMonthYear(dateStr)
 }
 </script>
 

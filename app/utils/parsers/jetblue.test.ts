@@ -1,24 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect } from 'vitest'
-import { jetblueParser, normalizeSlashDate } from './jetblue'
-
-describe('normalizeSlashDate', () => {
-  it('converts M/D/YYYY to YYYY-MM-DD', () => {
-    expect(normalizeSlashDate('3/5/2030')).toBe('2030-03-05')
-  })
-
-  it('converts MM/DD/YYYY to YYYY-MM-DD', () => {
-    expect(normalizeSlashDate('11/15/2028')).toBe('2028-11-15')
-  })
-
-  it('handles single-digit month and day', () => {
-    expect(normalizeSlashDate('1/9/2045')).toBe('2045-01-09')
-  })
-
-  it('passes through unrecognized formats unchanged', () => {
-    expect(normalizeSlashDate('2030-03-05')).toBe('2030-03-05')
-  })
-})
+import { jetblueParser } from './jetblue'
 
 describe('jetblueParser.parse', () => {
   const sampleFile: string[][] = [
@@ -106,5 +88,58 @@ describe('jetblueParser.parse', () => {
     expect(rows[0]).toContain('Seniority Number')
     expect(rows[0]).toContain('Hire Date')
     expect(rows[0]).toContain('Retire Date')
+  })
+
+  it('normalizes mixed date formats via per-cell fallback', () => {
+    const mixed: string[][] = [
+      ['SEN', 'CMID', 'NAME', 'BASE', 'FLEET', 'SEAT', 'HIREDATE', 'RTRDATE'],
+      ['1', '50001', 'JANE SMITH', 'BOS', '320', 'CA', '3/15/2005', '2040-06-01'],
+      ['2', '50002', 'BOB JONES', 'JFK', '220', 'FO', '2010-11-08', '9/30/2045'],
+    ]
+    const { rows } = jetblueParser.parse(mixed)
+    const headers = rows[0]!
+    const hireIdx = headers.indexOf('Hire Date')
+    const retireIdx = headers.indexOf('Retire Date')
+
+    expect(rows[1]![hireIdx]).toBe('2005-03-15')
+    expect(rows[1]![retireIdx]).toBe('2040-06-01')
+    expect(rows[2]![hireIdx]).toBe('2010-11-08')
+    expect(rows[2]![retireIdx]).toBe('2045-09-30')
+  })
+
+  it('normalizes 2-digit year dates', () => {
+    const twoDigitYears: string[][] = [
+      ['SEN', 'CMID', 'NAME', 'BASE', 'FLEET', 'SEAT', 'HIREDATE', 'RTRDATE'],
+      ['1', '50001', 'JANE SMITH', 'BOS', '320', 'CA', '3/15/05', '6/1/40'],
+      ['2', '50002', 'BOB JONES', 'JFK', '220', 'FO', '11/8/10', '9/30/45'],
+    ]
+    const { rows } = jetblueParser.parse(twoDigitYears)
+    const headers = rows[0]!
+    const hireIdx = headers.indexOf('Hire Date')
+    const retireIdx = headers.indexOf('Retire Date')
+
+    expect(rows[1]![hireIdx]).toBe('2005-03-15')
+    expect(rows[1]![retireIdx]).toBe('2040-06-01')
+    expect(rows[2]![hireIdx]).toBe('2010-11-08')
+    expect(rows[2]![retireIdx]).toBe('2045-09-30')
+  })
+
+  it('maps 2-digit retire years > 50 to 20xx (pilots retiring in 2050s–2070s)', () => {
+    // Junior pilots retiring in 2055–2065 have 2-digit years > 50.
+    // The standard century pivot (>50 → 19xx) would produce 1955–1965 — this test
+    // ensures the future-biased parser correctly maps them to 2055–2065.
+    const futureRetires: string[][] = [
+      ['SEN', 'CMID', 'NAME', 'BASE', 'FLEET', 'SEAT', 'HIREDATE', 'RTRDATE'],
+      ['3819', '53819', 'PILOT A', 'JFK', '320', 'FO', '8/15/2022', '6/13/55'],
+      ['3820', '53820', 'PILOT B', 'BOS', '220', 'FO', '3/1/2023',  '9/6/62'],
+      ['3821', '53821', 'PILOT C', 'MCO', '320', 'FO', '11/7/2021', '3/15/65'],
+    ]
+    const { rows } = jetblueParser.parse(futureRetires)
+    const headers = rows[0]!
+    const retireIdx = headers.indexOf('Retire Date')
+
+    expect(rows[1]![retireIdx]).toBe('2055-06-13')
+    expect(rows[2]![retireIdx]).toBe('2062-09-06')
+    expect(rows[3]![retireIdx]).toBe('2065-03-15')
   })
 })

@@ -3,6 +3,7 @@ import type { SenioritySnapshot, SeniorityLens, PilotAnchor } from '~/utils/seni
 import type { ComputedRef, Ref } from 'vue'
 import { createSnapshot, createLens } from '~/utils/seniority-engine'
 import { uniqueEntryValues } from '~/utils/entry-filters'
+import { computeRetireDate, todayISO } from '~/utils/date'
 import { useSeniorityStore } from '~/stores/seniority'
 import { useUserStore } from '~/stores/user'
 import { createLogger } from '~/utils/logger'
@@ -133,11 +134,7 @@ export function useSeniorityCore() {
 
   const retireDate = computed(() => {
     if (!birthDate.value) return null
-    const bd = new Date(birthDate.value)
-    const retire = new Date(bd)
-    const retirementAge = userStore.retirementAge
-    retire.setFullYear(retire.getFullYear() + retirementAge)
-    return retire.toISOString().split('T')[0]!
+    return computeRetireDate(birthDate.value, userStore.retirementAge)
   })
 
   const isConfigured = computed(() =>
@@ -161,7 +158,7 @@ export function useSeniorityCore() {
       seat: selectedSeat.value!,
       base: selectedBase.value!,
       fleet: selectedFleet.value!,
-      hire_date: new Date().toISOString().split('T')[0]!,
+      hire_date: todayISO(),
       retire_date: retireDate.value!,
     }
   })

@@ -43,6 +43,7 @@ import {
   computeQualComposition,
   findMostJuniorCA,
 } from '~/utils/qual-analytics'
+import { todayISO, isRetiredBy, retiresInYear, addYearsISO, currentYear } from '~/utils/date'
 
 export function createLens(
   snapshot: SenioritySnapshot,
@@ -58,17 +59,17 @@ export function createLens(
   function standing(): StandingResult | null {
     if (!resolvedAnchor) return null
     const { seniorityNumber } = resolvedAnchor
-    const today = new Date()
+    const todayStr = todayISO()
+    const thisYear = currentYear()
     const total = entries.length
-    const currentYear = today.getFullYear()
 
     const rank = computeRank(entries, seniorityNumber)
-    const retiredAbove = countRetiredAbove(entries, seniorityNumber, today)
+    const retiredAbove = countRetiredAbove(entries, seniorityNumber, todayStr)
     const adjustedRank = rank - retiredAbove
 
     const retiringThisYear = entries.filter(e => {
       if (!e.retire_date) return false
-      return new Date(e.retire_date).getFullYear() === currentYear
+      return retiresInYear(e.retire_date, thisYear)
     })
     const retirementsThisYear = retiringThisYear.length
     const retirementsThisYearSeniorToAnchor = retiringThisYear.filter(
@@ -80,11 +81,11 @@ export function createLens(
       const first = cellEntries[0]!
       const cellTotal = cellEntries.length
       const cellRetired = cellEntries.filter(
-        e => e.retire_date && new Date(e.retire_date) <= today,
+        e => e.retire_date && isRetiredBy(e.retire_date, todayStr),
       ).length
       const cellAdjustedTotal = cellTotal - cellRetired
       const cellRank = computeRank(cellEntries, seniorityNumber)
-      const cellRetiredAbove = countRetiredAbove(cellEntries, seniorityNumber, today)
+      const cellRetiredAbove = countRetiredAbove(cellEntries, seniorityNumber, todayStr)
       const cellAdjustedRank = cellRank - cellRetiredAbove
 
       cellBreakdown.push({
@@ -140,8 +141,6 @@ export function createLens(
   function compareTrajectories(
     scenarioA: Scenario, scenarioB: Scenario,
   ): ComparativeTrajectoryResult | null {
-    // Note: only scopeFilter is compared between scenarios — growthConfig from scenarioA is used for both.
-    // Callers should differ only in scopeFilter; differing growthConfigs are silently ignored.
     if (!resolvedAnchor) return null
     return projectComparativeTrajectory(
       entries,
@@ -223,16 +222,14 @@ export function createLens(
   }
 
   function upcomingRetirements(filter: UpcomingRetirementFilter): UpcomingRetirementRow[] {
-    const today = new Date()
-    const cutoff = new Date(today)
-    cutoff.setFullYear(cutoff.getFullYear() + filter.yearsHorizon)
+    const todayStr = todayISO()
+    const cutoff = addYearsISO(todayStr, filter.yearsHorizon)
 
     return entries
       .filter((e) => {
         if (!e.retire_date) return false
-        const rd = new Date(e.retire_date)
-        if (rd <= today) return false
-        if (rd > cutoff) return false
+        if (isRetiredBy(e.retire_date, todayStr)) return false
+        if (!isRetiredBy(e.retire_date, cutoff)) return false
         if (filter.seniorOnly && resolvedAnchor && e.seniority_number >= resolvedAnchor.seniorityNumber) return false
         if (filter.base && e.base !== filter.base) return false
         if (filter.seat && e.seat !== filter.seat) return false

@@ -27,6 +27,7 @@
     "@vercel/analytics": "^2.0.1",
     "@vite-pwa/nuxt": "^1.1.1",
     "chart.js": "^4.5.1",
+    "dayjs": "^1.11.20",
     "dexie": "^4.3.0",
     "nuxt": "^4.0.0",
     "tailwindcss": "^4.0.0",

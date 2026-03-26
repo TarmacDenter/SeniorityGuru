@@ -1,7 +1,7 @@
 import type { ComputedRef } from 'vue'
 import type { SeniorityEntry } from '~/utils/schemas/seniority-list'
 import type { Qual } from '~/utils/seniority-engine'
-import { formatDateLabel } from '~/utils/seniority-math'
+import { diffYears, formatMonthYear, todayISO } from '~/utils/date'
 import { useSeniorityStore } from '~/stores/seniority'
 import { useSeniorityCore } from './useSeniorityCore'
 
@@ -41,7 +41,7 @@ export function useCompanyOverview(): {
       groups.get(key)!.push(e)
     }
 
-    const now = new Date()
+    const now = todayISO()
 
     return Array.from(groups.entries()).map(([category, groupEntries]) => {
       const totalPilots = groupEntries.length
@@ -50,9 +50,7 @@ export function useCompanyOverview(): {
       const entriesWithRetireDate = groupEntries.filter(e => e.retire_date)
       const avgYearsToRetire = entriesWithRetireDate.length > 0
         ? entriesWithRetireDate.reduce((sum, e) => {
-            const rd = new Date(e.retire_date!)
-            const years = (rd.getTime() - now.getTime()) / (365.25 * 24 * 60 * 60 * 1000)
-            return sum + years
+            return sum + diffYears(now, e.retire_date!)
           }, 0) / entriesWithRetireDate.length
         : 0
 
@@ -68,7 +66,7 @@ export function useCompanyOverview(): {
   const recentLists = computed<RecentList[]>(() => {
     return seniorityStore.lists.map(list => ({
       id: list.id!,
-      title: `${formatDateLabel(list.effectiveDate)} Seniority List`,
+      title: `${formatMonthYear(list.effectiveDate)} Seniority List`,
       description: 'Uploaded',
       icon: 'i-lucide-file-text',
       date: list.effectiveDate,

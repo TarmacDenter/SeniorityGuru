@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useSeniorityCore, useQualAnalytics } from '~/composables/seniority'
-import { computeYOS } from '~/utils/qual-analytics'
+import { computeYOS } from '~/utils/date'
 
 defineProps<{ loading?: boolean }>()
 

@@ -14,7 +14,7 @@ describe('computeAdditionalPilots', () => {
     // 2000 * ((1.03)^5 - 1) = 2000 * 0.15927… ≈ 319
     const result = computeAdditionalPilots(
       2000, 0.03,
-      new Date('2026-01-01'), new Date('2031-01-01'),
+      '2026-01-01', '2031-01-01',
     )
     expect(result).toBe(319)
   })
@@ -23,25 +23,25 @@ describe('computeAdditionalPilots', () => {
     // 1000 * ((1.05)^10 - 1) = 1000 * 0.6289… ≈ 629
     const result = computeAdditionalPilots(
       1000, 0.05,
-      new Date('2026-01-01'), new Date('2036-01-01'),
+      '2026-01-01', '2036-01-01',
     )
     expect(result).toBe(629)
   })
 
   it('returns 0 when elapsed time is 0', () => {
-    const d = new Date('2026-01-01')
+    const d = '2026-01-01'
     expect(computeAdditionalPilots(2000, 0.03, d, d)).toBe(0)
   })
 
   it('returns 0 when rate is 0', () => {
     expect(computeAdditionalPilots(2000, 0,
-      new Date('2026-01-01'), new Date('2031-01-01'),
+      '2026-01-01', '2031-01-01',
     )).toBe(0)
   })
 
   it('returns 0 when target is before base (negative elapsed)', () => {
     expect(computeAdditionalPilots(2000, 0.03,
-      new Date('2031-01-01'), new Date('2026-01-01'),
+      '2031-01-01', '2026-01-01',
     )).toBe(0)
   })
 
@@ -49,15 +49,15 @@ describe('computeAdditionalPilots', () => {
     // ~2.5 years: 2000 * ((1.03)^2.5 - 1) ≈ 153
     const result = computeAdditionalPilots(
       2000, 0.03,
-      new Date('2026-01-01'), new Date('2028-07-02'),
+      '2026-01-01', '2028-07-02',
     )
     expect(result).toBeGreaterThan(140)
     expect(result).toBeLessThan(165)
   })
 
   it('scales with initial total', () => {
-    const base = new Date('2026-01-01')
-    const target = new Date('2031-01-01')
+    const base = '2026-01-01'
+    const target = '2031-01-01'
     const small = computeAdditionalPilots(100, 0.03, base, target)
     const large = computeAdditionalPilots(10000, 0.03, base, target)
     expect(large / small).toBeCloseTo(100, 0)

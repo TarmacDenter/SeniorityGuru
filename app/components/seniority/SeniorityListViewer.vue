@@ -5,6 +5,7 @@ import { getPaginationRowModel } from '@tanstack/vue-table';
 import type { Table, Row } from '@tanstack/vue-table';
 import type { TableColumn } from '@nuxt/ui';
 import type { SeniorityEntry } from '~/utils/schemas/seniority-list';
+import { diffYears, todayISO } from '~/utils/date';
 import { useSeniorityCore, useSeniorityLists } from '~/composables/seniority';
 
 defineProps<{
@@ -14,12 +15,11 @@ defineProps<{
 type RetirementTimeline = 'past' | 'imminent' | 'soon' | null;
 type SeniorityRow = SeniorityEntry & { _isUser: boolean; _retirementTimeline: RetirementTimeline; };
 
-function retirementTimeline(now: Date, retireDate: Date): RetirementTimeline {
-  const diffMs = retireDate.getTime() - now.getTime();
-  const diffDays = diffMs / (1000 * 60 * 60 * 24);
-  if (diffDays < 0) return 'past';
-  if (diffDays <= 180) return 'imminent';
-  if (diffDays <= 365) return 'soon';
+function retirementTimeline(today: string, retireDate: string): RetirementTimeline {
+  const days = diffYears(today, retireDate) * 365.25;
+  if (days < 0) return 'past';
+  if (days <= 180) return 'imminent';
+  if (days <= 365) return 'soon';
   return null;
 }
 
@@ -132,11 +132,11 @@ const tableMeta = {
 };
 
 const tableData = computed<SeniorityRow[]>(() => {
-  const now = new Date();
+  const today = todayISO();
   return entries.value.map(entry => ({
     ...entry,
     _isUser: !!userEmployeeNumber.value && entry.employee_number === userEmployeeNumber.value,
-    _retirementTimeline: entry.retire_date ? retirementTimeline(now, new Date(entry.retire_date)) : null,
+    _retirementTimeline: entry.retire_date ? retirementTimeline(today, entry.retire_date) : null,
   })
   );
 });

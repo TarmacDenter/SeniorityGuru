@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { ISO_DATE_REGEX } from '~/utils/constants'
+import { ISO_DATE_REGEX } from '~/utils/date'
 
 /** Strip leading zeroes from purely numeric strings: "007123" → "7123", "0" → "0". */
 export function normalizeEmployeeNumber(value: string): string {

@@ -8,7 +8,7 @@ import { createScenario } from './scenario'
 // Fix "today" for deterministic retirement calculations
 beforeAll(() => {
   vi.useFakeTimers()
-  vi.setSystemTime(new Date('2026-06-15'))
+  vi.setSystemTime(new Date('2026-06-15T12:00:00'))
 })
 afterAll(() => {
   vi.useRealTimers()
@@ -230,7 +230,7 @@ describe('holdability()', () => {
   })
 
   it('uses projection date from scenario', () => {
-    const farFuture = createScenario({ projectionDate: new Date('2044-01-01') })
+    const farFuture = createScenario({ projectionDate: '2044-01-01' })
     const cells = lens.holdability(farFuture)
     // Far-future projection should show more retirements, different states
     expect(cells.length).toBeGreaterThan(0)

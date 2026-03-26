@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { ChartData, ChartOptions } from 'chart.js'
 import type { TrajectoryDelta } from '~/utils/seniority-math'
+import { formatYear, extractYear } from '~/utils/date'
 
 const props = defineProps<{
   deltas: TrajectoryDelta[]
@@ -10,8 +11,7 @@ const { colors } = useChartTheme()
 
 const chartData = computed<ChartData<'bar'>>(() => ({
   labels: props.deltas.map((d) => {
-    const date = new Date(d.date)
-    return date.getFullYear().toString()
+    return formatYear(d.date)
   }),
   datasets: [
     {
@@ -61,7 +61,7 @@ const bestYear = computed(() => {
   }
   if (best.delta <= 0) return null
   return {
-    year: new Date(best.date).getFullYear(),
+    year: extractYear(best.date),
     delta: best.delta,
   }
 })

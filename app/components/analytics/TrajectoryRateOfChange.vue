@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Bar } from 'vue-chartjs'
+import { formatYear } from '~/utils/date'
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -30,8 +31,7 @@ const { defaults, colors } = useChartTheme()
 
 const chartData = computed(() => ({
   labels: props.deltas.map((d) => {
-    const date = new Date(d.date)
-    return date.getFullYear().toString()
+    return formatYear(d.date)
   }),
   datasets: [
     {

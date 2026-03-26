@@ -2,6 +2,7 @@ import type { Ref } from 'vue'
 import { DEFAULT_GROWTH_CONFIG, type GrowthConfig } from '~/utils/growth-config'
 import type { QualSpec } from '~/utils/seniority-engine'
 import { createLens, createScenario, qualSpecLabel } from '~/utils/seniority-engine'
+import { addYearsISO, todayISO } from '~/utils/date'
 import { uniqueEntryValues } from '~/utils/entry-filters'
 import { useSeniorityCore } from './useSeniorityCore'
 import { useSeniorityStore } from '~/stores/seniority'
@@ -93,11 +94,9 @@ export function useQualAnalytics(growthConfig?: Ref<GrowthConfig>) {
   // Projection controls
   const projectionYears = ref(0)
 
-  const projectionDate = computed(() => {
-    const d = new Date()
-    d.setFullYear(d.getFullYear() + projectionYears.value)
-    return d
-  })
+  const projectionDate = computed(() =>
+    addYearsISO(todayISO(), projectionYears.value),
+  )
 
   // Position scenario: no scope filter, for powerIndexCells + qualScales
   const positionScenario = computed(() => createScenario({

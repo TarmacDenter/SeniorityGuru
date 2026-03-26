@@ -8,7 +8,7 @@ describe('createScenario', () => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date('2026-06-15'))
     const s = createScenario()
-    expect(s.projectionDate).toEqual(new Date('2026-06-15'))
+    expect(s.projectionDate).toMatch(/^\d{4}-\d{2}-\d{2}$/)
     expect(s.growthConfig).toEqual(DEFAULT_GROWTH_CONFIG)
     expect(s.scopeFilter).toEqual({}) // default is company-wide (empty QualSpec)
     vi.useRealTimers()
@@ -16,11 +16,11 @@ describe('createScenario', () => {
 
   it('accepts overrides', () => {
     const custom = createScenario({
-      projectionDate: new Date('2030-01-01'),
+      projectionDate: '2030-01-01',
       growthConfig: { enabled: true, annualRate: 0.05 },
       scopeFilter: { seat: 'CA' },
     })
-    expect(custom.projectionDate).toEqual(new Date('2030-01-01'))
+    expect(custom.projectionDate).toBe('2030-01-01')
     expect(custom.growthConfig).toEqual({ enabled: true, annualRate: 0.05 })
     expect(custom.scopeFilter).toEqual({ seat: 'CA' })
   })

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Bar, Line } from 'vue-chartjs'
+import { formatYear } from '~/utils/date'
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -104,7 +105,7 @@ const trajectoryChartOptions = computed<ChartOptions<'line'>>(() => ({
         title: (items: TooltipItem<'line'>[]) => {
           const label = items[0]?.label
           if (!label) return ''
-          return new Date(label).getFullYear().toString()
+          return formatYear(label)
         },
         label: (item: TooltipItem<'line'>) => `${(item.parsed.y ?? 0).toFixed(1)}% seniority`,
       },
@@ -119,7 +120,7 @@ const trajectoryChartOptions = computed<ChartOptions<'line'>>(() => ({
         callback(_value: string | number, index: number) {
           const label = props.trajectoryPoints[index]?.date
           if (!label) return ''
-          return new Date(label).getFullYear().toString()
+          return formatYear(label)
         },
       },
     },

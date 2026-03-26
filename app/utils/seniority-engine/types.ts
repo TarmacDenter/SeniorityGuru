@@ -39,13 +39,13 @@ export interface PilotAnchor {
 }
 
 export interface ScenarioOptions {
-  projectionDate?: Date
+  projectionDate?: string
   growthConfig?: GrowthConfig
   scopeFilter?: QualSpec
 }
 
 export interface Scenario {
-  readonly projectionDate: Date
+  readonly projectionDate: string
   readonly growthConfig: GrowthConfig
   readonly scopeFilter: QualSpec
 }

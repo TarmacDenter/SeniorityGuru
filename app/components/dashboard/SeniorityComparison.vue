@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { ChartData, TooltipItem } from 'chart.js'
+import { formatMonthYear, formatYear } from '~/utils/date'
 import type { QualSpec } from '~/utils/seniority-engine'
 import type { SeniorityEntry } from '~/utils/schemas/seniority-list'
 
@@ -74,8 +75,7 @@ const chartOptions = {
         title(items: TooltipItem<'line'>[]) {
           const label = items[0]?.label
           if (!label) return ''
-          const d = new Date(label)
-          return d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+          return formatMonthYear(label)
         },
         label(item: TooltipItem<'line'>) {
           return `${item.dataset.label}: ${item.parsed.y}%`
@@ -90,7 +90,7 @@ const chartOptions = {
           const labels = chartData.value.labels as string[]
           const label = labels?.[index]
           if (!label) return ''
-          return new Date(label).getFullYear().toString()
+          return formatYear(label)
         },
       },
     },

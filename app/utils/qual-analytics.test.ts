@@ -1,10 +1,9 @@
 // @vitest-environment node
 import { describe, it, expect } from 'vitest'
 import type { SeniorityEntry } from '~/utils/schemas/seniority-list'
+import { deriveAge, computeYOS } from '~/utils/date'
 import {
   qualKey,
-  deriveAge,
-  computeYOS,
   computeAgeDistribution,
   findMostJuniorCA,
   computeYosDistribution,
@@ -290,8 +289,8 @@ describe('computeRetirementWave', () => {
 
 // ─── computePowerIndexCells ───────────────────────────────────────────────────
 describe('computePowerIndexCells', () => {
-  const TODAY = new Date('2026-01-01')
-  const FUTURE = new Date('2029-01-01')
+  const TODAY = '2026-01-01'
+  const FUTURE = '2029-01-01'
 
   it('green when user can hold today (more senior than most junior active)', () => {
     // User seniority_number=50. Cell has pilots with sen_nums 100,200,300 — all more junior.
@@ -377,7 +376,7 @@ describe('computePowerIndexCells', () => {
 
 // ─── computePowerIndexCells with growth ──────────────────────────────────────
 describe('computePowerIndexCells with growthConfig', () => {
-  const FUTURE = new Date('2029-01-01')
+  const FUTURE = '2029-01-01'
   const growthEnabled: GrowthConfig = { enabled: true, annualRate: 0.05 }
 
   it('growth increases userPercentile compared to no growth', () => {
@@ -415,7 +414,7 @@ describe('applyProjectionToSnapshots with growthConfig', () => {
       retire_date: `${2030 + i}-01-01`,
     }))
     const snapshots = computeQualSnapshots(entries)
-    const projectionDate = new Date('2035-01-01')
+    const projectionDate = '2035-01-01'
     const growthEnabled: GrowthConfig = { enabled: true, annualRate: 0.05 }
 
     const withoutGrowth = applyProjectionToSnapshots(snapshots, entries, 10, projectionDate)

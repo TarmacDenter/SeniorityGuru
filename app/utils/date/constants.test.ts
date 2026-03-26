@@ -15,7 +15,7 @@ describe('EXCEL_EPOCH_MS', () => {
   it('is Dec 30, 1899 UTC', () => {
     const d = new Date(EXCEL_EPOCH_MS)
     expect(d.getUTCFullYear()).toBe(1899)
-    expect(d.getUTCMonth()).toBe(11) // December
+    expect(d.getUTCMonth()).toBe(11)
     expect(d.getUTCDate()).toBe(30)
   })
 })

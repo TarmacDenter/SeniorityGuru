@@ -1,4 +1,5 @@
 import type { QualSpec } from '~/utils/seniority-engine/qual-spec'
+import { diffYears } from '~/utils/date'
 
 export interface GrowthConfig {
   enabled: boolean
@@ -15,11 +16,10 @@ export const DEFAULT_GROWTH_CONFIG: GrowthConfig = {
 export function computeAdditionalPilots(
   initialTotal: number,
   annualRate: number,
-  baseDate: Date,
-  targetDate: Date,
+  baseDate: string,
+  targetDate: string,
 ): number {
-  const msPerYear = 365.25 * 24 * 60 * 60 * 1000
-  const yearsElapsed = (targetDate.getTime() - baseDate.getTime()) / msPerYear
+  const yearsElapsed = diffYears(baseDate, targetDate)
   if (yearsElapsed <= 0 || annualRate <= 0) return 0
   return Math.round(initialTotal * ((1 + annualRate) ** yearsElapsed - 1))
 }
