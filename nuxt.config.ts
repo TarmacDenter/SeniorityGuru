@@ -38,6 +38,7 @@ export default defineNuxtConfig({
     '@pinia/nuxt',
     '@vercel/analytics',
     '@vite-pwa/nuxt',
+    '@nuxt/content',
   ],
   pwa: {
     registerType: 'autoUpdate',

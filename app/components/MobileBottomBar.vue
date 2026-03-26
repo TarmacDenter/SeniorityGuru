@@ -1,5 +1,6 @@
 <script setup lang="ts">
 const route = useRoute()
+const { hasUnseenChanges } = useChangelog()
 
 const navItems = [
   { label: 'Dashboard', icon: 'i-lucide-layout-dashboard', to: '/dashboard' },
@@ -27,7 +28,13 @@ function isActive(to: string) {
       :class="isActive(item.to) ? 'text-primary' : 'text-(--ui-text-muted)'"
       :aria-current="isActive(item.to) ? 'page' : undefined"
     >
-      <UIcon :name="item.icon" class="size-5" />
+      <div class="relative">
+        <UIcon :name="item.icon" class="size-5" />
+        <span
+          v-if="item.to === '/settings' && hasUnseenChanges"
+          class="absolute -top-0.5 -right-0.5 size-2 rounded-full bg-primary"
+        />
+      </div>
       <span>{{ item.label }}</span>
     </NuxtLink>
   </nav>

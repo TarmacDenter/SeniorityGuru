@@ -9,6 +9,7 @@ export function useSeniorityNav(): ComputedRef<NavigationMenuItem[]> {
   const sidebarOpen = useState<boolean>('dashboardSidebarOpen', () => false)
   // SSR-safe: returns false on server, reactive on client
   const isMobile = useMediaQuery('(max-width: 639px)')
+  const { hasUnseenChanges } = useChangelog()
 
   return computed(() => {
     const onDashboard = route.path === '/dashboard'
@@ -45,6 +46,12 @@ export function useSeniorityNav(): ComputedRef<NavigationMenuItem[]> {
       { label: 'My Lists', icon: 'i-lucide-list', to: '/seniority/lists' },
       { label: 'Upload', icon: 'i-lucide-upload', to: '/seniority/upload' },
       { label: 'Compare', icon: 'i-lucide-git-compare-arrows', to: '/seniority/compare' },
+      {
+        label: "What's New",
+        icon: 'i-lucide-sparkles',
+        to: '/whats-new',
+        chip: hasUnseenChanges.value ? { inset: true, color: 'primary' as const } : false,
+      },
       { label: 'Settings', icon: 'i-lucide-settings', to: '/settings' },
     ]
 

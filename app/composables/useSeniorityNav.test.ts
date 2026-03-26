@@ -6,6 +6,7 @@ vi.mock('@vueuse/core', async (importOriginal) => {
   return {
     ...actual,
     useMediaQuery: () => ({ value: false }), // non-mobile by default
+    useLocalStorage: () => ({ value: '' }),
   }
 })
 
@@ -23,7 +24,7 @@ describe('useSeniorityNav', () => {
     vi.clearAllMocks()
   })
 
-  it('returns navigation items including Dashboard, My Lists, Upload, Compare, Settings', async () => {
+  it('returns navigation items including Dashboard, My Lists, Upload, Compare, What\'s New, Settings', async () => {
     const { useSeniorityNav } = await import('./useSeniorityNav')
     const nav = useSeniorityNav()
     const items = nav.value
@@ -32,6 +33,7 @@ describe('useSeniorityNav', () => {
     expect(labels).toContain('My Lists')
     expect(labels).toContain('Upload')
     expect(labels).toContain('Compare')
+    expect(labels).toContain("What's New")
     expect(labels).toContain('Settings')
   })
 
@@ -43,9 +45,9 @@ describe('useSeniorityNav', () => {
     expect(adminItem).toBeUndefined()
   })
 
-  it('returns 5 top-level items', async () => {
+  it('returns 6 top-level items', async () => {
     const { useSeniorityNav } = await import('./useSeniorityNav')
     const nav = useSeniorityNav()
-    expect(nav.value).toHaveLength(5)
+    expect(nav.value).toHaveLength(6)
   })
 })

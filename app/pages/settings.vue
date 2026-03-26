@@ -10,6 +10,7 @@ definePageMeta({ layout: 'dashboard' })
 
     <template #body>
       <div class="max-w-2xl mx-auto space-y-6 p-4 sm:p-6">
+        <SettingsWhatsNewCard />
         <SettingsProfileCard />
         <SettingsPreferencesCard />
         <SettingsNewHireModeCard />
