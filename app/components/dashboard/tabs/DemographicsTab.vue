@@ -24,9 +24,9 @@ const ready = useDeferredReady()
 </script>
 
 <template>
-  <div class="sm:p-6 space-y-6">
+  <div class="space-y-6">
     <!-- Loading skeleton -->
-    <div v-if="loading" class="space-y-4 px-4 pt-4 sm:px-0 sm:pt-0">
+    <div v-if="loading" class="space-y-4">
       <USkeleton class="h-10 w-64" />
       <USkeleton class="h-48" />
       <USkeleton class="h-32" />
@@ -44,13 +44,11 @@ const ready = useDeferredReady()
     />
 
     <template v-else>
-    <div class="px-4 pt-4 sm:px-0 sm:pt-0">
-      <AnalyticsQualFilterBar :demographics="demographics" />
-    </div>
+    <AnalyticsQualFilterBar :demographics="demographics" />
 
     <!-- Most Junior Captain by Qual — full width, own row -->
     <USkeleton v-if="!ready || !demographics.mostJuniorCAs.value.length" class="h-48 rounded-lg" />
-    <UCard v-else :ui="{ body: 'px-0 py-0 sm:px-4 sm:py-5' }">
+    <UCard v-else>
       <template #header>
         <h3 class="font-semibold">Most Junior Captain by Qual</h3>
       </template>

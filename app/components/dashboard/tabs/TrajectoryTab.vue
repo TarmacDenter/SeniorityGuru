@@ -14,7 +14,6 @@ const { rankCard } = useStanding()
 
 const {
   chartData: trajectoryChartData,
-  deltas: companyTrajectoryDeltas,
   computeComparativeTrajectory,
   computeRetirementProjection,
 } = useTrajectory(growthConfig)
@@ -26,9 +25,9 @@ const ready = useDeferredReady()
 </script>
 
 <template>
-  <div class="sm:-m-6 sm:flex sm:flex-col sm:h-[calc(100%+3rem)]">
+  <div class="flex flex-col flex-1 min-h-0">
     <!-- Loading skeleton -->
-    <div v-if="loading" class="p-4 sm:p-6 space-y-4">
+    <div v-if="loading" class="p-3 sm:p-6 space-y-4">
       <USkeleton class="h-10 w-48" />
       <USkeleton class="h-64" />
       <USkeleton class="h-48" />
@@ -50,7 +49,7 @@ const ready = useDeferredReady()
     <DashboardGrowthBar v-model="growthConfig" />
 
     <!-- Scrollable content -->
-    <div class="p-4 sm:p-6 space-y-6">
+    <div class="p-3 sm:p-6 space-y-6 flex-1 overflow-y-auto">
       <!-- About this view collapsible -->
       <UCollapsible class="flex flex-col gap-2">
         <UButton
@@ -110,7 +109,7 @@ const ready = useDeferredReady()
       </div>
       <div v-else class="grid grid-cols-1 sm:grid-cols-11 gap-6">
         <div class="sm:col-span-6">
-          <UCard :ui="{ body: 'px-0 py-0 sm:px-4 sm:py-5' }">
+          <UCard >
             <template #header>
               <h3 class="font-semibold">Retirement Wave{{ demographics.qualLabel.value ? ` — ${demographics.qualLabel.value}` : '' }}</h3>
             </template>
@@ -122,7 +121,7 @@ const ready = useDeferredReady()
           </UCard>
         </div>
         <div class="sm:col-span-5">
-          <UCard :ui="{ body: 'px-0 py-0 sm:px-4 sm:py-5' }">
+          <UCard >
             <template #header>
               <h3 class="font-semibold">Percentile Threshold{{ demographics.qualLabel.value ? ` — ${demographics.qualLabel.value}` : '' }}</h3>
             </template>
@@ -153,11 +152,6 @@ const ready = useDeferredReady()
         <AnalyticsTrajectoryRateOfChange :deltas="qualTrajectoryDeltas" selected-qual="" />
       </UCard>
 
-      <!-- Improvement Rate Sparkline (company-wide) -->
-      <DashboardTrajectoryDeltaSparkline
-        v-if="hasAnchor && companyTrajectoryDeltas.length > 0"
-        :deltas="companyTrajectoryDeltas"
-      />
     </div>
     </template>
   </div>

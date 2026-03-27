@@ -19,6 +19,15 @@ export default defineAppConfig({
       defaultVariants: {
         variant: 'subtle' as const
       },
+      slots: {
+        body: 'p-3 sm:p-6',
+        header: 'p-3 sm:px-6',
+      },
+    },
+    tabs: {
+      slots: {
+        list: 'relative flex p-1 group w-full sm:w-auto',
+      },
     },
     dashboardPanel: {
       slots: {

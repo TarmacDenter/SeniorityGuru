@@ -20,7 +20,7 @@ const { showBanner, isIos, showIosModal, install, snooze, dismiss } = usePwaInst
         <UButton size="sm" variant="ghost" color="neutral" @click="snooze">
           Not now
         </UButton>
-        <UButton size="xs" variant="ghost" color="neutral" @click="dismiss">
+        <UButton size="sm" variant="ghost" color="neutral" @click="dismiss">
           Don't ask again
         </UButton>
       </template>

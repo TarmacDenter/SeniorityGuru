@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
-import DashboardTabChips from './DashboardTabChips.vue'
+import DashboardTabChips from './TabChips.vue'
 
 const tabs = [
   { label: 'My Status', value: 'status', icon: 'i-lucide-user' },

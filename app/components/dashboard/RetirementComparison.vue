@@ -80,9 +80,9 @@ const chartOptions = computed(() => ({
           </div>
         </div>
         <div class="flex items-center gap-2">
-          <USelect v-model="currentScope" :items="scopeOptions" size="xs" class="min-w-40" placeholder="Current" />
+          <USelect v-model="currentScope" :items="scopeOptions" size="xs" class="min-w-32 sm:min-w-40" placeholder="Current" />
           <span class="text-xs text-muted">vs</span>
-          <USelect v-model="compareScope" :items="scopeOptions" size="xs" class="min-w-40" placeholder="Compare" />
+          <USelect v-model="compareScope" :items="scopeOptions" size="xs" class="min-w-32 sm:min-w-40" placeholder="Compare" />
         </div>
       </div>
     </template>

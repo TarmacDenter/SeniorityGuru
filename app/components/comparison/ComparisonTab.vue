@@ -81,15 +81,12 @@ defineExpose({ filterOptions, filteredData, activeFilters })
         :pagination-options="table.paginationOptions"
       />
     </div>
-    <div class="flex items-center justify-between">
-      <p class="text-sm text-muted">{{ table.totalRows.value }} results</p>
-      <UPagination
-        v-if="table.pageCount.value > 1"
-        :page="table.currentPage.value"
-        :total="table.totalRows.value"
-        :items-per-page="table.pagination.value.pageSize"
-        @update:page="(p: number) => table.tableRef.value?.tableApi?.setPageIndex(p - 1)"
-      />
-    </div>
+    <TablePagination
+      :current-page="table.currentPage.value"
+      :page-count="table.pageCount.value"
+      :total-rows="table.totalRows.value"
+      :page-size="table.pagination.value.pageSize"
+      @update:page="(p: number) => table.tableRef.value?.tableApi?.setPageIndex(p - 1)"
+    />
   </div>
 </template>
