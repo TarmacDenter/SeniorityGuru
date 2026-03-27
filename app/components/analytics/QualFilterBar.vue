@@ -13,21 +13,21 @@ defineProps<{
       :model-value="demographics.selectedFleet.value ?? undefined"
       :items="demographics.availableFleets.value"
       placeholder="All Fleets"
-      class="w-40"
+      class="w-full sm:w-40"
       @update:model-value="demographics.selectedFleet.value = $event ?? null"
     />
     <USelect
       :model-value="demographics.selectedSeat.value ?? undefined"
       :items="demographics.availableSeats.value"
       placeholder="All Seats"
-      class="w-40"
+      class="w-full sm:w-40"
       @update:model-value="demographics.selectedSeat.value = $event ?? null"
     />
     <USelect
       :model-value="demographics.selectedBase.value ?? undefined"
       :items="demographics.availableBases.value"
       placeholder="All Bases"
-      class="w-40"
+      class="w-full sm:w-40"
       @update:model-value="demographics.selectedBase.value = $event ?? null"
     />
     <UButton

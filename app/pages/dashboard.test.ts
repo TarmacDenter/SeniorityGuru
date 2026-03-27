@@ -48,6 +48,8 @@ vi.mock('~/stores/user', () => ({
   useUserStore: () => ({
     employeeNumber: null,
     loadPreferences: mockLoadPreferences,
+    getPreference: vi.fn().mockResolvedValue(null),
+    savePreference: vi.fn().mockResolvedValue(undefined),
   }),
 }))
 

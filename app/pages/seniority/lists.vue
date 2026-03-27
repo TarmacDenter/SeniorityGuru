@@ -172,7 +172,7 @@ onMounted(async () => {
               <p class="text-sm text-muted">{{ list.effectiveDate }}</p>
             </div>
             <UDropdownMenu :items="getDropdownItems(list)">
-              <UButton icon="i-lucide-ellipsis" variant="ghost" size="xs" />
+              <UButton icon="i-lucide-ellipsis" variant="ghost" size="sm" />
             </UDropdownMenu>
           </div>
           <div v-if="lists.length === 0" class="px-4 py-8 text-center text-muted text-sm">
@@ -225,16 +225,13 @@ onMounted(async () => {
           </UTable>
         </div>
 
-        <div class="flex items-center justify-between">
-          <p class="text-sm text-muted">{{ totalRows }} lists</p>
-          <UPagination
-            v-if="pageCount > 1"
-            :page="currentPage"
-            :total="totalRows"
-            :items-per-page="pagination.pageSize"
-            @update:page="(p: number) => listsTable?.tableApi?.setPageIndex(p - 1)"
-          />
-        </div>
+        <TablePagination
+          :current-page="currentPage"
+          :page-count="pageCount"
+          :total-rows="totalRows"
+          :page-size="pagination.pageSize"
+          @update:page="(p: number) => listsTable?.tableApi?.setPageIndex(p - 1)"
+        />
 
         <!-- Edit Modal -->
         <UModal v-model:open="editOpen" title="Edit List" description="Update the title or effective date">

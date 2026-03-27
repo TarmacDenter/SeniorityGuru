@@ -61,6 +61,14 @@ const trajectoryChartData = computed(() =>
 );
 const trajectoryDeltas = computed(() => trajectoryResult.value?.deltas ?? []);
 
+// Full-bleed tabs manage their own padding (toolbars/growth bars go edge-to-edge)
+const fullBleedTabs = new Set(['position', 'trajectory', 'seniority']);
+const panelUi = computed(() => ({
+  body: fullBleedTabs.has(activeTab.value)
+    ? 'flex flex-col flex-1 sm:overflow-y-auto p-0'
+    : undefined,
+}));
+
 // Watcher fires ONLY for user-initiated dropdown changes after mount.
 // When onMounted sets the default value, oldId is undefined → guard skips it.
 watch(selectedListId, async (id, oldId) => {
@@ -92,7 +100,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <UDashboardPanel>
+  <UDashboardPanel :ui="panelUi">
     <template #header>
       <SeniorityNavbar title="Dashboard" :description="navbarDescription" />
 
@@ -131,6 +139,8 @@ onMounted(async () => {
     </template>
 
     <template #body>
+      <DashboardInstallBanner />
+
       <!-- Empty state: no lists imported yet -->
       <div
         v-if="!loading && lists.length === 0"

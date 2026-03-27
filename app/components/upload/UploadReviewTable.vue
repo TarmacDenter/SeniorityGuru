@@ -142,13 +142,12 @@ const columns: TableColumn<IndexedEntry>[] = [
     </UTable>
     </div>
 
-    <div v-if="pageCount > 1" class="flex justify-center">
-      <UPagination
-        v-model:page="currentPage"
-        :total="displayEntries.length"
-        :items-per-page="pagination.pageSize"
-        :sibling-count="1"
-      />
-    </div>
+    <TablePagination
+      :current-page="currentPage"
+      :page-count="pageCount"
+      :total-rows="displayEntries.length"
+      :page-size="pagination.pageSize"
+      @update:page="(p: number) => currentPage = p"
+    />
   </div>
 </template>
