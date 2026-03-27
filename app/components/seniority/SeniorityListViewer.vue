@@ -32,22 +32,6 @@ const globalFilter = ref('');
 const expanded = ref({});
 const isMobile = useMediaQuery('(max-width: 639px)');
 
-// Mobile "go to page" input — tracks the input value independently from currentPage
-// so the user can type without triggering navigation mid-keystroke
-const gotoPageInput = ref<number | null>(null);
-
-function commitGotoPage() {
-  const val = gotoPageInput.value;
-  if (val == null) return;
-  const clamped = Math.max(1, Math.min(pageCount.value, val));
-  table.value?.tableApi?.setPageIndex(clamped - 1);
-  gotoPageInput.value = null;
-}
-
-function handleGotoKeydown(e: KeyboardEvent) {
-  if (e.key === 'Enter') commitGotoPage();
-}
-
 // Imperatively sync filter to TanStack — v-model:global-filter alone doesn't
 // trigger recomputation because TanStack's mergeProxy lazily evaluates state getters.
 watch(globalFilter, (value) => {
@@ -180,7 +164,7 @@ const tableData = computed<SeniorityRow[]>(() => {
               :expanded-options="{ getRowCanExpand: () => true }"
               :pagination-options="{ getPaginationRowModel: getPaginationRowModel() }" sticky :meta="tableMeta"
               :ui="isMobile ? { th: 'px-2 py-2 text-xs', td: 'px-2 py-1.5 text-xs' } : {}"
-              class="w-full overscroll-contain text-xs sm:text-md">
+              class="w-full overscroll-contain text-xs sm:text-base">
               <template #expanded="{ row }">
                 <div :class="['grid grid-cols-2 sm:grid-cols-3 gap-3 px-4 py-3 text-xs', row.original._isUser ? 'bg-primary/5' : '']">
                   <div class="sm:hidden">
@@ -216,68 +200,14 @@ const tableData = computed<SeniorityRow[]>(() => {
     </div>
 
     <!-- Pagination — floats below scroll area, always visible -->
-    <div v-if="latestList" class="shrink-0 px-3 sm:px-6 py-2 sm:py-3 border-t border-default">
-
-      <!-- Mobile: first/prev/next/last + go-to-page input -->
-      <div v-if="isMobile" class="flex items-center justify-between gap-2">
-        <div class="flex gap-1">
-          <UButton
-            icon="i-lucide-chevrons-left" size="xs" variant="outline" color="neutral"
-            aria-label="First page" :disabled="currentPage === 1"
-            @click="table?.tableApi?.setPageIndex(0)"
-          />
-          <UButton
-            icon="i-lucide-chevron-left" size="xs" variant="outline" color="neutral"
-            aria-label="Previous page" :disabled="currentPage === 1"
-            @click="table?.tableApi?.setPageIndex(currentPage - 2)"
-          />
-          <UButton
-            icon="i-lucide-chevron-right" size="xs" variant="outline" color="neutral"
-            aria-label="Next page" :disabled="currentPage === pageCount"
-            @click="table?.tableApi?.setPageIndex(currentPage)"
-          />
-          <UButton
-            icon="i-lucide-chevrons-right" size="xs" variant="outline" color="neutral"
-            aria-label="Last page" :disabled="currentPage === pageCount"
-            @click="table?.tableApi?.setPageIndex(pageCount - 1)"
-          />
-        </div>
-
-        <div class="flex items-center gap-1.5 text-xs text-muted">
-          <span>p.</span>
-          <UInput
-            type="number"
-            :placeholder="String(currentPage)"
-            :model-value="gotoPageInput ?? undefined"
-            size="xs"
-            :min="1"
-            :max="pageCount"
-            class="w-14 text-center"
-            :ui="{ base: 'text-center' }"
-            @update:model-value="(v) => gotoPageInput = v ? Number(v) : null"
-            @blur="commitGotoPage"
-            @keydown="handleGotoKeydown"
-          />
-          <span>/ {{ pageCount }}</span>
-        </div>
-      </div>
-
-      <!-- Desktop: standard page-number pagination -->
-      <div v-else class="flex items-center justify-between gap-4">
-        <p class="text-sm text-muted shrink-0">
-          Page {{ currentPage }} of {{ pageCount }}
-        </p>
-        <UPagination
-          :page="currentPage"
-          :total="totalRows"
-          :items-per-page="table?.tableApi?.getState().pagination.pageSize"
-          :sibling-count="2"
-          size="sm"
-          show-edges
-          @update:page="(p: number) => table?.tableApi?.setPageIndex(p - 1)"
-        />
-      </div>
-
+    <div v-if="latestList" class="shrink-0 py-2 sm:py-3 border-t border-default">
+      <TablePagination
+        :current-page="currentPage"
+        :page-count="pageCount"
+        :total-rows="totalRows"
+        :page-size="pagination.pageSize"
+        @update:page="(p: number) => table?.tableApi?.setPageIndex(p - 1)"
+      />
     </div>
   </div>
 </template>

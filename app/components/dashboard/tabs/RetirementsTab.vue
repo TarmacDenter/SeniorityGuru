@@ -96,7 +96,7 @@ const horizonOptions = [
 </script>
 
 <template>
-  <div class="p-4 sm:p-6 space-y-4">
+  <div class="space-y-4">
     <!-- Empty state: no list loaded -->
     <div
       v-if="!hasData"
@@ -180,7 +180,7 @@ const horizonOptions = [
       </div>
 
       <!-- Table -->
-      <UCard :ui="{ body: 'p-0' }">
+      <UCard>
         <div class="overflow-x-auto">
         <UTable
           :data="rows"

@@ -149,7 +149,7 @@ function currentQual(row: DiffRow): string {
               </UBadge>
 
               <template #content>
-                <div class="p-3 text-xs space-y-1.5 min-w-48">
+                <div class="p-3 text-xs space-y-1.5 min-w-32 sm:min-w-48">
                   <div class="font-semibold text-(--ui-text) mb-2">
                     {{ row.name ?? row.employee_number }}
                   </div>
@@ -221,8 +221,8 @@ function currentQual(row: DiffRow): string {
     </div>
 
     <!-- Pagination -->
-    <div v-if="filteredRows.length > 0" class="flex items-center justify-between mt-3 text-sm text-(--ui-text-muted)">
-      <div class="flex items-center gap-2">
+    <div v-if="filteredRows.length > 0" class="mt-3">
+      <div class="flex items-center gap-2 text-sm text-(--ui-text-muted) mb-2">
         <span>Rows per page</span>
         <USelect
           v-model="pageSize"
@@ -233,15 +233,12 @@ function currentQual(row: DiffRow): string {
           class="w-16"
         />
       </div>
-      <UPagination
-        v-if="filteredRows.length > pageSize"
-        v-model:page="page"
-        :total="filteredRows.length"
-        :items-per-page="pageSize"
-        size="sm"
-        color="neutral"
-        variant="subtle"
-        :sibling-count="1"
+      <TablePagination
+        :current-page="page"
+        :page-count="Math.ceil(filteredRows.length / pageSize)"
+        :total-rows="filteredRows.length"
+        :page-size="pageSize"
+        @update:page="(p: number) => page = p"
       />
     </div>
   </div>

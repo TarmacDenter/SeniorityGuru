@@ -50,9 +50,9 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="sm:-m-6 sm:flex sm:flex-col sm:h-[calc(100%+3rem)]">
+  <div class="flex flex-col flex-1 min-h-0">
     <!-- Loading skeleton -->
-    <div v-if="loading" class="p-4 sm:p-6 space-y-4">
+    <div v-if="loading" class="p-3 sm:p-6 space-y-4">
       <USkeleton class="h-10 w-48" />
       <USkeleton class="h-48" />
       <USkeleton class="h-32" />
@@ -70,7 +70,7 @@ onUnmounted(() => {
 
     <template v-else>
     <!-- Projection controls — pinned toolbar -->
-    <div class="shrink-0 bg-[var(--ui-bg)] border-b border-[var(--ui-border)] px-4 sm:px-6 py-3 flex items-center gap-4 flex-wrap">
+    <div class="shrink-0 bg-[var(--ui-bg)] border-b border-[var(--ui-border)] px-3 sm:px-6 py-3 flex items-center gap-4 flex-wrap">
       <div class="flex items-center gap-2">
         <USwitch v-model="usePositionProjection" />
         <span class="text-sm text-[var(--ui-text-muted)]">Project forward</span>
@@ -94,7 +94,7 @@ onUnmounted(() => {
     <DashboardGrowthBar v-model="growthConfig" />
 
     <!-- Scrollable content -->
-    <div class="p-4 sm:p-6 space-y-6">
+    <div class="p-3 sm:p-6 space-y-6 flex-1 overflow-y-auto">
       <!-- About this view collapsible -->
       <UCollapsible class="flex flex-col gap-2">
         <UButton

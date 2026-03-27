@@ -46,6 +46,13 @@ export default defineNuxtConfig({
       navigateFallback: '/',
     },
   },
+  components: [
+    { path: '~/components/layout', pathPrefix: false },
+    { path: '~/components/comparison', pathPrefix: false },
+    { path: '~/components/upload', pathPrefix: false },
+    { path: '~/components/ui', pathPrefix: false },
+    '~/components',
+  ],
   imports: {
     dirs: ['composables/seniority'],
   },
