@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { h } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
-import { formatRankDelta } from '~/utils/seniority-math'
+import { formatRankDelta } from '~/utils/seniority-engine'
 import { formatMonthYear, formatYear } from '~/utils/date'
 
 interface TrajectoryPoint {

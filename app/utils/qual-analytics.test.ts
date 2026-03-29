@@ -16,23 +16,18 @@ import {
   findThresholdYear,
   detectUpgradeTransitions,
 } from './qual-analytics'
-import type { GrowthConfig } from '~/utils/growth-config'
+import type { GrowthConfig } from '~/utils/seniority-engine'
+import { makeEntry as _makeEntry } from '~/test-utils/factories'
 
-// ─── Test factory ─────────────────────────────────────────────────────────────
-let _nextId = 1
 function makeEntry(overrides: Partial<SeniorityEntry> = {}): SeniorityEntry {
-  const id = _nextId++
-  return {
-    seniority_number: id,
-    employee_number: `EMP${String(id).padStart(4, '0')}`,
-    name: `Pilot_${id}`,
+  return _makeEntry({
     seat: 'FO',
     base: 'JFK',
     fleet: '737',
     hire_date: '2010-01-01',
     retire_date: '2055-01-01',
     ...overrides,
-  }
+  })
 }
 
 // ─── qualKey ─────────────────────────────────────────────────────────────────

@@ -3,23 +3,13 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { useSeniorityCore, _resetCoreSingletons } from './useSeniorityCore'
 import { useQualAnalytics } from './useQualAnalytics'
 
+import { resetMockStores } from '~/test-utils/seniority-mocks'
+
 const mockStore = vi.hoisted(() => ({ entries: [] as any[], lists: [] as any[] }))
 const mockUserStore = vi.hoisted(() => ({ employeeNumber: null as string | null, retirementAge: 65, getPreference: vi.fn().mockResolvedValue(null), savePreference: vi.fn().mockResolvedValue(undefined) }))
-
-vi.mock('~/stores/seniority', () => ({
-  useSeniorityStore: () => mockStore,
-}))
-vi.mock('~/stores/user', () => ({
-  useUserStore: () => mockUserStore,
-}))
-vi.mock('~/utils/db', () => ({
-  db: {
-    preferences: {
-      get: vi.fn().mockResolvedValue(undefined),
-      put: vi.fn().mockResolvedValue('key'),
-    },
-  },
-}))
+vi.mock('~/stores/seniority', () => ({ useSeniorityStore: () => mockStore }))
+vi.mock('~/stores/user', () => ({ useUserStore: () => mockUserStore }))
+vi.mock('~/utils/db', () => ({ db: { preferences: { get: vi.fn().mockResolvedValue(undefined), put: vi.fn().mockResolvedValue('key') } } }))
 
 const localStorageMock: Record<string, string> = {}
 vi.stubGlobal('localStorage', {
@@ -33,10 +23,7 @@ const { makeEntry } = await import('~/test-utils/factories')
 
 beforeEach(() => {
   _resetCoreSingletons()
-  mockStore.entries = []
-  mockStore.lists = []
-  mockUserStore.employeeNumber = null
-  mockUserStore.retirementAge = 65
+  resetMockStores(mockStore, mockUserStore)
   const { newHire } = useSeniorityCore()
   newHire.reset()
   Object.keys(localStorageMock).forEach(k => Reflect.deleteProperty(localStorageMock, k))

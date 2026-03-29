@@ -1,6 +1,15 @@
 import type { SeniorityEntry } from '~/utils/schemas/seniority-list'
 import type { SenioritySnapshot, Qual } from './types'
-import { uniqueEntryValues } from '~/utils/entry-filters'
+import { cellKey } from './cell-key'
+
+export function uniqueEntryValues(entries: SeniorityEntry[], field: 'fleet' | 'seat' | 'base'): string[] {
+  const values = new Set<string>()
+  for (const e of entries) {
+    const v = e[field]
+    if (v) values.add(v)
+  }
+  return Array.from(values).sort()
+}
 
 export class InvalidSnapshotDataError extends Error {
   constructor(message: string, public invalidEntry?: SeniorityEntry) {
@@ -27,7 +36,7 @@ export function createSnapshot(entries: readonly SeniorityEntry[]): SenioritySna
 
   const byCell = new Map<string, SeniorityEntry[]>()
   for (const e of entries) {
-    const key = `${e.base}|${e.seat}|${e.fleet}`
+    const key = cellKey(e)
     let group = byCell.get(key)
     if (!group) { group = []; byCell.set(key, group) }
     group.push(e)

@@ -1,11 +1,10 @@
-import type { SeniorityEntry } from '~/utils/schemas/seniority-list';
-import type { GrowthConfig } from '~/utils/growth-config';
-import { computeAdditionalPilots } from '~/utils/growth-config';
-import { formatMonthYear, todayISO, addYearsISO, isRetiredBy } from '~/utils/date';
+import type { SeniorityEntry } from '~/utils/schemas/seniority-list'
+import type { FilterFn, GrowthConfig, TrajectoryDelta } from '~/utils/seniority-engine/types'
+import { computeAdditionalPilots } from '~/utils/growth-config'
+import { computePercentile } from '~/utils/seniority-engine/percentile'
+import { formatMonthYear, todayISO, addYearsISO, isRetiredBy } from '~/utils/date'
 
-type FilterFn = (entry: SeniorityEntry) => boolean;
-
-export type { FilterFn };
+export type { FilterFn }
 
 export function countRetiredAbove(
   entries: readonly SeniorityEntry[],
@@ -62,13 +61,10 @@ export function buildTrajectory(
       ? computeAdditionalPilots(totalInCategory, growthConfig.annualRate, baseDate, tp)
       : 0;
     const projectedTotal = totalInCategory + additional;
-    const percentile = projectedTotal > 0
-      ? Math.round(((projectedTotal - rank + 1) / projectedTotal) * 1000) / 10
-      : 0;
     return {
       date: tp,
       rank,
-      percentile,
+      percentile: computePercentile(rank, projectedTotal),
     };
   });
 }
@@ -140,12 +136,7 @@ export function projectComparativeTrajectory(
   };
 }
 
-export interface TrajectoryDelta {
-  date: string
-  percentile: number
-  delta: number
-  isPeak: boolean
-}
+export type { TrajectoryDelta }
 
 export function computeTrajectoryDeltas(
   trajectory: { date: string; rank: number; percentile: number }[],

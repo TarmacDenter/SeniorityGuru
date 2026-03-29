@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { GrowthConfig } from '~/utils/growth-config'
+import type { GrowthConfig } from '~/utils/seniority-engine'
 
 const props = defineProps<{ modelValue: GrowthConfig }>()
 const emit = defineEmits<{ 'update:modelValue': [config: GrowthConfig] }>()

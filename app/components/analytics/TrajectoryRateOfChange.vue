@@ -11,7 +11,7 @@ import {
   Legend,
 } from 'chart.js'
 import type { ChartOptions, TooltipItem } from 'chart.js'
-import type { TrajectoryDelta } from '~/utils/seniority-math'
+import type { TrajectoryDelta } from '~/utils/seniority-engine'
 
 ChartJS.register(
   CategoryScale,

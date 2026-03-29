@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { describe, it, expect, vi } from 'vitest'
 import { createScenario } from './scenario'
-import { DEFAULT_GROWTH_CONFIG } from '~/utils/growth-config'
+import { DEFAULT_GROWTH_CONFIG } from '~/utils/seniority-engine'
 
 describe('createScenario', () => {
   it('provides sensible defaults', () => {

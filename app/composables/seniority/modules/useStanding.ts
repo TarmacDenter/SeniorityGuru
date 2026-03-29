@@ -1,6 +1,5 @@
 import type { ComputedRef } from 'vue'
-import { formatNumber } from '~/utils/seniority-math'
-import type { TrajectoryPoint } from '~/utils/seniority-engine'
+import { formatNumber, type TrajectoryPoint } from '~/utils/seniority-engine'
 import { useSeniorityStore } from '~/stores/seniority'
 import { useSeniorityCore } from './useSeniorityCore'
 
@@ -66,15 +65,10 @@ export function useStanding(): {
         hireDate: '--',
       }
     }
-    const total = standing.total
-    const safeRank = Number.isFinite(standing.adjustedRank) ? standing.adjustedRank : 0
-    const percentile = total > 0
-      ? Math.round((safeRank / total) * 100 * 10) / 10
-      : 0
     return {
       seniorityNumber: entry.seniority_number,
       adjustedSeniority: standing.adjustedRank,
-      percentile,
+      percentile: standing.adjustedPercentile,
       base: entry.base ?? '--',
       seat: entry.seat ?? '--',
       fleet: entry.fleet ?? '--',

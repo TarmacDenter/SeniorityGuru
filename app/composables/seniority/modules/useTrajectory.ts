@@ -1,7 +1,6 @@
 import type { ComputedRef, Ref } from 'vue'
-import { DEFAULT_GROWTH_CONFIG, type GrowthConfig } from '~/utils/growth-config'
-import { createScenario } from '~/utils/seniority-engine'
-import type { QualSpec, TrajectoryDelta, TrajectoryPoint, RetirementProjectionResult, ComparativeTrajectoryResult } from '~/utils/seniority-engine'
+import { DEFAULT_GROWTH_CONFIG, createScenario } from '~/utils/seniority-engine'
+import type { GrowthConfig, QualSpec, TrajectoryDelta, TrajectoryPoint, RetirementProjectionResult, ComparativeTrajectoryResult } from '~/utils/seniority-engine'
 import { useSeniorityCore } from './useSeniorityCore'
 
 export function useTrajectory(growthConfig?: Ref<GrowthConfig>): {

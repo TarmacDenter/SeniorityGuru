@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { QualDemographicScale } from '~/utils/qual-analytics'
+import type { QualDemographicScale } from '~/utils/seniority-engine'
 
 definePageMeta({ layout: 'default' })
 

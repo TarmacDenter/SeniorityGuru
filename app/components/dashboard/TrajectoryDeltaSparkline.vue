@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { ChartData, ChartOptions } from 'chart.js'
-import type { TrajectoryDelta } from '~/utils/seniority-math'
+import type { TrajectoryDelta } from '~/utils/seniority-engine'
 import { formatYear, extractYear } from '~/utils/date'
 
 const props = defineProps<{

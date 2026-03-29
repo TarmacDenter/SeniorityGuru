@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import type { QualDemographicScale, DensityBucket } from '~/utils/qual-analytics'
-import { SEAT_ORDER } from '~/utils/qual-analytics'
+import type { QualDemographicScale, DensityBucket } from '~/utils/seniority-engine'
+import { SEAT_ORDER } from '~/utils/seniority-engine'
 
 const BUCKET_WIDTH_PCT = 5
 

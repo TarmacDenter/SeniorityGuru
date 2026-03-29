@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { useSeniorityCore, useQualAnalytics } from '~/composables/seniority'
 import { diffYears, todayISO } from '~/utils/date'
-import { DEFAULT_GROWTH_CONFIG } from '~/utils/growth-config'
-import type { GrowthConfig } from '~/utils/growth-config'
+import { DEFAULT_GROWTH_CONFIG, type GrowthConfig } from '~/utils/seniority-engine'
 
 defineProps<{ loading?: boolean }>()
 

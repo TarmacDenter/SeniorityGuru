@@ -1,35 +1,132 @@
 import type { SeniorityEntry } from '~/utils/schemas/seniority-list'
-import type { GrowthConfig } from '~/utils/growth-config'
-import type {
-  TrajectoryDelta,
-} from '~/utils/seniority-math'
-import type {
-  AgeBucket,
-  MostJuniorCARow,
-  PowerIndexCell,
-  QualCompositionRow,
-  QualDemographicScale,
-  RetirementWaveBucket,
-  ThresholdResult,
-  TrajectoryPoint,
-  YosDistribution,
-  YosHistogramBucket,
-} from '~/utils/qual-analytics'
 import type { QualSpec } from './qual-spec'
 
-export type {
-  QualSpec,
-  TrajectoryDelta,
-  TrajectoryPoint,
-  AgeBucket,
-  MostJuniorCARow,
-  PowerIndexCell,
-  QualCompositionRow,
-  QualDemographicScale,
-  RetirementWaveBucket,
-  ThresholdResult,
-  YosDistribution,
-  YosHistogramBucket,
+export type { QualSpec }
+
+export type FilterFn = (entry: SeniorityEntry) => boolean
+
+export interface TrajectoryPoint {
+  date: string
+  rank: number
+  percentile: number
+}
+
+export interface TrajectoryDelta {
+  date: string
+  percentile: number
+  delta: number
+  isPeak: boolean
+}
+
+export interface AgeBucket {
+  label: string
+  count: number
+}
+
+export interface MostJuniorCARow {
+  qualKey: string
+  fleet: string
+  seat: string
+  base: string
+  seniorityNumber: number
+  hireDate: string
+  yos: number
+}
+
+export interface YosDistribution {
+  entryFloor: number
+  p10: number
+  p25: number
+  median: number
+  p75: number
+  p90: number
+  max: number
+}
+
+export interface YosHistogramBucket {
+  label: string
+  minYos: number
+  count: number
+}
+
+export interface QualCompositionRow {
+  qualKey: string
+  fleet: string
+  seat: string
+  total: number
+  caCount: number
+  foCount: number
+  caFoRatio: number
+  byBase: { base: string; count: number; pct: number }[]
+}
+
+export interface RetirementWaveBucket {
+  year: number
+  count: number
+  isWave: boolean
+}
+
+export type PowerIndexCellState = 'green' | 'amber' | 'red'
+
+export interface PowerIndexCell {
+  fleet: string
+  seat: string
+  base: string
+  state: PowerIndexCellState
+  retiredCount: number
+  totalInCell: number
+  pilotsAhead: number
+  isLowestSeniority: boolean
+  cellPercentile: number
+  numbersJuniorToPlug: number
+  plugPercentile: number
+  userPercentile: number
+}
+
+export interface DensityBucket {
+  start: number
+  count: number
+}
+
+export interface QualDemographicSnapshot {
+  fleet: string
+  seat: string
+  base: string
+  activeCount: number
+  plugPercentile: number
+  plugSenNum: number
+  p25: number
+  median: number
+  p75: number
+  max: number
+  density: DensityBucket[]
+}
+
+export interface QualDemographicScale extends QualDemographicSnapshot {
+  userPercentile: number
+  currentUserPercentile: number
+  isHoldable: boolean
+}
+
+export interface ThresholdResult {
+  year: string
+}
+
+export interface UpgradeTransition {
+  employeeNumber: string
+  name: string | undefined
+  seniorityNumber: number
+  type: 'upgrade' | 'fleet-change' | 'downgrade' | 'other'
+  oldSeat: string
+  newSeat: string
+  oldFleet: string
+  newFleet: string
+}
+
+export interface GrowthConfig {
+  enabled: boolean
+  annualRate: number
+  qualOverrides?: { spec: QualSpec; rate: number }[]
 }
 
 export interface PilotAnchor {
@@ -72,6 +169,9 @@ export interface StandingResult {
   rank: number
   adjustedRank: number
   total: number
+  adjustedTotal: number
+  percentile: number
+  adjustedPercentile: number
   retiredAbove: number
   retirementsThisYear: number
   retirementsThisYearSeniorToAnchor: number

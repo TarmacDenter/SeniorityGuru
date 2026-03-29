@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { useSeniorityCore, useStanding, useTrajectory, useQualAnalytics } from '~/composables/seniority'
-import { DEFAULT_GROWTH_CONFIG } from '~/utils/growth-config'
-import type { GrowthConfig } from '~/utils/growth-config'
+import { DEFAULT_GROWTH_CONFIG, type GrowthConfig } from '~/utils/seniority-engine'
 
 defineProps<{ loading?: boolean }>()
 

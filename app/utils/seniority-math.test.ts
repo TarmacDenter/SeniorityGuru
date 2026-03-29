@@ -2,7 +2,7 @@
 import { describe, it, expect } from 'vitest'
 import { countRetiredAbove, generateTimePoints, buildTrajectory, computeRank, getProjectionEndDate, formatNumber, projectRetirements, projectComparativeTrajectory, computeTrajectoryDeltas } from './seniority-math'
 import { makeDomainEntry as makeEntry } from '~/test-utils/factories'
-import type { GrowthConfig } from '~/utils/growth-config'
+import type { GrowthConfig } from '~/utils/seniority-engine'
 import { todayISO, extractYear } from '~/utils/date'
 
 describe('countRetiredAbove', () => {

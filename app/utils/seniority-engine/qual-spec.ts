@@ -1,5 +1,6 @@
 import type { SeniorityEntry } from '~/utils/schemas/seniority-list'
-import type { FilterFn } from '~/utils/seniority-math'
+import type { FilterFn } from './types'
+import { cellKey } from './cell-key'
 
 export interface QualSpec {
   readonly fleet?: string
@@ -39,7 +40,7 @@ export function enumerateQualSpecs(entries: readonly SeniorityEntry[]): QualSpec
 
   const existingCombos = new Set<string>()
   for (const e of entries) {
-    existingCombos.add(`${e.base}|${e.seat}|${e.fleet}`)
+    existingCombos.add(cellKey(e))
   }
 
   const bases = [...new Set(entries.map(e => e.base))].sort()

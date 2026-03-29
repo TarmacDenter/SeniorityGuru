@@ -2,16 +2,17 @@
 import { describe, it, expect } from 'vitest'
 import { computeComparison } from './seniority-compare'
 import type { SeniorityEntry } from '~/utils/schemas/seniority-list'
+import { makeDomainEntry } from '~/test-utils/factories'
 
 function makeEntry(overrides: Partial<SeniorityEntry> & { employee_number: string; seniority_number: number }): SeniorityEntry {
-  return {
+  return makeDomainEntry({
     hire_date: '2010-01-01',
     retire_date: '2055-01-01',
     seat: 'CA',
     fleet: '737',
     base: 'JFK',
     ...overrides,
-  }
+  })
 }
 
 describe('computeComparison', () => {

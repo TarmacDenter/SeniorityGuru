@@ -3,11 +3,15 @@ import type {
   ComparativeTrajectoryResult,
   DemographicsResult,
   PilotAnchor,
+  PowerIndexCell,
+  QualDemographicScale,
   RetirementProjectionResult,
+  RetirementWaveBucket,
   Scenario,
   SeniorityLens,
   SenioritySnapshot,
   StandingResult,
+  ThresholdResult,
   TrajectoryResult,
   UpcomingRetirementFilter,
   UpcomingRetirementRow,
@@ -25,12 +29,7 @@ import {
 import { createScenario } from './scenario'
 import { memoizeLast } from './memoize'
 import { qualSpecToFilter } from './qual-spec'
-import type {
-  PowerIndexCell,
-  QualDemographicScale,
-  RetirementWaveBucket,
-  ThresholdResult,
-} from '~/utils/qual-analytics'
+import { computePercentile } from './percentile'
 import {
   findThresholdYear,
   computePowerIndexCells,
@@ -96,9 +95,8 @@ export function createLens(
         adjustedRank: cellAdjustedRank,
         total: cellTotal,
         adjustedTotal: cellAdjustedTotal,
-        percentile: cellTotal > 0 ? Math.round((cellRank / cellTotal) * 100 * 10) / 10 : 0,
-        adjustedPercentile: cellAdjustedTotal > 0
-          ? Math.round((cellAdjustedRank / cellAdjustedTotal) * 100 * 10) / 10 : 0,
+        percentile: computePercentile(cellRank, cellTotal),
+        adjustedPercentile: computePercentile(cellAdjustedRank, cellAdjustedTotal),
         isAnchorCurrent: !!(
           anchorEntry
           && anchorEntry.base === first.base
@@ -108,10 +106,16 @@ export function createLens(
       })
     }
 
+    const totalRetired = entries.filter(e => e.retire_date && isRetiredBy(e.retire_date, todayStr)).length
+    const adjustedTotal = total - totalRetired
+
     return {
       rank,
       adjustedRank,
       total,
+      adjustedTotal,
+      percentile: computePercentile(rank, total),
+      adjustedPercentile: computePercentile(adjustedRank, adjustedTotal),
       retiredAbove,
       retirementsThisYear,
       retirementsThisYearSeniorToAnchor,
