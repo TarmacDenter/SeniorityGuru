@@ -41,7 +41,7 @@ describe('ON_DEMO_ENTER hook listener', () => {
 
   it('calls addList twice (base list + variant list) with isDemo: true', async () => {
     const { emitHook } = await import('~/utils/hooks')
-    await import('./demo') // registers the hook
+    await import('./demo-enter') // registers the hook
 
     await emitHook('app:demo:enter')
 
@@ -54,7 +54,7 @@ describe('ON_DEMO_ENTER hook listener', () => {
 
   it('sets employee number to DEMO_EMPLOYEE_NUMBER after entering demo', async () => {
     const { emitHook } = await import('~/utils/hooks')
-    await import('./demo')
+    await import('./demo-enter')
 
     await emitHook('app:demo:enter')
 
@@ -63,7 +63,7 @@ describe('ON_DEMO_ENTER hook listener', () => {
 
   it('navigates to /dashboard after setup', async () => {
     const { emitHook } = await import('~/utils/hooks')
-    await import('./demo')
+    await import('./demo-enter')
 
     await emitHook('app:demo:enter')
 
