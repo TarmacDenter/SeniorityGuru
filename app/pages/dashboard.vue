@@ -117,10 +117,6 @@ onMounted(async () => {
               <UIcon name="i-lucide-flask-conical" class="size-3 mr-1" />
               Demo
             </UBadge>
-            <UBadge v-if="selectedList?.isDemo && showDemoBadge" color="info" variant="subtle" size="sm">
-              <UIcon name="i-lucide-flask-conical" class="size-3 mr-1" />
-              Demo
-            </UBadge>
             <UBadge v-if="isHistorical" color="warning" variant="subtle" size="sm">
               <UIcon name="i-lucide-alert-triangle" class="size-3 mr-1" />
               Historical

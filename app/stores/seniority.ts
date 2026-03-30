@@ -88,12 +88,18 @@ export const useSeniorityStore = defineStore('seniority', () => {
     const localEntries: LocalSeniorityEntry[] = entries.map(e => ({ ...e, listId }))
     await db.seniorityEntries.bulkAdd(localEntries)
 
+    const hasDemoListsBefore = lists.value.some(l => l.isDemo)
     lists.value.push({ id: listId, ...listData, createdAt: new Date().toISOString() })
     entryCache.clear()
     log.info('List added', { listId, entryCount: entries.length })
     emitHook('list:added', listId).catch((e: unknown) => {
       log.warn('emitHook list:added failed', { error: String(e) })
     })
+    if (!listData.isDemo && hasDemoListsBefore) {
+      emitHook('app:demo:exit').catch((e: unknown) => {
+        log.warn('emitHook app:demo:exit failed', { error: String(e) })
+      })
+    }
     return listId
   }
 
@@ -121,6 +127,10 @@ export const useSeniorityStore = defineStore('seniority', () => {
   }
 
   async function deleteList(id: number) {
+    const wasLastDemoList
+      = lists.value.some(l => l.id === id && l.isDemo)
+      && lists.value.filter(l => l.isDemo && l.id !== id).length === 0
+
     await db.deleteList(id)
     lists.value = lists.value.filter(l => l.id !== id)
     entryCache.delete(id)
@@ -132,6 +142,27 @@ export const useSeniorityStore = defineStore('seniority', () => {
     emitHook('list:deleted', id).catch((e: unknown) => {
       log.warn('emitHook list:deleted failed', { error: String(e) })
     })
+    if (wasLastDemoList) {
+      emitHook('app:demo:exit').catch((e: unknown) => {
+        log.warn('emitHook app:demo:exit failed', { error: String(e) })
+      })
+    }
+  }
+
+  /** Deletes all demo lists without emitting app:demo:exit (used by the exit listener). */
+  async function deleteDemoLists() {
+    const demoLists = lists.value.filter(l => l.isDemo)
+    for (const list of demoLists) {
+      if (list.id === undefined) continue
+      await db.deleteList(list.id)
+      entryCache.delete(list.id)
+      if (currentListId.value === list.id) {
+        entries.value = []
+        currentListId.value = null
+      }
+    }
+    lists.value = lists.value.filter(l => !l.isDemo)
+    log.info('Demo lists deleted', { count: demoLists.length })
   }
 
   return {
@@ -151,5 +182,6 @@ export const useSeniorityStore = defineStore('seniority', () => {
     getList,
     updateList,
     deleteList,
+    deleteDemoLists,
   }
 })

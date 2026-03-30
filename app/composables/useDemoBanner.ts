@@ -1,3 +1,4 @@
+import { emitHook } from '~/utils/hooks'
 import { useSeniorityStore } from '~/stores/seniority'
 import { useUserStore } from '~/stores/user'
 
@@ -21,5 +22,9 @@ export function useDemoBanner() {
     dismissed.value = true
   }
 
-  return { showBanner, showBadge, hasDemoLists, dismiss }
+  async function exit() {
+    await emitHook('app:demo:exit')
+  }
+
+  return { showBanner, showBadge, hasDemoLists, dismiss, exit }
 }

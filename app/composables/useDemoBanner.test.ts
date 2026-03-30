@@ -9,6 +9,7 @@ const mockSeniorityLists = vi.hoisted(() => [] as Array<{ id: number; isDemo?: b
 
 const mockGetPreference = vi.hoisted(() => vi.fn().mockResolvedValue(null))
 const mockSavePreference = vi.hoisted(() => vi.fn().mockResolvedValue(undefined))
+const mockEmitHook = vi.hoisted(() => vi.fn().mockResolvedValue(undefined))
 
 vi.mock('~/stores/seniority', () => ({
   useSeniorityStore: () => ({ lists: mockSeniorityLists }),
@@ -19,6 +20,11 @@ vi.mock('~/stores/user', () => ({
     getPreference: mockGetPreference,
     savePreference: mockSavePreference,
   }),
+}))
+
+vi.mock('~/utils/hooks', () => ({
+  emitHook: mockEmitHook,
+  defineHook: vi.fn(),
 }))
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -141,6 +147,16 @@ describe('useDemoBanner', () => {
       await mountComposable()
 
       expect(mockGetPreference).toHaveBeenCalledWith('demoBannerDismissed')
+    })
+  })
+
+  describe('exit()', () => {
+    it('emits the app:demo:exit hook', async () => {
+      const { exit } = await mountComposable()
+
+      await exit()
+
+      expect(mockEmitHook).toHaveBeenCalledWith('app:demo:exit')
     })
   })
 })

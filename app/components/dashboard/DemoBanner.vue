@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useDemoBanner } from '~/composables/useDemoBanner'
 
-const { showBanner, dismiss } = useDemoBanner()
+const { showBanner, dismiss, exit } = useDemoBanner()
 </script>
 
 <template>
@@ -19,6 +19,9 @@ const { showBanner, dismiss } = useDemoBanner()
         </UButton>
         <UButton size="sm" variant="ghost" color="neutral" @click="dismiss">
           Dismiss
+        </UButton>
+        <UButton size="sm" variant="ghost" color="error" @click="exit">
+          Exit Demo
         </UButton>
       </template>
     </UAlert>
