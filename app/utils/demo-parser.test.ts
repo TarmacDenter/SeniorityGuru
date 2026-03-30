@@ -50,8 +50,8 @@ describe('parseDemoCSV', () => {
 })
 
 describe('DEMO_EMPLOYEE_NUMBER', () => {
-  it('is a string matching a senior FO in the base data', () => {
+  it('is a string matching a mid-list FO (~rank 2000) in the base data', () => {
     expect(typeof DEMO_EMPLOYEE_NUMBER).toBe('string')
-    expect(DEMO_EMPLOYEE_NUMBER).toBe('1034')
+    expect(DEMO_EMPLOYEE_NUMBER).toBe('1371')
   })
 })

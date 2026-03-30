@@ -58,7 +58,7 @@ describe('ON_DEMO_ENTER hook listener', () => {
 
     await emitHook('app:demo:enter')
 
-    expect(mockUserStore.savePreference).toHaveBeenCalledWith('employeeNumber', '1034')
+    expect(mockUserStore.savePreference).toHaveBeenCalledWith('employeeNumber', '1371')
   })
 
   it('navigates to /dashboard after setup', async () => {

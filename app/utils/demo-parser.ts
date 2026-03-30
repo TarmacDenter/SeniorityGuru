@@ -1,7 +1,7 @@
 import type { LocalSeniorityEntry } from '~/utils/db'
 
-/** The employee number of the demo user — a senior FO in the base demo data. */
-export const DEMO_EMPLOYEE_NUMBER = '1034'
+/** The employee number of the demo user — a mid-list FO (rank ~2000) in the base demo data. */
+export const DEMO_EMPLOYEE_NUMBER = '1371'
 
 /** Converts M/D/YYYY date strings (from demo CSV) to ISO 8601 (YYYY-MM-DD). */
 function mdyToISO(mdy: string): string {
