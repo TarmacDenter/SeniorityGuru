@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useSeniorityCore, useStanding, useSeniorityLists } from '~/composables/seniority';
 import { useDashboardTabs } from '~/composables/useDashboardTabs';
+import { useDemoBanner } from '~/composables/useDemoBanner';
 import { DEFAULT_TAB } from '~/utils/dashboard-tabs';
 
 definePageMeta({
@@ -52,6 +53,7 @@ const navbarDescription = computed(() => {
   return `${base} · effective ${list.effectiveDate}`;
 });
 
+const { showBadge: showDemoBadge } = useDemoBanner();
 const { hasData, hasAnchor: userFound, isNewHireMode, newHire, lens } = useSeniorityCore();
 const hasEmployeeNumber = computed(() => !!employeeNumber.value || !!newHire.syntheticEntry.value);
 const { rankCard, statCards: stats, retirementSnapshot, baseStatus: baseStatusData } = useStanding();
@@ -111,6 +113,14 @@ onMounted(async () => {
           <div class="flex items-center gap-2">
             <USelectMenu v-model="selectedListId" :items="listOptions" value-key="id"
               label-key="label" placeholder="Select list..." class="w-48" size="sm" />
+            <UBadge v-if="selectedList?.isDemo && showDemoBadge" color="info" variant="subtle" size="sm">
+              <UIcon name="i-lucide-flask-conical" class="size-3 mr-1" />
+              Demo
+            </UBadge>
+            <UBadge v-if="selectedList?.isDemo && showDemoBadge" color="info" variant="subtle" size="sm">
+              <UIcon name="i-lucide-flask-conical" class="size-3 mr-1" />
+              Demo
+            </UBadge>
             <UBadge v-if="isHistorical" color="warning" variant="subtle" size="sm">
               <UIcon name="i-lucide-alert-triangle" class="size-3 mr-1" />
               Historical
@@ -140,6 +150,7 @@ onMounted(async () => {
 
     <template #body>
       <DashboardInstallBanner />
+      <DashboardDemoBanner />
 
       <!-- Empty state: no lists imported yet -->
       <div
