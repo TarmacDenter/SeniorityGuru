@@ -6,6 +6,9 @@ import type { SeniorityEntry } from '~/utils/schemas/seniority-list'
 // Mock db module
 // ---------------------------------------------------------------------------
 
+const mockEmitHook = vi.hoisted(() => vi.fn().mockResolvedValue(undefined))
+vi.mock('~/utils/hooks', () => ({ emitHook: mockEmitHook, defineHook: vi.fn() }))
+
 const mockDb = vi.hoisted(() => ({
   seniorityLists: {
     orderBy: vi.fn(),
@@ -294,6 +297,24 @@ describe('seniority store (Dexie)', () => {
       expect(store.lists[0]!.title).toBe('March List')
     })
 
+    it('passes isDemo flag to Dexie when provided', async () => {
+      mockDb.seniorityLists.add.mockResolvedValue(99)
+      mockDb.seniorityEntries.bulkAdd.mockResolvedValue(undefined)
+
+      const { useSeniorityStore } = await import('./seniority')
+      const store = useSeniorityStore()
+      store.clearStore()
+
+      await store.addList(
+        { title: 'Demo List', effectiveDate: '2026-01-01', isDemo: true },
+        [],
+      )
+
+      expect(mockDb.seniorityLists.add).toHaveBeenCalledWith(
+        expect.objectContaining({ isDemo: true }),
+      )
+    })
+
     it('does not change currentListId or entries', async () => {
       mockDb.seniorityLists.add.mockResolvedValue(42)
       mockDb.seniorityEntries.bulkAdd.mockResolvedValue(undefined)
@@ -520,6 +541,170 @@ describe('seniority store (Dexie)', () => {
       expect(store.entriesLoading).toBe(false)
       expect(store.listsError).toBeNull()
       expect(store.entriesError).toBeNull()
+    })
+  })
+
+  describe('deleteDemoLists', () => {
+    it('deletes all demo lists from Dexie and removes them from state', async () => {
+      const demoList: LocalSeniorityList = { id: 10, title: 'Demo', effectiveDate: '2025-01-01', createdAt: '', isDemo: true }
+      mockDb.seniorityLists.toArray.mockResolvedValue([demoList, mockList1])
+
+      const { useSeniorityStore } = await import('./seniority')
+      const store = useSeniorityStore()
+      store.clearStore()
+      await store.fetchLists()
+
+      await store.deleteDemoLists()
+
+      expect(mockDb.deleteList).toHaveBeenCalledWith(10)
+      expect(mockDb.deleteList).not.toHaveBeenCalledWith(1)
+      expect(store.lists.find(l => l.id === 10)).toBeUndefined()
+      expect(store.lists.find(l => l.id === 1)).toBeDefined()
+    })
+
+    it('does nothing when no demo lists exist', async () => {
+      mockDb.seniorityLists.toArray.mockResolvedValue([mockList1])
+
+      const { useSeniorityStore } = await import('./seniority')
+      const store = useSeniorityStore()
+      store.clearStore()
+      await store.fetchLists()
+
+      await store.deleteDemoLists()
+
+      expect(mockDb.deleteList).not.toHaveBeenCalled()
+    })
+
+    it('does not emit app:demo:exit', async () => {
+      const demoList: LocalSeniorityList = { id: 10, title: 'Demo', effectiveDate: '2025-01-01', createdAt: '', isDemo: true }
+      mockDb.seniorityLists.toArray.mockResolvedValue([demoList])
+
+      const { useSeniorityStore } = await import('./seniority')
+      const store = useSeniorityStore()
+      store.clearStore()
+      await store.fetchLists()
+
+      await store.deleteDemoLists()
+
+      const exitCalls = mockEmitHook.mock.calls.filter(([name]) => name === 'app:demo:exit')
+      expect(exitCalls).toHaveLength(0)
+    })
+  })
+
+  describe('demo exit triggers', () => {
+    it('deleteList emits app:demo:exit when the last demo list is deleted', async () => {
+      const demoList: LocalSeniorityList = { id: 10, title: 'Demo', effectiveDate: '2025-01-01', createdAt: '', isDemo: true }
+      mockDb.seniorityLists.toArray.mockResolvedValue([demoList])
+
+      const { useSeniorityStore } = await import('./seniority')
+      const store = useSeniorityStore()
+      store.clearStore()
+      await store.fetchLists()
+
+      vi.clearAllMocks()
+      mockDb.deleteList.mockResolvedValue(undefined)
+      mockEmitHook.mockResolvedValue(undefined)
+
+      await store.deleteList(10)
+
+      expect(mockEmitHook).toHaveBeenCalledWith('app:demo:exit')
+    })
+
+    it('deleteList does not emit app:demo:exit when non-demo list is deleted', async () => {
+      mockDb.seniorityLists.toArray.mockResolvedValue([mockList1])
+
+      const { useSeniorityStore } = await import('./seniority')
+      const store = useSeniorityStore()
+      store.clearStore()
+      await store.fetchLists()
+
+      vi.clearAllMocks()
+      mockDb.deleteList.mockResolvedValue(undefined)
+      mockEmitHook.mockResolvedValue(undefined)
+
+      await store.deleteList(1)
+
+      const exitCalls = mockEmitHook.mock.calls.filter(([name]) => name === 'app:demo:exit')
+      expect(exitCalls).toHaveLength(0)
+    })
+
+    it('deleteList does not emit app:demo:exit when demo lists remain after deletion', async () => {
+      const demoList1: LocalSeniorityList = { id: 10, title: 'Demo1', effectiveDate: '2025-01-01', createdAt: '', isDemo: true }
+      const demoList2: LocalSeniorityList = { id: 11, title: 'Demo2', effectiveDate: '2025-04-01', createdAt: '', isDemo: true }
+      mockDb.seniorityLists.toArray.mockResolvedValue([demoList1, demoList2])
+
+      const { useSeniorityStore } = await import('./seniority')
+      const store = useSeniorityStore()
+      store.clearStore()
+      await store.fetchLists()
+
+      vi.clearAllMocks()
+      mockDb.deleteList.mockResolvedValue(undefined)
+      mockEmitHook.mockResolvedValue(undefined)
+
+      await store.deleteList(10)
+
+      const exitCalls = mockEmitHook.mock.calls.filter(([name]) => name === 'app:demo:exit')
+      expect(exitCalls).toHaveLength(0)
+    })
+
+    it('addList emits app:demo:exit when a non-demo list is added while demo lists exist', async () => {
+      const demoList: LocalSeniorityList = { id: 10, title: 'Demo', effectiveDate: '2025-01-01', createdAt: '', isDemo: true }
+      mockDb.seniorityLists.toArray.mockResolvedValue([demoList])
+      mockDb.seniorityLists.add.mockResolvedValue(99)
+      mockDb.seniorityEntries.bulkAdd.mockResolvedValue(undefined)
+
+      const { useSeniorityStore } = await import('./seniority')
+      const store = useSeniorityStore()
+      store.clearStore()
+      await store.fetchLists()
+
+      vi.clearAllMocks()
+      mockDb.seniorityLists.add.mockResolvedValue(99)
+      mockDb.seniorityEntries.bulkAdd.mockResolvedValue(undefined)
+      mockEmitHook.mockResolvedValue(undefined)
+
+      await store.addList({ title: 'Real List', effectiveDate: '2026-01-01' }, [])
+
+      expect(mockEmitHook).toHaveBeenCalledWith('app:demo:exit')
+    })
+
+    it('addList does not emit app:demo:exit when adding a demo list', async () => {
+      mockDb.seniorityLists.add.mockResolvedValue(10)
+      mockDb.seniorityEntries.bulkAdd.mockResolvedValue(undefined)
+
+      const { useSeniorityStore } = await import('./seniority')
+      const store = useSeniorityStore()
+      store.clearStore()
+
+      vi.clearAllMocks()
+      mockDb.seniorityLists.add.mockResolvedValue(10)
+      mockDb.seniorityEntries.bulkAdd.mockResolvedValue(undefined)
+      mockEmitHook.mockResolvedValue(undefined)
+
+      await store.addList({ title: 'Demo', effectiveDate: '2025-01-01', isDemo: true }, [])
+
+      const exitCalls = mockEmitHook.mock.calls.filter(([name]) => name === 'app:demo:exit')
+      expect(exitCalls).toHaveLength(0)
+    })
+
+    it('addList does not emit app:demo:exit when no demo lists exist', async () => {
+      mockDb.seniorityLists.add.mockResolvedValue(1)
+      mockDb.seniorityEntries.bulkAdd.mockResolvedValue(undefined)
+
+      const { useSeniorityStore } = await import('./seniority')
+      const store = useSeniorityStore()
+      store.clearStore()
+
+      vi.clearAllMocks()
+      mockDb.seniorityLists.add.mockResolvedValue(1)
+      mockDb.seniorityEntries.bulkAdd.mockResolvedValue(undefined)
+      mockEmitHook.mockResolvedValue(undefined)
+
+      await store.addList({ title: 'Real List', effectiveDate: '2026-01-01' }, [])
+
+      const exitCalls = mockEmitHook.mock.calls.filter(([name]) => name === 'app:demo:exit')
+      expect(exitCalls).toHaveLength(0)
     })
   })
 })

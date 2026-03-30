@@ -98,7 +98,7 @@ describe('user store (Dexie preferences)', () => {
   })
 
   describe('savePreference', () => {
-    it('calls db.preferences.put with key and value', async () => {
+    it('calls db.preferences.put with serialized string value', async () => {
       const { useUserStore } = await import('./user')
       const store = useUserStore()
 
@@ -122,14 +122,14 @@ describe('user store (Dexie preferences)', () => {
       const store = useUserStore()
       await store.clearPreferences()
 
-      await store.savePreference('retirementAge', '62')
+      await store.savePreference('retirementAge', 62)
 
       expect(store.retirementAge).toBe(62)
     })
   })
 
   describe('getPreference', () => {
-    it('returns the raw string value for a known key', async () => {
+    it('returns a boolean for newHireEnabled key', async () => {
       mockDb.preferences.get.mockResolvedValue({ key: 'newHireEnabled', value: 'true' })
 
       const { useUserStore } = await import('./user')
@@ -138,16 +138,16 @@ describe('user store (Dexie preferences)', () => {
       const result = await store.getPreference('newHireEnabled')
 
       expect(mockDb.preferences.get).toHaveBeenCalledWith('newHireEnabled')
-      expect(result).toBe('true')
+      expect(result).toBe(true)
     })
 
-    it('returns null when key does not exist', async () => {
+    it('returns null when key does not exist in DB', async () => {
       mockDb.preferences.get.mockResolvedValue(undefined)
 
       const { useUserStore } = await import('./user')
       const store = useUserStore()
 
-      const result = await store.getPreference('nonexistent')
+      const result = await store.getPreference('employeeNumber')
 
       expect(result).toBeNull()
     })
@@ -196,6 +196,81 @@ describe('user store (Dexie preferences)', () => {
       expect(store.employeeNumber).toBeNull()
       expect(store.retirementAge).toBe(65)
       expect(store.error).toBeNull()
+    })
+  })
+
+  describe('typed preferences (PreferenceMap)', () => {
+    it('getPreference returns boolean true for newHireEnabled stored as "true"', async () => {
+      mockDb.preferences.get.mockResolvedValue({ key: 'newHireEnabled', value: 'true' })
+
+      const { useUserStore } = await import('./user')
+      const store = useUserStore()
+
+      const result = await store.getPreference('newHireEnabled')
+
+      expect(result).toBe(true)
+      expect(typeof result).toBe('boolean')
+    })
+
+    it('getPreference returns number for retirementAge stored as "62"', async () => {
+      mockDb.preferences.get.mockResolvedValue({ key: 'retirementAge', value: '62' })
+
+      const { useUserStore } = await import('./user')
+      const store = useUserStore()
+
+      const result = await store.getPreference('retirementAge')
+
+      expect(result).toBe(62)
+      expect(typeof result).toBe('number')
+    })
+
+    it('getPreference returns NewHireConfig object for growthConfig stored as JSON', async () => {
+      const config = { birthDate: '1990-01-01', selectedBase: 'JFK', selectedSeat: 'FO', selectedFleet: '737' }
+      mockDb.preferences.get.mockResolvedValue({ key: 'growthConfig', value: JSON.stringify(config) })
+
+      const { useUserStore } = await import('./user')
+      const store = useUserStore()
+
+      const result = await store.getPreference('growthConfig')
+
+      expect(result).toEqual(config)
+      expect(typeof result).toBe('object')
+    })
+
+    it('savePreference serializes NewHireConfig object to JSON string in Dexie', async () => {
+      const config = { birthDate: '1990-01-01', selectedBase: 'JFK', selectedSeat: 'FO', selectedFleet: '737' }
+
+      const { useUserStore } = await import('./user')
+      const store = useUserStore()
+
+      await store.savePreference('growthConfig', config)
+
+      expect(mockDb.preferences.put).toHaveBeenCalledWith({
+        key: 'growthConfig',
+        value: JSON.stringify(config),
+      })
+    })
+
+    it('savePreference serializes number retirementAge to string in Dexie', async () => {
+      const { useUserStore } = await import('./user')
+      const store = useUserStore()
+
+      await store.savePreference('retirementAge', 62)
+
+      expect(mockDb.preferences.put).toHaveBeenCalledWith({ key: 'retirementAge', value: '62' })
+      expect(store.retirementAge).toBe(62)
+    })
+
+    it('savePreference serializes boolean demoBannerDismissed to "true" string in Dexie', async () => {
+      const { useUserStore } = await import('./user')
+      const store = useUserStore()
+
+      await store.savePreference('demoBannerDismissed', true)
+
+      expect(mockDb.preferences.put).toHaveBeenCalledWith({
+        key: 'demoBannerDismissed',
+        value: 'true',
+      })
     })
   })
 

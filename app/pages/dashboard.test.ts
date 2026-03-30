@@ -63,6 +63,10 @@ vi.mock('~/composables/seniority/modules/useSeniorityLists', () => ({
   }),
 }))
 
+vi.mock('~/composables/useDemoBanner', () => ({
+  useDemoBanner: () => ({ showBanner: ref(false), showBadge: ref(false), hasDemoLists: ref(false), dismiss: vi.fn() }),
+}))
+
 // ---------------------------------------------------------------------------
 // Heavy composable mocks — isolate from test concerns
 // ---------------------------------------------------------------------------

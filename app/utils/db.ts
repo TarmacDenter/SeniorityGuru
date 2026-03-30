@@ -5,6 +5,7 @@ export interface LocalSeniorityList {
   title: string | null
   effectiveDate: string
   createdAt: string
+  isDemo?: boolean
 }
 
 export interface LocalSeniorityEntry {
@@ -34,6 +35,11 @@ class SeniorityGuruDB extends Dexie {
     super('SeniorityGuru')
     this.version(1).stores({
       seniorityLists: '++id, effectiveDate',
+      seniorityEntries: '++id, listId, seniorityNumber, employeeNumber',
+      preferences: 'key',
+    })
+    this.version(2).stores({
+      seniorityLists: '++id, effectiveDate, isDemo',
       seniorityEntries: '++id, listId, seniorityNumber, employeeNumber',
       preferences: 'key',
     })

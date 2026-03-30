@@ -16,7 +16,7 @@ const state = reactive<UpdatePreferencesState>({
 
 async function onSave() {
   loading.value = true
-  const { error } = await savePreference('retirementAge', String(state.mandatoryRetirementAge))
+  const { error } = await savePreference('retirementAge', state.mandatoryRetirementAge)
   loading.value = false
 
   if (error) {

@@ -1,6 +1,9 @@
 import { defineStore } from 'pinia'
 import { db } from '~/utils/db'
 import { createLogger } from '~/utils/logger'
+import { PREFERENCE_SERIALIZERS, PREFERENCE_DESERIALIZERS } from '~/utils/preferences'
+import type { PreferenceMap } from '~/utils/preferences'
+import { emitHook } from '~/utils/hooks'
 
 const log = createLogger('user-store')
 
@@ -34,22 +37,27 @@ export const useUserStore = defineStore('user', () => {
     loading.value = false
   }
 
-  async function savePreference(key: string, value: string) {
-    await db.preferences.put({ key, value })
+  async function savePreference<K extends keyof PreferenceMap>(key: K, value: PreferenceMap[K]): Promise<void> {
+    const serialized = PREFERENCE_SERIALIZERS[key](value)
+    await db.preferences.put({ key, value: serialized })
 
     if (key === 'employeeNumber') {
-      employeeNumber.value = value
+      employeeNumber.value = value as string
     }
     else if (key === 'retirementAge') {
-      retirementAge.value = Number(value)
+      retirementAge.value = value as number
     }
 
-    log.debug('Preference saved', { key, value })
+    log.debug('Preference saved', { key, value: serialized })
+    emitHook('user:preference:changed', key as string).catch((e: unknown) => {
+      log.warn('emitHook user:preference:changed failed', { error: String(e) })
+    })
   }
 
-  async function getPreference(key: string): Promise<string | null> {
-    const pref = await db.preferences.get(key)
-    return pref?.value ?? null
+  async function getPreference<K extends keyof PreferenceMap>(key: K): Promise<PreferenceMap[K] | null> {
+    const pref = await db.preferences.get(key as string)
+    if (!pref) return null
+    return PREFERENCE_DESERIALIZERS[key](pref.value)
   }
 
   async function clearPreferences() {

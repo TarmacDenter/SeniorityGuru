@@ -57,7 +57,7 @@ describe('usePwaInstall', () => {
   describe('showBanner', () => {
     it('is false when pwa-dismissed is true in store', async () => {
       mockUserStore.getPreference.mockImplementation(async (key: string) => {
-        if (key === 'pwa-dismissed') return 'true'
+        if (key === 'pwa-dismissed') return true
         return null
       })
 
@@ -133,7 +133,7 @@ describe('usePwaInstall', () => {
 
       await dismiss()
 
-      expect(mockUserStore.savePreference).toHaveBeenCalledWith('pwa-dismissed', 'true')
+      expect(mockUserStore.savePreference).toHaveBeenCalledWith('pwa-dismissed', true)
     })
 
     it('updates dismissed ref so showBanner reacts immediately', async () => {

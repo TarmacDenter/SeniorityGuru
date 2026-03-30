@@ -75,20 +75,12 @@ export function useSeniorityCore() {
       userStore.getPreference(PREF_KEY_ENABLED),
       userStore.getPreference(PREF_KEY_CONFIG),
     ]).then(([enabledVal, configVal]) => {
-      if (enabledVal === 'true') {
-        enabled.value = true
-      }
+      if (enabledVal) enabled.value = enabledVal
       if (configVal) {
-        try {
-          const parsed = JSON.parse(configVal)
-          if (parsed.birthDate) birthDate.value = parsed.birthDate
-          if (parsed.selectedBase) selectedBase.value = parsed.selectedBase
-          if (parsed.selectedSeat) selectedSeat.value = parsed.selectedSeat
-          if (parsed.selectedFleet) selectedFleet.value = parsed.selectedFleet
-        }
-        catch (e) {
-          log.warn('Failed to parse new-hire config from preferences', { error: String(e) })
-        }
+        if (configVal.birthDate) birthDate.value = configVal.birthDate
+        if (configVal.selectedBase) selectedBase.value = configVal.selectedBase
+        if (configVal.selectedSeat) selectedSeat.value = configVal.selectedSeat
+        if (configVal.selectedFleet) selectedFleet.value = configVal.selectedFleet
       }
       log.debug('New-hire preferences hydrated', {
         enabled: enabled.value,
@@ -103,18 +95,18 @@ export function useSeniorityCore() {
 
     watch(enabled, (val) => {
       log.info('New-hire mode toggled', { enabled: val })
-      userStore.savePreference(PREF_KEY_ENABLED, String(val)).catch((e: unknown) => {
+      userStore.savePreference(PREF_KEY_ENABLED, val).catch((e: unknown) => {
         log.error('Failed to persist newHireEnabled preference', { error: String(e) })
       })
     })
 
     watch([birthDate, selectedBase, selectedSeat, selectedFleet], () => {
-      userStore.savePreference(PREF_KEY_CONFIG, JSON.stringify({
+      userStore.savePreference(PREF_KEY_CONFIG, {
         birthDate: birthDate.value,
         selectedBase: selectedBase.value,
         selectedSeat: selectedSeat.value,
         selectedFleet: selectedFleet.value,
-      })).catch((e: unknown) => {
+      }).catch((e: unknown) => {
         log.error('Failed to persist growthConfig preference', { error: String(e) })
       })
     })
