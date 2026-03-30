@@ -1,5 +1,6 @@
 import { useUserStore } from '~/stores/user'
 import { useSeniorityStore } from '~/stores/seniority'
+import type { PreferenceMap } from '~/utils/preferences'
 
 export function useUser() {
   const store = useUserStore()
@@ -17,9 +18,9 @@ export function useUser() {
   })
 
   /**
-   * Persists a preference key/value pair to Dexie and updates the store.
+   * Persists a typed preference key/value pair to Dexie and updates the store.
    */
-  async function savePreference(key: string, value: string): Promise<{ error: Error | null }> {
+  async function savePreference<K extends keyof PreferenceMap>(key: K, value: PreferenceMap[K]): Promise<{ error: Error | null }> {
     try {
       await store.savePreference(key, value)
       return { error: null }

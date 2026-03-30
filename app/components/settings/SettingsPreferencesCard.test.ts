@@ -31,7 +31,7 @@ describe('SettingsPreferencesCard', () => {
     vm.state.mandatoryRetirementAge = 67
     await vm.onSave()
 
-    expect(mockSavePreference).toHaveBeenCalledWith('retirementAge', '67')
+    expect(mockSavePreference).toHaveBeenCalledWith('retirementAge', 67)
   })
 
   it('shows success toast on save', async () => {

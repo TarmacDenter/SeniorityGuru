@@ -29,7 +29,7 @@ export function usePwaInstall() {
       userStore.getPreference('pwa-snoozed-until'),
     ])
 
-    dismissed.value = dismissedVal === 'true'
+    dismissed.value = dismissedVal ?? false
     snoozedUntil.value = snoozeVal ? new Date(snoozeVal) : null
   })
 
@@ -60,7 +60,7 @@ export function usePwaInstall() {
   }
 
   async function dismiss() {
-    await userStore.savePreference('pwa-dismissed', 'true')
+    await userStore.savePreference('pwa-dismissed', true)
     dismissed.value = true
     log.info('PWA banner dismissed')
   }
