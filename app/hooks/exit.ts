@@ -8,5 +8,5 @@ defineHook('app:demo:exit', async () => {
 
   await seniorityStore.deleteDemoLists()
   await userStore.clearPreferences()
-  await navigateTo('/')
+  await navigateTo('/dashboard')
 })

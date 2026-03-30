@@ -57,6 +57,6 @@ describe('ON_DEMO_EXIT hook listener', () => {
 
     await emitHook('app:demo:exit')
 
-    expect(mockNavigateTo).toHaveBeenCalledWith('/')
+    expect(mockNavigateTo).toHaveBeenCalledWith('/dashboard')
   })
 })
