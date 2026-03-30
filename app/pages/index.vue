@@ -254,6 +254,19 @@ const demoWaveBuckets = computed(() => demoWaveData[demoQual.value])
 const config = useRuntimeConfig()
 const feedbackEmail = config.public.feedbackEmail as string
 const parserRequestMailto = `mailto:${feedbackEmail}?subject=${encodeURIComponent('SeniorityGuru: Airline Parser Request')}`
+
+const demoEntering = ref(false)
+
+async function enterDemo() {
+  demoEntering.value = true
+  try {
+    const { emitHook } = await import('~/utils/hooks')
+    await emitHook('app:demo:enter')
+  }
+  finally {
+    demoEntering.value = false
+  }
+}
 </script>
 
 <template>
@@ -281,6 +294,9 @@ const parserRequestMailto = `mailto:${feedbackEmail}?subject=${encodeURIComponen
           <div class="flex flex-wrap justify-center gap-3">
             <UButton to="/dashboard" size="xl" icon="i-lucide-arrow-right" trailing>
               Go to Dashboard
+            </UButton>
+            <UButton size="xl" variant="soft" icon="i-lucide-play" trailing :loading="demoEntering" @click="enterDemo">
+              Try Demo
             </UButton>
             <UButton size="xl" variant="ghost" icon="i-lucide-download" trailing @click="install">
               Install App
@@ -796,5 +812,29 @@ const parserRequestMailto = `mailto:${feedbackEmail}?subject=${encodeURIComponen
       </UContainer>
     </section>
 
+    <!-- Demo setup overlay interstitial -->
+    <Transition name="fade">
+      <div
+        v-if="demoEntering"
+        class="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-(--ui-bg)/90 backdrop-blur-sm"
+        aria-live="polite"
+        aria-label="Setting up your demo"
+      >
+        <UIcon name="i-lucide-loader-circle" class="size-12 text-primary animate-spin" />
+        <p class="text-lg font-medium">Setting up your demo…</p>
+        <p class="text-sm text-muted">Loading seniority data</p>
+      </div>
+    </Transition>
   </div>
 </template>
+
+<style scoped>
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+</style>

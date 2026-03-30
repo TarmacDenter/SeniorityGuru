@@ -21,6 +21,29 @@ describe('seniorityLists', () => {
     expect(list?.title).toBe('Jan 2025')
     expect(list?.effectiveDate).toBe('2025-01-01')
   })
+
+  it('stores and retrieves isDemo flag on a list', async () => {
+    const id = await db.seniorityLists.add({
+      title: 'Demo Jan 2025',
+      effectiveDate: '2025-01-01',
+      createdAt: '2025-01-15T00:00:00Z',
+      isDemo: true,
+    })
+
+    const list = await db.seniorityLists.get(id)
+    expect(list?.isDemo).toBe(true)
+  })
+
+  it('isDemo defaults to undefined when not set', async () => {
+    const id = await db.seniorityLists.add({
+      title: 'Regular list',
+      effectiveDate: '2025-01-01',
+      createdAt: '2025-01-15T00:00:00Z',
+    })
+
+    const list = await db.seniorityLists.get(id)
+    expect(list?.isDemo).toBeUndefined()
+  })
 })
 
 describe('seniorityEntries', () => {

@@ -3,6 +3,7 @@ import { db } from '~/utils/db'
 import { createLogger } from '~/utils/logger'
 import { PREFERENCE_SERIALIZERS, PREFERENCE_DESERIALIZERS } from '~/utils/preferences'
 import type { PreferenceMap } from '~/utils/preferences'
+import { emitHook } from '~/utils/hooks'
 
 const log = createLogger('user-store')
 
@@ -48,6 +49,9 @@ export const useUserStore = defineStore('user', () => {
     }
 
     log.debug('Preference saved', { key, value: serialized })
+    emitHook('user:preference:changed', key as string).catch((e: unknown) => {
+      log.warn('emitHook user:preference:changed failed', { error: String(e) })
+    })
   }
 
   async function getPreference<K extends keyof PreferenceMap>(key: K): Promise<PreferenceMap[K] | null> {

@@ -4,6 +4,7 @@ import { db } from '~/utils/db'
 import { localEntryToSeniorityEntry } from '~/utils/db-adapters'
 import type { SeniorityEntry } from '~/utils/schemas/seniority-list'
 import { createLogger } from '~/utils/logger'
+import { emitHook } from '~/utils/hooks'
 
 const log = createLogger('seniority-store')
 
@@ -74,13 +75,14 @@ export const useSeniorityStore = defineStore('seniority', () => {
   }
 
   async function addList(
-    listData: { title: string | null; effectiveDate: string },
+    listData: { title: string | null; effectiveDate: string; isDemo?: boolean },
     entries: Omit<LocalSeniorityEntry, 'id' | 'listId'>[],
   ): Promise<number> {
     const listId = await db.seniorityLists.add({
       title: listData.title,
       effectiveDate: listData.effectiveDate,
       createdAt: new Date().toISOString(),
+      ...(listData.isDemo ? { isDemo: true } : {}),
     })
 
     const localEntries: LocalSeniorityEntry[] = entries.map(e => ({ ...e, listId }))
@@ -89,6 +91,9 @@ export const useSeniorityStore = defineStore('seniority', () => {
     lists.value.push({ id: listId, ...listData, createdAt: new Date().toISOString() })
     entryCache.clear()
     log.info('List added', { listId, entryCount: entries.length })
+    emitHook('list:added', listId).catch((e: unknown) => {
+      log.warn('emitHook list:added failed', { error: String(e) })
+    })
     return listId
   }
 
@@ -124,6 +129,9 @@ export const useSeniorityStore = defineStore('seniority', () => {
       currentListId.value = null
     }
     log.info('List deleted from store', { listId: id })
+    emitHook('list:deleted', id).catch((e: unknown) => {
+      log.warn('emitHook list:deleted failed', { error: String(e) })
+    })
   }
 
   return {

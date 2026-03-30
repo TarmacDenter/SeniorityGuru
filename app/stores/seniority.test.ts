@@ -294,6 +294,24 @@ describe('seniority store (Dexie)', () => {
       expect(store.lists[0]!.title).toBe('March List')
     })
 
+    it('passes isDemo flag to Dexie when provided', async () => {
+      mockDb.seniorityLists.add.mockResolvedValue(99)
+      mockDb.seniorityEntries.bulkAdd.mockResolvedValue(undefined)
+
+      const { useSeniorityStore } = await import('./seniority')
+      const store = useSeniorityStore()
+      store.clearStore()
+
+      await store.addList(
+        { title: 'Demo List', effectiveDate: '2026-01-01', isDemo: true },
+        [],
+      )
+
+      expect(mockDb.seniorityLists.add).toHaveBeenCalledWith(
+        expect.objectContaining({ isDemo: true }),
+      )
+    })
+
     it('does not change currentListId or entries', async () => {
       mockDb.seniorityLists.add.mockResolvedValue(42)
       mockDb.seniorityEntries.bulkAdd.mockResolvedValue(undefined)
