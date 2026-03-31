@@ -64,9 +64,8 @@ defineExpose({ filterOptions, filteredData, activeFilters })
         />
       </UFormField>
     </div>
-    <UInput
+    <AppSearchInput
       v-model="table.globalFilter.value"
-      icon="i-lucide-search"
       :placeholder="searchPlaceholder"
       class="max-w-sm"
     />

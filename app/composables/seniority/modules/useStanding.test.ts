@@ -81,9 +81,10 @@ describe('useStanding', () => {
   })
 
   it('computes statCards with total pilots, retirements, base rank, and lists uploaded', () => {
-    const currentYear = new Date().getFullYear()
+    // Use a date 6 months from today so it reliably falls within the rolling 12-month window
+    const sixMonthsFromNow = new Date(Date.now() + 180 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
     mockStore.entries = [
-      makeEntry({ seniority_number: 1, employee_number: 'E1', base: 'JFK', seat: 'CA', fleet: '737', retire_date: `${currentYear}-06-15` }),
+      makeEntry({ seniority_number: 1, employee_number: 'E1', base: 'JFK', seat: 'CA', fleet: '737', retire_date: sixMonthsFromNow }),
       makeEntry({ seniority_number: 2, employee_number: 'E2', base: 'JFK', seat: 'CA', fleet: '737', retire_date: '2050-01-01' }),
       makeEntry({ seniority_number: 3, employee_number: 'E3', base: 'LAX', seat: 'FO', fleet: '777', retire_date: '2055-01-01' }),
     ]
@@ -99,8 +100,8 @@ describe('useStanding', () => {
     expect(cards[0]!.label).toBe('Total Pilots')
     expect(cards[0]!.value).toBe((3).toLocaleString())
 
-    // Retirements This Year — E1 retires this year
-    expect(cards[1]!.label).toBe('Retirements This Year')
+    // Retirements This Year — E1 retires within next 12 months
+    expect(cards[1]!.label).toBe('Retirements (Next 12 mo.)')
     expect(cards[1]!.value).toBe((1).toLocaleString())
     // E1 (seniority_number=1) is senior to E2 (seniority_number=2)
     expect(cards[1]!.trend).toBe(`${(1).toLocaleString()} senior to you`)

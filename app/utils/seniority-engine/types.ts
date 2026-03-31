@@ -237,6 +237,7 @@ export interface UpcomingRetirementRow {
 }
 
 export interface SeniorityLens {
+  retirementsThisYear(): number
   standing(): StandingResult | null
   trajectory(scenario?: Scenario): TrajectoryResult | null
   compareTrajectories(scenarioA: Scenario, scenarioB: Scenario): ComparativeTrajectoryResult | null

@@ -63,24 +63,14 @@ function updateOption<K extends keyof MappingOptions>(key: K, value: MappingOpti
     <div class="space-y-4">
       <div class="flex items-center gap-4">
         <span class="text-sm font-medium">Name columns</span>
-        <div class="inline-flex">
-          <UButton
-            size="xs"
-            :variant="mappingOptions.nameMode === 'single' ? 'solid' : 'ghost'"
-            class="rounded-r-none"
-            @click="updateOption('nameMode', 'single')"
-          >
-            Single column
-          </UButton>
-          <UButton
-            size="xs"
-            :variant="mappingOptions.nameMode === 'separate' ? 'solid' : 'ghost'"
-            class="rounded-l-none"
-            @click="updateOption('nameMode', 'separate')"
-          >
-            First & Last
-          </UButton>
-        </div>
+        <AppButtonToggle
+          :model-value="mappingOptions.nameMode"
+          :options="[
+            { label: 'Single column', value: 'single' },
+            { label: 'First & Last', value: 'separate' },
+          ]"
+          @update:model-value="updateOption('nameMode', $event as 'single' | 'separate')"
+        />
       </div>
 
       <div v-if="mappingOptions.nameMode === 'single'" class="max-w-sm">
@@ -126,24 +116,14 @@ function updateOption<K extends keyof MappingOptions>(key: K, value: MappingOpti
     <div class="space-y-4">
       <div class="flex items-center gap-4">
         <span class="text-sm font-medium">Retirement date <span class="text-error">*</span></span>
-        <div class="inline-flex">
-          <UButton
-            size="xs"
-            :variant="mappingOptions.retireMode === 'direct' ? 'solid' : 'ghost'"
-            class="rounded-r-none"
-            @click="updateOption('retireMode', 'direct')"
-          >
-            Date column
-          </UButton>
-          <UButton
-            size="xs"
-            :variant="mappingOptions.retireMode === 'dob' ? 'solid' : 'ghost'"
-            class="rounded-l-none"
-            @click="updateOption('retireMode', 'dob')"
-          >
-            From DOB
-          </UButton>
-        </div>
+        <AppButtonToggle
+          :model-value="mappingOptions.retireMode"
+          :options="[
+            { label: 'Date column', value: 'direct' },
+            { label: 'From DOB', value: 'dob' },
+          ]"
+          @update:model-value="updateOption('retireMode', $event as 'direct' | 'dob')"
+        />
       </div>
 
       <div v-if="mappingOptions.retireMode === 'direct'" class="max-w-sm">

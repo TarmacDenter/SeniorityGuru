@@ -39,6 +39,7 @@
  * - {@link addYearsISO} — offset a date by N years
  * - {@link isRetiredBy} — has a pilot retired by a given date?
  * - {@link retiresInYear} — does a retire date fall in year X?
+ * - {@link retiresWithinNextYear} — does a retire date fall in the next 12 months from a given date?
  * - {@link extractYear} — numeric year from ISO string (pure string op)
  * - {@link currentYear} — current calendar year as number
  * - {@link deriveAge} — approximate age from retire date + mandatory age
@@ -62,7 +63,7 @@ export { formatDate, formatMonthYear, formatYear, todayISO } from './format'
 // ── Math ────────────────────────────────────────────────────────────────
 export {
   diffYears, deriveAge, computeYOS, computeRetireDate,
-  isRetiredBy, extractYear, addYearsISO, retiresInYear, currentYear,
+  isRetiredBy, extractYear, addYearsISO, retiresInYear, retiresWithinNextYear, currentYear,
 } from './math'
 
 // ── Parsing ─────────────────────────────────────────────────────────────

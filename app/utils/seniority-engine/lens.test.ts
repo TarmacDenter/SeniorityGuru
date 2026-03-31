@@ -38,6 +38,19 @@ describe('createLens', () => {
   })
 })
 
+describe('retirementsThisYear()', () => {
+  it('counts retirements in the next 12 months without requiring an anchor', () => {
+    const noAnchor = createLens(snapshot)
+    // Today = 2026-06-15; E2 retires 2026-12-01 → within next 12 months
+    expect(noAnchor.retirementsThisYear()).toBe(1)
+  })
+
+  it('counts retirements in the next 12 months with anchor (same result)', () => {
+    const lens = createLens(snapshot, anchor)
+    expect(lens.retirementsThisYear()).toBe(1)
+  })
+})
+
 describe('standing()', () => {
   const lens = createLens(snapshot, anchor)
 

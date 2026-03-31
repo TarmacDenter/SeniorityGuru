@@ -118,8 +118,8 @@ export function useStanding(): {
         icon: 'i-lucide-users',
       },
       {
-        label: 'Retirements This Year',
-        value: formatNumber(standing?.retirementsThisYear ?? 0),
+        label: 'Retirements (Next 12 mo.)',
+        value: formatNumber(lens.value?.retirementsThisYear() ?? 0),
         trend: entry && standing
           ? `${formatNumber(standing.retirementsThisYearSeniorToAnchor)} senior to you`
           : undefined,

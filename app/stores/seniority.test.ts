@@ -111,8 +111,25 @@ describe('seniority store (Dexie)', () => {
       expect(mockDb.seniorityLists.orderBy).toHaveBeenCalledWith('effectiveDate')
       expect(mockDb.seniorityLists.reverse).toHaveBeenCalled()
       expect(store.lists).toHaveLength(2)
-      expect(store.lists[0]!.id).toBe(1)
-      expect(store.lists[1]!.id).toBe(2)
+      // mockList2 has the later effectiveDate (2026-02-15) so it sorts first
+      expect(store.lists[0]!.id).toBe(2)
+      expect(store.lists[1]!.id).toBe(1)
+    })
+
+    it('breaks effectiveDate ties by most recently uploaded (higher id) first', async () => {
+      const sameDate1: LocalSeniorityList = { id: 3, title: null, effectiveDate: '2026-03-01', createdAt: '2026-03-01T08:00:00Z' }
+      const sameDate2: LocalSeniorityList = { id: 7, title: null, effectiveDate: '2026-03-01', createdAt: '2026-03-01T10:00:00Z' }
+      mockDb.seniorityLists.toArray.mockResolvedValue([sameDate1, sameDate2])
+
+      const { useSeniorityStore } = await import('./seniority')
+      const store = useSeniorityStore()
+      store.clearStore()
+
+      await store.fetchLists()
+
+      // id=7 was uploaded later → should appear first
+      expect(store.lists[0]!.id).toBe(7)
+      expect(store.lists[1]!.id).toBe(3)
     })
 
     it('sets listsError and clears lists on failure', async () => {

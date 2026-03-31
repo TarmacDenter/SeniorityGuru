@@ -131,13 +131,11 @@ const tableData = computed<SeniorityRow[]>(() => {
   <div class="flex flex-col h-full min-h-0 min-w-0">
     <!-- Search — pinned at top, never scrolls away -->
     <div class="shrink-0 border-b border-default">
-      <UInput v-model="globalFilter" :fixed=true icon="i-lucide-search"
-        placeholder="Search by name, employee #, base..." class="w-full text-xs sm:text-sm my-1 md:mb-3">
-        <template v-if="globalFilter" #trailing>
-          <UButton icon="i-lucide-x" variant="link" color="neutral" size="xs" aria-label="Clear search"
-            @click="globalFilter = ''" />
-        </template>
-      </UInput>
+      <AppSearchInput
+        v-model="globalFilter"
+        placeholder="Search by name, employee #, base..."
+        class="w-full text-xs sm:text-sm my-1 md:mb-3"
+      />
     </div>
 
     <!-- Scrollable content area -->

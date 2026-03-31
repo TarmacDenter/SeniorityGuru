@@ -39,6 +39,13 @@ export function retiresInYear(retireDate: string, year: number): boolean {
   return extractYear(retireDate) === year
 }
 
+/** True if retire date falls after fromDate and within 12 months of it. */
+export function retiresWithinNextYear(retireDate: string, fromDate: string): boolean {
+  const retire = dayjs.utc(retireDate)
+  const from = dayjs.utc(fromDate)
+  return retire.isAfter(from, 'day') && !retire.isAfter(from.add(1, 'year'), 'day')
+}
+
 /** Current calendar year as a number. */
 export function currentYear(): number {
   return dayjs().year()

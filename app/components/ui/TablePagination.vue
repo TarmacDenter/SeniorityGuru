@@ -70,7 +70,7 @@ function handleGotoKeydown(e: KeyboardEvent) {
           size="xs"
           :min="1"
           :max="pageCount"
-          class="w-14 text-center"
+          class="w-14"
           :ui="{ base: 'text-center' }"
           @update:model-value="(v: string | number) => gotoPageInput = v ? Number(v) : null"
           @blur="commitGotoPage"

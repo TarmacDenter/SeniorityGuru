@@ -41,12 +41,7 @@ async function onSave() {
 </script>
 
 <template>
-  <UCard
-    variant="outline"
-    :ui="{
-      root: 'border-l-4 border-l-(--ui-primary)',
-    }"
-  >
+  <UCard variant="accent">
     <div class="flex items-start gap-4">
       <UIcon name="i-lucide-id-card" class="size-8 text-primary shrink-0 mt-0.5" />
       <div class="flex-1 min-w-0">
@@ -58,10 +53,12 @@ async function onSave() {
           <UInput
             v-model="employeeNumber"
             placeholder="e.g. 12345"
-            :color="validationError ? 'error' : undefined"
+            :color="validationError ? 'error' : 'primary'"
+            :highlight="!!validationError"
           />
           <UButton
             type="submit"
+            size="sm"
             color="primary"
             :loading="loading"
             label="Save"

@@ -112,21 +112,14 @@ const horizonOptions = [
 <template>
   <div class="space-y-4">
     <!-- Empty state: no list loaded -->
-    <div
+    <UEmpty
       v-if="!hasData"
-      class="flex flex-col items-center justify-center py-24 gap-6 text-center"
-    >
-      <UIcon name="i-lucide-calendar-x" class="size-14 text-muted" />
-      <div class="space-y-2">
-        <h2 class="text-xl font-semibold">No seniority list loaded</h2>
-        <p class="text-muted max-w-sm">
-          Import your airline's seniority list to see upcoming retirements.
-        </p>
-      </div>
-      <UButton to="/seniority/upload" icon="i-lucide-upload">
-        Import a list
-      </UButton>
-    </div>
+      icon="i-lucide-calendar-x"
+      title="No seniority list loaded"
+      description="Import your airline's seniority list to see upcoming retirements."
+      :actions="[{ label: 'Import a list', icon: 'i-lucide-upload', to: '/seniority/upload' }]"
+      class="py-24"
+    />
 
     <template v-else>
       <!-- Filters row -->

@@ -29,17 +29,17 @@ async function clearAll() {
       </p>
 
       <div v-if="!confirm">
-        <UButton color="error" variant="outline" @click="confirm = true">
+        <UButton size="sm" color="error" variant="outline" @click="confirm = true">
           Clear all data
         </UButton>
       </div>
 
       <div v-else class="flex items-center gap-3">
         <p class="text-sm font-medium text-error">Are you sure?</p>
-        <UButton color="error" :loading="loading" @click="clearAll">
+        <UButton size="sm" color="error" :loading="loading" @click="clearAll">
           Yes, clear everything
         </UButton>
-        <UButton variant="ghost" @click="confirm = false">
+        <UButton size="sm" variant="ghost" color="neutral" @click="confirm = false">
           Cancel
         </UButton>
       </div>

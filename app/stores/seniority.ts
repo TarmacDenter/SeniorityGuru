@@ -42,7 +42,11 @@ export const useSeniorityStore = defineStore('seniority', () => {
     listsError.value = null
 
     try {
-      lists.value = await db.seniorityLists.orderBy('effectiveDate').reverse().toArray()
+      const raw = await db.seniorityLists.orderBy('effectiveDate').reverse().toArray()
+      lists.value = raw.sort((a, b) => {
+        const dateCmp = b.effectiveDate.localeCompare(a.effectiveDate)
+        return dateCmp !== 0 ? dateCmp : b.id! - a.id!
+      })
       log.debug('Lists fetched', { count: lists.value.length })
     }
     catch (e: unknown) {
@@ -122,6 +126,10 @@ export const useSeniorityStore = defineStore('seniority', () => {
     const idx = lists.value.findIndex(l => l.id === id)
     if (idx !== -1) {
       lists.value[idx] = { ...lists.value[idx]!, ...updates }
+      lists.value = [...lists.value].sort((a, b) => {
+        const dateCmp = b.effectiveDate.localeCompare(a.effectiveDate)
+        return dateCmp !== 0 ? dateCmp : b.id! - a.id!
+      })
     }
     log.info('List updated in store', { listId: id })
   }

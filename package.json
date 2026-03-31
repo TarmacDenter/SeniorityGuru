@@ -31,7 +31,7 @@
     "@tanstack/vue-table": "^8.21.3",
     "@vercel/analytics": "^2.0.1",
     "@vite-pwa/nuxt": "^1.1.1",
-    "@vueuse/core": "^10.11.1",
+    "@vueuse/core": "^13.0.0",
     "better-sqlite3": "^12.8.0",
     "chart.js": "^4.5.1",
     "dayjs": "^1.11.20",

@@ -42,7 +42,7 @@ import {
   computeQualComposition,
   findMostJuniorCA,
 } from '~/utils/qual-analytics'
-import { todayISO, isRetiredBy, retiresInYear, addYearsISO, currentYear } from '~/utils/date'
+import { todayISO, isRetiredBy, retiresWithinNextYear, addYearsISO } from '~/utils/date'
 
 export function createLens(
   snapshot: SenioritySnapshot,
@@ -55,23 +55,24 @@ export function createLens(
     ? snapshot.byEmployeeNumber.get(resolvedAnchor.employeeNumber) ?? null
     : null
 
+  function retirementsThisYear(): number {
+    const today = todayISO()
+    return entries.filter(e => !!e.retire_date && retiresWithinNextYear(e.retire_date, today)).length
+  }
+
   function standing(): StandingResult | null {
     if (!resolvedAnchor) return null
     const { seniorityNumber } = resolvedAnchor
     const todayStr = todayISO()
-    const thisYear = currentYear()
     const total = entries.length
 
     const rank = computeRank(entries, seniorityNumber)
     const retiredAbove = countRetiredAbove(entries, seniorityNumber, todayStr)
     const adjustedRank = rank - retiredAbove
 
-    const retiringThisYear = entries.filter(e => {
-      if (!e.retire_date) return false
-      return retiresInYear(e.retire_date, thisYear)
-    })
-    const retirementsThisYear = retiringThisYear.length
-    const retirementsThisYearSeniorToAnchor = retiringThisYear.filter(
+    const retiringNextYear = entries.filter(e => !!e.retire_date && retiresWithinNextYear(e.retire_date, todayStr))
+    const retirementsThisYearCount = retirementsThisYear()
+    const retirementsThisYearSeniorToAnchor = retiringNextYear.filter(
       e => e.seniority_number < seniorityNumber,
     ).length
 
@@ -116,7 +117,7 @@ export function createLens(
       percentile: computePercentile(rank, total),
       adjustedPercentile: computePercentile(adjustedRank, adjustedTotal),
       retiredAbove,
-      retirementsThisYear,
+      retirementsThisYear: retirementsThisYearCount,
       retirementsThisYearSeniorToAnchor,
       cellBreakdown,
     }
@@ -254,6 +255,7 @@ export function createLens(
   }
 
   return {
+    retirementsThisYear,
     standing: memoizeLast(standing, () => 'standing'),
     trajectory: memoizeLast(trajectory),
     compareTrajectories: memoizeLast(compareTrajectories),

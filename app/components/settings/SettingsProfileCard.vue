@@ -32,7 +32,7 @@ async function onSave() {
       <UFormField label="Employee Number" name="employeeNumber">
         <UInput v-model="employeeNumberInput" placeholder="e.g. 12345" class="w-full" />
       </UFormField>
-      <UButton type="submit" :loading="loading">Save profile</UButton>
+      <UButton type="submit" size="sm" :loading="loading">Save profile</UButton>
     </UForm>
   </UCard>
 </template>

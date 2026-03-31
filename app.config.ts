@@ -23,6 +23,14 @@ export default defineAppConfig({
         body: 'p-3 sm:p-6',
         header: 'p-3 sm:px-6',
       },
+      variants: {
+        variant: {
+          // Left-border accent for highlight cards (e.g. rank card, employee number prompt)
+          accent: {
+            root: 'bg-elevated/50 ring ring-default divide-y divide-default border-l-4 border-l-primary',
+          },
+        },
+      },
     },
     tabs: {
       slots: {
