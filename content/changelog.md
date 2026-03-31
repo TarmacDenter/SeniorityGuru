@@ -3,6 +3,10 @@ title: "What's New"
 latestDate: "2026-03-26"
 ---
 
+## March 30, 2026
+
+- Added a demo mode with synthetic data
+
 ## March 26, 2026
 
 - Added JetBlue Airways seniority list support

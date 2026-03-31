@@ -48,7 +48,7 @@ describe('useStanding', () => {
     expect(rankCard.value.hireDate).toBe('2012-03-01')
     // adjustedRank = rank - retiredAbove; rank=2 (1 entry < sen#2), retiredAbove=0
     expect(rankCard.value.adjustedSeniority).toBe(2)
-    // percentile = (adjustedRank / total) * 100 rounded to 1 decimal
+    // percentile = ((adjustedTotal - adjustedRank + 1) / adjustedTotal) * 100 rounded to 1 decimal
     expect(rankCard.value.percentile).toBe(Math.round((2 / 3) * 100 * 10) / 10)
   })
 

@@ -106,8 +106,7 @@ export function createLens(
       })
     }
 
-    const totalRetired = entries.filter(e => e.retire_date && isRetiredBy(e.retire_date, todayStr)).length
-    const adjustedTotal = total - totalRetired
+    const adjustedTotal = cellBreakdown.reduce((sum, cell) => sum + cell.adjustedTotal, 0)
 
     return {
       rank,
