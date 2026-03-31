@@ -104,7 +104,7 @@ semantic-release runs automatically on every push to `main` and:
 | Gate | Where | Runs |
 |---|---|---|
 | commitlint | Local (commit-msg hook) | Conventional Commits format |
-| typecheck + tests | Local (pre-push hook) | `npm run typecheck && npm test` |
+| typecheck + tests | Local (pre-push hook) | `pnpm typecheck && pnpm test` |
 | CI (typecheck + tests) | GitHub (push to `feature/*`, `hotfix/*`, PRs to `main`) | Same as pre-push |
 | semantic-release | GitHub (push to `main`) | Version bump + changelog + tag |
 

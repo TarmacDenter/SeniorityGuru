@@ -2,7 +2,7 @@
 
 A local-first PWA for airline pilots to track and project their seniority standing. Stack: Nuxt 4 + Dexie (IndexedDB) + Vercel. Read `package.json` for commands, `nuxt.config.ts` for configuration.
 
-**Runtime:** Always use `node`/`npm`, NOT `bun`.
+**Runtime:** Always use `node`/`pnpm`, NOT `bun` or `npm`.
 
 ---
 
@@ -14,7 +14,7 @@ A local-first PWA for airline pilots to track and project their seniority standi
 - **Deep module composables** — pages and components call composables only; stores are internal infrastructure. Pages and components never import `db` or `use*Store` directly.
 - **Stores own all `db` access** — only Pinia stores may import `db` from `~/utils/db`. Composables call store methods, never `db.*` directly. This ensures Dexie writes always update reactive store state, so downstream computeds and UI re-render automatically.
 - **No cross-store dependencies** — stores must never import other stores. When an operation spans multiple stores (e.g., clearing all data), use a higher-order composable that coordinates the stores. A store that imports another store is a signal that logic belongs in a composable.
-- **No Docker** — there is no local database to run. `npm install && npm run dev` is the full setup.
+- **No Docker** — there is no local database to run. `pnpm install && pnpm dev` is the full setup.
 
 ---
 
@@ -77,7 +77,7 @@ const pref = await db.preferences.get('employeeNumber')
   1. `app.config.ts` `ui.colors.primary: 'sky'` — drives Tailwind utility class generation (`bg-primary`, etc.)
   2. `--ui-primary` in `main.css` — drives `text-primary`, `border-primary` semantic tokens
   3. `--ui-color-primary-*` (all 11 shades) in `main.css` — drives opacity variants (`bg-primary/10`), palette display, and component internals. **`app.config.ts` cannot update these** — must be set explicitly in `main.css` section 3
-- **Changing primary color**: update all three locations. `main.css` changes hot-reload instantly; `app.config.ts` requires `rm -rf .nuxt && npm run dev`
+- **Changing primary color**: update all three locations. `main.css` changes hot-reload instantly; `app.config.ts` requires `rm -rf .nuxt && pnpm dev`
 - `/dev/theme` — design token playground at `localhost:3000/dev/theme` (dev only)
 - When working with `UTable`, the `ui.tr` prop only accepts static class strings, not functions
 - **Always use `v-model:` for stateful props** on Nuxt UI components (e.g., `v-model:pagination`, `v-model:sorting`). Using `:prop` (one-way binding) means the UI won't update when you mutate the ref
@@ -95,9 +95,9 @@ const pref = await db.preferences.get('employeeNumber')
 **All new features and bug fixes require tests.** Before finishing any feature or declaring work done, all three gates must pass:
 
 ```bash
-npm run lint       # zero errors (warnings OK)
-npm run typecheck  # zero errors
-npm test           # all tests pass
+pnpm lint       # zero errors (warnings OK)
+pnpm typecheck  # zero errors
+pnpm test       # all tests pass
 ```
 
 Run all three. Do not claim completion without fresh output from each.
@@ -118,7 +118,7 @@ Run all three. Do not claim completion without fresh output from each.
 - `navigateTo` is a Nuxt auto-import — mock it with `mockNuxtImport`, not `vi.mock`
 - Mock `~/utils/db` in store/composable tests — do not use `fake-indexeddb` in the nuxt vitest environment (use it only in `@vitest-environment node` db unit tests)
 
-**E2E:** Playwright (`e2e/` directory). No auth required — just run `npm run dev` and `npm run test:e2e`.
+**E2E:** Playwright (`e2e/` directory). No auth required — just run `pnpm dev` and `pnpm test:e2e`.
 
 ---
 

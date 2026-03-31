@@ -33,14 +33,28 @@ function toggleSort(key: SortKey) {
 
 // ── Qual options ─────────────────────────────────────────────────────────────
 const availableBases = computed(() =>
-  [...new Set(entries.value.map(e => e.base).filter(Boolean))].sort(),
+  [...new Set(entries.value.map(e => e.base).filter(Boolean) as string[])].sort(),
 )
 const availableSeats = computed(() =>
-  [...new Set(entries.value.map(e => e.seat).filter(Boolean))].sort(),
+  [...new Set(entries.value.map(e => e.seat).filter(Boolean) as string[])].sort(),
 )
 const availableFleets = computed(() =>
-  [...new Set(entries.value.map(e => e.fleet).filter(Boolean))].sort(),
+  [...new Set(entries.value.map(e => e.fleet).filter(Boolean) as string[])].sort(),
 )
+
+type SelectItem = { label: string; value: string | null }
+const baseItems = computed<SelectItem[]>(() => [
+  { label: 'All bases', value: null },
+  ...availableBases.value.map(b => ({ label: b, value: b })),
+])
+const seatItems = computed<SelectItem[]>(() => [
+  { label: 'All seats', value: null },
+  ...availableSeats.value.map(s => ({ label: s, value: s })),
+])
+const fleetItems = computed<SelectItem[]>(() => [
+  { label: 'All fleets', value: null },
+  ...availableFleets.value.map(f => ({ label: f, value: f })),
+])
 
 // ── Rows ─────────────────────────────────────────────────────────────────────
 const rows = computed((): UpcomingRetirementRow[] => {
@@ -138,7 +152,7 @@ const horizonOptions = [
         <div class="flex items-center gap-2 flex-wrap">
           <USelectMenu
             v-model="filterBase"
-            :items="[{ label: 'All bases', value: null }, ...availableBases.map(b => ({ label: b, value: b }))]"
+            :items="baseItems"
             value-key="value"
             label-key="label"
             placeholder="Base"
@@ -147,7 +161,7 @@ const horizonOptions = [
           />
           <USelectMenu
             v-model="filterSeat"
-            :items="[{ label: 'All seats', value: null }, ...availableSeats.map(s => ({ label: s, value: s }))]"
+            :items="seatItems"
             value-key="value"
             label-key="label"
             placeholder="Seat"
@@ -156,7 +170,7 @@ const horizonOptions = [
           />
           <USelectMenu
             v-model="filterFleet"
-            :items="[{ label: 'All fleets', value: null }, ...availableFleets.map(f => ({ label: f, value: f }))]"
+            :items="fleetItems"
             value-key="value"
             label-key="label"
             placeholder="Fleet"

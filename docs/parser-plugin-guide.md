@@ -642,7 +642,7 @@ describe('valuejetParser.parse', () => {
 Run the tests:
 
 ```bash
-npm test -- app/utils/parsers/valuejet.test.ts
+pnpm test app/utils/parsers/valuejet.test.ts
 ```
 
 ---
@@ -676,7 +676,7 @@ No upload pipeline code, no page code, and no component code is modified.
 - [ ] Register in `app/utils/parsers/registry.ts` (before `genericParser`)
 - [ ] Create `app/utils/parsers/<airline>.test.ts` with `@vitest-environment node`
 - [ ] Test: header detection, metadata extraction, column decomposition, date normalization, blank row handling, missing header fallback, **alias resilience**
-- [ ] Run all three gates: `npm run lint && npm run typecheck && npm test`
+- [ ] Run all three gates: `pnpm lint && pnpm typecheck && pnpm test`
 
 ---
 

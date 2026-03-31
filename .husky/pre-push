@@ -6,6 +6,6 @@ while read local_ref local_sha remote_ref remote_sha; do
 done
 
 mkdir -p "${TMPDIR:-/tmp}"
-npm run lint
-npm run typecheck
-npm test
+pnpm lint
+pnpm typecheck
+pnpm test

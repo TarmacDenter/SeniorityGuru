@@ -7,8 +7,8 @@ Thank you for your interest in contributing! This guide focuses on adding airlin
 SeniorityGuru is a **local-first PWA** for airline pilots to track seniority standing. There is no server, no authentication, and no accounts -- all data lives in the user's browser via IndexedDB.
 
 - **Stack:** Nuxt 4 + Dexie.js (IndexedDB) + Vercel
-- **Runtime:** Node.js / npm (not Bun)
-- **Setup:** `npm install && npm run dev` -- no Docker, no database
+- **Runtime:** Node.js / pnpm (not npm or Bun)
+- **Setup:** `pnpm install && pnpm dev` -- no Docker, no database
 
 See [CLAUDE.md](CLAUDE.md) for full architecture rules and code conventions.
 
@@ -184,9 +184,9 @@ Test cases to cover:
 All three must pass with zero errors before submitting:
 
 ```bash
-npm run lint       # ESLint -- zero errors
-npm run typecheck  # TypeScript strict mode -- zero errors
-npm test           # Vitest -- all tests pass
+pnpm lint       # ESLint -- zero errors
+pnpm typecheck  # TypeScript strict mode -- zero errors
+pnpm test       # Vitest -- all tests pass
 ```
 
 ## Code Conventions
@@ -212,5 +212,5 @@ See [CLAUDE.md](CLAUDE.md) for the full set of architecture rules.
 - [ ] Parser implements `PreParser` interface
 - [ ] Registered in `registry.ts` (before `genericParser`)
 - [ ] Co-located test file with fabricated data
-- [ ] All quality gates pass (`npm run lint && npm run typecheck && npm test`)
+- [ ] All quality gates pass (`pnpm lint && pnpm typecheck && pnpm test`)
 - [ ] No real pilot data anywhere in the code

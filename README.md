@@ -124,8 +124,8 @@ e2e/                        # Playwright end-to-end specs
 ## Setup
 
 ```bash
-npm install
-npm run dev    # http://localhost:3000
+pnpm install
+pnpm dev    # http://localhost:3000
 ```
 
 No environment variables required for local development.
@@ -136,12 +136,12 @@ No environment variables required for local development.
 
 | Command | What it does |
 |---|---|
-| `npm run dev` | Dev server |
-| `npm test` | Vitest (unit + component) |
-| `npm run typecheck` | vue-tsc |
-| `npm run lint` | ESLint |
-| `npm run build` | Production build |
-| `npm run test:e2e` | Playwright (requires dev server running) |
+| `pnpm dev` | Dev server |
+| `pnpm test` | Vitest (unit + component) |
+| `pnpm typecheck` | vue-tsc |
+| `pnpm lint` | ESLint |
+| `pnpm build` | Production build |
+| `pnpm test:e2e` | Playwright (requires dev server running) |
 
 ---
 
@@ -156,7 +156,7 @@ Tests live next to the files they test (co-location). Three environments:
 All features and bug fixes require tests. Before merging:
 
 ```bash
-npm run lint && npm run typecheck && npm test
+pnpm lint && pnpm typecheck && pnpm test
 ```
 
 ---
