@@ -106,28 +106,15 @@ onMounted(async () => {
     <template #header>
       <SeniorityNavbar title="Dashboard" :description="navbarDescription" />
 
-      <UDashboardToolbar class="hidden sm:flex">
+      <UDashboardToolbar class="hidden sm:flex overflow-y-hidden">
         <UTabs v-model="activeTab" :items="tabs" :content="false" variant="link" />
-
-        <template #right>
-          <div class="flex items-center gap-2">
-            <USelectMenu v-model="selectedListId" :items="listOptions" value-key="id"
-              label-key="label" placeholder="Select list..." class="w-48" size="sm" />
-            <UBadge v-if="selectedList?.isDemo && showDemoBadge" color="info" variant="subtle" size="sm">
-              <UIcon name="i-lucide-flask-conical" class="size-3 mr-1" />
-              Demo
-            </UBadge>
-            <UBadge v-if="isHistorical" color="warning" variant="subtle" size="sm">
-              <UIcon name="i-lucide-alert-triangle" class="size-3 mr-1" />
-              Historical
-            </UBadge>
-          </div>
-        </template>
       </UDashboardToolbar>
 
       <!-- Mobile-only: scrollable tab chip row -->
       <DashboardTabChips v-model="activeTab" :tabs="tabs" />
-      <div v-if="listOptions.length > 1" class="sm:hidden flex items-center gap-2 px-3 py-1.5 border-b border-(--ui-border)">
+
+      <!-- List selector — all breakpoints -->
+      <div v-if="lists.length > 0" class="flex items-center gap-2 px-3 py-1.5 border-b border-(--ui-border)">
         <USelectMenu
           v-model="selectedListId"
           :items="listOptions"
@@ -135,8 +122,12 @@ onMounted(async () => {
           label-key="label"
           placeholder="Select list..."
           size="sm"
-          class="flex-1"
+          class="flex-1 sm:flex-none sm:w-56"
         />
+        <UBadge v-if="selectedList?.isDemo && showDemoBadge" color="info" variant="subtle" size="sm">
+          <UIcon name="i-lucide-flask-conical" class="size-3 mr-1" />
+          Demo
+        </UBadge>
         <UBadge v-if="isHistorical" color="warning" variant="subtle" size="sm">
           <UIcon name="i-lucide-alert-triangle" class="size-3 mr-1" />
           Historical

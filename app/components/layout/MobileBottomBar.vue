@@ -1,6 +1,6 @@
 <script setup lang="ts">
-const route = useRoute()
-const { hasUnseenChanges } = useChangelog()
+const route = useRoute();
+const { hasUnseenChanges } = useChangelog();
 
 const navItems = [
   { label: 'Dashboard', icon: 'i-lucide-layout-dashboard', to: '/dashboard' },
@@ -8,18 +8,15 @@ const navItems = [
   { label: 'Upload', icon: 'i-lucide-upload', to: '/seniority/upload' },
   { label: 'Compare', icon: 'i-lucide-git-compare-arrows', to: '/seniority/compare' },
   { label: 'Settings', icon: 'i-lucide-settings', to: '/settings' },
-]
+];
 
 function isActive(to: string) {
-  return route.path === to || route.path.startsWith(to + '/')
+  return route.path === to || route.path.startsWith(to + '/');
 }
 </script>
 
 <template>
-  <nav
-    class="sm:hidden fixed bottom-0 inset-x-0 z-50 bg-(--ui-bg) border-t border-(--ui-border) flex"
-    style="padding-bottom: env(safe-area-inset-bottom)"
-  >
+  <nav class="sm:hidden fixed bottom-0 inset-x-0 z-50 bg-(--ui-bg) border-t border-(--ui-border) flex">
     <NuxtLink
       v-for="item in navItems"
       :key="item.to"

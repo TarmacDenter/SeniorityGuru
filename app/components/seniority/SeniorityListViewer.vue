@@ -12,8 +12,23 @@ defineProps<{
   loading?: boolean;
 }>();
 
+// ── Types ────────────────────────────────────────────────────────────────────
 type RetirementTimeline = 'past' | 'imminent' | 'soon' | null;
-type SeniorityRow = SeniorityEntry & { _isUser: boolean; _retirementTimeline: RetirementTimeline; };
+type SeniorityRow = SeniorityEntry & { _isUser: boolean; _retirementTimeline: RetirementTimeline };
+
+// ── Data ─────────────────────────────────────────────────────────────────────
+const { lists, entriesLoading } = useSeniorityLists();
+const { entries } = useSeniorityCore();
+const { employeeNumber } = useUser();
+const userEmployeeNumber = computed(() => employeeNumber.value ?? null);
+const latestList = computed(() => lists.value[0] ?? null);
+
+// ── Retirement timeline ───────────────────────────────────────────────────────
+const timelineClasses = new Map<RetirementTimeline, { row: string; cell: string; expanded: string }>([
+  ['past',     { row: 'bg-past/10',     cell: 'text-past/50',     expanded: 'text-past/70'     }],
+  ['imminent', { row: 'bg-imminent/10', cell: 'text-imminent/50', expanded: 'text-imminent/70' }],
+  ['soon',     { row: 'bg-soon/10',     cell: 'text-soon',        expanded: 'text-soon'        }],
+]);
 
 function retirementTimeline(today: string, retireDate: string): RetirementTimeline {
   const days = diffYears(today, retireDate) * 365.25;
@@ -23,31 +38,8 @@ function retirementTimeline(today: string, retireDate: string): RetirementTimeli
   return null;
 }
 
-const { lists, entriesLoading } = useSeniorityLists();
-const { entries } = useSeniorityCore();
-const { employeeNumber } = useUser();
-const table = useTemplateRef<{ tableApi: Table<SeniorityRow>; }>('table');
-
-const globalFilter = ref('');
-const expanded = ref({});
+// ── Table config ──────────────────────────────────────────────────────────────
 const isMobile = useMediaQuery('(max-width: 639px)');
-
-// Imperatively sync filter to TanStack — v-model:global-filter alone doesn't
-// trigger recomputation because TanStack's mergeProxy lazily evaluates state getters.
-watch(globalFilter, (value) => {
-  if (table.value?.tableApi) {
-    table.value.tableApi.setGlobalFilter(value);
-    table.value.tableApi.setPageIndex(0);
-  }
-  else {
-    pagination.value.pageIndex = 0;
-  }
-});
-
-const pagination = ref({
-  pageIndex: 0,
-  pageSize: 50,
-});
 
 const columnVisibility = computed(() => ({
   expand: isMobile.value,
@@ -81,61 +73,60 @@ const columns: TableColumn<SeniorityRow>[] = [
   { accessorKey: 'fleet', header: 'Fleet' },
   { accessorKey: 'hire_date', header: 'Hire Date' },
   {
-    accessorKey: 'retire_date', header: 'Retire Date', cell: ({ row }) => {
-      const timeline = row.original._retirementTimeline;
-      const classes = [
-        timeline === 'past' ? 'text-past/70' : '',
-        timeline === 'imminent' ? 'text-imminent/70' : '',
-        timeline === 'soon' ? 'text-soon' : '',
-      ].join(' ').trim();
-      return h('span', { class: classes }, row.original.retire_date ?? '');
-    }
+    accessorKey: 'retire_date',
+    header: 'Retire Date',
+    cell: ({ row }) => h('span', { class: timelineClasses.get(row.original._retirementTimeline)?.cell }, row.original.retire_date ?? ''),
   },
 ];
 
-const latestList = computed(() => lists.value[0] ?? null);
+const tableMeta = {
+  class: {
+    tr: (row: Row<SeniorityRow>) => [
+      row.original._isUser ? 'bg-primary/10' : '',
+      timelineClasses.get(row.original._retirementTimeline)?.row ?? '',
+    ].join(' ').trim(),
+  },
+};
+
+// ── Table state ───────────────────────────────────────────────────────────────
+const table = useTemplateRef<{ tableApi: Table<SeniorityRow> }>('table');
+const globalFilter = ref('');
+const expanded = ref({});
+const pagination = ref({ pageIndex: 0, pageSize: 50 });
 
 const currentPage = computed(() => (table.value?.tableApi?.getState().pagination.pageIndex ?? 0) + 1);
 const pageCount = computed(() => table.value?.tableApi?.getPageCount() ?? 1);
 const totalRows = computed(() => table.value?.tableApi?.getFilteredRowModel().rows.length ?? 0);
 
-const userEmployeeNumber = computed(() => employeeNumber.value ?? null);
-
-const tableMeta = {
-  class: {
-    tr: (row: Row<SeniorityRow>) => {
-      const timeline = row.original._retirementTimeline;
-      return [
-        row.original._isUser ? 'bg-primary/10' : '',
-        timeline === 'past' ? 'bg-past/10' : '',
-        timeline === 'imminent' ? 'bg-imminent/10' : '',
-        timeline === 'soon' ? 'bg-soon/10' : '',
-      ].join(' ').trim();
-    },
+// Imperatively sync filter to TanStack — v-model:global-filter alone doesn't
+// trigger recomputation because TanStack's mergeProxy lazily evaluates state getters.
+watch(globalFilter, (value) => {
+  if (table.value?.tableApi) {
+    table.value.tableApi.setGlobalFilter(value);
+    table.value.tableApi.setPageIndex(0);
   }
-};
+  else {
+    pagination.value.pageIndex = 0;
+  }
+});
 
+// ── Derived data ──────────────────────────────────────────────────────────────
 const tableData = computed<SeniorityRow[]>(() => {
   const today = todayISO();
   return entries.value.map(entry => ({
     ...entry,
     _isUser: !!userEmployeeNumber.value && entry.employee_number === userEmployeeNumber.value,
     _retirementTimeline: entry.retire_date ? retirementTimeline(today, entry.retire_date) : null,
-  })
-  );
+  }));
 });
-
 </script>
 
 <template>
-  <div class="flex flex-col h-full min-h-0 min-w-0">
+  <div class="flex flex-col h-full min-h-0 min-w-0 px-1">
     <!-- Search — pinned at top, never scrolls away -->
     <div class="shrink-0 border-b border-default">
-      <AppSearchInput
-        v-model="globalFilter"
-        placeholder="Search by name, employee #, base..."
-        class="w-full text-xs sm:text-sm my-1 md:mb-3"
-      />
+      <AppSearchInput v-model="globalFilter" placeholder="Search by name, employee #, base..."
+        class="w-full text-xs sm:text-sm my-1 md:mb-3" />
     </div>
 
     <!-- Scrollable content area -->
@@ -149,11 +140,6 @@ const tableData = computed<SeniorityRow[]>(() => {
 
         <!-- List viewer -->
         <template v-else>
-          <!-- Metadata -->
-          <p v-if="latestList" class="text-sm text-muted mb-4">
-            Effective {{ latestList.effectiveDate }}
-            &middot; {{ entries.length }} pilots
-          </p>
 
           <div class="overflow-x-auto">
             <UTable ref="table" v-model:global-filter="globalFilter" v-model:pagination="pagination"
@@ -164,7 +150,8 @@ const tableData = computed<SeniorityRow[]>(() => {
               :ui="isMobile ? { th: 'px-2 py-2 text-xs', td: 'px-2 py-1.5 text-xs' } : {}"
               class="w-full overscroll-contain text-xs sm:text-base">
               <template #expanded="{ row }">
-                <div :class="['grid grid-cols-2 sm:grid-cols-3 gap-3 px-4 py-3 text-xs', row.original._isUser ? 'bg-primary/5' : '']">
+                <div
+                  :class="['grid grid-cols-2 sm:grid-cols-3 gap-3 px-4 py-3 text-xs', row.original._isUser ? 'bg-primary/5' : '']">
                   <div class="sm:hidden">
                     <p class="text-muted text-xs mb-0.5">Seat</p>
                     <p>{{ row.original.seat }}</p>
@@ -183,11 +170,7 @@ const tableData = computed<SeniorityRow[]>(() => {
                   </div>
                   <div class="sm:hidden">
                     <p class="text-muted text-xs mb-0.5">Retire Date</p>
-                    <p :class="[
-                      row.original._retirementTimeline === 'past' ? 'text-past/70' : '',
-                      row.original._retirementTimeline === 'imminent' ? 'text-imminent/70' : '',
-                      row.original._retirementTimeline === 'soon' ? 'text-soon' : '',
-                    ]">{{ row.original.retire_date ?? '—' }}</p>
+                    <p :class="timelineClasses.get(row.original._retirementTimeline)?.expanded">{{ row.original.retire_date ?? '—' }}</p>
                   </div>
                 </div>
               </template>
@@ -199,13 +182,8 @@ const tableData = computed<SeniorityRow[]>(() => {
 
     <!-- Pagination — floats below scroll area, always visible -->
     <div v-if="latestList" class="shrink-0 py-2 sm:py-3 border-t border-default">
-      <TablePagination
-        :current-page="currentPage"
-        :page-count="pageCount"
-        :total-rows="totalRows"
-        :page-size="pagination.pageSize"
-        @update:page="(p: number) => table?.tableApi?.setPageIndex(p - 1)"
-      />
+      <TablePagination :current-page="currentPage" :page-count="pageCount" :total-rows="totalRows"
+        :page-size="pagination.pageSize" @update:page="(p: number) => table?.tableApi?.setPageIndex(p - 1)" />
     </div>
   </div>
 </template>
