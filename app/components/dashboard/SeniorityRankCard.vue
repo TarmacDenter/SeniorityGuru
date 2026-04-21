@@ -29,7 +29,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <UCard variant="accent">
+  <UCard variant="soft">
     <div class="flex flex-col sm:flex-row sm:items-center gap-4">
       <div class="flex items-center gap-4 flex-1">
         <div class="flex items-center justify-center size-16 rounded-xl bg-primary/10">

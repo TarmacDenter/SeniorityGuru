@@ -41,7 +41,7 @@ async function onSave() {
 </script>
 
 <template>
-  <UCard variant="accent">
+  <UCard variant="soft">
     <div class="flex items-start gap-4">
       <UIcon name="i-lucide-id-card" class="size-8 text-primary shrink-0 mt-0.5" />
       <div class="flex-1 min-w-0">
