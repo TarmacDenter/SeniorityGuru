@@ -22,6 +22,7 @@ watch(activeTab, (tab) => {
 const { lists, fetchLists, fetchEntries } = useSeniorityLists();
 const { employeeNumber, loadPreferences } = useUser();
 const loading = ref(true);
+const initializing = ref(true);
 
 // Initialize synchronously from the URL so the watcher never sees this as a
 // "change" — the watcher is lazy by default and won't fire on the initial value.
@@ -74,7 +75,7 @@ const panelUi = computed(() => ({
 // Watcher fires ONLY for user-initiated dropdown changes after mount.
 // When onMounted sets the default value, oldId is undefined → guard skips it.
 watch(selectedListId, async (id, oldId) => {
-  if (!id || !oldId) return;
+  if (initializing.value || !id || !oldId) return;
   loading.value = true;
   await fetchEntries(id);
   const query: Record<string, string> = { list: String(id) };
@@ -87,9 +88,9 @@ onMounted(async () => {
   await loadPreferences();
   await fetchLists();
 
-  // Set a default if the URL had no ?list= param.
-  // This fires the watcher but oldId=undefined → the guard catches it.
-  if (!selectedListId.value) {
+  // Route query may contain a stale list id (deleted/old session).
+  // Fall back to newest available list in that case.
+  if (!selectedListId.value || !lists.value.some(l => l.id === selectedListId.value)) {
     selectedListId.value = lists.value[0]?.id ?? undefined;
   }
 
@@ -97,6 +98,7 @@ onMounted(async () => {
     await fetchEntries(selectedListId.value);
   }
 
+  initializing.value = false;
   loading.value = false;
 });
 </script>
