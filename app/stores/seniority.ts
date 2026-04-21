@@ -70,11 +70,12 @@ export const useSeniorityStore = defineStore('seniority', () => {
     entriesError.value = null
     entries.value = []
     currentListId.value = listId
+    log.info('Fetching entries for list', { listId })
 
     try {
       const localEntries = await db.seniorityEntries.where('listId').equals(listId).toArray()
       entries.value = localEntries.map(localEntryToSeniorityEntry)
-      log.debug('Entries fetched', { listId, count: entries.value.length })
+      log.info('Entries fetched', { listId, count: entries.value.length })
     }
     catch (e: unknown) {
       const message = e instanceof Error ? e.message : 'Failed to fetch entries'

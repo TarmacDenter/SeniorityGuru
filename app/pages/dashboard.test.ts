@@ -144,6 +144,22 @@ describe('dashboard.vue — route-synced ref / watcher race condition', () => {
     expect(mockFetchEntries).toHaveBeenCalledWith(OLD_ID)
   })
 
+  it('falls back to latest list when URL list id is stale', async () => {
+    const STALE_ID = 999
+    const LATEST_ID = 77
+
+    mockRouteQuery.value = { list: String(STALE_ID) }
+    mockFetchLists.mockImplementation(() => {
+      mockLists.value = [makeList(LATEST_ID)]
+    })
+
+    const DashboardPage = await import('./dashboard.vue')
+    await mountSuspended(DashboardPage.default)
+
+    expect(mockFetchEntries).toHaveBeenCalledTimes(1)
+    expect(mockFetchEntries).toHaveBeenCalledWith(LATEST_ID)
+  })
+
   it('calls navigateTo when selectedListId changes after mount', async () => {
     const LIST_A = 1
     const LIST_B = 2
@@ -155,6 +171,10 @@ describe('dashboard.vue — route-synced ref / watcher race condition', () => {
 
     const DashboardPage = await import('./dashboard.vue')
     const wrapper = await mountSuspended(DashboardPage.default)
+
+    await vi.waitFor(() => {
+      expect(mockFetchEntries).toHaveBeenCalledWith(LIST_A)
+    })
 
     // Clear navigateTo calls from mount
     mockNavigateTo.mockClear()
@@ -172,5 +192,32 @@ describe('dashboard.vue — route-synced ref / watcher race condition', () => {
       expect.objectContaining({ query: expect.objectContaining({ list: String(LIST_B) }) }),
       expect.objectContaining({ replace: true }),
     )
+  })
+
+  it('normalizes string dropdown ids before fetching entries', async () => {
+    const LIST_A = 1
+    const LIST_B = 2
+
+    mockRouteQuery.value = { list: String(LIST_A) }
+    mockFetchLists.mockImplementation(() => {
+      mockLists.value = [makeList(LIST_B), makeList(LIST_A)]
+    })
+
+    const DashboardPage = await import('./dashboard.vue')
+    const wrapper = await mountSuspended(DashboardPage.default)
+
+    await vi.waitFor(() => {
+      expect(mockFetchEntries).toHaveBeenCalledWith(LIST_A)
+    })
+
+    mockFetchEntries.mockClear()
+
+    const vm = wrapper.vm as unknown as { selectedListId: string | number }
+    vm.selectedListId = String(LIST_B)
+
+    await nextTick()
+    await nextTick()
+
+    expect(mockFetchEntries).toHaveBeenCalledWith(LIST_B)
   })
 })

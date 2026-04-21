@@ -47,18 +47,11 @@ describe('useSeniorityLists', () => {
     expect(listOptions.value[0]!.label).toBe('2025-06-01')
   })
 
-  it('fetchLists calls store.fetchLists when lists are empty', async () => {
-    mockStore.lists = []
-    const { fetchLists } = useSeniorityLists()
-    await fetchLists()
-    expect(mockStore.fetchLists).toHaveBeenCalledOnce()
-  })
-
-  it('fetchLists skips store call when lists already loaded', async () => {
+  it('fetchLists always delegates to store.fetchLists', async () => {
     mockStore.lists = [{ id: 1, effectiveDate: '2025-01-01', createdAt: '' }]
     const { fetchLists } = useSeniorityLists()
     await fetchLists()
-    expect(mockStore.fetchLists).not.toHaveBeenCalled()
+    expect(mockStore.fetchLists).toHaveBeenCalledOnce()
   })
 
   it('deleteList delegates to store.deleteList', async () => {
