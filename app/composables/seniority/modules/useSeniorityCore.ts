@@ -191,7 +191,16 @@ export function useSeniorityCore() {
   if (!_baseSnapshot) {
     _baseSnapshot = computed<SenioritySnapshot | null>(() => {
       if (seniorityStore.entries.length === 0) return null
-      return createSnapshot([...seniorityStore.entries])
+      try {
+        return createSnapshot([...seniorityStore.entries])
+      }
+      catch (e: unknown) {
+        log.error('Failed to build seniority snapshot from entries', {
+          error: String(e),
+          entryCount: seniorityStore.entries.length,
+        })
+        return null
+      }
     })
   }
 
@@ -200,7 +209,16 @@ export function useSeniorityCore() {
       const synthetic = syntheticEntry.value
       if (!synthetic) return _baseSnapshot!.value
       if (seniorityStore.entries.length === 0) return null
-      return createSnapshot([...seniorityStore.entries, synthetic])
+      try {
+        return createSnapshot([...seniorityStore.entries, synthetic])
+      }
+      catch (e: unknown) {
+        log.error('Failed to build seniority snapshot with synthetic entry', {
+          error: String(e),
+          entryCount: seniorityStore.entries.length + 1,
+        })
+        return null
+      }
     })
   }
 
@@ -235,7 +253,7 @@ export function useSeniorityCore() {
   const snapshot = _snapshot
   const lens = _lens
 
-  const hasData = computed(() => snapshot.value !== null)
+  const hasData = computed(() => seniorityStore.entries.length > 0)
   const hasAnchor = computed(() => lens.value !== null)
   const isNewHireMode = computed(() => enabled.value)
 

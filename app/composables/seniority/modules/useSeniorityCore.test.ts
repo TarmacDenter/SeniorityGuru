@@ -77,6 +77,17 @@ describe('useSeniorityCore', () => {
     expect(hasAnchor.value).toBe(false)
   })
 
+  it('keeps hasData true when snapshot build fails (e.g., duplicate employee numbers)', () => {
+    const duplicateEmployee = 'E1'
+    mockStore.entries = [
+      makeEntry({ seniority_number: 1, employee_number: duplicateEmployee }),
+      makeEntry({ seniority_number: 2, employee_number: duplicateEmployee }),
+    ]
+    const { hasData, snapshot } = useSeniorityCore()
+    expect(hasData.value).toBe(true)
+    expect(snapshot.value).toBeNull()
+  })
+
   it('hasData and hasAnchor are both false when no entries', () => {
     const { hasData, hasAnchor } = useSeniorityCore()
     expect(hasData.value).toBe(false)
