@@ -193,4 +193,31 @@ describe('dashboard.vue — route-synced ref / watcher race condition', () => {
       expect.objectContaining({ replace: true }),
     )
   })
+
+  it('normalizes string dropdown ids before fetching entries', async () => {
+    const LIST_A = 1
+    const LIST_B = 2
+
+    mockRouteQuery.value = { list: String(LIST_A) }
+    mockFetchLists.mockImplementation(() => {
+      mockLists.value = [makeList(LIST_B), makeList(LIST_A)]
+    })
+
+    const DashboardPage = await import('./dashboard.vue')
+    const wrapper = await mountSuspended(DashboardPage.default)
+
+    await vi.waitFor(() => {
+      expect(mockFetchEntries).toHaveBeenCalledWith(LIST_A)
+    })
+
+    mockFetchEntries.mockClear()
+
+    const vm = wrapper.vm as unknown as { selectedListId: string | number }
+    vm.selectedListId = String(LIST_B)
+
+    await nextTick()
+    await nextTick()
+
+    expect(mockFetchEntries).toHaveBeenCalledWith(LIST_B)
+  })
 })

@@ -3,12 +3,14 @@ import { useSeniorityCore, useStanding, useSeniorityLists } from '~/composables/
 import { useDashboardTabs } from '~/composables/useDashboardTabs';
 import { useDemoBanner } from '~/composables/useDemoBanner';
 import { DEFAULT_TAB } from '~/utils/dashboard-tabs';
+import { createLogger } from '~/utils/logger';
 
 definePageMeta({
   layout: 'dashboard',
 });
 
 const route = useRoute();
+const log = createLogger('dashboard-page')
 
 const { activeTab, tabs } = useDashboardTabs();
 
@@ -27,8 +29,14 @@ const initializing = ref(true);
 // Initialize synchronously from the URL so the watcher never sees this as a
 // "change" — the watcher is lazy by default and won't fire on the initial value.
 const selectedListId = ref<number | undefined>(
-  route.query.list ? Number(route.query.list) : undefined,
+  normalizeListId(route.query.list),
 );
+
+function normalizeListId(value: unknown): number | undefined {
+  const raw = Array.isArray(value) ? value[0] : value
+  const n = typeof raw === 'number' ? raw : Number(raw)
+  return Number.isFinite(n) && n > 0 ? n : undefined
+}
 
 const listOptions = computed(() =>
   lists.value.map((l, i) => ({
@@ -75,10 +83,13 @@ const panelUi = computed(() => ({
 // Watcher fires ONLY for user-initiated dropdown changes after mount.
 // When onMounted sets the default value, oldId is undefined → guard skips it.
 watch(selectedListId, async (id, oldId) => {
-  if (initializing.value || !id || !oldId) return;
+  const normalizedId = normalizeListId(id)
+  const normalizedOldId = normalizeListId(oldId)
+  if (initializing.value || !normalizedId || !normalizedOldId || normalizedId === normalizedOldId) return;
   loading.value = true;
-  await fetchEntries(id);
-  const query: Record<string, string> = { list: String(id) };
+  log.info('Loading entries for selected list', { listId: normalizedId, previousListId: normalizedOldId })
+  await fetchEntries(normalizedId);
+  const query: Record<string, string> = { list: String(normalizedId) };
   if (activeTab.value !== DEFAULT_TAB) query.tab = activeTab.value;
   await navigateTo({ path: '/dashboard', query }, { replace: true });
   loading.value = false;
@@ -87,15 +98,28 @@ watch(selectedListId, async (id, oldId) => {
 onMounted(async () => {
   await loadPreferences();
   await fetchLists();
+  log.info('Dashboard lists loaded', {
+    listCount: lists.value.length,
+    routeListId: route.query.list ?? null,
+    selectedListId: selectedListId.value ?? null,
+  })
 
   // Route query may contain a stale list id (deleted/old session).
   // Fall back to newest available list in that case.
-  if (!selectedListId.value || !lists.value.some(l => l.id === selectedListId.value)) {
+  const normalizedSelectedListId = normalizeListId(selectedListId.value)
+  if (!normalizedSelectedListId || !lists.value.some(l => l.id === normalizedSelectedListId)) {
     selectedListId.value = lists.value[0]?.id ?? undefined;
+    log.info('Selected list fallback applied', { listId: selectedListId.value ?? null })
+  } else if (selectedListId.value !== normalizedSelectedListId) {
+    selectedListId.value = normalizedSelectedListId
   }
 
   if (selectedListId.value) {
-    await fetchEntries(selectedListId.value);
+    const listId = normalizeListId(selectedListId.value)
+    if (listId) {
+      log.info('Initial entries load', { listId })
+      await fetchEntries(listId);
+    }
   }
 
   initializing.value = false;
