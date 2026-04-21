@@ -61,6 +61,14 @@ describe('useSeniorityCore', () => {
     expect(lens.value).toBeNull()
   })
 
+  it('matches user by canonicalized employee number', () => {
+    mockStore.entries = [makeEntry({ seniority_number: 1, employee_number: ' 123 ', retire_date: '2045-01-01' })]
+    mockUserStore.employeeNumber = '00123'
+    const { hasAnchor, userEntry } = useSeniorityCore()
+    expect(hasAnchor.value).toBe(true)
+    expect(userEntry.value?.employee_number).toBe(' 123 ')
+  })
+
   it('hasData/hasAnchor readiness signals are correct', () => {
     mockStore.entries = [makeEntry({ employee_number: 'E1' })]
     mockUserStore.employeeNumber = 'E1'

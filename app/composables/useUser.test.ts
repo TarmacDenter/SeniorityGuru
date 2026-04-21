@@ -87,6 +87,14 @@ describe('useUser', () => {
       const user = useUser()
       expect(user.entry.value).toBeUndefined()
     })
+
+    it('matches entry with canonicalized employee number', async () => {
+      mockUserStore.employeeNumber = '00123'
+      mockSeniorityEntries.push({ employee_number: ' 123 ', seniority_number: 1, seat: 'CA', base: 'JFK', fleet: '737', hire_date: '2010-01-01', retire_date: '2040-01-01' })
+      const { useUser } = await import('./useUser')
+      const user = useUser()
+      expect(user.entry.value?.employee_number).toBe(' 123 ')
+    })
   })
 
   describe('loadPreferences', () => {

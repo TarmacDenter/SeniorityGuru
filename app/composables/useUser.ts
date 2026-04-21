@@ -1,6 +1,7 @@
 import { useUserStore } from '~/stores/user'
 import { useSeniorityStore } from '~/stores/seniority'
 import type { PreferenceMap } from '~/utils/preferences'
+import { canonicalizeEmployeeNumber } from '~/utils/schemas/seniority-list'
 
 export function useUser() {
   const store = useUserStore()
@@ -14,7 +15,8 @@ export function useUser() {
   const entry = computed(() => {
     const empNum = store.employeeNumber
     if (!empNum) return undefined
-    return seniorityStore.entries.find((e) => e.employee_number === empNum)
+    const canonicalEmpNum = canonicalizeEmployeeNumber(empNum)
+    return seniorityStore.entries.find((e) => canonicalizeEmployeeNumber(e.employee_number) === canonicalEmpNum)
   })
 
   /**

@@ -6,6 +6,7 @@ import { computeRetireDate, todayISO } from '~/utils/date'
 import { useSeniorityStore } from '~/stores/seniority'
 import { useUserStore } from '~/stores/user'
 import { createLogger } from '~/utils/logger'
+import { canonicalizeEmployeeNumber } from '~/utils/schemas/seniority-list'
 
 const log = createLogger('seniority-core')
 
@@ -120,7 +121,8 @@ export function useSeniorityCore() {
   const realUserFound = computed(() => {
     const empNum = userStore.employeeNumber
     if (!empNum) return false
-    return seniorityStore.entries.some(e => e.employee_number === empNum)
+    const canonicalEmpNum = canonicalizeEmployeeNumber(empNum)
+    return seniorityStore.entries.some(e => canonicalizeEmployeeNumber(e.employee_number) === canonicalEmpNum)
   })
 
   const retireDate = computed(() => {
@@ -184,7 +186,8 @@ export function useSeniorityCore() {
     _userEntry = computed<SeniorityEntry | undefined>(() => {
       const empNum = userStore.employeeNumber
       if (!empNum) return undefined
-      return seniorityStore.entries.find(e => e.employee_number === empNum)
+      const canonicalEmpNum = canonicalizeEmployeeNumber(empNum)
+      return seniorityStore.entries.find(e => canonicalizeEmployeeNumber(e.employee_number) === canonicalEmpNum)
     })
   }
 

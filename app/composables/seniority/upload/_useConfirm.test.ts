@@ -67,6 +67,24 @@ describe('_useConfirm', () => {
     )
   })
 
+  it('canonicalizes employee numbers before persisting', async () => {
+    const confirm = createConfirm()
+    confirm.effectiveDate.value = { toString: () => '2025-01-01' } as never
+
+    const entries = [
+      makeDomainEntry({ seniority_number: 1, employee_number: ' 00123 ', seat: 'CA', base: 'LAX', fleet: 'B737', hire_date: '2010-01-01', retire_date: '2040-01-01' }),
+    ]
+
+    await confirm.save(entries)
+
+    expect(mockStore.addList).toHaveBeenCalledWith(
+      expect.any(Object),
+      expect.arrayContaining([
+        expect.objectContaining({ employeeNumber: '123' }),
+      ]),
+    )
+  })
+
   it('sets error on save failure and re-throws', async () => {
     mockStore.addList.mockRejectedValue(new Error('DB full'))
     const error = ref<string | null>(null)

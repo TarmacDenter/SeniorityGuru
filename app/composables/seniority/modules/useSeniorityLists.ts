@@ -17,7 +17,7 @@ export function useSeniorityLists() {
   )
 
   async function fetchLists() {
-    if (!store.lists.length) await store.fetchLists()
+    await store.fetchLists()
   }
 
   async function deleteList(id: number) {

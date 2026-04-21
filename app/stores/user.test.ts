@@ -43,6 +43,21 @@ describe('user store (Dexie preferences)', () => {
       expect(store.employeeNumber).toBe('99999')
     })
 
+    it('canonicalizes employeeNumber loaded from preferences table', async () => {
+      mockDb.preferences.get.mockImplementation(async (key: string) => {
+        if (key === 'employeeNumber') return { key: 'employeeNumber', value: ' 00123 ' }
+        return undefined
+      })
+
+      const { useUserStore } = await import('./user')
+      const store = useUserStore()
+      await store.clearPreferences()
+
+      await store.loadPreferences()
+
+      expect(store.employeeNumber).toBe('123')
+    })
+
     it('loads retirementAge from preferences table', async () => {
       mockDb.preferences.get.mockImplementation(async (key: string) => {
         if (key === 'retirementAge') return { key: 'retirementAge', value: '60' }
@@ -105,6 +120,16 @@ describe('user store (Dexie preferences)', () => {
       await store.savePreference('employeeNumber', '12345')
 
       expect(mockDb.preferences.put).toHaveBeenCalledWith({ key: 'employeeNumber', value: '12345' })
+    })
+
+    it('canonicalizes employeeNumber before saving to preferences', async () => {
+      const { useUserStore } = await import('./user')
+      const store = useUserStore()
+
+      await store.savePreference('employeeNumber', ' 00123 ')
+
+      expect(mockDb.preferences.put).toHaveBeenCalledWith({ key: 'employeeNumber', value: '123' })
+      expect(store.employeeNumber).toBe('123')
     })
 
     it('updates employeeNumber ref when key is employeeNumber', async () => {

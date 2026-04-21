@@ -4,6 +4,7 @@ import { createLogger } from '~/utils/logger'
 import { PREFERENCE_SERIALIZERS, PREFERENCE_DESERIALIZERS } from '~/utils/preferences'
 import type { PreferenceMap } from '~/utils/preferences'
 import { emitHook } from '~/utils/hooks'
+import { canonicalizeEmployeeNumber } from '~/utils/schemas/seniority-list'
 
 const log = createLogger('user-store')
 
@@ -23,7 +24,7 @@ export const useUserStore = defineStore('user', () => {
         db.preferences.get('retirementAge'),
       ])
 
-      employeeNumber.value = empPref ? empPref.value : null
+      employeeNumber.value = empPref ? canonicalizeEmployeeNumber(empPref.value) : null
       retirementAge.value = agePref ? Number(agePref.value) : 65
 
       log.debug('Preferences loaded', { employeeNumber: employeeNumber.value, retirementAge: retirementAge.value })
@@ -42,7 +43,7 @@ export const useUserStore = defineStore('user', () => {
     await db.preferences.put({ key, value: serialized })
 
     if (key === 'employeeNumber') {
-      employeeNumber.value = value as string
+      employeeNumber.value = canonicalizeEmployeeNumber(value as string)
     }
     else if (key === 'retirementAge') {
       retirementAge.value = value as number

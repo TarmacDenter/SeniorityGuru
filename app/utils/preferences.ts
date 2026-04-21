@@ -1,3 +1,5 @@
+import { canonicalizeEmployeeNumber } from './schemas/seniority-list'
+
 /** Stored shape of the new-hire configuration preference (key: 'growthConfig'). */
 export interface NewHireConfig {
   birthDate: string | null
@@ -19,7 +21,7 @@ export interface PreferenceMap {
 
 /** Serializes a typed preference value to the string stored in Dexie. */
 export const PREFERENCE_SERIALIZERS: { [K in keyof PreferenceMap]: (v: PreferenceMap[K]) => string } = {
-  employeeNumber: (v) => v,
+  employeeNumber: (v) => canonicalizeEmployeeNumber(v),
   retirementAge: (v) => String(v),
   newHireEnabled: (v) => String(v),
   growthConfig: (v) => JSON.stringify(v),
@@ -30,7 +32,7 @@ export const PREFERENCE_SERIALIZERS: { [K in keyof PreferenceMap]: (v: Preferenc
 
 /** Deserializes a raw Dexie string back to the typed preference value. */
 export const PREFERENCE_DESERIALIZERS: { [K in keyof PreferenceMap]: (raw: string) => PreferenceMap[K] } = {
-  employeeNumber: (raw) => raw,
+  employeeNumber: (raw) => canonicalizeEmployeeNumber(raw),
   retirementAge: (raw) => Number(raw),
   newHireEnabled: (raw) => raw === 'true',
   growthConfig: (raw) => JSON.parse(raw) as NewHireConfig,

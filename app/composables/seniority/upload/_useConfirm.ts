@@ -1,6 +1,7 @@
 import type { DateValue } from 'reka-ui'
 import type { ConfirmPhase, ConfirmPhaseOptions } from './types'
 import type { SeniorityEntry } from '~/utils/schemas/seniority-list'
+import { canonicalizeEmployeeNumber } from '~/utils/schemas/seniority-list'
 import { useSeniorityStore } from '~/stores/seniority'
 import { createLogger } from '~/utils/logger'
 
@@ -20,7 +21,7 @@ export function _useConfirm(opts: ConfirmPhaseOptions): ConfirmPhase & { _reset:
       const store = useSeniorityStore()
       const localEntries = (entries as SeniorityEntry[]).map(e => ({
         seniorityNumber: e.seniority_number,
-        employeeNumber: e.employee_number,
+        employeeNumber: canonicalizeEmployeeNumber(String(e.employee_number ?? '')),
         name: e.name ?? null,
         seat: e.seat,
         base: e.base,

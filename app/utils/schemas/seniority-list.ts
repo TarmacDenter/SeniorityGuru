@@ -10,6 +10,11 @@ export function normalizeEmployeeNumber(value: string): string {
   return value
 }
 
+/** Trim whitespace and normalize numeric leading-zero formatting. */
+export function canonicalizeEmployeeNumber(value: string): string {
+  return normalizeEmployeeNumber(value.trim())
+}
+
 export const SeniorityEntrySchema = z.object({
   seniority_number: z.number().int().positive(),
   employee_number: z.string().min(1),
@@ -21,4 +26,3 @@ export const SeniorityEntrySchema = z.object({
   retire_date: z.string().regex(ISO_DATE_REGEX, 'Invalid date format'),
 })
 export type SeniorityEntry = z.infer<typeof SeniorityEntrySchema>
-
