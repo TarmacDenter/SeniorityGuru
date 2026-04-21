@@ -94,10 +94,17 @@ export const useSeniorityStore = defineStore('seniority', () => {
 
     const hasDemoListsBefore = lists.value.some(l => l.isDemo)
     lists.value.push({ id: listId, ...listData, createdAt: new Date().toISOString() })
+    lists.value = [...lists.value].sort((a, b) => {
+      const dateCmp = b.effectiveDate.localeCompare(a.effectiveDate)
+      return dateCmp !== 0 ? dateCmp : b.id! - a.id!
+    })
     entryCache.clear()
     log.info('List added', { listId, entryCount: entries.length })
     emitHook('list:added', listId).catch((e: unknown) => {
       log.warn('emitHook list:added failed', { error: String(e) })
+    })
+    emitHook('list:changed').catch((e: unknown) => {
+      log.warn('emitHook list:changed failed', { error: String(e) })
     })
     if (!listData.isDemo && hasDemoListsBefore) {
       emitHook('app:demo:exit').catch((e: unknown) => {
@@ -149,6 +156,9 @@ export const useSeniorityStore = defineStore('seniority', () => {
     log.info('List deleted from store', { listId: id })
     emitHook('list:deleted', id).catch((e: unknown) => {
       log.warn('emitHook list:deleted failed', { error: String(e) })
+    })
+    emitHook('list:changed').catch((e: unknown) => {
+      log.warn('emitHook list:changed failed', { error: String(e) })
     })
     if (wasLastDemoList) {
       emitHook('app:demo:exit').catch((e: unknown) => {

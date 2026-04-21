@@ -332,6 +332,41 @@ describe('seniority store (Dexie)', () => {
       )
     })
 
+    it('inserts new list at lists[0] when its effectiveDate is the most recent', async () => {
+      mockDb.seniorityLists.toArray.mockResolvedValue([mockList1, mockList2])
+      mockDb.seniorityLists.add.mockResolvedValue(99)
+      mockDb.seniorityEntries.bulkAdd.mockResolvedValue(undefined)
+
+      const { useSeniorityStore } = await import('./seniority')
+      const store = useSeniorityStore()
+      store.clearStore()
+      await store.fetchLists()
+      // lists: [mockList2 (2026-02-15), mockList1 (2026-01-15)]
+
+      await store.addList({ title: 'April List', effectiveDate: '2026-04-01' }, [])
+
+      // New list (id=99) has the latest effectiveDate — must be at index 0
+      expect(store.lists[0]!.id).toBe(99)
+      expect(store.lists[0]!.effectiveDate).toBe('2026-04-01')
+    })
+
+    it('uses id as tiebreaker when effectiveDates match — higher id sorts first', async () => {
+      const existing: LocalSeniorityList = { id: 1, title: null, effectiveDate: '2026-04-21', createdAt: '2026-04-20T10:00:00Z' }
+      mockDb.seniorityLists.toArray.mockResolvedValue([existing])
+      mockDb.seniorityLists.add.mockResolvedValue(5)
+      mockDb.seniorityEntries.bulkAdd.mockResolvedValue(undefined)
+
+      const { useSeniorityStore } = await import('./seniority')
+      const store = useSeniorityStore()
+      store.clearStore()
+      await store.fetchLists()
+
+      await store.addList({ title: null, effectiveDate: '2026-04-21' }, [])
+
+      // id=5 was uploaded later — must win the tiebreaker
+      expect(store.lists[0]!.id).toBe(5)
+    })
+
     it('does not change currentListId or entries', async () => {
       mockDb.seniorityLists.add.mockResolvedValue(42)
       mockDb.seniorityEntries.bulkAdd.mockResolvedValue(undefined)

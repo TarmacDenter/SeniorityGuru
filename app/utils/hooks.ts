@@ -3,9 +3,10 @@ export interface AppHooks {
   // Demo lifecycle
   'app:demo:enter': () => Promise<void> | void
   'app:demo:exit': () => Promise<void> | void
-  // Data lifecycle (emitted by stores; no listeners required)
+  // Data lifecycle
   'list:added': (listId: number) => void
   'list:deleted': (listId: number) => void
+  'list:changed': () => Promise<void> | void
   // User lifecycle (emitted by stores; no listeners required)
   'user:preference:changed': (key: string) => void
 }
