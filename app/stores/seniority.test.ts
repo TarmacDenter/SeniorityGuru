@@ -11,8 +11,6 @@ vi.mock('~/utils/hooks', () => ({ emitHook: mockEmitHook, defineHook: vi.fn() })
 
 const mockDb = vi.hoisted(() => ({
   seniorityLists: {
-    orderBy: vi.fn(),
-    reverse: vi.fn(),
     toArray: vi.fn(),
     update: vi.fn(),
     get: vi.fn(),
@@ -84,9 +82,7 @@ describe('seniority store (Dexie)', () => {
   beforeEach(() => {
     vi.clearAllMocks()
 
-    // Default chain: orderBy → reverse → toArray → []
-    mockDb.seniorityLists.orderBy.mockReturnValue(mockDb.seniorityLists)
-    mockDb.seniorityLists.reverse.mockReturnValue(mockDb.seniorityLists)
+    // Default fetch: toArray → []
     mockDb.seniorityLists.toArray.mockResolvedValue([])
     mockDb.seniorityLists.update.mockResolvedValue(1)
 
@@ -99,7 +95,7 @@ describe('seniority store (Dexie)', () => {
   })
 
   describe('fetchLists', () => {
-    it('queries Dexie orderBy effectiveDate descending and populates lists', async () => {
+    it('queries Dexie and sorts lists by upload recency (createdAt) descending', async () => {
       mockDb.seniorityLists.toArray.mockResolvedValue([mockList1, mockList2])
 
       const { useSeniorityStore } = await import('./seniority')
@@ -108,18 +104,17 @@ describe('seniority store (Dexie)', () => {
 
       await store.fetchLists()
 
-      expect(mockDb.seniorityLists.orderBy).toHaveBeenCalledWith('effectiveDate')
-      expect(mockDb.seniorityLists.reverse).toHaveBeenCalled()
       expect(store.lists).toHaveLength(2)
-      // mockList2 has the later effectiveDate (2026-02-15) so it sorts first
+      // mockList2 has the later createdAt (2026-02-10) so it sorts first
       expect(store.lists[0]!.id).toBe(2)
       expect(store.lists[1]!.id).toBe(1)
     })
 
-    it('breaks effectiveDate ties by most recently uploaded (higher id) first', async () => {
-      const sameDate1: LocalSeniorityList = { id: 3, title: null, effectiveDate: '2026-03-01', createdAt: '2026-03-01T08:00:00Z' }
-      const sameDate2: LocalSeniorityList = { id: 7, title: null, effectiveDate: '2026-03-01', createdAt: '2026-03-01T10:00:00Z' }
-      mockDb.seniorityLists.toArray.mockResolvedValue([sameDate1, sameDate2])
+    it('breaks createdAt ties by effectiveDate, then by id descending', async () => {
+      const sameCreated1: LocalSeniorityList = { id: 3, title: null, effectiveDate: '2026-03-01', createdAt: '2026-03-01T10:00:00Z' }
+      const sameCreated2: LocalSeniorityList = { id: 7, title: null, effectiveDate: '2026-03-01', createdAt: '2026-03-01T10:00:00Z' }
+      const sameCreatedNewerEffective: LocalSeniorityList = { id: 4, title: null, effectiveDate: '2026-04-01', createdAt: '2026-03-01T10:00:00Z' }
+      mockDb.seniorityLists.toArray.mockResolvedValue([sameCreated1, sameCreated2, sameCreatedNewerEffective])
 
       const { useSeniorityStore } = await import('./seniority')
       const store = useSeniorityStore()
@@ -127,9 +122,10 @@ describe('seniority store (Dexie)', () => {
 
       await store.fetchLists()
 
-      // id=7 was uploaded later → should appear first
-      expect(store.lists[0]!.id).toBe(7)
-      expect(store.lists[1]!.id).toBe(3)
+      // same createdAt: newer effectiveDate wins first, then higher id.
+      expect(store.lists[0]!.id).toBe(4)
+      expect(store.lists[1]!.id).toBe(7)
+      expect(store.lists[2]!.id).toBe(3)
     })
 
     it('sets listsError and clears lists on failure', async () => {
@@ -332,7 +328,7 @@ describe('seniority store (Dexie)', () => {
       )
     })
 
-    it('inserts new list at lists[0] when its effectiveDate is the most recent', async () => {
+    it('inserts new list at lists[0] when it is the most recently uploaded', async () => {
       mockDb.seniorityLists.toArray.mockResolvedValue([mockList1, mockList2])
       mockDb.seniorityLists.add.mockResolvedValue(99)
       mockDb.seniorityEntries.bulkAdd.mockResolvedValue(undefined)
@@ -345,7 +341,7 @@ describe('seniority store (Dexie)', () => {
 
       await store.addList({ title: 'April List', effectiveDate: '2026-04-01' }, [])
 
-      // New list (id=99) has the latest effectiveDate — must be at index 0
+      // Newly uploaded list has the latest createdAt — must be at index 0
       expect(store.lists[0]!.id).toBe(99)
       expect(store.lists[0]!.effectiveDate).toBe('2026-04-01')
     })

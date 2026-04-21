@@ -1,15 +1,34 @@
 // @vitest-environment node
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-// Re-import fresh module each test to avoid registry state leakage
+type Handler = (...args: unknown[]) => unknown | Promise<unknown>
+const runtimeHandlers = new Map<string, Handler[]>()
+
+vi.mock('#app', () => ({
+  useNuxtApp: () => ({
+    hook: (name: string, handler: Handler) => {
+      const handlers = runtimeHandlers.get(name) ?? []
+      handlers.push(handler)
+      runtimeHandlers.set(name, handlers)
+    },
+    callHook: async (name: string, ...args: unknown[]) => {
+      const handlers = runtimeHandlers.get(name) ?? []
+      for (const handler of handlers) {
+        await handler(...args)
+      }
+    },
+  }),
+}))
+
+// Re-import fresh module each test to avoid cached state leakage.
 async function freshHooks() {
   vi.resetModules()
   return import('./hooks')
 }
 
-describe('emitHook / defineHook', () => {
+describe('emitHook / defineHook (Nuxt runtime hooks)', () => {
   beforeEach(() => {
-    vi.resetModules()
+    runtimeHandlers.clear()
   })
 
   it('calls a registered handler when event is emitted', async () => {

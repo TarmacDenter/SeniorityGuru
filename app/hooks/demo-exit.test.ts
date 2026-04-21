@@ -35,7 +35,6 @@ describe('ON_DEMO_EXIT hook listener', () => {
 
   it('calls deleteDemoLists on the seniority store', async () => {
     const { emitHook } = await import('~/utils/hooks')
-    await import('./demo-exit')
 
     await emitHook('app:demo:exit')
 
@@ -44,7 +43,6 @@ describe('ON_DEMO_EXIT hook listener', () => {
 
   it('calls clearPreferences on the user store', async () => {
     const { emitHook } = await import('~/utils/hooks')
-    await import('./demo-exit')
 
     await emitHook('app:demo:exit')
 
@@ -53,7 +51,6 @@ describe('ON_DEMO_EXIT hook listener', () => {
 
   it('navigates to / after cleanup', async () => {
     const { emitHook } = await import('~/utils/hooks')
-    await import('./demo-exit')
 
     await emitHook('app:demo:exit')
 

@@ -24,7 +24,6 @@ describe('list:changed hook listener', () => {
 
   it('calls fetchLists on the seniority store when list:changed fires', async () => {
     const { emitHook } = await import('~/utils/hooks')
-    await import('./list-changed')
 
     await emitHook('list:changed')
 
