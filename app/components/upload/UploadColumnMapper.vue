@@ -64,7 +64,7 @@ function updateOption<K extends keyof MappingOptions>(key: K, value: MappingOpti
       <div class="flex items-center gap-4">
         <span class="text-sm font-medium">Name columns</span>
         <AppButtonToggle
-          :model-value="mappingOptions.nameMode"
+          :model-value="mappingOptions.nameMode ?? 'single'"
           :options="[
             { label: 'Single column', value: 'single' },
             { label: 'First & Last', value: 'separate' },
@@ -117,7 +117,7 @@ function updateOption<K extends keyof MappingOptions>(key: K, value: MappingOpti
       <div class="flex items-center gap-4">
         <span class="text-sm font-medium">Retirement date <span class="text-error">*</span></span>
         <AppButtonToggle
-          :model-value="mappingOptions.retireMode"
+          :model-value="mappingOptions.retireMode ?? 'direct'"
           :options="[
             { label: 'Date column', value: 'direct' },
             { label: 'From DOB', value: 'dob' },
