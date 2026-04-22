@@ -1,3 +1,6 @@
+import { useNuxtApp } from '#app'
+import type { NuxtApp } from '#app'
+
 /** All application hook events with their typed callback signatures. */
 export interface AppHooks {
   // Demo lifecycle
@@ -12,12 +15,23 @@ export interface AppHooks {
 
 type HookHandler<K extends keyof AppHooks> = AppHooks[K]
 
-const _registry = new Map<keyof AppHooks, Set<(...args: unknown[]) => unknown>>()
+declare module '#app' {
+  interface RuntimeNuxtHooks {
+    'app:demo:enter': () => void
+    'app:demo:exit': () => void
+    'list:added': (listId: number) => void
+    'list:deleted': (listId: number) => void
+    'user:preference:changed': (key: string) => void
+  }
+}
 
 /** Register a handler for a named hook event. */
-export function defineHook<K extends keyof AppHooks>(name: K, handler: HookHandler<K>): void {
-  if (!_registry.has(name)) _registry.set(name, new Set())
-  _registry.get(name)!.add(handler as (...args: unknown[]) => unknown)
+export function defineHook<K extends keyof AppHooks>(
+  name: K,
+  handler: HookHandler<K>,
+  nuxtApp: NuxtApp = useNuxtApp(),
+): void {
+  nuxtApp.hook(name, handler as never)
 }
 
 /** Emit a named hook event, awaiting all async handlers in registration order. */
@@ -25,9 +39,6 @@ export async function emitHook<K extends keyof AppHooks>(
   name: K,
   ...args: Parameters<HookHandler<K>>
 ): Promise<void> {
-  const handlers = _registry.get(name)
-  if (!handlers) return
-  for (const handler of handlers) {
-    await handler(...(args as unknown[]))
-  }
+  type AnyCallHook = (name: string, ...args: unknown[]) => Promise<void>
+  await (useNuxtApp().callHook as AnyCallHook)(name, ...args)
 }
