@@ -8,6 +8,14 @@ import { emitHook } from '~/utils/hooks'
 
 const log = createLogger('seniority-store')
 
+function compareListsByRecency(a: LocalSeniorityList, b: LocalSeniorityList): number {
+  const createdCmp = (b.createdAt ?? '').localeCompare(a.createdAt ?? '')
+  if (createdCmp !== 0) return createdCmp
+  const effectiveCmp = b.effectiveDate.localeCompare(a.effectiveDate)
+  if (effectiveCmp !== 0) return effectiveCmp
+  return (b.id ?? 0) - (a.id ?? 0)
+}
+
 export const useSeniorityStore = defineStore('seniority', () => {
   const lists = ref<LocalSeniorityList[]>([])
   const entries = ref<SeniorityEntry[]>([])
@@ -42,11 +50,8 @@ export const useSeniorityStore = defineStore('seniority', () => {
     listsError.value = null
 
     try {
-      const raw = await db.seniorityLists.orderBy('effectiveDate').reverse().toArray()
-      lists.value = raw.sort((a, b) => {
-        const dateCmp = b.effectiveDate.localeCompare(a.effectiveDate)
-        return dateCmp !== 0 ? dateCmp : b.id! - a.id!
-      })
+      const raw = await db.seniorityLists.toArray()
+      lists.value = raw.sort(compareListsByRecency)
       log.debug('Lists fetched', { count: lists.value.length })
     }
     catch (e: unknown) {
@@ -94,6 +99,7 @@ export const useSeniorityStore = defineStore('seniority', () => {
 
     const hasDemoListsBefore = lists.value.some(l => l.isDemo)
     lists.value.push({ id: listId, ...listData, createdAt: new Date().toISOString() })
+    lists.value = [...lists.value].sort(compareListsByRecency)
     entryCache.clear()
     log.info('List added', { listId, entryCount: entries.length })
     emitHook('list:added', listId).catch((e: unknown) => {
@@ -126,10 +132,7 @@ export const useSeniorityStore = defineStore('seniority', () => {
     const idx = lists.value.findIndex(l => l.id === id)
     if (idx !== -1) {
       lists.value[idx] = { ...lists.value[idx]!, ...updates }
-      lists.value = [...lists.value].sort((a, b) => {
-        const dateCmp = b.effectiveDate.localeCompare(a.effectiveDate)
-        return dateCmp !== 0 ? dateCmp : b.id! - a.id!
-      })
+      lists.value = [...lists.value].sort(compareListsByRecency)
     }
     log.info('List updated in store', { listId: id })
   }
