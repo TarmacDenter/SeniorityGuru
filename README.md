@@ -25,7 +25,7 @@ Pilots upload their airline's seniority list (CSV or XLSX). The app parses it, m
 
 `ssr: false` globally. Pure SPA. No server routes, no Nitro, no auth, no database. All data lives in the user's browser via IndexedDB.
 
-This is an intentional constraint — pilots are cautious about where their employer's data goes. Zero-server means zero data risk.
+This is an intentional. In the future, data sync can be rolled, but for now I don't want to assume the risk that comes with hosting employee data.
 
 ### Data layer — Dexie (IndexedDB)
 
@@ -51,7 +51,7 @@ Component → composable/store → db
 - `useUser()` — exposes preferences (employee number, retirement age). Calls `db` internally.
 - `useSeniorityUpload()` — orchestrates the upload wizard. Writes to `db` on confirm.
 
-Components call composables and read store refs. If a component imports `db`, something has leaked through the wrong layer.
+Components call composables and read store refs. If you're adding a feature and your component imports `db`, please don't do that. Gross.
 
 ### Seniority engine
 
@@ -168,11 +168,10 @@ Linear dev with rebase. Conventional Commits enforced by commitlint + husky.
 | Branch | Purpose |
 |---|---|
 | `main` | Production. Protected. Auto-tagged by semantic-release. |
-| `dev` | Integration. Unprotected — push directly, force-push for history revision. |
-| `feature/*` | Branch from `dev`, rebase + fast-forward merge back. |
-| `hotfix/*` | Branch from `main`, cherry-pick to `dev` after. |
+| `feature/*` | Branch from `main`, integrated with a PR | Integration branches okay
+| `hotfix/*` | Branch from `main`, cherry-pick to `main` after. | Integrated with PR
 
-Pre-push hook runs typecheck + tests. CI runs both on push to `dev` and PRs to `main`. After a squash merge to `main`, `sync-dev.yml` automatically rebases `dev` onto `main` — no manual realignment needed.
+Pre-push hook runs typecheck + tests. CI runs both on push PRs to `main` AND all feature/**. After a squash merge to `main`.
 
 ---
 
