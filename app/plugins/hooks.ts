@@ -1,10 +1,12 @@
 /**
  * Auto-registers all hook listener files in app/hooks/.
- * Files call defineHook() at module-level, so importing them is enough.
+ * Each file exports a registration function that receives nuxtApp.
  */
-export default defineNuxtPlugin(() => {
+export default defineNuxtPlugin((nuxtApp) => {
   const modules = import.meta.glob(['~/hooks/*.ts', '!~/hooks/*.test.ts', '!~/hooks/*.spec.ts'], { eager: true })
-  // Modules are imported eagerly above — their top-level defineHook() calls
-  // have already executed as a side effect of the import.
-  void Object.keys(modules).length // suppress unused-variable warning
+
+  for (const mod of Object.values(modules)) {
+    const register = (mod as { default?: (app: unknown) => void }).default
+    if (typeof register === 'function') register(nuxtApp)
+  }
 })

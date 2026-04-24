@@ -6,6 +6,8 @@ const emit = defineEmits<{
 }>()
 
 const { savePreference } = useUser()
+// 'accent' is a custom UCard variant defined in app.config.ts — not in Nuxt UI types
+const accentVariant = 'accent' as 'solid'
 const toast = useToast()
 
 const employeeNumber = ref('')
@@ -41,7 +43,7 @@ async function onSave() {
 </script>
 
 <template>
-  <UCard variant="accent">
+  <UCard :variant="accentVariant">
     <div class="flex items-start gap-4">
       <UIcon name="i-lucide-id-card" class="size-8 text-primary shrink-0 mt-0.5" />
       <div class="flex-1 min-w-0">

@@ -21,6 +21,9 @@ const yearsOfService = computed(() => {
   return years >= 0 ? years : null
 })
 
+// 'accent' is a custom UCard variant defined in app.config.ts — not in Nuxt UI types
+const accentVariant = 'accent' as 'solid'
+
 onMounted(() => {
   requestAnimationFrame(() => {
     animatedPercentile.value = props.rank.percentile
@@ -29,7 +32,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <UCard variant="accent">
+  <UCard :variant="accentVariant">
     <div class="flex flex-col sm:flex-row sm:items-center gap-4">
       <div class="flex items-center gap-4 flex-1">
         <div class="flex items-center justify-center size-16 rounded-xl bg-primary/10">
