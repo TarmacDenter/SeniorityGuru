@@ -64,14 +64,75 @@ export function _useReview(opts: ReviewPhaseOptions): ReviewPhase & { _reset: ()
     triggerRef(opts.rowErrors)
   }
 
-  function deleteRow(rowIndex: number) {
-    opts.entries.value.splice(rowIndex, 1)
-    const newErrors = new Map<number, string[]>()
-    opts.rowErrors.value.forEach((errs, idx) => {
-      if (idx < rowIndex) newErrors.set(idx, errs)
-      else if (idx > rowIndex) newErrors.set(idx - 1, errs)
+  function clearStructuralErrors(errors: Map<number, string[]>): Map<number, string[]> {
+    const cleaned = new Map<number, string[]>()
+    errors.forEach((msgs, idx) => {
+      const filtered = msgs.filter(m =>
+        !m.startsWith('seniority_number: Duplicate') &&
+        !m.startsWith('seniority_number: Non-contiguous'),
+      )
+      if (filtered.length > 0) cleaned.set(idx, filtered)
     })
-    opts.rowErrors.value = newErrors
+    return cleaned
+  }
+
+  function deleteRow(rowIndex: number) {
+    const deleted = opts.entries.value[rowIndex]
+    const deletedSenNum = typeof deleted?.seniority_number === 'number' ? deleted.seniority_number : null
+
+    opts.entries.value.splice(rowIndex, 1)
+
+    if (deletedSenNum !== null) {
+      const hasDuplicate = opts.entries.value.some(
+        e => typeof e.seniority_number === 'number' && e.seniority_number === deletedSenNum,
+      )
+      if (!hasDuplicate) {
+        for (const entry of opts.entries.value) {
+          if (typeof entry.seniority_number === 'number' && entry.seniority_number > deletedSenNum) {
+            entry.seniority_number--
+          }
+        }
+      }
+    }
+
+    const reindexed = new Map<number, string[]>()
+    opts.rowErrors.value.forEach((errs, idx) => {
+      if (idx < rowIndex) reindexed.set(idx, errs)
+      else if (idx > rowIndex) reindexed.set(idx - 1, errs)
+    })
+    opts.rowErrors.value = clearStructuralErrors(reindexed)
+  }
+
+  function insertRowAt(rowIndex: number) {
+    const target = opts.entries.value[rowIndex]
+    const targetSenNum = typeof target?.seniority_number === 'number' ? target.seniority_number : null
+
+    if (targetSenNum !== null) {
+      for (const entry of opts.entries.value) {
+        if (typeof entry.seniority_number === 'number' && entry.seniority_number >= targetSenNum) {
+          entry.seniority_number++
+        }
+      }
+    }
+
+    const newEntry: Partial<SeniorityEntry> = {
+      seniority_number: targetSenNum ?? undefined,
+      employee_number: '',
+      name: '',
+      seat: '',
+      base: '',
+      fleet: '',
+      hire_date: '',
+      retire_date: '',
+    }
+
+    opts.entries.value.splice(rowIndex, 0, newEntry)
+
+    const reindexed = new Map<number, string[]>()
+    opts.rowErrors.value.forEach((errs, idx) => {
+      reindexed.set(idx < rowIndex ? idx : idx + 1, errs)
+    })
+    opts.rowErrors.value = clearStructuralErrors(reindexed)
   }
 
   function deleteErrorRows(): number {
@@ -98,6 +159,7 @@ export function _useReview(opts: ReviewPhaseOptions): ReviewPhase & { _reset: ()
     updateCell,
     deleteRow,
     deleteErrorRows,
+    insertRowAt,
     validate,
     _reset: reset,
   }

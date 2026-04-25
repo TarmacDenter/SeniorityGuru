@@ -38,6 +38,7 @@ const currentPage = computed({
 const emit = defineEmits<{
   updateCell: [rowIndex: number, field: keyof SeniorityEntry, value: string | number]
   deleteRow: [rowIndex: number]
+  insertRow: [rowIndex: number]
 }>()
 
 const editingCell = ref<{ row: number; field: string } | null>(null)
@@ -130,14 +131,24 @@ const columns: TableColumn<IndexedEntry>[] = [
       </template>
 
       <template #actions-cell="{ row }">
-        <UButton
-          icon="i-lucide-trash-2"
-          color="error"
-          variant="ghost"
-          size="xs"
-          aria-label="Delete row"
-          @click="emit('deleteRow', row.original._originalIndex)"
-        />
+        <div class="flex items-center gap-1">
+          <UButton
+            icon="i-lucide-plus"
+            color="neutral"
+            variant="ghost"
+            size="xs"
+            aria-label="Insert row above"
+            @click="emit('insertRow', row.original._originalIndex)"
+          />
+          <UButton
+            icon="i-lucide-trash-2"
+            color="error"
+            variant="ghost"
+            size="xs"
+            aria-label="Delete row"
+            @click="emit('deleteRow', row.original._originalIndex)"
+          />
+        </div>
       </template>
     </UTable>
     </div>

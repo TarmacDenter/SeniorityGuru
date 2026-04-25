@@ -53,6 +53,7 @@ export interface MappingPhase {
   headers: Readonly<Ref<string[]>>
   sampleRows: ComputedRef<string[][]>
   canAdvance: ComputedRef<boolean>
+  error: Readonly<Ref<string | null>>
 
   apply(): Promise<void>
 }
@@ -81,6 +82,7 @@ export interface ReviewPhase {
   updateCell(rowIndex: number, field: keyof SeniorityEntry, value: string | number): void
   deleteRow(rowIndex: number): void
   deleteErrorRows(): number
+  insertRowAt(rowIndex: number): void
   validate(): Promise<void>
 }
 
