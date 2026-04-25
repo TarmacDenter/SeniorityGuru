@@ -177,7 +177,7 @@ describe('_useReview', () => {
       expect(review.entries.value[3]!.seniority_number).toBe(4) // was #3
     })
 
-    it('shifts error map indices at and above rowIndex up by 1', () => {
+    it('shifts pre-existing error indices up and shows schema errors for the blank row', () => {
       const { review } = createReview()
       review.entries.value = [
         makePartialEntry({ seniority_number: 1 }),
@@ -191,9 +191,13 @@ describe('_useReview', () => {
 
       review.insertRowAt(1)
 
+      // Pre-existing errors are shifted correctly
       expect(review.rowErrors.value.has(0)).toBe(true)  // unchanged
-      expect(review.rowErrors.value.has(1)).toBe(false) // new blank row — no pre-existing error
       expect(review.rowErrors.value.has(3)).toBe(true)  // was index 2, shifted to 3
+      // Blank row immediately surfaces schema errors
+      expect(review.rowErrors.value.has(1)).toBe(true)
+      const blankErrors = review.rowErrors.value.get(1)!
+      expect(blankErrors.some(e => e.includes('employee_number'))).toBe(true)
     })
   })
 
@@ -217,6 +221,26 @@ describe('_useReview', () => {
       expect(deleted).toBe(2)
       expect(review.entries.value).toHaveLength(3)
       expect(review.entries.value.map(e => e.employee_number)).toEqual(['900001', '900003', '900005'])
+    })
+
+    it('renumbers surviving entries to be contiguous after bulk delete', () => {
+      const { review } = createReview()
+      review.entries.value = [
+        makePartialEntry({ seniority_number: 1, employee_number: '100' }),
+        makePartialEntry({ seniority_number: 2, employee_number: '200' }),
+        makePartialEntry({ seniority_number: 3, employee_number: '300' }),
+        makePartialEntry({ seniority_number: 4, employee_number: '400' }),
+        makePartialEntry({ seniority_number: 5, employee_number: '500' }),
+      ]
+      review.rowErrors.value = new Map([
+        [1, ['seniority_number: Duplicate seniority number 2']],
+        [3, ['hire_date: Invalid']],
+      ])
+
+      review.deleteErrorRows()
+
+      expect(review.entries.value.map(e => e.seniority_number)).toEqual([1, 2, 3])
+      expect(review.entries.value.map(e => e.employee_number)).toEqual(['100', '300', '500'])
     })
 
     it('returns 0 when no errors exist', () => {
@@ -248,6 +272,59 @@ describe('_useReview', () => {
       expect(review.entries.value[1]!.name).toBe('Robert')
       expect(review.entries.value[0]!.name).toBe('Alice')
       expect(review.entries.value[2]!.name).toBe('Charlie')
+    })
+
+    it('surfaces duplicate seniority_number error when cell edit creates a conflict', () => {
+      const { review } = createReview()
+      review.entries.value = [
+        makePartialEntry({ seniority_number: 1, employee_number: '100' }),
+        makePartialEntry({ seniority_number: 2, employee_number: '200' }),
+        makePartialEntry({ seniority_number: 3, employee_number: '300' }),
+      ]
+      review.rowErrors.value = new Map()
+
+      // Edit row 2's seniority_number to match row 0
+      review.updateCell(2, 'seniority_number', 1)
+
+      const allErrors = Array.from(review.rowErrors.value.values()).flat()
+      expect(allErrors.some(e => e.includes('Duplicate seniority number'))).toBe(true)
+      expect(review.rowErrors.value.has(0)).toBe(true) // row 0 flagged as duplicate
+      expect(review.rowErrors.value.has(2)).toBe(true) // row 2 flagged as duplicate
+    })
+
+    it('surfaces duplicate employee_number error when cell edit creates a conflict', () => {
+      const { review } = createReview()
+      review.entries.value = [
+        makePartialEntry({ seniority_number: 1, employee_number: '100' }),
+        makePartialEntry({ seniority_number: 2, employee_number: '200' }),
+        makePartialEntry({ seniority_number: 3, employee_number: '300' }),
+      ]
+      review.rowErrors.value = new Map()
+
+      // Edit row 2's employee_number to match row 0
+      review.updateCell(2, 'employee_number', '100')
+
+      const allErrors = Array.from(review.rowErrors.value.values()).flat()
+      expect(allErrors.some(e => e.includes('Duplicate employee number'))).toBe(true)
+    })
+
+    it('clears duplicate error when the conflict is resolved by editing', () => {
+      const { review } = createReview()
+      review.entries.value = [
+        makePartialEntry({ seniority_number: 1, employee_number: '100' }),
+        makePartialEntry({ seniority_number: 1, employee_number: '200' }), // duplicate
+        makePartialEntry({ seniority_number: 3, employee_number: '300' }),
+      ]
+      review.rowErrors.value = new Map([
+        [0, ['seniority_number: Duplicate seniority number 1']],
+        [1, ['seniority_number: Duplicate seniority number 1']],
+      ])
+
+      // Fix row 1's seniority_number
+      review.updateCell(1, 'seniority_number', 2)
+
+      expect(review.rowErrors.value.has(0)).toBe(false)
+      expect(review.rowErrors.value.has(1)).toBe(false)
     })
   })
 

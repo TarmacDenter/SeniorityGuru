@@ -1,11 +1,17 @@
 import type { ReviewPhase, ReviewPhaseOptions } from './types'
 import type { SeniorityEntry } from '~/utils/schemas/seniority-list'
 import { SeniorityEntrySchema } from '~/utils/schemas/seniority-list'
-import { validateEntries } from '~/utils/validate-entries'
+import { computeStructuralErrors } from '~/utils/validate-entries'
 import { BATCH_SIZE } from '~/utils/parse-spreadsheet'
 import { createLogger } from '~/utils/logger'
 
 const log = createLogger('upload:review')
+
+function isStructuralError(msg: string): boolean {
+  return msg.startsWith('seniority_number: Duplicate') ||
+    msg.startsWith('seniority_number: Non-contiguous') ||
+    msg.startsWith('employee_number: Duplicate')
+}
 
 export function _useReview(opts: ReviewPhaseOptions): ReviewPhase & { _reset: () => void } {
   const errorCount = computed(() => opts.rowErrors.value.size)
@@ -35,45 +41,55 @@ export function _useReview(opts: ReviewPhaseOptions): ReviewPhase & { _reset: ()
       }
     }
 
-    const structuralErrors = validateEntries(opts.entries.value)
+    const structural = computeStructuralErrors(opts.entries.value)
 
     for (const [idx, msgs] of schemaErrors) {
-      const existing = structuralErrors.get(idx)
+      const existing = structural.get(idx)
       if (existing) existing.unshift(...msgs)
-      else structuralErrors.set(idx, msgs)
+      else structural.set(idx, msgs)
     }
 
-    opts.rowErrors.value = structuralErrors
-    if (structuralErrors.size > 0) {
-      log.warn('Validation errors found', { errorCount: structuralErrors.size, totalRows: total })
+    opts.rowErrors.value = structural
+    if (structural.size > 0) {
+      log.warn('Validation errors found', { errorCount: structural.size, totalRows: total })
     }
 
     opts.progress.idle()
+  }
+
+  function revalidateStructural() {
+    // Remove stale structural errors, preserve schema errors
+    const cleaned = new Map<number, string[]>()
+    opts.rowErrors.value.forEach((msgs, idx) => {
+      const schemaOnly = msgs.filter(m => !isStructuralError(m))
+      if (schemaOnly.length > 0) cleaned.set(idx, schemaOnly)
+    })
+
+    // Add fresh structural errors across all rows
+    const structural = computeStructuralErrors(opts.entries.value)
+    structural.forEach((msgs, idx) => {
+      const existing = cleaned.get(idx) ?? []
+      cleaned.set(idx, [...existing, ...msgs])
+    })
+
+    opts.rowErrors.value = cleaned
+    triggerRef(opts.rowErrors)
   }
 
   function updateCell(rowIndex: number, field: keyof SeniorityEntry, value: string | number) {
     const entry = opts.entries.value[rowIndex]
     if (!entry) return
     ;(entry as Record<string, unknown>)[field] = value
+
+    // Update schema errors for the edited row (structural refreshed below)
     const result = SeniorityEntrySchema.safeParse(entry)
     if (result.success) {
       opts.rowErrors.value.delete(rowIndex)
     } else {
       opts.rowErrors.value.set(rowIndex, result.error.issues.map(issue => `${issue.path.join('.')}: ${issue.message}`))
     }
-    triggerRef(opts.rowErrors)
-  }
 
-  function clearStructuralErrors(errors: Map<number, string[]>): Map<number, string[]> {
-    const cleaned = new Map<number, string[]>()
-    errors.forEach((msgs, idx) => {
-      const filtered = msgs.filter(m =>
-        !m.startsWith('seniority_number: Duplicate') &&
-        !m.startsWith('seniority_number: Non-contiguous'),
-      )
-      if (filtered.length > 0) cleaned.set(idx, filtered)
-    })
-    return cleaned
+    revalidateStructural()
   }
 
   function deleteRow(rowIndex: number) {
@@ -100,7 +116,9 @@ export function _useReview(opts: ReviewPhaseOptions): ReviewPhase & { _reset: ()
       if (idx < rowIndex) reindexed.set(idx, errs)
       else if (idx > rowIndex) reindexed.set(idx - 1, errs)
     })
-    opts.rowErrors.value = clearStructuralErrors(reindexed)
+    opts.rowErrors.value = reindexed
+
+    revalidateStructural()
   }
 
   function insertRowAt(rowIndex: number) {
@@ -132,7 +150,16 @@ export function _useReview(opts: ReviewPhaseOptions): ReviewPhase & { _reset: ()
     opts.rowErrors.value.forEach((errs, idx) => {
       reindexed.set(idx < rowIndex ? idx : idx + 1, errs)
     })
-    opts.rowErrors.value = clearStructuralErrors(reindexed)
+
+    // Immediately surface schema errors for the blank row
+    const blankResult = SeniorityEntrySchema.safeParse(newEntry)
+    if (!blankResult.success) {
+      reindexed.set(rowIndex, blankResult.error.issues.map(i => `${i.path.join('.')}: ${i.message}`))
+    }
+
+    opts.rowErrors.value = reindexed
+
+    revalidateStructural()
   }
 
   function deleteErrorRows(): number {
@@ -140,7 +167,16 @@ export function _useReview(opts: ReviewPhaseOptions): ReviewPhase & { _reset: ()
     if (errorIndices.size === 0) return 0
     const count = errorIndices.size
     opts.entries.value = opts.entries.value.filter((_, i) => !errorIndices.has(i))
+
+    // Renumber surviving entries to keep the sequence contiguous
+    opts.entries.value.forEach((entry, i) => {
+      if (typeof entry.seniority_number === 'number') {
+        entry.seniority_number = i + 1
+      }
+    })
+
     opts.rowErrors.value = new Map()
+    revalidateStructural()
     return count
   }
 
