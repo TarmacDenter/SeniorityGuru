@@ -1,7 +1,16 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { _useColumnMapping } from './_useColumnMapping'
 import { _useProgressTracker } from './_useProgressTracker'
 import type { ColumnMap } from '~/utils/parse-spreadsheet'
+
+const { mockApplyColumnMapAsync } = vi.hoisted(() => ({
+  mockApplyColumnMapAsync: vi.fn(),
+}))
+
+vi.mock('~/utils/parse-spreadsheet', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('~/utils/parse-spreadsheet')>()
+  return { ...actual, applyColumnMapAsync: mockApplyColumnMapAsync }
+})
 
 function createMapping(overrides: Record<string, any> = {}) {
   const rawRows = ref<string[][]>([])
@@ -85,6 +94,7 @@ describe('_useColumnMapping', () => {
 
   describe('apply', () => {
     it('calls onMapped with mapped entries and onMetadataReady', async () => {
+      mockApplyColumnMapAsync.mockResolvedValueOnce([{ seniority_number: 1 }])
       const onMapped = vi.fn()
       const onMetadataReady = vi.fn()
       const { mapping, rawRows, extractedEffectiveDate, extractedTitle } = createMapping({ onMapped, onMetadataReady })
@@ -113,6 +123,57 @@ describe('_useColumnMapping', () => {
       expect(entries[0].seniority_number).toBe(1)
 
       expect(onMetadataReady).toHaveBeenCalledWith('2026-03-01', 'March List')
+    })
+  })
+
+  describe('apply — error handling', () => {
+    beforeEach(() => {
+      mockApplyColumnMapAsync.mockReset()
+    })
+
+    it('sets error.value when applyColumnMapAsync throws and does not call onMapped', async () => {
+      mockApplyColumnMapAsync.mockRejectedValueOnce(new Error('row transform failed'))
+      const onMapped = vi.fn()
+      const { mapping } = createMapping({ onMapped })
+
+      await mapping.apply()
+
+      expect(mapping.error.value).toBe('Failed to map columns: row transform failed')
+      expect(onMapped).not.toHaveBeenCalled()
+    })
+
+    it('sets error.value when mapped result is empty and does not call onMapped', async () => {
+      mockApplyColumnMapAsync.mockResolvedValueOnce([])
+      const onMapped = vi.fn()
+      const { mapping } = createMapping({ onMapped })
+
+      await mapping.apply()
+
+      expect(mapping.error.value).toBe('No rows could be mapped. Verify the selected columns contain data.')
+      expect(onMapped).not.toHaveBeenCalled()
+    })
+
+    it('clears error.value at the start of the next apply() call', async () => {
+      mockApplyColumnMapAsync.mockRejectedValueOnce(new Error('first failure'))
+      const onMapped = vi.fn()
+      const { mapping } = createMapping({ onMapped })
+
+      await mapping.apply()
+      expect(mapping.error.value).not.toBeNull()
+
+      mockApplyColumnMapAsync.mockResolvedValueOnce([{ seniority_number: 1 }])
+      await mapping.apply()
+
+      expect(mapping.error.value).toBeNull()
+    })
+
+    it('error.value is null after a successful apply()', async () => {
+      mockApplyColumnMapAsync.mockResolvedValueOnce([{ seniority_number: 1 }])
+      const { mapping } = createMapping()
+
+      await mapping.apply()
+
+      expect(mapping.error.value).toBeNull()
     })
   })
 })

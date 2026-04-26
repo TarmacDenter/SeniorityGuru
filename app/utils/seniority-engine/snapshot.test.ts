@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { describe, it, expect } from 'vitest'
 import { makeDomainEntry } from '~/test-utils/factories'
-import { createSnapshot, InvalidSnapshotDataError } from './snapshot'
+import { createSnapshot, InvalidSnapshotDataError, validateSnapshotEntries } from './snapshot'
 
 describe('createSnapshot', () => {
   const entries = [
@@ -64,5 +64,60 @@ describe('createSnapshot', () => {
     expect(snap.sortedEntries).toHaveLength(0)
     expect(snap.byCell.size).toBe(0)
     expect(snap.quals).toHaveLength(0)
+  })
+})
+
+describe('validateSnapshotEntries', () => {
+  it('returns empty map for valid entries with unique seniority and employee numbers', () => {
+    const entries = [
+      makeDomainEntry({ seniority_number: 1, employee_number: 'E1' }),
+      makeDomainEntry({ seniority_number: 2, employee_number: 'E2' }),
+    ]
+    expect(validateSnapshotEntries(entries).size).toBe(0)
+  })
+
+  it('flags all rows sharing a duplicate seniority number', () => {
+    const entries = [
+      makeDomainEntry({ seniority_number: 1, employee_number: 'E1' }),
+      makeDomainEntry({ seniority_number: 2, employee_number: 'E2' }),
+      makeDomainEntry({ seniority_number: 2, employee_number: 'E3' }),
+    ]
+    const errors = validateSnapshotEntries(entries)
+    expect(errors.has(1)).toBe(true)
+    expect(errors.has(2)).toBe(true)
+    const allErrors = Array.from(errors.values()).flat()
+    expect(allErrors.some(e => e.includes('Duplicate seniority number 2'))).toBe(true)
+  })
+
+  it('flags all rows sharing a duplicate employee number', () => {
+    const entries = [
+      makeDomainEntry({ seniority_number: 1, employee_number: 'SAME' }),
+      makeDomainEntry({ seniority_number: 2, employee_number: 'SAME' }),
+    ]
+    const errors = validateSnapshotEntries(entries)
+    expect(errors.has(0)).toBe(true)
+    expect(errors.has(1)).toBe(true)
+    const allErrors = Array.from(errors.values()).flat()
+    expect(allErrors.some(e => e.includes('Duplicate employee number SAME'))).toBe(true)
+  })
+
+  it('reports both duplicate seniority and employee number violations in the same pass', () => {
+    const entries = [
+      makeDomainEntry({ seniority_number: 1, employee_number: 'DUP' }),
+      makeDomainEntry({ seniority_number: 1, employee_number: 'DUP' }),
+    ]
+    const errors = validateSnapshotEntries(entries)
+    const allErrors = Array.from(errors.values()).flat()
+    expect(allErrors.some(e => e.includes('Duplicate seniority number'))).toBe(true)
+    expect(allErrors.some(e => e.includes('Duplicate employee number'))).toBe(true)
+  })
+
+  it('does not flag empty employee_number as a duplicate', () => {
+    const entries = [
+      makeDomainEntry({ seniority_number: 1, employee_number: '' }),
+      makeDomainEntry({ seniority_number: 2, employee_number: '' }),
+    ]
+    const errors = validateSnapshotEntries(entries)
+    expect(Array.from(errors.values()).flat().some(e => e.includes('Duplicate employee number'))).toBe(false)
   })
 })

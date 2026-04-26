@@ -2,6 +2,56 @@ import type { SeniorityEntry } from '~/utils/schemas/seniority-list'
 import type { SenioritySnapshot, Qual } from './types'
 import { cellKey } from './cell-key'
 
+/**
+ * Returns all cross-row snapshot invariant violations as a row-indexed error map.
+ * Checks the same constraints that createSnapshot enforces (uniqueness of seniority
+ * and employee numbers) but collects every violation instead of failing on the first.
+ * Used by computeStructuralErrors as the authoritative source for these rules.
+ */
+export function validateSnapshotEntries(entries: Partial<SeniorityEntry>[]): Map<number, string[]> {
+  const errors = new Map<number, string[]>()
+
+  const senNumToIndices = new Map<number, number[]>()
+  entries.forEach((entry, i) => {
+    const num = entry.seniority_number
+    if (typeof num === 'number' && Number.isInteger(num) && num > 0) {
+      const indices = senNumToIndices.get(num) ?? []
+      indices.push(i)
+      senNumToIndices.set(num, indices)
+    }
+  })
+  for (const [num, indices] of senNumToIndices) {
+    if (indices.length > 1) {
+      for (const i of indices) {
+        const errs = errors.get(i) ?? []
+        errs.push(`seniority_number: Duplicate seniority number ${num}`)
+        errors.set(i, errs)
+      }
+    }
+  }
+
+  const empToIndices = new Map<string, number[]>()
+  entries.forEach((entry, i) => {
+    const emp = typeof entry.employee_number === 'string' ? entry.employee_number.trim() : ''
+    if (emp.length > 0) {
+      const indices = empToIndices.get(emp) ?? []
+      indices.push(i)
+      empToIndices.set(emp, indices)
+    }
+  })
+  for (const [emp, indices] of empToIndices) {
+    if (indices.length > 1) {
+      for (const i of indices) {
+        const errs = errors.get(i) ?? []
+        errs.push(`employee_number: Duplicate employee number ${emp}`)
+        errors.set(i, errs)
+      }
+    }
+  }
+
+  return errors
+}
+
 export function uniqueEntryValues(entries: SeniorityEntry[], field: 'fleet' | 'seat' | 'base'): string[] {
   const values = new Set<string>()
   for (const e of entries) {

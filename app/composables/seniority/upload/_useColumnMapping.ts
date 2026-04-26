@@ -23,6 +23,7 @@ const DEFAULT_MAPPING_OPTIONS: MappingOptions = {
 
 export function _useColumnMapping(opts: MappingPhaseOptions): MappingPhase & { _reset: () => void } {
   const mappingOptions = ref<MappingOptions>({ ...DEFAULT_MAPPING_OPTIONS })
+  const error = ref<string | null>(null)
 
   const sampleRows = computed(() => opts.rawRows.value.slice(0, 3))
 
@@ -40,6 +41,7 @@ export function _useColumnMapping(opts: MappingPhaseOptions): MappingPhase & { _
   })
 
   async function apply() {
+    error.value = null
     try {
       opts.progress.report('mapping', 0, opts.rawRows.value.length)
 
@@ -52,6 +54,12 @@ export function _useColumnMapping(opts: MappingPhaseOptions): MappingPhase & { _
         },
       )
 
+      if (mapped.length === 0) {
+        error.value = 'No rows could be mapped. Verify the selected columns contain data.'
+        log.warn('Mapping produced zero rows')
+        return
+      }
+
       log.debug('Mapping complete', { entryCount: mapped.length, sampleEntry: mapped[0] })
 
       await opts.onMapped(mapped)
@@ -62,6 +70,10 @@ export function _useColumnMapping(opts: MappingPhaseOptions): MappingPhase & { _
         opts.extractedEffectiveDate.value,
         opts.extractedTitle.value,
       )
+    } catch (err) {
+      const detail = err instanceof Error ? err.message : String(err)
+      error.value = `Failed to map columns: ${detail}`
+      log.error('Mapping failed', { error: detail })
     } finally {
       opts.progress.idle()
     }
@@ -78,6 +90,7 @@ export function _useColumnMapping(opts: MappingPhaseOptions): MappingPhase & { _
     headers: opts.rawHeaders,
     sampleRows,
     canAdvance,
+    error: readonly(error),
     apply,
     _reset: reset,
   }

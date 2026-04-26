@@ -68,11 +68,11 @@ function changeFormat() {
 
 async function nextStep() {
   if (currentStep.value === 'upload' && upload.file.autoDetected.value) {
-    try {
-      await upload.mapping.apply()
-    } catch {
-      log.error('applyMapping failed during auto-detect step')
-      toast.add({ title: 'Failed to process file', color: 'error' })
+    await upload.mapping.apply()
+    if (upload.mapping.error.value) {
+      log.error('applyMapping failed during auto-detect step', { error: upload.mapping.error.value })
+      currentStep.value = 'mapping'
+      mappingSkipped.value = false
       return
     }
     mappingSkipped.value = true
@@ -82,11 +82,9 @@ async function nextStep() {
     return
   }
   if (currentStep.value === 'mapping') {
-    try {
-      await upload.mapping.apply()
-    } catch {
-      log.error('applyMapping failed during mapping step')
-      toast.add({ title: 'Failed to process file', color: 'error' })
+    await upload.mapping.apply()
+    if (upload.mapping.error.value) {
+      log.error('applyMapping failed during mapping step', { error: upload.mapping.error.value })
       return
     }
   }
@@ -240,6 +238,13 @@ async function onSave() {
 
             <!-- Step 2: Map Columns -->
             <div v-else-if="currentStep === 'mapping'" class="space-y-6">
+              <UAlert
+                v-if="upload.mapping.error.value"
+                icon="i-lucide-alert-circle"
+                color="error"
+                variant="soft"
+                :title="upload.mapping.error.value"
+              />
               <UploadColumnMapper
                 :headers="upload.mapping.headers.value"
                 :column-map="upload.mapping.columnMap.value"
@@ -318,11 +323,19 @@ async function onSave() {
                 :estimated-indices="upload.review.syntheticIndices.value"
                 @update-cell="upload.review.updateCell"
                 @delete-row="upload.review.deleteRow"
+                @insert-row="upload.review.insertRowAt"
               />
             </div>
 
             <!-- Step 4: Confirm & Save -->
             <div v-else-if="currentStep === 'confirm'" class="space-y-6 max-w-md">
+              <UAlert
+                v-if="upload.confirm.error.value"
+                icon="i-lucide-alert-circle"
+                color="error"
+                variant="soft"
+                :title="upload.confirm.error.value"
+              />
               <UFormField label="Effective Date" name="effectiveDate" required>
                 <UInputDate v-model="effectiveDateModel" class="w-full" />
               </UFormField>
