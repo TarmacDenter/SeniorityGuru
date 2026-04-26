@@ -2,6 +2,7 @@ import type { DateValue } from 'reka-ui'
 import type { ConfirmPhase, ConfirmPhaseOptions } from './types'
 import type { SeniorityEntry } from '~/utils/schemas/seniority-list'
 import { useSeniorityStore } from '~/stores/seniority'
+import { createSnapshot } from '~/utils/seniority-engine/snapshot'
 import { createLogger } from '~/utils/logger'
 
 const log = createLogger('upload:confirm')
@@ -17,6 +18,8 @@ export function _useConfirm(opts: ConfirmPhaseOptions): ConfirmPhase & { _reset:
     log.info('Upload started', { entryCount: entries.length, effectiveDate: effectiveDate.value?.toString() })
 
     try {
+      createSnapshot(entries as SeniorityEntry[])
+
       const store = useSeniorityStore()
       const localEntries = (entries as SeniorityEntry[]).map(e => ({
         seniorityNumber: e.seniority_number,

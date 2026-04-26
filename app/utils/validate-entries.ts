@@ -1,14 +1,16 @@
 import type { SeniorityEntry } from '~/utils/schemas/seniority-list'
 import { SeniorityEntrySchema } from '~/utils/schemas/seniority-list'
+import { validateSnapshotEntries } from '~/utils/seniority-engine/snapshot'
 
 /**
- * Structural-only validation: duplicate seniority numbers, non-contiguous sequences,
- * and duplicate employee numbers. Does not run Zod schema validation.
- * Pure function — no side effects, no reactive state.
+ * Structural validation: snapshot invariants (duplicate seniority/employee numbers)
+ * plus the upload-specific contiguity requirement (1..N sequence).
+ * Does not run Zod schema validation. Pure function — no side effects.
  */
 export function computeStructuralErrors(entries: Partial<SeniorityEntry>[]): Map<number, string[]> {
-  const errors = new Map<number, string[]>()
+  const errors = validateSnapshotEntries(entries)
 
+  // Contiguity is an upload requirement; the snapshot engine does not enforce it
   const senNumToIndices = new Map<number, number[]>()
   entries.forEach((entry, i) => {
     const num = entry.seniority_number
@@ -18,16 +20,6 @@ export function computeStructuralErrors(entries: Partial<SeniorityEntry>[]): Map
       senNumToIndices.set(num, indices)
     }
   })
-
-  for (const [num, indices] of senNumToIndices) {
-    if (indices.length > 1) {
-      for (const i of indices) {
-        const existing = errors.get(i) ?? []
-        existing.push(`seniority_number: Duplicate seniority number ${num}`)
-        errors.set(i, existing)
-      }
-    }
-  }
 
   const allNums = Array.from(senNumToIndices.keys()).sort((a, b) => a - b)
   if (allNums.length > 0) {
@@ -43,25 +35,6 @@ export function computeStructuralErrors(entries: Partial<SeniorityEntry>[]): Map
             errors.set(i, existing)
           }
         }
-      }
-    }
-  }
-
-  const empToIndices = new Map<string, number[]>()
-  entries.forEach((entry, i) => {
-    const emp = typeof entry.employee_number === 'string' ? entry.employee_number.trim() : ''
-    if (emp.length > 0) {
-      const indices = empToIndices.get(emp) ?? []
-      indices.push(i)
-      empToIndices.set(emp, indices)
-    }
-  })
-  for (const [emp, indices] of empToIndices) {
-    if (indices.length > 1) {
-      for (const i of indices) {
-        const existing = errors.get(i) ?? []
-        existing.push(`employee_number: Duplicate employee number ${emp}`)
-        errors.set(i, existing)
       }
     }
   }

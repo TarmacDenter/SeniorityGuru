@@ -80,4 +80,34 @@ describe('_useConfirm', () => {
     await expect(confirm.save(entries)).rejects.toThrow('DB full')
     expect(error.value).toBe('DB full')
   })
+
+  it('rejects with snapshot error and does not call store when entries have duplicate seniority numbers', async () => {
+    const error = ref<string | null>(null)
+    const confirm = _useConfirm({ error })
+    confirm.effectiveDate.value = { toString: () => '2025-01-01' } as never
+
+    const entries = [
+      makeDomainEntry({ seniority_number: 1, employee_number: 'E1' }),
+      makeDomainEntry({ seniority_number: 1, employee_number: 'E2' }), // duplicate seniority
+    ]
+
+    await expect(confirm.save(entries)).rejects.toThrow()
+    expect(error.value).toContain('Duplicate seniority number')
+    expect(mockStore.addList).not.toHaveBeenCalled()
+  })
+
+  it('rejects with snapshot error and does not call store when entries have duplicate employee numbers', async () => {
+    const error = ref<string | null>(null)
+    const confirm = _useConfirm({ error })
+    confirm.effectiveDate.value = { toString: () => '2025-01-01' } as never
+
+    const entries = [
+      makeDomainEntry({ seniority_number: 1, employee_number: 'SAME' }),
+      makeDomainEntry({ seniority_number: 2, employee_number: 'SAME' }), // duplicate employee
+    ]
+
+    await expect(confirm.save(entries)).rejects.toThrow()
+    expect(error.value).toContain('Duplicate employee number')
+    expect(mockStore.addList).not.toHaveBeenCalled()
+  })
 })
