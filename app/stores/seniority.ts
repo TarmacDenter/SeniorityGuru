@@ -9,10 +9,12 @@ import { emitHook } from '~/utils/hooks'
 const log = createLogger('seniority-store')
 
 function compareListsByRecency(a: LocalSeniorityList, b: LocalSeniorityList): number {
-  const createdCmp = (b.createdAt ?? '').localeCompare(a.createdAt ?? '')
-  if (createdCmp !== 0) return createdCmp
   const effectiveCmp = b.effectiveDate.localeCompare(a.effectiveDate)
   if (effectiveCmp !== 0) return effectiveCmp
+
+  const createdCmp = (b.createdAt ?? '').localeCompare(a.createdAt ?? '')
+  if (createdCmp !== 0) return createdCmp
+
   return (b.id ?? 0) - (a.id ?? 0)
 }
 
