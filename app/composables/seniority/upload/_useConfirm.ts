@@ -12,16 +12,16 @@ export function _useConfirm(opts: ConfirmPhaseOptions): ConfirmPhase & { _reset:
   const title = ref('')
   const saving = ref(false)
 
-  async function save(entries: Partial<SeniorityEntry>[]): Promise<number> {
+  async function save(entries: SeniorityEntry[]): Promise<number> {
     saving.value = true
     opts.error.value = null
     log.info('Upload started', { entryCount: entries.length, effectiveDate: effectiveDate.value?.toString() })
 
     try {
-      createSnapshot(entries as SeniorityEntry[])
+      createSnapshot(entries)
 
       const store = useSeniorityStore()
-      const localEntries = (entries as SeniorityEntry[]).map(e => ({
+      const localEntries = entries.map(e => ({
         seniorityNumber: e.seniority_number,
         employeeNumber: e.employee_number,
         name: e.name ?? null,

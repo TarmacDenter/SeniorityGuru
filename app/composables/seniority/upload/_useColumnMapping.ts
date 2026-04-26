@@ -1,25 +1,10 @@
 import type { MappingPhase, MappingPhaseOptions } from './types'
-import type { ColumnMap, MappingOptions } from '~/utils/parse-spreadsheet'
+import type { MappingOptions } from '~/utils/parse-spreadsheet'
 import { applyColumnMapAsync } from '~/utils/parse-spreadsheet'
 import { createLogger } from '~/utils/logger'
+import { DEFAULT_COLUMN_MAP, DEFAULT_MAPPING_OPTIONS } from './defaults'
 
 const log = createLogger('upload:mapping')
-
-const DEFAULT_COLUMN_MAP: ColumnMap = {
-  seniority_number: -1,
-  employee_number: -1,
-  seat: -1,
-  base: -1,
-  fleet: -1,
-  name: -1,
-  hire_date: -1,
-  retire_date: -1,
-}
-
-const DEFAULT_MAPPING_OPTIONS: MappingOptions = {
-  nameMode: 'single',
-  retireMode: 'direct',
-}
 
 export function _useColumnMapping(opts: MappingPhaseOptions): MappingPhase & { _reset: () => void } {
   const mappingOptions = ref<MappingOptions>({ ...DEFAULT_MAPPING_OPTIONS })

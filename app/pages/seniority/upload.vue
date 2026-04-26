@@ -116,7 +116,7 @@ function onDeleteErrorRows() {
 
 async function onSave() {
   try {
-    const count = await upload.confirm.save(upload.review.entries.value)
+    const count = await upload.confirm.save(upload.review.toValidatedEntries())
     toast.add({ title: `Uploaded ${count} entries`, color: 'success' })
     upload.reset()
     await navigateTo({ path: '/dashboard', query: { tab: 'seniority' } })
