@@ -2,6 +2,89 @@ import type { SeniorityEntry } from '~/utils/schemas/seniority-list'
 import type { SenioritySnapshot, Qual } from './types'
 import { cellKey } from './cell-key'
 
+export type SnapshotIssueCode = 'duplicate_seniority_number' | 'duplicate_employee_number'
+
+export interface SnapshotValidationIssue {
+  code: SnapshotIssueCode
+  field: 'seniority_number' | 'employee_number'
+  rowIndex: number
+  message: string
+}
+
+function collectDuplicateIssues(entries: readonly Partial<SeniorityEntry>[]): SnapshotValidationIssue[] {
+  const issues: SnapshotValidationIssue[] = []
+
+  const senNumToIndices = new Map<number, number[]>()
+  entries.forEach((entry, i) => {
+    const num = entry.seniority_number
+    if (typeof num === 'number' && Number.isInteger(num) && num > 0) {
+      const indices = senNumToIndices.get(num) ?? []
+      indices.push(i)
+      senNumToIndices.set(num, indices)
+    }
+  })
+  for (const [num, indices] of senNumToIndices) {
+    if (indices.length > 1) {
+      for (const rowIndex of indices) {
+        issues.push({
+          code: 'duplicate_seniority_number',
+          field: 'seniority_number',
+          rowIndex,
+          message: `Duplicate seniority number ${num}`,
+        })
+      }
+    }
+  }
+
+  const empToIndices = new Map<string, number[]>()
+  entries.forEach((entry, i) => {
+    const emp = typeof entry.employee_number === 'string' ? entry.employee_number.trim() : ''
+    if (emp.length > 0) {
+      const indices = empToIndices.get(emp) ?? []
+      indices.push(i)
+      empToIndices.set(emp, indices)
+    }
+  })
+  for (const [emp, indices] of empToIndices) {
+    if (indices.length > 1) {
+      for (const rowIndex of indices) {
+        issues.push({
+          code: 'duplicate_employee_number',
+          field: 'employee_number',
+          rowIndex,
+          message: `Duplicate employee number ${emp}`,
+        })
+      }
+    }
+  }
+
+  return issues
+}
+
+function issuesToErrorMap(issues: SnapshotValidationIssue[]): Map<number, string[]> {
+  const errors = new Map<number, string[]>()
+  for (const issue of issues) {
+    const rowErrors = errors.get(issue.rowIndex) ?? []
+    rowErrors.push(`${issue.field}: ${issue.message}`)
+    errors.set(issue.rowIndex, rowErrors)
+  }
+  return errors
+}
+
+/**
+ * Returns all cross-row snapshot invariant violations as a row-indexed error map.
+ * Checks the same constraints that createSnapshot enforces (uniqueness of seniority
+ * and employee numbers) but collects every violation instead of failing on the first.
+ * Used by computeStructuralErrors as the authoritative source for these rules.
+ */
+export function validateSnapshotEntries(entries: Partial<SeniorityEntry>[]): Map<number, string[]> {
+  return issuesToErrorMap(collectDuplicateIssues(entries))
+}
+
+export function validateSnapshotEntryIssues(entries: readonly Partial<SeniorityEntry>[]): SnapshotValidationIssue[] {
+  return collectDuplicateIssues(entries)
+}
+
 export function uniqueEntryValues(entries: SeniorityEntry[], field: 'fleet' | 'seat' | 'base'): string[] {
   const values = new Set<string>()
   for (const e of entries) {
@@ -18,17 +101,15 @@ export class InvalidSnapshotDataError extends Error {
 }
 
 export function createSnapshot(entries: readonly SeniorityEntry[]): SenioritySnapshot {
-  const seenSenNums = new Set<number>()
-  const seenEmpNums = new Set<string>()
+  const duplicateIssues = validateSnapshotEntryIssues(entries)
+  if (duplicateIssues.length > 0) {
+    const issue = duplicateIssues[0]!
+    throw new InvalidSnapshotDataError(`${issue.message}.`, entries[issue.rowIndex])
+  }
+
   for (const e of entries) {
     if (!e.base || !e.seat || !e.fleet)
       throw new InvalidSnapshotDataError(`Entry is missing required qual data (base/seat/fleet).`, e)
-    if (seenSenNums.has(e.seniority_number))
-      throw new InvalidSnapshotDataError(`Duplicate seniority number: ${e.seniority_number}.`, e)
-    if (seenEmpNums.has(e.employee_number))
-      throw new InvalidSnapshotDataError(`Duplicate employee number: ${e.employee_number}.`, e)
-    seenSenNums.add(e.seniority_number)
-    seenEmpNums.add(e.employee_number)
   }
 
   const sortedEntries = entries

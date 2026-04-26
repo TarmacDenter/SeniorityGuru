@@ -127,7 +127,7 @@ describe('useSeniorityUpload (orchestrator)', () => {
         makeDomainEntry({ seniority_number: 1, employee_number: 'E001', seat: 'CA', base: 'LAX', fleet: 'B737', hire_date: '2010-01-01', retire_date: '2040-01-01' }),
       ]
 
-      const count = await upload.confirm.save(upload.review.entries.value)
+      const count = await upload.confirm.save(upload.review.toValidatedEntries())
 
       expect(count).toBe(1)
       expect(mockStore.addList).toHaveBeenCalledTimes(1)

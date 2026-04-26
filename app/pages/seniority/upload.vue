@@ -14,9 +14,34 @@ defineExpose({ onSave })
 const upload = useSeniorityUpload()
 const toast = useToast()
 const files = ref<File | null>(null)
-const showErrorsOnly = ref(false)
-const showEstimatedOnly = ref(false)
 const mappingSkipped = ref(false)
+const activeRowFilter = ref<'all' | 'errors' | 'estimated'>('all')
+
+const showErrorsOnly = computed(() => activeRowFilter.value === 'errors')
+const showEstimatedOnly = computed(() => activeRowFilter.value === 'estimated')
+const activeFilterLabel = computed(() => {
+  if (showErrorsOnly.value) return 'Error rows only'
+  if (showEstimatedOnly.value) return 'Estimated rows only'
+  return null
+})
+
+watch(() => upload.review.errorCount.value, (count) => {
+  if (count === 0 && showErrorsOnly.value) {
+    activeRowFilter.value = 'all'
+  }
+})
+
+function toggleErrorsOnly() {
+  activeRowFilter.value = showErrorsOnly.value ? 'all' : 'errors'
+}
+
+function toggleEstimatedOnly() {
+  activeRowFilter.value = showEstimatedOnly.value ? 'all' : 'estimated'
+}
+
+function clearRowFilter() {
+  activeRowFilter.value = 'all'
+}
 
 const stepOrder = ['upload', 'mapping', 'review', 'confirm'] as const
 type Step = typeof stepOrder[number]
@@ -62,17 +87,18 @@ function selectParser(parserId: string) {
 
 function changeFormat() {
   upload.reset()
+  clearRowFilter()
   files.value = null
   mappingSkipped.value = false
 }
 
 async function nextStep() {
   if (currentStep.value === 'upload' && upload.file.autoDetected.value) {
-    try {
-      await upload.mapping.apply()
-    } catch {
-      log.error('applyMapping failed during auto-detect step')
-      toast.add({ title: 'Failed to process file', color: 'error' })
+    await upload.mapping.apply()
+    if (upload.mapping.error.value) {
+      log.error('applyMapping failed during auto-detect step', { error: upload.mapping.error.value })
+      currentStep.value = 'mapping'
+      mappingSkipped.value = false
       return
     }
     mappingSkipped.value = true
@@ -82,11 +108,9 @@ async function nextStep() {
     return
   }
   if (currentStep.value === 'mapping') {
-    try {
-      await upload.mapping.apply()
-    } catch {
-      log.error('applyMapping failed during mapping step')
-      toast.add({ title: 'Failed to process file', color: 'error' })
+    await upload.mapping.apply()
+    if (upload.mapping.error.value) {
+      log.error('applyMapping failed during mapping step', { error: upload.mapping.error.value })
       return
     }
   }
@@ -118,9 +142,10 @@ function onDeleteErrorRows() {
 
 async function onSave() {
   try {
-    const count = await upload.confirm.save(upload.review.entries.value)
+    const count = await upload.confirm.save(upload.review.toValidatedEntries())
     toast.add({ title: `Uploaded ${count} entries`, color: 'success' })
     upload.reset()
+    clearRowFilter()
     await navigateTo({ path: '/dashboard', query: { tab: 'seniority' } })
   } catch {
     toast.add({ title: upload.confirm.error.value ?? 'Upload failed', color: 'error' })
@@ -240,6 +265,13 @@ async function onSave() {
 
             <!-- Step 2: Map Columns -->
             <div v-else-if="currentStep === 'mapping'" class="space-y-6">
+              <UAlert
+                v-if="upload.mapping.error.value"
+                icon="i-lucide-alert-circle"
+                color="error"
+                variant="soft"
+                :title="upload.mapping.error.value"
+              />
               <UploadColumnMapper
                 :headers="upload.mapping.headers.value"
                 :column-map="upload.mapping.columnMap.value"
@@ -252,6 +284,20 @@ async function onSave() {
 
             <!-- Step 3: Review & Validate -->
             <div v-else-if="currentStep === 'review'" class="space-y-4">
+              <div class="sticky top-0 z-10 -mx-2 sm:mx-0 px-2 sm:px-0 py-2 bg-(--ui-bg)/95 backdrop-blur supports-[backdrop-filter]:bg-(--ui-bg)/80">
+                <div class="flex justify-end">
+                  <UButton
+                    :disabled="!canAdvance || upload.progress.busy.value"
+                    :loading="upload.progress.busy.value"
+                    icon="i-lucide-arrow-right"
+                    trailing
+                    @click="nextStep"
+                  >
+                    Continue to Save
+                  </UButton>
+                </div>
+              </div>
+
               <UAlert
                 v-if="upload.review.syntheticNote.value"
                 icon="i-lucide-info"
@@ -265,7 +311,7 @@ async function onSave() {
                     size="sm"
                     color="info"
                     :icon="showEstimatedOnly ? 'i-lucide-filter-x' : 'i-lucide-filter'"
-                    @click="showEstimatedOnly = !showEstimatedOnly; showErrorsOnly = false"
+                    @click="toggleEstimatedOnly"
                   >
                     {{ showEstimatedOnly ? 'Show all rows' : 'Show estimated rows' }}
                   </UButton>
@@ -294,12 +340,31 @@ async function onSave() {
                     variant="ghost"
                     color="neutral"
                     :icon="showErrorsOnly ? 'i-lucide-filter-x' : 'i-lucide-filter'"
-                    @click="showErrorsOnly = !showErrorsOnly"
+                    @click="toggleErrorsOnly"
                   >
                     {{ showErrorsOnly ? 'Show all rows' : 'Show only errors' }}
                   </UButton>
                 </template>
               </UAlert>
+
+              <div
+                v-if="activeFilterLabel"
+                class="flex items-center justify-between gap-3 rounded-lg border border-(--ui-border) bg-(--ui-bg-elevated)/40 px-3 py-2"
+              >
+                <p class="text-xs text-muted">
+                  Viewing:
+                  <span class="font-medium text-(--ui-text)">{{ activeFilterLabel }}</span>
+                </p>
+                <UButton
+                  size="xs"
+                  variant="ghost"
+                  color="neutral"
+                  icon="i-lucide-rotate-ccw"
+                  @click="clearRowFilter"
+                >
+                  Reset view
+                </UButton>
+              </div>
 
               <div class="flex items-center justify-between">
                 <p class="text-sm text-muted">
@@ -318,11 +383,19 @@ async function onSave() {
                 :estimated-indices="upload.review.syntheticIndices.value"
                 @update-cell="upload.review.updateCell"
                 @delete-row="upload.review.deleteRow"
+                @insert-row="upload.review.insertRowAt"
               />
             </div>
 
             <!-- Step 4: Confirm & Save -->
             <div v-else-if="currentStep === 'confirm'" class="space-y-6 max-w-md">
+              <UAlert
+                v-if="upload.confirm.error.value"
+                icon="i-lucide-alert-circle"
+                color="error"
+                variant="soft"
+                :title="upload.confirm.error.value"
+              />
               <UFormField label="Effective Date" name="effectiveDate" required>
                 <UInputDate v-model="effectiveDateModel" class="w-full" />
               </UFormField>

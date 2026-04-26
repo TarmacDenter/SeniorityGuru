@@ -1,7 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mountSuspended, mockNuxtImport } from '@nuxt/test-utils/runtime'
 import type { DOMWrapper } from '@vue/test-utils'
+import { ref } from 'vue'
 import UploadPage from './upload.vue'
+
+const mockReviewErrorCount = ref(0)
 
 const {
   mockSave,
@@ -10,8 +13,10 @@ const {
   mockFileHasData,
   mockFileAutoDetected,
   mockMappingCanAdvance,
+  mockMappingError,
   mockReviewCanAdvance,
   mockApplyMapping,
+  mockInsertRowAt,
   mockSelectedParserId,
 } = vi.hoisted(() => ({
   mockSave: vi.fn(),
@@ -20,8 +25,10 @@ const {
   mockFileHasData: { value: false },
   mockFileAutoDetected: { value: false },
   mockMappingCanAdvance: { value: false },
+  mockMappingError: { value: null as string | null },
   mockReviewCanAdvance: { value: false },
   mockApplyMapping: vi.fn().mockResolvedValue(undefined),
+  mockInsertRowAt: vi.fn(),
   mockSelectedParserId: { value: 'generic' as string | null },
 }))
 
@@ -45,18 +52,21 @@ mockNuxtImport('useSeniorityUpload', () => () => ({
     headers: { value: [] },
     sampleRows: { value: [] },
     canAdvance: mockMappingCanAdvance,
+    error: mockMappingError,
     apply: mockApplyMapping,
   },
   review: {
     entries: { value: [] },
     rowErrors: { value: new Map() },
-    errorCount: { value: 0 },
+    errorCount: mockReviewErrorCount,
     syntheticNote: { value: null },
     syntheticIndices: { value: new Set() },
     canAdvance: mockReviewCanAdvance,
     updateCell: vi.fn(),
     deleteRow: vi.fn(),
     deleteErrorRows: vi.fn().mockReturnValue(0),
+    insertRowAt: mockInsertRowAt,
+    toValidatedEntries: vi.fn().mockReturnValue([]),
   },
   confirm: {
     effectiveDate: { value: null },
@@ -130,11 +140,80 @@ describe('upload page onSave', () => {
   })
 })
 
+describe('upload page nextStep — mapping error handling', () => {
+  beforeEach(() => {
+    mockFileHasData.value = true
+    mockFileAutoDetected.value = true
+    mockMappingCanAdvance.value = false
+    mockMappingError.value = null
+    mockReviewErrorCount.value = 0
+    mockApplyMapping.mockReset()
+    mockApplyMapping.mockResolvedValue(undefined)
+  })
+
+  it('navigates to mapping step when auto-detect apply sets an error', async () => {
+    mockMappingError.value = 'No rows could be mapped. Verify the selected columns contain data.'
+
+    const wrapper = await mountSuspended(UploadPage)
+    const buttons = wrapper.findAll('button')
+    const nextBtn = buttons.find(b => b.text().includes('Next'))
+    await nextBtn!.trigger('click')
+    await wrapper.vm.$nextTick()
+
+    // Should be on mapping step, not review
+    expect(wrapper.text()).toContain('Map Columns')
+  })
+})
+
+describe('upload page review filter behavior', () => {
+  beforeEach(() => {
+    mockFileHasData.value = true
+    mockFileAutoDetected.value = true
+    mockMappingError.value = null
+    mockReviewErrorCount.value = 1
+  })
+
+  it('auto-clears error-only view when errors are resolved', async () => {
+    const wrapper = await mountSuspended(UploadPage)
+    const nextBtn = wrapper.findAll('button').find(b => b.text().includes('Next'))
+    await nextBtn!.trigger('click')
+    await wrapper.vm.$nextTick()
+
+    const showOnlyErrorsBtn = wrapper.findAll('button').find(b => b.text().includes('Show only errors'))
+    await showOnlyErrorsBtn!.trigger('click')
+    await wrapper.vm.$nextTick()
+    expect(wrapper.text()).toContain('Viewing:')
+
+    mockReviewErrorCount.value = 0
+    await wrapper.vm.$nextTick()
+
+    expect(wrapper.text()).not.toContain('Viewing:')
+  })
+
+  it('shows a top review action button to continue without scrolling', async () => {
+    mockReviewCanAdvance.value = true
+
+    const wrapper = await mountSuspended(UploadPage)
+    const nextBtn = wrapper.findAll('button').find(b => b.text().includes('Next'))
+    await nextBtn!.trigger('click')
+    await wrapper.vm.$nextTick()
+
+    const topContinueButton = wrapper.findAll('button').find(b => b.text().includes('Continue to Save'))
+    expect(topContinueButton).toBeDefined()
+
+    await topContinueButton!.trigger('click')
+    await wrapper.vm.$nextTick()
+
+    expect(wrapper.text()).toContain('Effective Date')
+  })
+})
+
 describe('upload page canAdvance — mapping step', () => {
   beforeEach(() => {
     mockFileHasData.value = true
     mockFileAutoDetected.value = false
     mockMappingCanAdvance.value = false
+    mockMappingError.value = null
   })
 
   it('Next is disabled on mapping step when mapping.canAdvance is false', async () => {
