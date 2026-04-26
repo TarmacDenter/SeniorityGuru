@@ -1,7 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mountSuspended, mockNuxtImport } from '@nuxt/test-utils/runtime'
 import type { DOMWrapper } from '@vue/test-utils'
+import { ref } from 'vue'
 import UploadPage from './upload.vue'
+
+const mockReviewErrorCount = ref(0)
 
 const {
   mockSave,
@@ -55,7 +58,7 @@ mockNuxtImport('useSeniorityUpload', () => () => ({
   review: {
     entries: { value: [] },
     rowErrors: { value: new Map() },
-    errorCount: { value: 0 },
+    errorCount: mockReviewErrorCount,
     syntheticNote: { value: null },
     syntheticIndices: { value: new Set() },
     canAdvance: mockReviewCanAdvance,
@@ -143,6 +146,7 @@ describe('upload page nextStep — mapping error handling', () => {
     mockFileAutoDetected.value = true
     mockMappingCanAdvance.value = false
     mockMappingError.value = null
+    mockReviewErrorCount.value = 0
     mockApplyMapping.mockReset()
     mockApplyMapping.mockResolvedValue(undefined)
   })
@@ -158,6 +162,32 @@ describe('upload page nextStep — mapping error handling', () => {
 
     // Should be on mapping step, not review
     expect(wrapper.text()).toContain('Map Columns')
+  })
+})
+
+describe('upload page review filter behavior', () => {
+  beforeEach(() => {
+    mockFileHasData.value = true
+    mockFileAutoDetected.value = true
+    mockMappingError.value = null
+    mockReviewErrorCount.value = 1
+  })
+
+  it('auto-clears error-only view when errors are resolved', async () => {
+    const wrapper = await mountSuspended(UploadPage)
+    const nextBtn = wrapper.findAll('button').find(b => b.text().includes('Next'))
+    await nextBtn!.trigger('click')
+    await wrapper.vm.$nextTick()
+
+    const showOnlyErrorsBtn = wrapper.findAll('button').find(b => b.text().includes('Show only errors'))
+    await showOnlyErrorsBtn!.trigger('click')
+    await wrapper.vm.$nextTick()
+    expect(wrapper.text()).toContain('Viewing:')
+
+    mockReviewErrorCount.value = 0
+    await wrapper.vm.$nextTick()
+
+    expect(wrapper.text()).not.toContain('Viewing:')
   })
 })
 

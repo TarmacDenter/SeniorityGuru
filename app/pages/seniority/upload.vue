@@ -14,9 +14,34 @@ defineExpose({ onSave })
 const upload = useSeniorityUpload()
 const toast = useToast()
 const files = ref<File | null>(null)
-const showErrorsOnly = ref(false)
-const showEstimatedOnly = ref(false)
 const mappingSkipped = ref(false)
+const activeRowFilter = ref<'all' | 'errors' | 'estimated'>('all')
+
+const showErrorsOnly = computed(() => activeRowFilter.value === 'errors')
+const showEstimatedOnly = computed(() => activeRowFilter.value === 'estimated')
+const activeFilterLabel = computed(() => {
+  if (showErrorsOnly.value) return 'Error rows only'
+  if (showEstimatedOnly.value) return 'Estimated rows only'
+  return null
+})
+
+watch(() => upload.review.errorCount.value, (count) => {
+  if (count === 0 && showErrorsOnly.value) {
+    activeRowFilter.value = 'all'
+  }
+})
+
+function toggleErrorsOnly() {
+  activeRowFilter.value = showErrorsOnly.value ? 'all' : 'errors'
+}
+
+function toggleEstimatedOnly() {
+  activeRowFilter.value = showEstimatedOnly.value ? 'all' : 'estimated'
+}
+
+function clearRowFilter() {
+  activeRowFilter.value = 'all'
+}
 
 const stepOrder = ['upload', 'mapping', 'review', 'confirm'] as const
 type Step = typeof stepOrder[number]
@@ -62,6 +87,7 @@ function selectParser(parserId: string) {
 
 function changeFormat() {
   upload.reset()
+  clearRowFilter()
   files.value = null
   mappingSkipped.value = false
 }
@@ -119,6 +145,7 @@ async function onSave() {
     const count = await upload.confirm.save(upload.review.toValidatedEntries())
     toast.add({ title: `Uploaded ${count} entries`, color: 'success' })
     upload.reset()
+    clearRowFilter()
     await navigateTo({ path: '/dashboard', query: { tab: 'seniority' } })
   } catch {
     toast.add({ title: upload.confirm.error.value ?? 'Upload failed', color: 'error' })
@@ -270,7 +297,7 @@ async function onSave() {
                     size="sm"
                     color="info"
                     :icon="showEstimatedOnly ? 'i-lucide-filter-x' : 'i-lucide-filter'"
-                    @click="showEstimatedOnly = !showEstimatedOnly; showErrorsOnly = false"
+                    @click="toggleEstimatedOnly"
                   >
                     {{ showEstimatedOnly ? 'Show all rows' : 'Show estimated rows' }}
                   </UButton>
@@ -299,12 +326,31 @@ async function onSave() {
                     variant="ghost"
                     color="neutral"
                     :icon="showErrorsOnly ? 'i-lucide-filter-x' : 'i-lucide-filter'"
-                    @click="showErrorsOnly = !showErrorsOnly"
+                    @click="toggleErrorsOnly"
                   >
                     {{ showErrorsOnly ? 'Show all rows' : 'Show only errors' }}
                   </UButton>
                 </template>
               </UAlert>
+
+              <div
+                v-if="activeFilterLabel"
+                class="flex items-center justify-between gap-3 rounded-lg border border-(--ui-border) bg-(--ui-bg-elevated)/40 px-3 py-2"
+              >
+                <p class="text-xs text-muted">
+                  Viewing:
+                  <span class="font-medium text-(--ui-text)">{{ activeFilterLabel }}</span>
+                </p>
+                <UButton
+                  size="xs"
+                  variant="ghost"
+                  color="neutral"
+                  icon="i-lucide-rotate-ccw"
+                  @click="clearRowFilter"
+                >
+                  Reset view
+                </UButton>
+              </div>
 
               <div class="flex items-center justify-between">
                 <p class="text-sm text-muted">
