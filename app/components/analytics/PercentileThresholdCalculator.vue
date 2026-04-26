@@ -38,7 +38,7 @@ const percentileOptions = [50, 75, 90] as const
             :variant="targetPercentile === p ? 'solid' : 'outline'"
             @click="$emit('percentileChange', p)"
           >
-            Top {{ 100 - p }}%
+            {{ p }}th percentile
           </UButton>
         </UFieldGroup>
       </div>
@@ -50,8 +50,8 @@ const percentileOptions = [50, 75, 90] as const
           <p class="text-sm">
             At current attrition, you could hold
             <strong>{{ selectedQual || 'this qual' }}</strong>
-            in the
-            <strong>top {{ 100 - targetPercentile }}%</strong>
+            at the
+            <strong>{{ targetPercentile }}th percentile</strong>
             by
             <strong class="font-mono">{{ result.year }}</strong>.
           </p>
