@@ -284,6 +284,20 @@ async function onSave() {
 
             <!-- Step 3: Review & Validate -->
             <div v-else-if="currentStep === 'review'" class="space-y-4">
+              <div class="sticky top-0 z-10 -mx-2 sm:mx-0 px-2 sm:px-0 py-2 bg-(--ui-bg)/95 backdrop-blur supports-[backdrop-filter]:bg-(--ui-bg)/80">
+                <div class="flex justify-end">
+                  <UButton
+                    :disabled="!canAdvance || upload.progress.busy.value"
+                    :loading="upload.progress.busy.value"
+                    icon="i-lucide-arrow-right"
+                    trailing
+                    @click="nextStep"
+                  >
+                    Continue to Save
+                  </UButton>
+                </div>
+              </div>
+
               <UAlert
                 v-if="upload.review.syntheticNote.value"
                 icon="i-lucide-info"
