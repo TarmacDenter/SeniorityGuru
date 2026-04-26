@@ -67,7 +67,7 @@ onMounted(() => {
 
     <div class="mt-4">
       <div class="flex justify-between text-xs text-muted mb-1">
-        <span>TOP %</span>
+        <span>Percentile</span>
         <span class="font-mono">{{ rank.percentile }}%</span>
       </div>
       <UProgress
