@@ -1,16 +1,31 @@
 import type { ReviewPhase, ReviewPhaseOptions } from './types'
 import type { SeniorityEntry } from '~/utils/schemas/seniority-list'
 import { SeniorityEntrySchema } from '~/utils/schemas/seniority-list'
-import { computeStructuralErrors } from '~/utils/validate-entries'
+import { computeStructuralIssues, type ValidationIssue } from '~/utils/validate-entries'
 import { BATCH_SIZE } from '~/utils/parse-spreadsheet'
 import { createLogger } from '~/utils/logger'
 
 const log = createLogger('upload:review')
 
-function isStructuralError(msg: string): boolean {
-  return msg.startsWith('seniority_number: Duplicate') ||
-    msg.startsWith('seniority_number: Non-contiguous') ||
-    msg.startsWith('employee_number: Duplicate')
+function formatSchemaIssues(entry: Partial<SeniorityEntry>): ValidationIssue[] {
+  const result = SeniorityEntrySchema.safeParse(entry)
+  if (result.success) return []
+  return result.error.issues.map(issue => ({
+    code: 'schema_violation',
+    field: issue.path.join('.'),
+    rowIndex: -1,
+    message: issue.message,
+  }))
+}
+
+function formatIssueMessage(issue: ValidationIssue): string {
+  return `${issue.field}: ${issue.message}`
+}
+
+function isStructuralMessage(raw: string): boolean {
+  return raw.startsWith('seniority_number: Duplicate seniority number')
+    || raw.startsWith('seniority_number: Non-contiguous sequence')
+    || raw.startsWith('employee_number: Duplicate employee number')
 }
 
 export function _useReview(opts: ReviewPhaseOptions): ReviewPhase & { _reset: () => void } {
@@ -24,16 +39,14 @@ export function _useReview(opts: ReviewPhaseOptions): ReviewPhase & { _reset: ()
     opts.progress.report('validating', 0, opts.entries.value.length)
 
     const total = opts.entries.value.length
-    const schemaErrors = new Map<number, string[]>()
+    const schemaIssues = new Map<number, ValidationIssue[]>()
 
     for (let i = 0; i < total; i += BATCH_SIZE) {
       const end = Math.min(i + BATCH_SIZE, total)
       for (let j = i; j < end; j++) {
         const entry = opts.entries.value[j]!
-        const result = SeniorityEntrySchema.safeParse(entry)
-        if (!result.success) {
-          schemaErrors.set(j, result.error.issues.map(issue => `${issue.path.join('.')}: ${issue.message}`))
-        }
+        const entryIssues = formatSchemaIssues(entry).map(issue => ({ ...issue, rowIndex: j }))
+        if (entryIssues.length > 0) schemaIssues.set(j, entryIssues)
       }
       opts.progress.report('validating', end, total)
       if (end < total) {
@@ -41,35 +54,35 @@ export function _useReview(opts: ReviewPhaseOptions): ReviewPhase & { _reset: ()
       }
     }
 
-    const structural = computeStructuralErrors(opts.entries.value)
+    const structural = computeStructuralIssues(opts.entries.value)
 
-    for (const [idx, msgs] of schemaErrors) {
-      const existing = structural.get(idx)
-      if (existing) existing.unshift(...msgs)
-      else structural.set(idx, msgs)
+    for (const [idx, entryIssues] of schemaIssues) {
+      const existing = structural.get(idx) ?? []
+      structural.set(idx, [...entryIssues, ...existing])
     }
 
-    opts.rowErrors.value = structural
-    if (structural.size > 0) {
-      log.warn('Validation errors found', { errorCount: structural.size, totalRows: total })
+    opts.rowErrors.value = new Map(
+      Array.from(structural.entries()).map(([idx, rowIssues]) => [idx, rowIssues.map(formatIssueMessage)]),
+    )
+    if (opts.rowErrors.value.size > 0) {
+      log.warn('Validation errors found', { errorCount: opts.rowErrors.value.size, totalRows: total })
     }
 
     opts.progress.idle()
   }
 
   function revalidateStructural() {
-    // Remove stale structural errors, preserve schema errors
+    // Preserve pre-existing non-structural messages, refresh structural messages
     const cleaned = new Map<number, string[]>()
     opts.rowErrors.value.forEach((msgs, idx) => {
-      const schemaOnly = msgs.filter(m => !isStructuralError(m))
-      if (schemaOnly.length > 0) cleaned.set(idx, schemaOnly)
+      const nonStructural = msgs.filter(msg => !isStructuralMessage(msg))
+      if (nonStructural.length > 0) cleaned.set(idx, nonStructural)
     })
 
-    // Add fresh structural errors across all rows
-    const structural = computeStructuralErrors(opts.entries.value)
-    structural.forEach((msgs, idx) => {
+    const structural = computeStructuralIssues(opts.entries.value)
+    structural.forEach((entryIssues, idx) => {
       const existing = cleaned.get(idx) ?? []
-      cleaned.set(idx, [...existing, ...msgs])
+      cleaned.set(idx, [...existing, ...entryIssues.map(formatIssueMessage)])
     })
 
     opts.rowErrors.value = cleaned
@@ -82,11 +95,11 @@ export function _useReview(opts: ReviewPhaseOptions): ReviewPhase & { _reset: ()
     ;(entry as Record<string, unknown>)[field] = value
 
     // Update schema errors for the edited row (structural refreshed below)
-    const result = SeniorityEntrySchema.safeParse(entry)
-    if (result.success) {
+    const issues = formatSchemaIssues(entry)
+    if (issues.length === 0) {
       opts.rowErrors.value.delete(rowIndex)
     } else {
-      opts.rowErrors.value.set(rowIndex, result.error.issues.map(issue => `${issue.path.join('.')}: ${issue.message}`))
+      opts.rowErrors.value.set(rowIndex, issues.map(formatIssueMessage))
     }
 
     revalidateStructural()
@@ -185,6 +198,19 @@ export function _useReview(opts: ReviewPhaseOptions): ReviewPhase & { _reset: ()
     opts.rowErrors.value = new Map()
   }
 
+  function toValidatedEntries(): SeniorityEntry[] {
+    if (opts.rowErrors.value.size > 0) {
+      throw new Error('Cannot convert to validated entries while row errors exist')
+    }
+    return opts.entries.value.map((entry, idx) => {
+      const parsed = SeniorityEntrySchema.safeParse(entry)
+      if (!parsed.success) {
+        throw new Error(`Row ${idx + 1} is not schema-valid`)
+      }
+      return parsed.data
+    })
+  }
+
   return {
     entries: opts.entries,
     rowErrors: opts.rowErrors,
@@ -196,6 +222,7 @@ export function _useReview(opts: ReviewPhaseOptions): ReviewPhase & { _reset: ()
     deleteRow,
     deleteErrorRows,
     insertRowAt,
+    toValidatedEntries,
     validate,
     _reset: reset,
   }

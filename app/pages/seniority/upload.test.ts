@@ -63,6 +63,7 @@ mockNuxtImport('useSeniorityUpload', () => () => ({
     deleteRow: vi.fn(),
     deleteErrorRows: vi.fn().mockReturnValue(0),
     insertRowAt: mockInsertRowAt,
+    toValidatedEntries: vi.fn().mockReturnValue([]),
   },
   confirm: {
     effectiveDate: { value: null },

@@ -8,19 +8,9 @@ import { _useFileIO } from './_useFileIO'
 import { _useColumnMapping } from './_useColumnMapping'
 import { _useReview } from './_useReview'
 import { _useConfirm } from './_useConfirm'
+import { DEFAULT_COLUMN_MAP } from './defaults'
 
 export type { SeniorityUpload, ProcessingPhase, ProgressTracker } from './types'
-
-const DEFAULT_COLUMN_MAP: ColumnMap = {
-  seniority_number: -1,
-  employee_number: -1,
-  seat: -1,
-  base: -1,
-  fleet: -1,
-  name: -1,
-  hire_date: -1,
-  retire_date: -1,
-}
 
 export function useSeniorityUpload(): SeniorityUpload {
   // ── Shared refs (owned here, passed to phases) ──────────────────────────
