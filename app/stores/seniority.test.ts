@@ -39,7 +39,7 @@ vi.mock('~/utils/db', () => ({ db: mockDb }))
 const mockList1: LocalSeniorityList = {
   id: 1,
   title: 'January List',
-  effectiveDate: '2026-01-15',
+  effectiveDate: '2026-03-15',
   createdAt: '2026-01-10T12:00:00Z',
 }
 
@@ -95,7 +95,7 @@ describe('seniority store (Dexie)', () => {
   })
 
   describe('fetchLists', () => {
-    it('queries Dexie and sorts lists by upload recency (createdAt) descending', async () => {
+    it('queries Dexie and sorts lists by effectiveDate descending before upload recency', async () => {
       mockDb.seniorityLists.toArray.mockResolvedValue([mockList1, mockList2])
 
       const { useSeniorityStore } = await import('./seniority')
@@ -105,16 +105,16 @@ describe('seniority store (Dexie)', () => {
       await store.fetchLists()
 
       expect(store.lists).toHaveLength(2)
-      // mockList2 has the later createdAt (2026-02-10) so it sorts first
-      expect(store.lists[0]!.id).toBe(2)
-      expect(store.lists[1]!.id).toBe(1)
+      // mockList1 has the newer effectiveDate (2026-03-15) so it sorts first
+      expect(store.lists[0]!.id).toBe(1)
+      expect(store.lists[1]!.id).toBe(2)
     })
 
-    it('breaks createdAt ties by effectiveDate, then by id descending', async () => {
-      const sameCreated1: LocalSeniorityList = { id: 3, title: null, effectiveDate: '2026-03-01', createdAt: '2026-03-01T10:00:00Z' }
-      const sameCreated2: LocalSeniorityList = { id: 7, title: null, effectiveDate: '2026-03-01', createdAt: '2026-03-01T10:00:00Z' }
-      const sameCreatedNewerEffective: LocalSeniorityList = { id: 4, title: null, effectiveDate: '2026-04-01', createdAt: '2026-03-01T10:00:00Z' }
-      mockDb.seniorityLists.toArray.mockResolvedValue([sameCreated1, sameCreated2, sameCreatedNewerEffective])
+    it('breaks effectiveDate ties by createdAt, then by id descending', async () => {
+      const sameEffectiveOlderUpload: LocalSeniorityList = { id: 3, title: null, effectiveDate: '2026-03-01', createdAt: '2026-03-01T09:00:00Z' }
+      const sameEffectiveNewerUploadLowerId: LocalSeniorityList = { id: 4, title: null, effectiveDate: '2026-03-01', createdAt: '2026-03-01T10:00:00Z' }
+      const sameEffectiveNewerUploadHigherId: LocalSeniorityList = { id: 7, title: null, effectiveDate: '2026-03-01', createdAt: '2026-03-01T10:00:00Z' }
+      mockDb.seniorityLists.toArray.mockResolvedValue([sameEffectiveOlderUpload, sameEffectiveNewerUploadLowerId, sameEffectiveNewerUploadHigherId])
 
       const { useSeniorityStore } = await import('./seniority')
       const store = useSeniorityStore()
@@ -122,9 +122,9 @@ describe('seniority store (Dexie)', () => {
 
       await store.fetchLists()
 
-      // same createdAt: newer effectiveDate wins, then higher id
-      expect(store.lists[0]!.id).toBe(4)
-      expect(store.lists[1]!.id).toBe(7)
+      // same effectiveDate: newer upload wins, then higher id
+      expect(store.lists[0]!.id).toBe(7)
+      expect(store.lists[1]!.id).toBe(4)
       expect(store.lists[2]!.id).toBe(3)
     })
 
