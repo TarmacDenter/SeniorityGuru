@@ -189,6 +189,23 @@ describe('upload page review filter behavior', () => {
 
     expect(wrapper.text()).not.toContain('Viewing:')
   })
+
+  it('shows a top review action button to continue without scrolling', async () => {
+    mockReviewCanAdvance.value = true
+
+    const wrapper = await mountSuspended(UploadPage)
+    const nextBtn = wrapper.findAll('button').find(b => b.text().includes('Next'))
+    await nextBtn!.trigger('click')
+    await wrapper.vm.$nextTick()
+
+    const topContinueButton = wrapper.findAll('button').find(b => b.text().includes('Continue to Save'))
+    expect(topContinueButton).toBeDefined()
+
+    await topContinueButton!.trigger('click')
+    await wrapper.vm.$nextTick()
+
+    expect(wrapper.text()).toContain('Effective Date')
+  })
 })
 
 describe('upload page canAdvance — mapping step', () => {
