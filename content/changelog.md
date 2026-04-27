@@ -3,6 +3,10 @@ title: "What's New"
 latestDate: "2026-03-26"
 ---
 
+## April 26, 2026
+
+- You can now add/delete pilot entries when saving a new seniority list to the app. Useful for correcting errors like duplicate data in app instead of in a spreadsheet
+
 ## March 30, 2026
 
 - Added a demo mode with synthetic data
