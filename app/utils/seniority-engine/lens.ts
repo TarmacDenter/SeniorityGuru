@@ -31,12 +31,12 @@ import { memoizeLast } from './memoize'
 import { qualSpecToFilter } from './qual-spec'
 import { computePercentile } from './percentile'
 import {
-  pipe as rPipe,
-  filter as rFilter,
-  sortBy as rSortBy,
-  map as rMap,
-  allPass as rAllPass,
-  anyPass as rAnyPass,
+  pipe,
+  filter,
+  sortBy,
+  map,
+  allPass,
+  anyPass,
 } from 'remeda'
 import {
   findThresholdYear,
@@ -233,23 +233,23 @@ export function createLens(
     }
   }
 
-  function upcomingRetirements(filter: UpcomingRetirementFilter): UpcomingRetirementRow[] {
+  function upcomingRetirements(options: UpcomingRetirementFilter): UpcomingRetirementRow[] {
     const todayStr = todayISO()
-    const cutoff = addYearsISO(todayStr, filter.yearsHorizon)
+    const cutoff = addYearsISO(todayStr, options.yearsHorizon)
     const isSeniorToAnchor = (entry: typeof entries[number]) => (
-      !filter.seniorOnly
+      !options.seniorOnly
       || !resolvedAnchor
       || entry.seniority_number < resolvedAnchor.seniorityNumber
     )
-    const inQualScope = rAllPass([
-      (entry: typeof entries[number]) => !filter.base || entry.base === filter.base,
-      (entry: typeof entries[number]) => !filter.seat || entry.seat === filter.seat,
-      (entry: typeof entries[number]) => !filter.fleet || entry.fleet === filter.fleet,
+    const inQualScope = allPass([
+      (entry: typeof entries[number]) => !options.base || entry.base === options.base,
+      (entry: typeof entries[number]) => !options.seat || entry.seat === options.seat,
+      (entry: typeof entries[number]) => !options.fleet || entry.fleet === options.fleet,
     ])
-    const hasAnyQualFilter = rAnyPass([
-      () => !!filter.base,
-      () => !!filter.seat,
-      () => !!filter.fleet,
+    const hasAnyQualFilter = anyPass([
+      () => !!options.base,
+      () => !!options.seat,
+      () => !!options.fleet,
     ])
     const retireWithinHorizon = (entry: typeof entries[number]) => (
       !!entry.retire_date
@@ -257,15 +257,15 @@ export function createLens(
       && isRetiredBy(entry.retire_date, cutoff)
     )
 
-    return rPipe(
+    return pipe(
       entries,
-      rFilter(rAllPass([
+      filter(allPass([
         retireWithinHorizon,
         isSeniorToAnchor,
         (entry) => !hasAnyQualFilter(entry) || inQualScope(entry),
       ])),
-      rSortBy((entry) => entry.retire_date!),
-      rMap((e): UpcomingRetirementRow => ({
+      sortBy((entry) => entry.retire_date!),
+      map((e): UpcomingRetirementRow => ({
         seniorityNumber: e.seniority_number,
         employeeNumber: e.employee_number,
         base: e.base,
