@@ -30,6 +30,7 @@ import { createScenario } from './scenario'
 import { memoizeLast } from './memoize'
 import { qualSpecToFilter } from './qual-spec'
 import { computePercentile } from './percentile'
+import { pipe as rPipe, filter as rFilter, sortBy as rSortBy, map as rMap } from 'remeda'
 import {
   findThresholdYear,
   computePowerIndexCells,
@@ -229,8 +230,9 @@ export function createLens(
     const todayStr = todayISO()
     const cutoff = addYearsISO(todayStr, filter.yearsHorizon)
 
-    return entries
-      .filter((e) => {
+    return rPipe(
+      entries,
+      rFilter((e) => {
         if (!e.retire_date) return false
         if (isRetiredBy(e.retire_date, todayStr)) return false
         if (!isRetiredBy(e.retire_date, cutoff)) return false
@@ -239,9 +241,9 @@ export function createLens(
         if (filter.seat && e.seat !== filter.seat) return false
         if (filter.fleet && e.fleet !== filter.fleet) return false
         return true
-      })
-      .sort((a, b) => a.retire_date!.localeCompare(b.retire_date!))
-      .map((e): UpcomingRetirementRow => ({
+      }),
+      rSortBy((entry) => entry.retire_date!),
+      rMap((e): UpcomingRetirementRow => ({
         seniorityNumber: e.seniority_number,
         employeeNumber: e.employee_number,
         base: e.base,
@@ -251,7 +253,8 @@ export function createLens(
         rankRelativeToMe: resolvedAnchor
           ? resolvedAnchor.seniorityNumber - e.seniority_number
           : null,
-      }))
+      })),
+    )
   }
 
   return {

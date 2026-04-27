@@ -1,6 +1,7 @@
 import type { SeniorityEntry } from '~/utils/schemas/seniority-list'
 import type { SenioritySnapshot, Qual } from './types'
 import { cellKey } from './cell-key'
+import { pipe, map, filter, unique, sort, groupBy } from 'remeda'
 
 export type SnapshotIssueCode = 'duplicate_seniority_number' | 'duplicate_employee_number'
 
@@ -12,53 +13,47 @@ export interface SnapshotValidationIssue {
 }
 
 function collectDuplicateIssues(entries: readonly Partial<SeniorityEntry>[]): SnapshotValidationIssue[] {
-  const issues: SnapshotValidationIssue[] = []
+  const indexedEntries = entries.map((entry, rowIndex) => ({ entry, rowIndex }))
 
-  const senNumToIndices = new Map<number, number[]>()
-  entries.forEach((entry, i) => {
-    const num = entry.seniority_number
-    if (typeof num === 'number' && Number.isInteger(num) && num > 0) {
-      const indices = senNumToIndices.get(num) ?? []
-      indices.push(i)
-      senNumToIndices.set(num, indices)
-    }
-  })
-  for (const [num, indices] of senNumToIndices) {
-    if (indices.length > 1) {
-      for (const rowIndex of indices) {
-        issues.push({
-          code: 'duplicate_seniority_number',
-          field: 'seniority_number',
-          rowIndex,
-          message: `Duplicate seniority number ${num}`,
-        })
-      }
-    }
-  }
+  const seniorityNumberIssues = pipe(
+    indexedEntries,
+    filter(({ entry }) =>
+      typeof entry.seniority_number === 'number'
+      && Number.isInteger(entry.seniority_number)
+      && entry.seniority_number > 0,
+    ),
+    groupBy(({ entry }) => String(entry.seniority_number)),
+  )
+  const seniorityDuplicateGroups = Object.entries(seniorityNumberIssues).filter(([, rows]) => rows.length > 1)
+  const seniorityIssues = seniorityDuplicateGroups.flatMap(([num, rows]) =>
+    rows.map(({ rowIndex }) => ({
+      code: 'duplicate_seniority_number' as const,
+      field: 'seniority_number' as const,
+      rowIndex,
+      message: `Duplicate seniority number ${Number(num)}`,
+    })),
+  )
 
-  const empToIndices = new Map<string, number[]>()
-  entries.forEach((entry, i) => {
-    const emp = typeof entry.employee_number === 'string' ? entry.employee_number.trim() : ''
-    if (emp.length > 0) {
-      const indices = empToIndices.get(emp) ?? []
-      indices.push(i)
-      empToIndices.set(emp, indices)
-    }
-  })
-  for (const [emp, indices] of empToIndices) {
-    if (indices.length > 1) {
-      for (const rowIndex of indices) {
-        issues.push({
-          code: 'duplicate_employee_number',
-          field: 'employee_number',
-          rowIndex,
-          message: `Duplicate employee number ${emp}`,
-        })
-      }
-    }
-  }
+  const employeeNumberGroups = pipe(
+    indexedEntries,
+    map(({ entry, rowIndex }) => ({
+      employeeNumber: typeof entry.employee_number === 'string' ? entry.employee_number.trim() : '',
+      rowIndex,
+    })),
+    filter(({ employeeNumber }) => employeeNumber.length > 0),
+    groupBy(({ employeeNumber }) => employeeNumber),
+  )
+  const employeeDuplicateGroups = Object.entries(employeeNumberGroups).filter(([, rows]) => rows.length > 1)
+  const employeeIssues = employeeDuplicateGroups.flatMap(([employeeNumber, rows]) =>
+    rows.map(({ rowIndex }) => ({
+      code: 'duplicate_employee_number' as const,
+      field: 'employee_number' as const,
+      rowIndex,
+      message: `Duplicate employee number ${employeeNumber}`,
+    })),
+  )
 
-  return issues
+  return [...seniorityIssues, ...employeeIssues]
 }
 
 function issuesToErrorMap(issues: SnapshotValidationIssue[]): Map<number, string[]> {
@@ -86,12 +81,13 @@ export function validateSnapshotEntryIssues(entries: readonly Partial<SeniorityE
 }
 
 export function uniqueEntryValues(entries: SeniorityEntry[], field: 'fleet' | 'seat' | 'base'): string[] {
-  const values = new Set<string>()
-  for (const e of entries) {
-    const v = e[field]
-    if (v) values.add(v)
-  }
-  return Array.from(values).sort()
+  return pipe(
+    entries,
+    map((entry) => entry[field]),
+    filter((value): value is string => Boolean(value)),
+    unique(),
+    sort((a, b) => a.localeCompare(b)),
+  )
 }
 
 export class InvalidSnapshotDataError extends Error {
