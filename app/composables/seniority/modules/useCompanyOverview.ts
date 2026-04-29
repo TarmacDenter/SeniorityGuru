@@ -1,4 +1,5 @@
 import type { ComputedRef } from 'vue'
+import { groupBy, map, pipe } from 'remeda'
 import type { SeniorityEntry } from '~/utils/schemas/seniority-list'
 import type { Qual } from '~/utils/seniority-engine'
 import { diffYears, formatMonthYear, todayISO } from '~/utils/date'
@@ -20,6 +21,38 @@ export interface RecentList {
   date: string
 }
 
+function toFleetBaseKey(entry: SeniorityEntry): string | undefined {
+  if (!entry.fleet || !entry.base) return undefined
+  return `${entry.fleet} / ${entry.base}`
+}
+
+function roundTenth(value: number): number {
+  return Math.round(value * 10) / 10
+}
+
+function calcAvgYearsToRetire(entries: SeniorityEntry[], now: string): number {
+  const entriesWithRetireDate = entries.filter(entry => !!entry.retire_date)
+  if (entriesWithRetireDate.length === 0) return 0
+
+  const totalYears = entriesWithRetireDate.reduce(
+    (sum, entry) => sum + diffYears(now, entry.retire_date!),
+    0,
+  )
+  return totalYears / entriesWithRetireDate.length
+}
+
+function toFleetBaseGroup(category: string, entries: SeniorityEntry[], now: string): FleetBaseGroup {
+  const totalPilots = entries.length
+  const avgSeniority = entries.reduce((sum, entry) => sum + entry.seniority_number, 0) / totalPilots
+
+  return {
+    category,
+    avgSeniority: roundTenth(avgSeniority),
+    avgYearsToRetire: roundTenth(calcAvgYearsToRetire(entries, now)),
+    totalPilots,
+  }
+}
+
 export function useCompanyOverview(): {
   aggregateStats: ComputedRef<FleetBaseGroup[]>
   recentLists: ComputedRef<RecentList[]>
@@ -29,38 +62,14 @@ export function useCompanyOverview(): {
   const { snapshot } = useSeniorityCore()
 
   const aggregateStats = computed<FleetBaseGroup[]>(() => {
-    const entries = seniorityStore.entries
-    const groups = new Map<string, SeniorityEntry[]>()
-
-    for (const e of entries) {
-      if (!e.fleet || !e.base) continue
-      const key = `${e.fleet} / ${e.base}`
-      if (!groups.has(key)) {
-        groups.set(key, [])
-      }
-      groups.get(key)!.push(e)
-    }
-
     const now = todayISO()
 
-    return Array.from(groups.entries()).map(([category, groupEntries]) => {
-      const totalPilots = groupEntries.length
-      const avgSeniority = groupEntries.reduce((sum, e) => sum + e.seniority_number, 0) / totalPilots
-
-      const entriesWithRetireDate = groupEntries.filter(e => e.retire_date)
-      const avgYearsToRetire = entriesWithRetireDate.length > 0
-        ? entriesWithRetireDate.reduce((sum, e) => {
-            return sum + diffYears(now, e.retire_date!)
-          }, 0) / entriesWithRetireDate.length
-        : 0
-
-      return {
-        category,
-        avgSeniority: Math.round(avgSeniority * 10) / 10,
-        avgYearsToRetire: Math.round(avgYearsToRetire * 10) / 10,
-        totalPilots,
-      }
-    })
+    return pipe(
+      seniorityStore.entries,
+      groupBy(toFleetBaseKey),
+      Object.entries,
+      map(([category, entries]) => toFleetBaseGroup(category, entries, now)),
+    )
   })
 
   const recentLists = computed<RecentList[]>(() => {

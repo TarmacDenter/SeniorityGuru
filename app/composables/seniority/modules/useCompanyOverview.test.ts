@@ -50,6 +50,26 @@ describe('useCompanyOverview', () => {
     expect(laxGroup.avgSeniority).toBe(3)
   })
 
+
+  it('ignores incomplete fleet/base entries and reports zero years when retire dates are missing', () => {
+    mockStore.entries = [
+      makeEntry({ seniority_number: 10, employee_number: 'E10', base: 'JFK', fleet: '737', retire_date: undefined }),
+      makeEntry({ seniority_number: 20, employee_number: 'E20', base: 'JFK', fleet: '737', retire_date: undefined }),
+      makeEntry({ seniority_number: 30, employee_number: 'E30', base: undefined, fleet: '737' }),
+      makeEntry({ seniority_number: 40, employee_number: 'E40', base: 'JFK', fleet: undefined }),
+    ]
+
+    const { aggregateStats } = useCompanyOverview()
+    expect(aggregateStats.value).toEqual([
+      {
+        category: '737 / JFK',
+        avgSeniority: 15,
+        avgYearsToRetire: 0,
+        totalPilots: 2,
+      },
+    ])
+  })
+
   it('formats recentLists from store lists', () => {
     mockStore.lists = [
       { id: 1, title: null, effectiveDate: '2026-01-15', createdAt: '2026-01-15T00:00:00Z' },
