@@ -2,6 +2,8 @@
 export { createSnapshot, uniqueEntryValues } from './snapshot'
 export { createScenario } from './scenario'
 export { createLens } from './lens'
+export { projectQualViewer } from './qual-viewer'
+export type { QualViewerRow, QualViewerResult, QualViewerOptions, QualViewerStatus } from './qual-viewer'
 export { computePercentile } from './percentile'
 export { cellKey } from './cell-key'
 export {

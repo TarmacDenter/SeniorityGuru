@@ -1,54 +1,115 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { defineComponent } from 'vue'
+import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { mountSuspended, mockNuxtImport } from '@nuxt/test-utils/runtime'
-import { ref } from 'vue'
-import SeniorityListViewer from './SeniorityListViewer.vue'
+import { makeDomainEntry, makeList } from '~/test-utils/factories'
 
-const mockIsMobile = ref(true)
-const mockLists = ref([{ id: 1, title: 'Latest', effectiveDate: '2026-01-01', createdAt: '2026-01-01' }])
-const mockEntries = ref([
-  {
-    seniority_number: 1,
-    employee_number: '12345',
-    name: 'Pilot One',
-    seat: 'CA',
-    base: 'ATL',
-    fleet: '737',
-    hire_date: '2010-01-01',
-    retire_date: '2030-01-01',
-    listId: 1,
-  },
-])
+const state = vi.hoisted(() => {
+  const { ref: vRef } = require('vue')
+  return {
+    lists: vRef([]),
+    entries: vRef([]),
+    entriesLoading: vRef(false),
+    employeeNumber: vRef(null),
+    isNewHireMode: vRef(false),
+  }
+})
 
-mockNuxtImport('useSeniorityLists', () => () => ({
-  lists: mockLists,
-  entriesLoading: ref(false),
+vi.mock('~/composables/seniority', () => ({
+  useSeniorityLists: () => ({ lists: state.lists, entriesLoading: state.entriesLoading }),
+  useSeniorityCore: () => ({ entries: state.entries, isNewHireMode: state.isNewHireMode }),
 }))
 
-mockNuxtImport('useSeniorityCore', () => () => ({
-  entries: mockEntries,
-}))
+mockNuxtImport('useUser', () => () => ({ employeeNumber: state.employeeNumber }))
 
-mockNuxtImport('useUser', () => () => ({
-  employeeNumber: ref('12345'),
-}))
+const stubs = {
+  USelect: defineComponent({
+    props: { modelValue: { type: String, default: '' }, items: { type: Array, default: () => [] } },
+    emits: ['update:modelValue'],
+    template: '<select :value="modelValue" @change="$emit(\'update:modelValue\', $event.target.value)"><option value="">Company-wide</option><option v-for="item in items" :key="item.value" :value="item.value">{{ item.label }}</option></select>',
+  }),
+  UInput: defineComponent({
+    props: { modelValue: { type: String, default: '' } },
+    emits: ['update:modelValue'],
+    template: '<input :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)" />',
+  }),
+  UButton: defineComponent({
+    props: { disabled: Boolean },
+    template: '<button :disabled="disabled"><slot /></button>',
+  }),
+  UEmpty: defineComponent({ template: '<div data-testid="empty"><slot />{{ title }}</div>', props: { title: String } }),
+  UTable: defineComponent({
+    props: { data: { type: Array, default: () => [] }, loading: Boolean },
+    setup(props) {
+      const tableApi = {
+        getState: () => ({ pagination: { pageIndex: 0 } }),
+        getPageCount: () => Math.max(1, Math.ceil(props.data.length / 50)),
+        getFilteredRowModel: () => ({ rows: props.data.map(() => ({})) }),
+        setGlobalFilter: vi.fn(),
+        setPageIndex: vi.fn(),
+      }
+      return { tableApi }
+    },
+    template: '<div data-testid="table"><span v-if="loading" data-testid="loading">loading</span><div v-for="row in data" :key="row.employeeNumber + row.status">{{ row.name }}|{{ row.employeeNumber }}|{{ row.qualSeniority }}|{{ row.companySeniority }}|{{ row.status }}|{{ row.isUser ? "user" : "" }}</div></div>',
+  }),
+  TablePagination: defineComponent({
+    props: { currentPage: Number, pageCount: Number, totalRows: Number },
+    template: '<div data-testid="pagination">page {{ currentPage }}/{{ pageCount }} · {{ totalRows }} rows</div>',
+  }),
+}
 
-vi.mock('@vueuse/core', () => ({
-  useMediaQuery: () => mockIsMobile,
-}))
-
-describe('SeniorityListViewer mobile layout', () => {
+describe('SeniorityListViewer', () => {
   beforeEach(() => {
-    mockIsMobile.value = true
+    state.lists.value = []
+    state.entries.value = []
+    state.entriesLoading.value = false
+    state.employeeNumber.value = null
+    state.isNewHireMode.value = false
   })
 
-  it('renders list rows as mobile cards with key fields', async () => {
-    const wrapper = await mountSuspended(SeniorityListViewer, {
-      props: { loading: false },
+  it('keeps the table loading while the parent is loading', async () => {
+    const Component = (await import('./SeniorityListViewer.vue')).default
+    const wrapper = await mountSuspended(Component, {
+      props: { loading: true },
+      global: { stubs },
     })
 
-    expect(wrapper.text()).toContain('Pilot One')
-    expect(wrapper.text()).toContain('Emp # 12345')
-    expect(wrapper.text()).toContain('Seat')
-    expect(wrapper.text()).toContain('Base')
+    expect(wrapper.find('[data-testid="loading"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="empty"]').exists()).toBe(false)
+  })
+
+  it('updates the displayed qual when a qual is selected', async () => {
+    state.lists.value = [makeList()]
+    state.entries.value = [
+      makeDomainEntry({ seniority_number: 1, employee_number: 'E1', name: 'First', base: 'JFK', fleet: '737', seat: 'CA' }),
+      makeDomainEntry({ seniority_number: 2, employee_number: 'E2', name: 'Second', base: 'JFK', fleet: '737', seat: 'CA' }),
+      makeDomainEntry({ seniority_number: 3, employee_number: 'E3', name: 'Other', base: 'LAX', fleet: '320', seat: 'FO' }),
+    ]
+    const Component = (await import('./SeniorityListViewer.vue')).default
+    const wrapper = await mountSuspended(Component, { global: { stubs } })
+
+    await wrapper.find('select').setValue('JFK|737|CA')
+
+    expect(wrapper.text()).toContain('JFK-737-CA · 2 pilots')
+    expect(wrapper.text()).toContain('First|E1|1|1|active')
+  })
+
+  it('keeps insertion synthetic and exposes pagination for large lists', async () => {
+    state.lists.value = [makeList()]
+    state.employeeNumber.value = 'E51'
+    state.entries.value = Array.from({ length: 51 }, (_, index) => makeDomainEntry({
+      seniority_number: index + 1,
+      employee_number: index === 50 ? 'E51' : `E${index + 1}`,
+      name: `Pilot ${index + 1}`,
+      base: 'JFK',
+      fleet: '737',
+      seat: 'CA',
+    }))
+    const Component = (await import('./SeniorityListViewer.vue')).default
+    const wrapper = await mountSuspended(Component, { global: { stubs } })
+
+    expect(wrapper.find('[data-testid="pagination"]').text()).toContain('51 rows')
+    await wrapper.find('button').trigger('click')
+
+    expect(wrapper.text()).toContain('Pilot 51|E51|51|51|active|user')
   })
 })
