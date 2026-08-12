@@ -1,7 +1,13 @@
 ---
 title: "What's New"
-latestDate: "2026-03-26"
+latestDate: "2026-08-12"
 ---
+
+## August 12, 2026
+
+- Added the Seniority Slicer: select a base, fleet, and seat to view company and in-qualification seniority together
+- Added in-qualification seniority percentiles, responsive mobile columns, and pagination for large lists
+- Added an optional synthetic placement so you can see where you would rank in the selected qualification
 
 ## April 26, 2026
 

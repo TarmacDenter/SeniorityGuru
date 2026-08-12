@@ -1,4 +1,5 @@
 import type { SeniorityEntry } from '~/utils/schemas/seniority-list'
+import { normalizeEmployeeNumber } from '~/utils/schemas/seniority-list'
 import type { SenioritySnapshot, Qual } from './types'
 import { cellKey } from './cell-key'
 
@@ -38,7 +39,9 @@ function collectDuplicateIssues(entries: readonly Partial<SeniorityEntry>[]): Sn
 
   const empToIndices = new Map<string, number[]>()
   entries.forEach((entry, i) => {
-    const emp = typeof entry.employee_number === 'string' ? entry.employee_number.trim() : ''
+    const emp = typeof entry.employee_number === 'string'
+      ? normalizeEmployeeNumber(entry.employee_number.trim())
+      : ''
     if (emp.length > 0) {
       const indices = empToIndices.get(emp) ?? []
       indices.push(i)
