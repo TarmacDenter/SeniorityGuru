@@ -61,7 +61,7 @@ export function projectQualViewer(options: QualViewerOptions): QualViewerResult 
 
   const activeEntries = ordered.filter(e => !isRetiredBy(e.retire_date, asOfDate))
   const activeCompanyRank = new Map<string, number>()
-  activeEntries.forEach((e, index) => activeCompanyRank.set(e.employee_number, index + 1))
+  activeEntries.forEach((e, index) => activeCompanyRank.set(normalizeEmployeeNumber(e.employee_number), index + 1))
   const activeCompanyTotal = activeEntries.length
   const selectedListTotal = ordered.length
 
@@ -72,12 +72,13 @@ export function projectQualViewer(options: QualViewerOptions): QualViewerResult 
 
   const activeQualEntries = matches.filter(e => !isRetiredBy(e.retire_date, asOfDate))
   const qualRankByEmployee = new Map<string, number>()
-  activeQualEntries.forEach((e, index) => qualRankByEmployee.set(e.employee_number, index + 1))
+  activeQualEntries.forEach((e, index) => qualRankByEmployee.set(normalizeEmployeeNumber(e.employee_number), index + 1))
 
   const rows = matches.map((entry): QualViewerRow => {
     const retired = isRetiredBy(entry.retire_date, asOfDate)
     const selected = selectedListMetrics(entry)
-    const companySeniority = retired ? null : activeCompanyRank.get(entry.employee_number) ?? null
+    const employeeKey = normalizeEmployeeNumber(entry.employee_number)
+    const companySeniority = retired ? null : activeCompanyRank.get(employeeKey) ?? null
     return {
       entry,
       seniorityNumber: entry.seniority_number,
@@ -95,7 +96,7 @@ export function projectQualViewer(options: QualViewerOptions): QualViewerResult 
       selectedListCompanyPercentile: selected.percentile,
       companySeniority,
       companyPercentile: companySeniority === null ? null : computePercentile(companySeniority, activeCompanyTotal),
-      qualSeniority: retired ? null : qualRankByEmployee.get(entry.employee_number) ?? null,
+      qualSeniority: retired ? null : qualRankByEmployee.get(employeeKey) ?? null,
       qualPercentile: null,
     }
   })
@@ -117,8 +118,8 @@ export function projectQualViewer(options: QualViewerOptions): QualViewerResult 
       isMarker: true,
       selectedListCompanySeniority: anchor.seniority_number,
       selectedListCompanyPercentile: computePercentile(anchor.seniority_number, selectedListTotal),
-      companySeniority: markerRetired ? null : activeCompanyRank.get(anchor.employee_number) ?? null,
-      companyPercentile: markerRetired ? null : computePercentile(activeCompanyRank.get(anchor.employee_number) ?? 0, activeCompanyTotal),
+      companySeniority: markerRetired ? null : activeCompanyRank.get(normalizeEmployeeNumber(anchor.employee_number)) ?? null,
+      companyPercentile: markerRetired ? null : computePercentile(activeCompanyRank.get(normalizeEmployeeNumber(anchor.employee_number)) ?? 0, activeCompanyTotal),
       qualSeniority: markerRetired ? null : activeQualEntries.filter(e => e.seniority_number < anchor.seniority_number).length + 1,
       qualPercentile: null,
     }

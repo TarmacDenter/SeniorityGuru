@@ -7,6 +7,7 @@ import type { TableColumn } from '@nuxt/ui'
 import type { QualSpec, QualViewerRow } from '~/utils/seniority-engine'
 import { projectQualViewer } from '~/utils/seniority-engine'
 import { diffYears, todayISO } from '~/utils/date'
+import { normalizeEmployeeNumber } from '~/utils/schemas/seniority-list'
 import { useSeniorityCore, useSeniorityLists } from '~/composables/seniority'
 
 const props = defineProps<{ loading?: boolean }>()
@@ -57,7 +58,11 @@ const selectedQual = computed<QualSpec>(() => {
   return { base, fleet, seat }
 })
 const isQualMode = computed(() => Object.keys(selectedQual.value).length === 3)
-const anchorFound = computed(() => !!employeeNumber.value && entries.value.some(e => e.employee_number === employeeNumber.value))
+const anchorFound = computed(() => {
+  if (!employeeNumber.value) return false
+  const normalized = normalizeEmployeeNumber(employeeNumber.value)
+  return entries.value.some(e => normalizeEmployeeNumber(e.employee_number) === normalized)
+})
 const canInsert = computed(() => anchorFound.value && !isNewHireMode.value)
 const insertDisabledReason = computed(() => {
   if (isNewHireMode.value) return 'Insert yourself is unavailable in New Hire Mode.'
@@ -66,7 +71,7 @@ const insertDisabledReason = computed(() => {
   return ''
 })
 
-watch([entries, selectedQualKey], () => {
+watch(entries, () => {
   if (selectedQualKey.value && !qualOptions.value.some(option => option.value === selectedQualKey.value)) selectedQualKey.value = ''
   pagination.value.pageIndex = 0
 })
@@ -150,14 +155,24 @@ const pageCount = computed(() => table.value?.tableApi?.getPageCount() ?? 1)
 const totalRows = computed(() => table.value?.tableApi?.getFilteredRowModel().rows.length ?? tableData.value.length)
 const pagination = ref({ pageIndex: 0, pageSize: 50 })
 
+function focusUserPage() {
+  const targetIndex = projected.value.rows.findIndex(row => row.isUser)
+  if (targetIndex >= 0) {
+    pagination.value.pageIndex = Math.floor(targetIndex / pagination.value.pageSize)
+  }
+}
+
+watch(selectedQualKey, (value, previousValue) => {
+  if (value === previousValue) return
+  pagination.value.pageIndex = 0
+  nextTick(focusUserPage)
+})
+
 function toggleInsert() {
   if (!canInsert.value) return
   insertSelf.value = !insertSelf.value
   nextTick(() => {
-    const targetIndex = projected.value.rows.findIndex(row => row.isUser)
-    if (targetIndex >= 0) {
-      pagination.value.pageIndex = Math.floor(targetIndex / pagination.value.pageSize)
-    }
+    focusUserPage()
     nextTick(() => scrollToUserRow())
   })
 }

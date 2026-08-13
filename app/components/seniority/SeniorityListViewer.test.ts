@@ -79,6 +79,7 @@ describe('SeniorityListViewer', () => {
 
   it('updates the displayed qual when a qual is selected', async () => {
     state.lists.value = [makeList()]
+    state.employeeNumber.value = 'E1'
     state.entries.value = [
       makeDomainEntry({ seniority_number: 1, employee_number: 'E1', name: 'First', base: 'JFK', fleet: '737', seat: 'CA' }),
       makeDomainEntry({ seniority_number: 2, employee_number: 'E2', name: 'Second', base: 'JFK', fleet: '737', seat: 'CA' }),
@@ -93,9 +94,12 @@ describe('SeniorityListViewer', () => {
     expect(wrapper.text()).toContain('First|E1|1|1|active')
     expect(wrapper.find('div.flex-1.min-h-0.overflow-auto').exists()).toBe(true)
 
+    await wrapper.find('button').trigger('click')
+
     await wrapper.find('select').setValue('__company_wide__')
 
     expect(wrapper.text()).toContain('Company-wide · 3 pilots')
+    expect(wrapper.text()).toContain('First|E1|1|1|active|user')
   })
 
   it('keeps insertion synthetic and exposes pagination for large lists', async () => {
