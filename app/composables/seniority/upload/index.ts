@@ -2,6 +2,7 @@ import { parseDate } from '@internationalized/date'
 import type { SeniorityEntry } from '~/utils/schemas/seniority-list'
 import { todayISO } from '~/utils/date'
 import type { ColumnMap } from '~/utils/parse-spreadsheet'
+import type { PreparedSheet } from '~/utils/import-pipeline/types'
 import type { SeniorityUpload } from './types'
 import { _useProgressTracker } from './_useProgressTracker'
 import { _useFileIO } from './_useFileIO'
@@ -23,6 +24,7 @@ export function useSeniorityUpload(): SeniorityUpload {
   const syntheticNote = ref<string | null>(null)
   const syntheticIndices = ref<Set<number>>(new Set())
   const autoDetectSucceeded = ref(false)
+  const preparedSheet = ref<PreparedSheet | null>(null)
   const columnMap = ref<ColumnMap>({ ...DEFAULT_COLUMN_MAP })
   const entries = ref<Partial<SeniorityEntry>[]>([])
   const rowErrors = shallowRef<Map<number, string[]>>(new Map())
@@ -53,6 +55,7 @@ export function useSeniorityUpload(): SeniorityUpload {
     syntheticNote.value = null
     syntheticIndices.value = new Set()
     autoDetectSucceeded.value = false
+    preparedSheet.value = null
     error.value = null
     review._reset()
     confirm._reset()
@@ -66,6 +69,8 @@ export function useSeniorityUpload(): SeniorityUpload {
     progress,
     extractedEffectiveDate,
     extractedTitle,
+    selectedParserId,
+    preparedSheet,
     async onMapped(mapped: Partial<SeniorityEntry>[]) {
       entries.value = mapped
       await review.validate()
@@ -92,6 +97,7 @@ export function useSeniorityUpload(): SeniorityUpload {
     syntheticIndices,
     columnMap,
     autoDetectSucceeded,
+    preparedSheet,
     progress,
     onSheetChange: resetDownstream,
   })

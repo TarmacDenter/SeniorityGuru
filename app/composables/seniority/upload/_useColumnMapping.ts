@@ -3,6 +3,38 @@ import type { MappingOptions } from '~/utils/parse-spreadsheet'
 import { applyColumnMapAsync } from '~/utils/parse-spreadsheet'
 import { createLogger } from '~/utils/logger'
 import { DEFAULT_COLUMN_MAP, DEFAULT_MAPPING_OPTIONS } from './defaults'
+import { processConfirmedMappings } from '~/utils/import-pipeline/process-confirmed-mappings'
+import type { ConfirmedMappings, PreparedColumn } from '~/utils/import-pipeline/types'
+
+function toConfirmedMappings(
+  map: ColumnMap,
+  options: MappingOptions,
+  headers: string[],
+  columns?: readonly PreparedColumn[],
+): ConfirmedMappings {
+  const columnId = (index: number) => columns?.[index]?.id ?? headers[index]
+  const column = (index: number) => index >= 0 && columnId(index) ? { kind: 'column' as const, columnId: columnId(index)! } : undefined
+  const mappings: Partial<Record<keyof ColumnMap, ConfirmedMappings[keyof ConfirmedMappings]>> = {
+    seniority_number: column(map.seniority_number),
+    employee_number: column(map.employee_number),
+    seat: column(map.seat),
+    base: column(map.base),
+    fleet: column(map.fleet),
+    hire_date: column(map.hire_date),
+  }
+
+  mappings.name = options.nameMode === 'separate'
+    && options.firstNameCol != null
+    && options.lastNameCol != null
+    && columnId(options.firstNameCol)
+    && columnId(options.lastNameCol)
+    ? { kind: 'combined-name', firstNameColumnId: columnId(options.firstNameCol)!, lastNameColumnId: columnId(options.lastNameCol)! }
+    : column(map.name)
+  mappings.retire_date = options.retireMode === 'dob' && options.dobCol != null && columnId(options.dobCol)
+    ? { kind: 'retirement-from-birth-date', columnId: columnId(options.dobCol)!, retirementAge: options.retirementAge ?? 65 }
+    : column(map.retire_date)
+  return mappings as ConfirmedMappings
+}
 
 const log = createLogger('upload:mapping')
 
@@ -30,14 +62,19 @@ export function _useColumnMapping(opts: MappingPhaseOptions): MappingPhase & { _
     try {
       opts.progress.report('mapping', 0, opts.rawRows.value.length)
 
-      const mapped = await applyColumnMapAsync(
-        opts.rawRows.value,
-        opts.columnMap.value,
-        mappingOptions.value,
-        (current, total) => {
-          opts.progress.report('mapping', current, total)
-        },
-      )
+      const mapped = opts.selectedParserId.value === 'generic' && opts.preparedSheet.value
+        ? (await processConfirmedMappings({
+            preparedSheet: opts.preparedSheet.value,
+            mappings: toConfirmedMappings(opts.columnMap.value, mappingOptions.value, opts.rawHeaders.value, opts.preparedSheet.value.columns),
+          })).drafts.map(draft => draft.entry)
+        : await applyColumnMapAsync(
+            opts.rawRows.value,
+            opts.columnMap.value,
+            mappingOptions.value,
+            (current, total) => {
+              opts.progress.report('mapping', current, total)
+            },
+          )
 
       if (mapped.length === 0) {
         error.value = 'No rows could be mapped. Verify the selected columns contain data.'

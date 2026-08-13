@@ -14,7 +14,6 @@ defineExpose({ onSave })
 const upload = useSeniorityUpload()
 const toast = useToast()
 const files = ref<File | null>(null)
-const mappingSkipped = ref(false)
 const activeRowFilter = ref<'all' | 'errors' | 'estimated'>('all')
 
 const showErrorsOnly = computed(() => activeRowFilter.value === 'errors')
@@ -89,24 +88,9 @@ function changeFormat() {
   upload.reset()
   clearRowFilter()
   files.value = null
-  mappingSkipped.value = false
 }
 
 async function nextStep() {
-  if (currentStep.value === 'upload' && upload.file.autoDetected.value) {
-    await upload.mapping.apply()
-    if (upload.mapping.error.value) {
-      log.error('applyMapping failed during auto-detect step', { error: upload.mapping.error.value })
-      currentStep.value = 'mapping'
-      mappingSkipped.value = false
-      return
-    }
-    mappingSkipped.value = true
-    currentStep.value = 'review'
-    log.info('Upload step advanced (mapping skipped)', { step: 'review' })
-    toast.add({ title: 'All columns auto-detected — skipped to review', color: 'info' })
-    return
-  }
   if (currentStep.value === 'mapping') {
     await upload.mapping.apply()
     if (upload.mapping.error.value) {
@@ -122,11 +106,6 @@ async function nextStep() {
 }
 
 function prevStep() {
-  if (currentStep.value === 'review' && mappingSkipped.value) {
-    mappingSkipped.value = false
-    currentStep.value = 'upload'
-    return
-  }
   const prevIdx = currentStepIndex.value - 1
   if (prevIdx >= 0) {
     currentStep.value = stepOrder[prevIdx]!

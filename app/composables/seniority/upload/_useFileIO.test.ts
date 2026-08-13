@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { _useFileIO } from './_useFileIO'
 import { _useProgressTracker } from './_useProgressTracker'
 import type { ColumnMap } from '~/utils/parse-spreadsheet'
+import type { PreparedSheet } from '~/utils/import-pipeline/types'
 
 // Mock XLSX
 const mockRead = vi.hoisted(() => vi.fn())
@@ -29,6 +30,7 @@ function createFileIO() {
   const syntheticNote = ref<string | null>(null)
   const syntheticIndices = ref<Set<number>>(new Set())
   const autoDetectSucceeded = ref(false)
+  const preparedSheet = ref<PreparedSheet | null>(null)
   const columnMap = ref<ColumnMap>({
     seniority_number: -1, employee_number: -1, seat: -1,
     base: -1, fleet: -1, name: -1, hire_date: -1, retire_date: -1,
@@ -46,6 +48,7 @@ function createFileIO() {
     syntheticIndices,
     columnMap,
     autoDetectSucceeded,
+    preparedSheet,
     progress,
     onSheetChange,
   })

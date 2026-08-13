@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { _useColumnMapping } from './_useColumnMapping'
 import { _useProgressTracker } from './_useProgressTracker'
 import type { ColumnMap } from '~/utils/parse-spreadsheet'
+import type { PreparedSheet } from '~/utils/import-pipeline/types'
 
 const { mockApplyColumnMapAsync } = vi.hoisted(() => ({
   mockApplyColumnMapAsync: vi.fn(),
@@ -27,6 +28,8 @@ function createMapping(overrides: Record<string, any> = {}) {
   })
   const extractedEffectiveDate = ref<string | null>(null)
   const extractedTitle = ref<string | null>(null)
+  const selectedParserId = ref<string | null>(null)
+  const preparedSheet = ref<PreparedSheet | null>(null)
   const progress = _useProgressTracker()
   const onMapped = overrides.onMapped ?? vi.fn()
   const onMetadataReady = overrides.onMetadataReady ?? vi.fn()
@@ -38,11 +41,13 @@ function createMapping(overrides: Record<string, any> = {}) {
     progress,
     extractedEffectiveDate,
     extractedTitle,
+    selectedParserId,
+    preparedSheet,
     onMapped,
     onMetadataReady,
   })
 
-  return { mapping, rawRows, rawHeaders, columnMap, extractedEffectiveDate, extractedTitle, progress, onMapped, onMetadataReady }
+  return { mapping, rawRows, rawHeaders, columnMap, extractedEffectiveDate, extractedTitle, selectedParserId, preparedSheet, progress, onMapped, onMetadataReady }
 }
 
 describe('_useColumnMapping', () => {

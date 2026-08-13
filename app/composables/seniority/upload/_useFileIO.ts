@@ -3,6 +3,10 @@ import type { FilePhase, FilePhaseOptions } from './types'
 import { parseSpreadsheetData, autoDetectColumnMap, isColumnMapComplete } from '~/utils/parse-spreadsheet'
 import { getParser } from '~/utils/parsers/registry'
 import { createLogger } from '~/utils/logger'
+import { decodeWorkbook } from '~/utils/import-pipeline/decode-workbook'
+import { genericImportPlugin } from '~/utils/import-pipeline/plugins/generic'
+import { prepareImport } from '~/utils/import-pipeline/prepare-import'
+import type { DecodedWorkbook, PreparedSheet } from '~/utils/import-pipeline/types'
 
 const log = createLogger('upload:file')
 
@@ -13,6 +17,7 @@ export function _useFileIO(opts: FilePhaseOptions): FilePhase & { _reset: () => 
   const error = ref<string | null>(null)
 
   let workbookBuffer: ArrayBuffer | null = null
+  let decodedWorkbook: DecodedWorkbook | null = null
 
   const needsSheetSelection = computed(
     () => sheetNames.value.length > 1 && opts.rawRows.value.length === 0,
@@ -79,11 +84,35 @@ export function _useFileIO(opts: FilePhaseOptions): FilePhase & { _reset: () => 
     })
   }
 
+  function applyPreparedSheet(preparedSheet: PreparedSheet) {
+    opts.preparedSheet.value = {
+      ...preparedSheet,
+      rows: preparedSheet.rows.slice(1),
+    }
+    opts.rawHeaders.value = preparedSheet.columns.map(column => column.label)
+    opts.rawRows.value = opts.preparedSheet.value.rows.map(row =>
+      preparedSheet.columns.map(column => String(row.cells[column.id] ?? '')),
+    )
+    opts.columnMap.value = autoDetectColumnMap(opts.rawHeaders.value)
+    opts.autoDetectSucceeded.value = isColumnMapComplete(opts.columnMap.value)
+  }
+
+  function processGenericSheet(workbook: DecodedWorkbook, sheetName: string) {
+    const sourceSheet = workbook.sheets.find(sheet => sheet.name === sheetName)
+    if (!sourceSheet) return
+    const result = prepareImport({ plugin: genericImportPlugin, sourceSheet })
+    applyPreparedSheet(result.preparedSheet)
+    if (result.issues.length > 0) {
+      log.warn('Generic sheet preparation needs manual mapping', { issueKinds: result.issues.map(issue => issue.kind) })
+    }
+  }
+
   async function setFile(file: File | null) {
     fileName.value = ''
     sheetNames.value = []
     selectedSheet.value = null
     workbookBuffer = null
+    decodedWorkbook = null
     error.value = null
     opts.onSheetChange()
 
@@ -93,6 +122,22 @@ export function _useFileIO(opts: FilePhaseOptions): FilePhase & { _reset: () => 
     opts.progress.enter('reading')
 
     try {
+      if (opts.selectedParserId.value === 'generic') {
+        const decoded = await decodeWorkbook(file)
+        if (!decoded.ok) {
+          error.value = decoded.error.message
+          return
+        }
+        decodedWorkbook = decoded.workbook
+        sheetNames.value = [...decoded.workbook.sheetNames]
+        if (decoded.workbook.sheetNames.length === 1) {
+          const onlySheet = decoded.workbook.sheetNames[0]!
+          selectedSheet.value = onlySheet
+          processGenericSheet(decoded.workbook, onlySheet)
+        }
+        return
+      }
+
       let buffer: ArrayBuffer
       try {
         buffer = await file.arrayBuffer()
@@ -131,6 +176,13 @@ export function _useFileIO(opts: FilePhaseOptions): FilePhase & { _reset: () => 
   }
 
   function selectSheet(name: string) {
+    if (opts.selectedParserId.value === 'generic' && decodedWorkbook) {
+      if (!decodedWorkbook.sheetNames.includes(name)) return
+      opts.onSheetChange()
+      selectedSheet.value = name
+      processGenericSheet(decodedWorkbook, name)
+      return
+    }
     if (!workbookBuffer) return
 
     const workbook = XLSX.read(workbookBuffer, { type: 'array', raw: true })
@@ -150,6 +202,7 @@ export function _useFileIO(opts: FilePhaseOptions): FilePhase & { _reset: () => 
     sheetNames.value = []
     selectedSheet.value = null
     workbookBuffer = null
+    decodedWorkbook = null
     error.value = null
   }
 
