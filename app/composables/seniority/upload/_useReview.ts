@@ -27,6 +27,10 @@ function formatPipelineIssue(issue: { field?: string, message: string }): string
   return `${issue.field ?? 'row'}: ${issue.message}`
 }
 
+function reportReviewChange(opts: ReviewPhaseOptions) {
+  opts.onReviewChanged?.(opts.entries.value)
+}
+
 function isStructuralMessage(raw: string): boolean {
   return raw.startsWith('seniority_number: Duplicate seniority number')
     || raw.startsWith('seniority_number: Non-contiguous sequence')
@@ -118,6 +122,7 @@ export function _useReview(opts: ReviewPhaseOptions): ReviewPhase & { _reset: ()
     }
 
     revalidateStructural()
+    reportReviewChange(opts)
   }
 
   function deleteRow(rowIndex: number) {
@@ -149,6 +154,7 @@ export function _useReview(opts: ReviewPhaseOptions): ReviewPhase & { _reset: ()
     opts.sourceValues.value = reindexSourceValues(rowIndex, -1)
 
     revalidateStructural()
+    reportReviewChange(opts)
   }
 
   function insertRowAt(rowIndex: number) {
@@ -192,6 +198,7 @@ export function _useReview(opts: ReviewPhaseOptions): ReviewPhase & { _reset: ()
     opts.sourceValues.value = reindexSourceValues(rowIndex, 1)
 
     revalidateStructural()
+    reportReviewChange(opts)
   }
 
   function deleteErrorRows(): number {
@@ -222,6 +229,7 @@ export function _useReview(opts: ReviewPhaseOptions): ReviewPhase & { _reset: ()
 
     opts.rowErrors.value = new Map()
     revalidateStructural()
+    reportReviewChange(opts)
     return count
   }
 

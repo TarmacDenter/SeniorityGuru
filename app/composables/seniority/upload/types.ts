@@ -61,6 +61,7 @@ export interface FilePhaseOptions {
   autoDetectSucceeded: Ref<boolean>
   preparedSheet: Ref<PreparedSheet | null>
   preparationIssues?: Ref<ImportIssue[]>
+  importAttemptId?: Ref<string | null>
   progress: ProgressTracker
   onSheetChange: () => void
 }
@@ -124,6 +125,7 @@ export interface ReviewPhaseOptions {
   syntheticNote: Ref<string | null>
   syntheticIndices: Ref<Set<number>>
   progress: ProgressTracker
+  onReviewChanged?: (entries: Partial<SeniorityEntry>[]) => void
 }
 
 // ── Phase: Confirm ───────────────────────────────────────────────────────────

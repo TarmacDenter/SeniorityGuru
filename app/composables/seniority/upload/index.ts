@@ -11,11 +11,13 @@ import { _useConfirm } from './_useConfirm'
 import { DEFAULT_COLUMN_MAP, DEFAULT_MAPPING_OPTIONS } from './defaults'
 import { useUserStore } from '~/stores/user'
 import { getImportPlugin, importPlugins } from '~/utils/import-pipeline/plugins/registry'
+import { useImportAttemptsStore } from '~/stores/import-attempts'
 
 export type { SeniorityUpload, ProcessingPhase, ProgressTracker } from './types'
 
 export function useSeniorityUpload(): SeniorityUpload {
   const userStore = useUserStore()
+  const importAttemptsStore = useImportAttemptsStore()
   // ── Shared refs (owned here, passed to phases) ──────────────────────────
 
   const selectedUploadTypeId = ref<string | null>(null)
@@ -74,6 +76,17 @@ export function useSeniorityUpload(): SeniorityUpload {
     syntheticNote,
     syntheticIndices,
     progress,
+    onReviewChanged(entries) {
+      const id = importAttemptId.value
+      if (!id) return
+      void importAttemptsStore.update(id, {
+        data: {
+          ...JSON.parse(importAttemptsStore.exportAttempt(id) ?? '{}'),
+          review: { entries, editedAt: new Date().toISOString() },
+          stage: 'review',
+        },
+      })
+    },
   })
 
   const confirm = _useConfirm({ error, importAttemptId })

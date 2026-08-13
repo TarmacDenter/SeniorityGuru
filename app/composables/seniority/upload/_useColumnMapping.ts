@@ -92,11 +92,8 @@ export function _useColumnMapping(opts: MappingPhaseOptions): MappingPhase & { _
         try {
           const existing = await userStore.getPreference('importMappings') ?? {}
           await userStore.savePreference('importMappings', { ...existing, [plugin.id]: { columns, mappingOptions: mappingOptions.value as unknown as Record<string, unknown> } })
-          const attemptId = await importAttemptsStore.record({
-            id: crypto.randomUUID(),
-            pluginId: plugin.id,
-            sheetName: opts.preparedSheet.value.sourceSheet.name,
-            data: {
+          const diagnosticData = {
+              ...JSON.parse(opts.importAttemptId?.value ? importAttemptsStore.exportAttempt(opts.importAttemptId.value) ?? '{}' : '{}'),
               diagnosticSchemaVersion: 1,
               plugin: { id: plugin.id, label: plugin.label },
               createdAt: new Date().toISOString(),
@@ -107,9 +104,16 @@ export function _useColumnMapping(opts: MappingPhaseOptions): MappingPhase & { _
               mappingPreferences: { columns, mappingOptions: mappingOptions.value },
               drafts: processed.drafts,
               outcome: 'review',
-            },
-          })
-          if (opts.importAttemptId) opts.importAttemptId.value = attemptId
+              stage: 'review',
+              mapping: { confirmedMappings, processedDrafts: processed.drafts, transformationIssues: processed.drafts.flatMap(draft => draft.issues) },
+            }
+          const existingAttemptId = opts.importAttemptId?.value
+          if (existingAttemptId) {
+            await importAttemptsStore.update(existingAttemptId, { data: diagnosticData })
+          } else {
+            const attemptId = await importAttemptsStore.record({ id: crypto.randomUUID(), pluginId: plugin.id, sheetName: opts.preparedSheet.value.sourceSheet.name, data: diagnosticData })
+            if (opts.importAttemptId) opts.importAttemptId.value = attemptId
+          }
         } catch (storageError) {
           log.warn('Could not save import preferences or diagnostic', { error: String(storageError) })
         }
@@ -136,6 +140,9 @@ export function _useColumnMapping(opts: MappingPhaseOptions): MappingPhase & { _
     } catch (err) {
       const detail = err instanceof Error ? err.message : String(err)
       error.value = `Failed to map columns: ${detail}`
+      if (opts.importAttemptId?.value) {
+        await importAttemptsStore.complete(opts.importAttemptId.value, { outcome: 'failed', error: detail })
+      }
       log.error('Mapping failed', { error: detail })
     } finally {
       opts.progress.idle()

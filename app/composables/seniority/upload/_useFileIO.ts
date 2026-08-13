@@ -6,11 +6,13 @@ import { getImportPlugin } from '~/utils/import-pipeline/plugins/registry'
 import { prepareImport } from '~/utils/import-pipeline/prepare-import'
 import type { DecodedWorkbook, ImportIssue, PreparedSheet } from '~/utils/import-pipeline/types'
 import { useUserStore } from '~/stores/user'
+import { useImportAttemptsStore } from '~/stores/import-attempts'
 
 const log = createLogger('upload:file')
 
 export function _useFileIO(opts: FilePhaseOptions): FilePhase & { _reset: () => void } {
   const userStore = useUserStore()
+  const importAttemptsStore = useImportAttemptsStore()
   const fileName = ref('')
   const sheetNames = ref<string[]>([])
   const selectedSheet = ref<string | null>(null)
@@ -62,6 +64,17 @@ export function _useFileIO(opts: FilePhaseOptions): FilePhase & { _reset: () => 
     sourceHeaders.value = sourceSheet.columns.map(column => column.label ?? column.id)
     selectedHeaderRow.value = headerRowIndex ?? plugin.suggestHeaderRow?.(sourceSheet) ?? 0
     const result = prepareImport({ plugin, sourceSheet, headerRowIndex: selectedHeaderRow.value })
+    if (opts.importAttemptId?.value) {
+      await importAttemptsStore.update(opts.importAttemptId.value, {
+        data: {
+          ...JSON.parse(importAttemptsStore.exportAttempt(opts.importAttemptId.value) ?? '{}'),
+          sourceSheet,
+          preparation: { headerRowIndex: selectedHeaderRow.value, issues: result.issues, metadata: result.metadata, preparedSheet: result.preparedSheet },
+          stage: 'prepared',
+          updatedAt: new Date().toISOString(),
+        },
+      })
+    }
     preparationIssues.value = [...result.issues]
     opts.extractedEffectiveDate.value = result.metadata.effectiveDate
     opts.extractedTitle.value = result.metadata.title
@@ -103,13 +116,32 @@ export function _useFileIO(opts: FilePhaseOptions): FilePhase & { _reset: () => 
     if (!file) return
 
     fileName.value = file.name
+    const plugin = getImportPlugin(opts.selectedUploadTypeId.value ?? '')
+    if (plugin && opts.importAttemptId) {
+      const id = crypto.randomUUID()
+      opts.importAttemptId.value = await importAttemptsStore.record({
+        id,
+        pluginId: plugin.id,
+        outcome: 'review',
+        data: {
+          diagnosticSchemaVersion: 2,
+          appBuildVersion: 'local',
+          plugin: { id: plugin.id, label: plugin.label },
+          file: { name: file.name },
+          createdAt: new Date().toISOString(),
+          stage: 'reading',
+          logs: [{ stage: 'reading', at: new Date().toISOString() }],
+        },
+      })
+    }
     opts.progress.enter('reading')
 
     try {
-      if (getImportPlugin(opts.selectedUploadTypeId.value ?? '')) {
+      if (plugin) {
         const decoded = await decodeWorkbook(file)
         if (!decoded.ok) {
           error.value = decoded.error.message
+          if (opts.importAttemptId?.value) await importAttemptsStore.complete(opts.importAttemptId.value, { outcome: 'failed', error: decoded.error.message })
           return
         }
         decodedWorkbook = decoded.workbook
