@@ -82,13 +82,27 @@ function applyPatch(sourceSheet: SourceSheet, patch: PreparationPatch): Prepared
 export function prepareImport({
   plugin,
   sourceSheet,
+  headerRowIndex,
 }: {
   readonly plugin: ImportPlugin
   readonly sourceSheet: SourceSheet
+  /** A user-confirmed source row that supplies column labels and is excluded from mapping. */
+  readonly headerRowIndex?: number
 }): PrepareImportResult {
+  const headerRow = headerRowIndex === undefined ? undefined : sourceSheet.rows[headerRowIndex]
+  const sheetForPreparation = headerRow
+    ? {
+        ...sourceSheet,
+        columns: sourceSheet.columns.map((column, index) => ({
+          ...column,
+          label: typeof headerRow.cells[index] === 'string' ? headerRow.cells[index] : column.label,
+        })),
+        rows: sourceSheet.rows.filter((_, index) => index > headerRowIndex),
+      }
+    : sourceSheet
   let patch: PreparationPatch
   try {
-    patch = preparationPatchSchema.parse(plugin.prepare(sourceSheet))
+    patch = preparationPatchSchema.parse(plugin.prepare(sheetForPreparation))
   } catch {
     patch = {
       issues: [{
@@ -99,7 +113,7 @@ export function prepareImport({
   }
 
   return {
-    preparedSheet: applyPatch(sourceSheet, patch),
+    preparedSheet: applyPatch(sheetForPreparation, patch),
     mappingSuggestions: patch.mappingSuggestions ?? {},
     issues: patch.issues ?? [],
   }

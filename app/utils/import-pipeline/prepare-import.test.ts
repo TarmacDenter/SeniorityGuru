@@ -116,4 +116,29 @@ describe('prepareImport', () => {
       message: 'This Upload Type could not prepare the sheet. Match the columns manually.',
     }])
   })
+
+  it('honors an explicit header-row choice over the decoded first row', () => {
+    const result = prepareImport({
+      plugin: genericImportPlugin,
+      sourceSheet: {
+        ...sourceSheet,
+        columns: [
+          { id: 'source:column:0', label: 'Untitled 1' },
+          { id: 'source:column:1', label: 'Untitled 2' },
+        ],
+        rows: [
+          { id: 'source:row:0', cells: ['January roster', null] },
+          { id: 'source:row:1', cells: ['Seniority Number', 'Employee Number'] },
+          { id: 'source:row:2', cells: ['1', '123'] },
+        ],
+      },
+      headerRowIndex: 1,
+    })
+
+    expect(result.mappingSuggestions).toEqual({
+      seniority_number: 'plugin:generic:seniority-number',
+      employee_number: 'plugin:generic:employee-number',
+    })
+    expect(result.preparedSheet.rows.map(row => row.sourceRowId)).toEqual(['source:row:2'])
+  })
 })
