@@ -82,7 +82,7 @@ See [WORKFLOW.md](WORKFLOW.md) for branch, pull-request, and quality-gate requir
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) to add or improve an airline parser.
+See [CONTRIBUTING.md](CONTRIBUTING.md) to add or improve an Import Plugin.
 
 ---
 

@@ -3,11 +3,13 @@ import type { ImportField } from './fields'
 /** A decoded spreadsheet value retained by the import pipeline. */
 export type SourceCellValue = string | number | boolean | null
 
+/** A stable source column identity and its decoded header label. */
 export interface SourceColumn {
   readonly id: string
   readonly label: string | null
 }
 
+/** A stable source row identity and its lossless decoded cell values. */
 export interface SourceRow {
   readonly id: string
   readonly cells: readonly SourceCellValue[]
@@ -21,11 +23,13 @@ export interface SourceSheet {
   readonly rows: readonly SourceRow[]
 }
 
+/** A workbook decoded without retaining workbook-library objects or formatting. */
 export interface DecodedWorkbook {
   readonly sheetNames: readonly string[]
   readonly sheets: readonly SourceSheet[]
 }
 
+/** A user-facing, actionable workbook decoding failure. */
 export interface DecodeError {
   readonly kind: 'file-read-failed' | 'workbook-decode-failed' | 'no-sheets'
   readonly message: string
@@ -37,12 +41,14 @@ export type DecodeWorkbookResult =
 
 export type { ImportField } from './fields'
 
+/** A canonical or derived column exposed during Match Columns. */
 export interface PreparedColumn {
   readonly id: string
   readonly label: string
   readonly sourceColumnId?: string
 }
 
+/** One lossless prepared row. Excluded rows remain available through sourceSheet. */
 export interface PreparedRow {
   readonly sourceRowId: string
   /** A non-destructive data-row suggestion. Excluded rows remain available for recovery. */
@@ -50,18 +56,21 @@ export interface PreparedRow {
   readonly cells: Readonly<Record<string, SourceCellValue>>
 }
 
+/** A lossless sheet plus plugin-prepared columns and row values. */
 export interface PreparedSheet {
   readonly sourceSheet: SourceSheet
   readonly columns: readonly PreparedColumn[]
   readonly rows: readonly PreparedRow[]
 }
 
+/** A typed issue that can be shown in preparation, mapping, or Review. */
 export interface ImportIssue {
   readonly kind: 'ambiguous-alias' | 'preparation-failed' | 'transformation-failed' | 'validation-failed'
   readonly field?: ImportField
   readonly message: string
 }
 
+/** The only changes a plugin may make while preparing a sheet. */
 export interface PreparationPatch {
   readonly columns?: readonly PreparedColumn[]
   /** Values for derived prepared columns, keyed by prepared column and source row ID. */
@@ -73,16 +82,31 @@ export interface PreparationPatch {
   readonly excludedSourceRowIds?: readonly string[]
 }
 
+/**
+ * The compiled-in contribution contract for one explicit Upload Type.
+ *
+ * Plugins are synchronous and pure. They receive immutable pipeline data,
+ * return validated patches, and never access Vue, browser services,
+ * persistence, logging, network services, or another plugin.
+ */
 export interface ImportPlugin {
+  /** Permanent lowercase slug used by preferences and diagnostics. */
   readonly id: string
+  /** User-facing Upload Type name. */
   readonly label: string
+  /** Short explanation shown when the Upload Type is selected. */
   readonly description: string
+  /** Nuxt UI icon name for the Upload Type. */
   readonly icon: string
+  /** Human-readable description of accepted spreadsheet formats. */
   readonly formatDescription: string
+  /** Fields that must be mapped before this Upload Type can continue. */
   readonly requiredMappings?: readonly ImportField[]
-  /** Returns the source row that should provide headings, when the format has a preamble. */
+  /** Suggests a heading row without changing the source sheet. */
   readonly suggestHeaderRow?: (sourceSheet: SourceSheet) => number | undefined
+  /** Returns immutable preparation changes; it must not mutate sourceSheet. */
   readonly prepare: (sourceSheet: SourceSheet) => PreparationPatch
+  /** Returns an immutable mapped-entry patch; it must not mutate either input. */
   readonly transformMappedEntry?: (input: MappedEntryTransformationInput) => EntryPatch
 }
 
@@ -99,8 +123,10 @@ export type MappingSelection =
   | { readonly kind: 'combined-name'; readonly firstNameColumnId: string; readonly lastNameColumnId: string }
   | { readonly kind: 'retirement-from-birth-date'; readonly columnId: string; readonly retirementAge: number }
 
+/** The user-confirmed mapping choices passed to the processing operation. */
 export type ConfirmedMappings = Readonly<Partial<Record<ImportField, MappingSelection>>>
 
+/** A mapped, transformed, and validated row ready for Review. */
 export interface DraftSeniorityEntry {
   readonly id: string
   readonly sourceRowId: string
@@ -108,16 +134,19 @@ export interface DraftSeniorityEntry {
   readonly issues: readonly ImportIssue[]
 }
 
+/** Immutable context supplied to a plugin's mapped-entry transformation. */
 export interface MappedEntryTransformationInput {
   readonly draft: DraftSeniorityEntry
   readonly preparedRow: PreparedRow
 }
 
+/** The only changes a plugin may make to a mapped entry. */
 export interface EntryPatch {
   readonly entry?: Readonly<Partial<Record<string, unknown>>>
   readonly issues?: readonly ImportIssue[]
 }
 
+/** Public result of processing confirmed mappings. */
 export interface ProcessConfirmedMappingsResult {
   readonly drafts: readonly DraftSeniorityEntry[]
   readonly issues: readonly ImportIssue[]

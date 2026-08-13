@@ -14,3 +14,6 @@ An Upload Type selects a compiled-in Import Plugin. The application never infers
 - Keep tests beside the code they cover.
 - Use Conventional Commit messages.
 - Run `pnpm lint`, `pnpm typecheck`, and `pnpm test` before opening a pull request.
+- Keep the plugin ID permanent after release. Do not rename it to reflect a display-label change.
+- Include source fixtures, prepared-sheet expectations, mapped-entry expectations, and failure-recovery tests.
+- Keep plugin behavior pure, synchronous, deterministic, and limited to immutable patches.
