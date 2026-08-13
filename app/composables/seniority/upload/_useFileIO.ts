@@ -61,6 +61,8 @@ export function _useFileIO(opts: FilePhaseOptions): FilePhase & { _reset: () => 
     selectedHeaderRow.value = headerRowIndex ?? plugin.suggestHeaderRow?.(sourceSheet) ?? 0
     const result = prepareImport({ plugin, sourceSheet, headerRowIndex: selectedHeaderRow.value })
     preparationIssues.value = [...result.issues]
+    opts.extractedEffectiveDate.value = result.metadata.effectiveDate
+    opts.extractedTitle.value = result.metadata.title
     applyPreparedSheet(result.preparedSheet, result.mappingSuggestions)
     const saved = (await userStore.getPreference('importMappings'))?.[plugin.id]
     if (saved) {

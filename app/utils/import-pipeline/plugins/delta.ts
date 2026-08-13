@@ -1,5 +1,6 @@
 import { defineImportPlugin } from '../prepare-import'
 import type { ImportField, ImportPlugin, PreparationPatch, SourceSheet } from '../types'
+import { normalizeDate } from '~/utils/date'
 
 const UNKNOWN_RETIRE_SENTINEL = '2099-12-31'
 const HEADER_MARKER = 'SENIORITY_NBR'
@@ -61,7 +62,17 @@ function prepare(sourceSheet: SourceSheet): PreparationPatch {
       mappingSuggestions[field] = columnId
     }
   }
-  return { columns, cellValues, mappingSuggestions }
+  const title = sourceSheet.rows
+    .slice(0, headerIndex(sourceSheet) ?? 0)
+    .map(row => String(row.cells[0] ?? '').trim())
+    .find(value => /Seniority\s+List\s+\d{2}[A-Za-z]{3}\d{4}/i.test(value))
+  const date = title?.match(/\d{2}[A-Za-z]{3}\d{4}/)?.[0]
+  return {
+    columns,
+    cellValues,
+    mappingSuggestions,
+    ...(title ? { metadata: { title, ...(date ? { effectiveDate: normalizeDate(date) } : {}) } } : {}),
+  }
 }
 
 export const deltaImportPlugin: ImportPlugin = defineImportPlugin({

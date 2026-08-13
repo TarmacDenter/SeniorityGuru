@@ -19,6 +19,7 @@ describe('deltaImportPlugin', () => {
     expect(result.mappingSuggestions).toMatchObject({ base: 'plugin:delta:base', fleet: 'plugin:delta:fleet', seat: 'plugin:delta:seat' })
     expect(result.preparedSheet.rows[2]!.cells['plugin:delta:base']).toBe('ATL')
     expect(result.preparedSheet.rows[2]!.cells['source:column:2']).toBe('ATL350A')
+    expect(result.metadata).toEqual({ effectiveDate: '2099-03-01', title: 'Seniority List 01MAR2099' })
   })
 
   it('keeps Delta category fallbacks stable', () => {

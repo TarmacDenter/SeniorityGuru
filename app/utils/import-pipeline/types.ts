@@ -74,6 +74,7 @@ export interface PreparationPatch {
   readonly cellValues?: Readonly<Record<string, Readonly<Record<string, SourceCellValue>>>>
   readonly mappingSuggestions?: Readonly<Partial<Record<ImportField, string>>>
   readonly issues?: readonly ImportIssue[]
+  readonly metadata?: { readonly effectiveDate?: string, readonly title?: string }
 }
 
 export interface ImportPlugin {
@@ -92,6 +93,7 @@ export interface PrepareImportResult {
   readonly preparedSheet: PreparedSheet
   readonly mappingSuggestions: Readonly<Partial<Record<ImportField, string>>>
   readonly issues: readonly ImportIssue[]
+  readonly metadata: { readonly effectiveDate: string | null, readonly title: string | null }
 }
 
 export type MappingSelection =

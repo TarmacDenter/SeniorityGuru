@@ -32,6 +32,7 @@ const preparationPatchSchema = z.object({
     field: importFieldSchema.optional(),
     message: z.string().min(1),
   })).optional(),
+  metadata: z.object({ effectiveDate: z.string().min(1).optional(), title: z.string().min(1).optional() }).optional(),
 }).strict()
 
 const importPluginSchema = z.object({
@@ -125,5 +126,6 @@ export function prepareImport({
     preparedSheet: { ...preparedSheet, rows },
     mappingSuggestions: patch.mappingSuggestions ?? {},
     issues: patch.issues ?? [],
+    metadata: { effectiveDate: patch.metadata?.effectiveDate ?? null, title: patch.metadata?.title ?? null },
   }
 }
