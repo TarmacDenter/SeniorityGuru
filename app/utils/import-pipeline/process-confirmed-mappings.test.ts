@@ -78,7 +78,7 @@ describe('processConfirmedMappings', () => {
         retire_date: { kind: 'column', columnId: 'retire' },
       },
       plugin: {
-        id: 'test', label: 'Test', description: 'Test plugin', prepare: () => ({}),
+        id: 'test', label: 'Test', description: 'Test plugin', icon: 'i-lucide-test', formatDescription: 'Test format.', prepare: () => ({}),
         transformMappedEntry: ({ draft }) => {
           if (draft.sourceRowId === 'source:row:1') throw new Error('bad row')
           return { entry: { base: 'JFK' } }

@@ -24,6 +24,8 @@ describe('prepareImport', () => {
       id: 'Generic Spreadsheet',
       label: 'Generic spreadsheet',
       description: 'Maps a spreadsheet.',
+      icon: 'i-lucide-sheet',
+      formatDescription: 'Test format.',
       prepare: () => ({}),
     })).toThrow('plugin id')
   })

@@ -102,7 +102,7 @@ export function prepareImport({
           ...column,
           label: typeof headerRow.cells[index] === 'string' ? headerRow.cells[index] : column.label,
         })),
-        rows: sourceSheet.rows.filter((_, index) => index > headerRowIndex),
+        rows: sourceSheet.rows.filter((_, index) => index > headerRowIndex!),
       }
     : sourceSheet
   let patch: PreparationPatch

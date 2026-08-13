@@ -1,31 +1,31 @@
 import { describe, it, expect } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import ParserSelector from './ParserSelector.vue'
-import { parsers } from '~/utils/parsers/registry'
+import { importPlugins } from '~/utils/import-pipeline/plugins/registry'
 
 describe('ParserSelector', () => {
   it('renders a card for each registered parser', async () => {
     const wrapper = await mountSuspended(ParserSelector, {
-      props: { parsers },
+      props: { parsers: importPlugins },
     })
-    for (const parser of parsers) {
+    for (const parser of importPlugins) {
       expect(wrapper.text()).toContain(parser.label)
     }
   })
 
   it('emits select with parser id when card is clicked', async () => {
     const wrapper = await mountSuspended(ParserSelector, {
-      props: { parsers },
+      props: { parsers: importPlugins },
     })
     const cards = wrapper.findAllComponents({ name: 'UCard' })
     expect(cards.length).toBeGreaterThanOrEqual(1)
     await cards[0]!.trigger('click')
-    expect(wrapper.emitted('select')?.[0]).toEqual([parsers[0]!.id])
+    expect(wrapper.emitted('select')?.[0]).toEqual([importPlugins[0]!.id])
   })
 
   it('renders "Don\'t see your airline?" contact link', async () => {
     const wrapper = await mountSuspended(ParserSelector, {
-      props: { parsers },
+      props: { parsers: importPlugins },
     })
     expect(wrapper.text()).toContain("Don't see your airline?")
     expect(wrapper.html()).toContain('mailto:')
@@ -33,9 +33,9 @@ describe('ParserSelector', () => {
 
   it('renders Learn More button for each parser', async () => {
     const wrapper = await mountSuspended(ParserSelector, {
-      props: { parsers },
+      props: { parsers: importPlugins },
     })
     const learnMoreButtons = wrapper.findAll('button').filter(b => b.text().includes('Learn More'))
-    expect(learnMoreButtons.length).toBe(parsers.length)
+    expect(learnMoreButtons.length).toBe(importPlugins.length)
   })
 })

@@ -51,9 +51,9 @@ function prepare(sourceSheet: SourceSheet): PreparationPatch {
     for (const field of ['base', 'fleet', 'seat'] as const) cellValues[id(field)] = {}
     for (const row of sourceSheet.rows) {
       const parts = decomposeDeltaCategory(String(row.cells[categoryIndex] ?? ''))
-      cellValues[id('base')][row.id] = parts.base
-      cellValues[id('fleet')][row.id] = parts.fleet
-      cellValues[id('seat')][row.id] = parts.seat
+      cellValues[id('base')]![row.id] = parts.base
+      cellValues[id('fleet')]![row.id] = parts.fleet
+      cellValues[id('seat')]![row.id] = parts.seat
     }
     for (const field of ['base', 'fleet', 'seat'] as const) {
       const columnId = id(field)

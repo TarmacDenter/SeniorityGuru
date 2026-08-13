@@ -1,6 +1,7 @@
 import * as XLSX from 'xlsx'
 import type { FilePhase, FilePhaseOptions } from './types'
 import { parseSpreadsheetData, autoDetectColumnMap, isColumnMapComplete } from '~/utils/parse-spreadsheet'
+import { getParser } from '~/utils/parsers/registry'
 import { createLogger } from '~/utils/logger'
 import { decodeWorkbook } from '~/utils/import-pipeline/decode-workbook'
 import { getImportPlugin } from '~/utils/import-pipeline/plugins/registry'
