@@ -75,6 +75,8 @@ export interface PreparationPatch {
   readonly mappingSuggestions?: Readonly<Partial<Record<ImportField, string>>>
   readonly issues?: readonly ImportIssue[]
   readonly metadata?: { readonly effectiveDate?: string, readonly title?: string }
+  /** Source row IDs that are data-free and should not become draft entries. */
+  readonly excludedSourceRowIds?: readonly string[]
 }
 
 export interface ImportPlugin {
@@ -83,6 +85,7 @@ export interface ImportPlugin {
   readonly description: string
   readonly icon: string
   readonly formatDescription: string
+  readonly requiredMappings?: readonly ImportField[]
   /** Returns the source row that should provide headings, when the format has a preamble. */
   readonly suggestHeaderRow?: (sourceSheet: SourceSheet) => number | undefined
   readonly prepare: (sourceSheet: SourceSheet) => PreparationPatch

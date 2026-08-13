@@ -1,6 +1,7 @@
 import { defineImportPlugin } from '../prepare-import'
 import type { ImportField, ImportPlugin, PreparationPatch, SourceSheet } from '../types'
 import { normalizeDate } from '~/utils/date'
+import { normalizeHeader, preparedColumn, preparedColumnId } from './aliases'
 
 const UNKNOWN_RETIRE_SENTINEL = '2099-12-31'
 const HEADER_MARKER = 'SENIORITY_NBR'
@@ -10,10 +11,6 @@ const headerFields: Readonly<Record<string, ImportField>> = {
   NAME: 'name',
   PILOT_HIRE_DATE: 'hire_date',
   SCHEDULED_RETIRE_DATE: 'retire_date',
-}
-const labels: Readonly<Record<ImportField, string>> = {
-  seniority_number: 'Seniority Number', employee_number: 'Employee Number', name: 'Name',
-  seat: 'Seat', base: 'Base', fleet: 'Fleet', hire_date: 'Hire Date', retire_date: 'Retire Date',
 }
 
 export function mapDeltaSeat(code: string): string {
@@ -25,10 +22,10 @@ export function decomposeDeltaCategory(category: string): { base: string, fleet:
   return { base: value.slice(0, 3), fleet: value.slice(3, 6), seat: mapDeltaSeat(value.slice(6, 7)) }
 }
 
-function id(field: ImportField) { return `plugin:delta:${field.replace(/_/g, '-')}` }
+const id = (field: ImportField) => preparedColumnId('delta', field)
 
 function headerIndex(sourceSheet: SourceSheet): number | undefined {
-  const index = sourceSheet.rows.findIndex(row => row.cells.some(cell => String(cell ?? '').trim() === HEADER_MARKER))
+  const index = sourceSheet.rows.findIndex(row => row.cells.some(cell => normalizeHeader(String(cell ?? '')).toUpperCase() === normalizeHeader(HEADER_MARKER).toUpperCase()))
   return index === -1 ? undefined : index
 }
 
@@ -39,12 +36,12 @@ function prepare(sourceSheet: SourceSheet): PreparationPatch {
   let categoryIndex = -1
 
   sourceSheet.columns.forEach((column, index) => {
-    const key = column.label?.trim().toUpperCase() ?? ''
+    const key = normalizeHeader(column.label ?? '').toUpperCase().replace(/ /g, '_')
     if (key === 'CATEGORY') categoryIndex = index
     const field = headerFields[key]
     if (!field) return
     const columnId = id(field)
-    columns.push({ id: columnId, label: labels[field], sourceColumnId: column.id })
+    columns.push(preparedColumn('delta', field, column.id))
     mappingSuggestions[field] = columnId
   })
 
@@ -58,7 +55,7 @@ function prepare(sourceSheet: SourceSheet): PreparationPatch {
     }
     for (const field of ['base', 'fleet', 'seat'] as const) {
       const columnId = id(field)
-      columns.push({ id: columnId, label: labels[field] })
+      columns.push(preparedColumn('delta', field))
       mappingSuggestions[field] = columnId
     }
   }
@@ -71,6 +68,7 @@ function prepare(sourceSheet: SourceSheet): PreparationPatch {
     columns,
     cellValues,
     mappingSuggestions,
+    excludedSourceRowIds: sourceSheet.rows.filter(row => row.cells.every(cell => String(cell ?? '').trim() === '')).map(row => row.id),
     ...(title ? { metadata: { title, ...(date ? { effectiveDate: normalizeDate(date) } : {}) } } : {}),
   }
 }

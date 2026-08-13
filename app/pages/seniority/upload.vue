@@ -108,6 +108,7 @@ function changeFormat() {
 
 async function nextStep() {
   if (currentStep.value === 'mapping') {
+    if (upload.review.entries.value.length > 0 && !window.confirm('Changing column mappings replaces your review edits. Continue?')) return
     await upload.mapping.apply()
     if (upload.mapping.error.value) {
       log.error('applyMapping failed during mapping step', { error: upload.mapping.error.value })

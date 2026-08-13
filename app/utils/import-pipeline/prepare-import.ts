@@ -33,6 +33,7 @@ const preparationPatchSchema = z.object({
     message: z.string().min(1),
   })).optional(),
   metadata: z.object({ effectiveDate: z.string().min(1).optional(), title: z.string().min(1).optional() }).optional(),
+  excludedSourceRowIds: z.array(z.string().min(1)).optional(),
 }).strict()
 
 const importPluginSchema = z.object({
@@ -41,6 +42,7 @@ const importPluginSchema = z.object({
   description: z.string().min(1),
   icon: z.string().min(1),
   formatDescription: z.string().min(1),
+  requiredMappings: z.array(importFieldSchema).optional(),
   suggestHeaderRow: z.function().optional(),
   prepare: z.function(),
   transformMappedEntry: z.function().optional(),
@@ -119,9 +121,10 @@ export function prepareImport({
   }
 
   const preparedSheet = applyPatch(sourceSheet, sourceColumns(sheetForPreparation), patch)
+  const excluded = new Set(patch.excludedSourceRowIds ?? [])
   const rows = headerRowIndex === undefined
-    ? preparedSheet.rows
-    : preparedSheet.rows.map((row, index) => index > headerRowIndex ? row : { ...row, included: false })
+    ? preparedSheet.rows.map(row => excluded.has(row.sourceRowId) ? { ...row, included: false } : row)
+    : preparedSheet.rows.map((row, index) => index > headerRowIndex && !excluded.has(row.sourceRowId) ? row : { ...row, included: false })
   return {
     preparedSheet: { ...preparedSheet, rows },
     mappingSuggestions: patch.mappingSuggestions ?? {},

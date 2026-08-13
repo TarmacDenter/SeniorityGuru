@@ -46,6 +46,7 @@ export function _useColumnMapping(opts: MappingPhaseOptions): MappingPhase & { _
 
   const canAdvance = computed(() => {
     const m = opts.columnMap.value
+    const required = getImportPlugin(opts.selectedUploadTypeId.value ?? '')?.requiredMappings ?? []
     const dobActive = mappingOptions.value.retireMode === 'dob'
     const retireSatisfied = Boolean(m.retire_date) || dobActive
     return Boolean(m.seniority_number)
@@ -55,6 +56,7 @@ export function _useColumnMapping(opts: MappingPhaseOptions): MappingPhase & { _
       && Boolean(m.fleet)
       && Boolean(m.hire_date)
       && retireSatisfied
+      && required.every(field => Boolean(m[field]))
   })
 
   async function apply() {

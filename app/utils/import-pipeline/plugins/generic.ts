@@ -1,5 +1,6 @@
 import { defineImportPlugin } from '../prepare-import'
-import type { ImportField, ImportIssue, ImportPlugin, PreparedColumn, PreparationPatch, SourceColumn, SourceSheet } from '../types'
+import type { ImportField, ImportIssue, ImportPlugin, PreparedColumn, PreparationPatch, SourceSheet } from '../types'
+import { FIELD_LABELS, matchingColumns, preparedColumn, preparedColumnId } from './aliases'
 
 const FIELD_ALIASES: Readonly<Record<ImportField, readonly string[]>> = {
   seniority_number: ['seniority number', 'seniority', 'sen #', 'sen num', 'sen_num'],
@@ -12,29 +13,6 @@ const FIELD_ALIASES: Readonly<Record<ImportField, readonly string[]>> = {
   retire_date: ['retire date', 'retirement date', 'retire', 'retirement', 'retire_date'],
 }
 
-const FIELD_LABELS: Readonly<Record<ImportField, string>> = {
-  seniority_number: 'Seniority Number',
-  employee_number: 'Employee Number',
-  name: 'Name',
-  seat: 'Seat',
-  base: 'Base',
-  fleet: 'Fleet',
-  hire_date: 'Hire Date',
-  retire_date: 'Retire Date',
-}
-
-function normalizeHeader(value: string): string {
-  return value.toLocaleLowerCase().replace(/[\s_\-./]+/g, ' ').replace(/[^a-z0-9 ]/g, '').trim()
-}
-
-function matchingColumns(columns: readonly SourceColumn[], aliases: readonly string[]): SourceColumn[] {
-  const normalizedAliases = new Set(aliases.map(normalizeHeader))
-  return columns.filter(column => column.label !== null && normalizedAliases.has(normalizeHeader(column.label)))
-}
-
-function canonicalColumnId(field: ImportField): string {
-  return `plugin:generic:${field.replace(/_/g, '-')}`
-}
 
 function prepare(sourceSheet: SourceSheet): PreparationPatch {
   const columns: PreparedColumn[] = []
@@ -44,8 +22,8 @@ function prepare(sourceSheet: SourceSheet): PreparationPatch {
   for (const field of Object.keys(FIELD_ALIASES) as ImportField[]) {
     const matches = matchingColumns(sourceSheet.columns, FIELD_ALIASES[field])
     if (matches.length === 1) {
-      const id = canonicalColumnId(field)
-      columns.push({ id, label: FIELD_LABELS[field], sourceColumnId: matches[0]!.id })
+      const id = preparedColumnId('generic', field)
+      columns.push(preparedColumn('generic', field, matches[0]!.id))
       mappingSuggestions[field] = id
     } else if (matches.length > 1) {
       issues.push({
