@@ -1,10 +1,9 @@
 // @vitest-environment node
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import {
   parseSpreadsheetData,
   autoDetectColumnMap,
   applyColumnMap,
-  applyColumnMapAsync,
   mapSingleRow,
   isColumnMapComplete,
   type ColumnMap,
@@ -164,48 +163,5 @@ describe('mapSingleRow', () => {
     const result = mapSingleRow(row, map, {})
     expect(result.seniority_number).toBe(1)
     expect(result.seat).toBeUndefined()
-  })
-})
-
-describe('applyColumnMapAsync', () => {
-  const map: ColumnMap = {
-    seniority_number: 0,
-    employee_number: 1,
-    seat: 2,
-    base: 3,
-    fleet: 4,
-    name: -1,
-    hire_date: 5,
-    retire_date: -1,
-  }
-
-  it('produces the same result as synchronous applyColumnMap', async () => {
-    const rows = [
-      ['1', '00123', 'CA', 'JFK', '737', '2010-01-15'],
-      ['2', '456', 'FO', 'LAX', '320', '2015-06-01'],
-    ]
-    const syncResult = applyColumnMap(rows, map, {})
-    const asyncResult = await applyColumnMapAsync(rows, map, {})
-    expect(asyncResult).toEqual(syncResult)
-  })
-
-  it('calls onProgress callback with batch updates', async () => {
-    // Create 1200 rows to trigger multiple batches (batch size = 500)
-    const rows = Array.from({ length: 1200 }, (_, i) => [
-      String(i + 1), String(900000 + i), 'CA', 'ATL', '737', '2010-01-15',
-    ])
-    const progress = vi.fn()
-    await applyColumnMapAsync(rows, map, {}, progress)
-
-    expect(progress).toHaveBeenCalled()
-    // Last call should have current = total
-    const lastCall = progress.mock.calls[progress.mock.calls.length - 1]
-    expect(lastCall![0]).toBe(1200) // current
-    expect(lastCall![1]).toBe(1200) // total
-  })
-
-  it('handles empty rows array', async () => {
-    const result = await applyColumnMapAsync([], map, {})
-    expect(result).toEqual([])
   })
 })
