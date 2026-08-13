@@ -23,6 +23,11 @@ describe('MobileBottomBar', () => {
     expect(wrapper.find('nav').classes()).toContain('sm:hidden')
   })
 
+  it('reserves the device safe area below the navigation items', async () => {
+    const wrapper = await mountSuspended(MobileBottomBar)
+    expect(wrapper.find('nav').classes()).toContain('pb-[env(safe-area-inset-bottom)]')
+  })
+
   it('sets aria-current="page" on the active link', async () => {
     const wrapper = await mountSuspended(MobileBottomBar)
     expect(wrapper.find('a[href="/dashboard"]').attributes('aria-current')).toBe('page')

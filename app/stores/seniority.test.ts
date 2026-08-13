@@ -196,6 +196,29 @@ describe('seniority store (Dexie)', () => {
       expect(store.currentListId).toBe(42)
       expect(typeof store.currentListId).toBe('number')
     })
+
+    it('ignores a stale request when list selection changes during loading', async () => {
+      let resolveFirst!: (entries: typeof mockLocalEntry[]) => void
+      let resolveSecond!: (entries: typeof mockLocalEntry[]) => void
+      mockDb.seniorityEntries.toArray
+        .mockImplementationOnce(() => new Promise(resolve => { resolveFirst = resolve }))
+        .mockImplementationOnce(() => new Promise(resolve => { resolveSecond = resolve }))
+
+      const { useSeniorityStore } = await import('./seniority')
+      const store = useSeniorityStore()
+      store.clearStore()
+
+      const firstRequest = store.fetchEntries(1)
+      const secondRequest = store.fetchEntries(2)
+      resolveSecond([{ ...mockLocalEntry, listId: 2, employeeNumber: 'SECOND' }])
+      await secondRequest
+      resolveFirst([mockLocalEntry])
+      await firstRequest
+
+      expect(store.currentListId).toBe(2)
+      expect(store.entries[0]?.employee_number).toBe('SECOND')
+      expect(store.entriesLoading).toBe(false)
+    })
   })
 
   describe('updateList', () => {

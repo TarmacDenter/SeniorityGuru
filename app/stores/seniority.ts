@@ -27,6 +27,7 @@ export const useSeniorityStore = defineStore('seniority', () => {
   const entriesError = ref<string | null>(null)
   const currentListId = ref<number | null>(null)
   const entryCache = new Map<number, SeniorityEntry[]>()
+  let entriesRequestId = 0
 
   async function clearAll() {
     await db.seniorityLists.clear()
@@ -44,6 +45,7 @@ export const useSeniorityStore = defineStore('seniority', () => {
     entriesError.value = null
     currentListId.value = null
     entryCache.clear()
+    entriesRequestId++
     log.info('Seniority store cleared')
   }
 
@@ -66,6 +68,7 @@ export const useSeniorityStore = defineStore('seniority', () => {
   }
 
   async function fetchEntries(listId: number) {
+    const requestId = ++entriesRequestId
     entriesLoading.value = true
     entriesError.value = null
     entries.value = []
@@ -73,16 +76,18 @@ export const useSeniorityStore = defineStore('seniority', () => {
 
     try {
       const localEntries = await db.seniorityEntries.where('listId').equals(listId).toArray()
+      if (requestId !== entriesRequestId) return
       entries.value = localEntries.map(localEntryToSeniorityEntry)
       log.debug('Entries fetched', { listId, count: entries.value.length })
     }
     catch (e: unknown) {
+      if (requestId !== entriesRequestId) return
       const message = e instanceof Error ? e.message : 'Failed to fetch entries'
       log.error('Failed to fetch entries', { listId, error: message })
       entriesError.value = message
     }
 
-    entriesLoading.value = false
+    if (requestId === entriesRequestId) entriesLoading.value = false
   }
 
   async function addList(

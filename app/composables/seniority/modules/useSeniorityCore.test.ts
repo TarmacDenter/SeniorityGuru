@@ -54,6 +54,14 @@ describe('useSeniorityCore', () => {
     })
   })
 
+  it('anchors to employee numbers after normalization', () => {
+    mockStore.entries = [makeEntry({ seniority_number: 1, employee_number: '00123', retire_date: '2045-01-01' })]
+    mockUserStore.employeeNumber = '123'
+    const { lens, userEntry } = useSeniorityCore()
+    expect(lens.value).not.toBeNull()
+    expect(userEntry.value?.employee_number).toBe('00123')
+  })
+
   it('returns null lens when user has no matching entry', () => {
     mockStore.entries = [makeEntry()]
     mockUserStore.employeeNumber = 'UNKNOWN'

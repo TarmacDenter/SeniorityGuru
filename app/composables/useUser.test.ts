@@ -80,6 +80,14 @@ describe('useUser', () => {
       expect(user.entry.value?.employee_number).toBe('EMP001')
     })
 
+    it('matches employee numbers after normalization', async () => {
+      mockUserStore.employeeNumber = '123'
+      mockSeniorityEntries.push({ employee_number: '00123', seniority_number: 1, seat: 'CA', base: 'JFK', fleet: '737', hire_date: '2010-01-01', retire_date: '2040-01-01' })
+      const { useUser } = await import('./useUser')
+      const user = useUser()
+      expect(user.entry.value?.employee_number).toBe('00123')
+    })
+
     it('returns undefined when employee number has no match in entries', async () => {
       mockUserStore.employeeNumber = 'EMP001'
       mockSeniorityEntries.push({ employee_number: 'EMP999', seniority_number: 1, seat: 'CA', base: 'JFK', fleet: '737', hire_date: '2010-01-01', retire_date: '2040-01-01' })

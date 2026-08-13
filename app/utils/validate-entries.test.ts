@@ -25,6 +25,16 @@ describe('validateEntries', () => {
     expect(allErrors.some(e => /duplicate/i.test(e))).toBe(true)
   })
 
+  it('flags duplicate normalized employee numbers', () => {
+    const entries = [
+      makePartialEntry({ seniority_number: 1, employee_number: '00123' }),
+      makePartialEntry({ seniority_number: 2, employee_number: '123' }),
+    ]
+    const errors = validateEntries(entries)
+    expect(errors.get(0)?.some(e => /duplicate employee number 123/i.test(e))).toBe(true)
+    expect(errors.get(1)?.some(e => /duplicate employee number 123/i.test(e))).toBe(true)
+  })
+
   it('flags non-contiguous seniority numbers', () => {
     const entries = [
       makePartialEntry({ seniority_number: 1 }),

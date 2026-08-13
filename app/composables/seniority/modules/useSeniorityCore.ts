@@ -3,6 +3,7 @@ import type { SenioritySnapshot, SeniorityLens, PilotAnchor } from '~/utils/seni
 import type { ComputedRef, Ref } from 'vue'
 import { createSnapshot, createLens, uniqueEntryValues } from '~/utils/seniority-engine'
 import { computeRetireDate, todayISO } from '~/utils/date'
+import { normalizeEmployeeNumber } from '~/utils/schemas/seniority-list'
 import { useSeniorityStore } from '~/stores/seniority'
 import { useUserStore } from '~/stores/user'
 import { createLogger } from '~/utils/logger'
@@ -120,7 +121,8 @@ export function useSeniorityCore() {
   const realUserFound = computed(() => {
     const empNum = userStore.employeeNumber
     if (!empNum) return false
-    return seniorityStore.entries.some(e => e.employee_number === empNum)
+    const normalized = normalizeEmployeeNumber(empNum)
+    return seniorityStore.entries.some(e => normalizeEmployeeNumber(e.employee_number) === normalized)
   })
 
   const retireDate = computed(() => {
@@ -184,7 +186,8 @@ export function useSeniorityCore() {
     _userEntry = computed<SeniorityEntry | undefined>(() => {
       const empNum = userStore.employeeNumber
       if (!empNum) return undefined
-      return seniorityStore.entries.find(e => e.employee_number === empNum)
+      const normalized = normalizeEmployeeNumber(empNum)
+      return seniorityStore.entries.find(e => normalizeEmployeeNumber(e.employee_number) === normalized)
     })
   }
 
