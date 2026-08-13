@@ -1,0 +1,86 @@
+/** A decoded spreadsheet value retained by the import pipeline. */
+export type SourceCellValue = string | number | boolean | null
+
+export interface SourceColumn {
+  readonly id: string
+  readonly label: string | null
+}
+
+export interface SourceRow {
+  readonly id: string
+  readonly cells: readonly SourceCellValue[]
+}
+
+/** A lossless, library-independent representation of one decoded worksheet. */
+export interface SourceSheet {
+  readonly id: string
+  readonly name: string
+  readonly columns: readonly SourceColumn[]
+  readonly rows: readonly SourceRow[]
+}
+
+export interface DecodedWorkbook {
+  readonly sheetNames: readonly string[]
+  readonly sheets: readonly SourceSheet[]
+}
+
+export interface DecodeError {
+  readonly kind: 'file-read-failed' | 'workbook-decode-failed' | 'no-sheets'
+  readonly message: string
+}
+
+export type DecodeWorkbookResult =
+  | { readonly ok: true; readonly workbook: DecodedWorkbook }
+  | { readonly ok: false; readonly error: DecodeError }
+
+export type ImportField =
+  | 'seniority_number'
+  | 'employee_number'
+  | 'name'
+  | 'seat'
+  | 'base'
+  | 'fleet'
+  | 'hire_date'
+  | 'retire_date'
+
+export interface PreparedColumn {
+  readonly id: string
+  readonly label: string
+  readonly sourceColumnId?: string
+}
+
+export interface PreparedRow {
+  readonly sourceRowId: string
+  readonly cells: Readonly<Record<string, SourceCellValue>>
+}
+
+export interface PreparedSheet {
+  readonly sourceSheet: SourceSheet
+  readonly columns: readonly PreparedColumn[]
+  readonly rows: readonly PreparedRow[]
+}
+
+export interface ImportIssue {
+  readonly kind: 'ambiguous-alias' | 'preparation-failed'
+  readonly field?: ImportField
+  readonly message: string
+}
+
+export interface PreparationPatch {
+  readonly columns?: readonly PreparedColumn[]
+  readonly mappingSuggestions?: Readonly<Partial<Record<ImportField, string>>>
+  readonly issues?: readonly ImportIssue[]
+}
+
+export interface ImportPlugin {
+  readonly id: string
+  readonly label: string
+  readonly description: string
+  readonly prepare: (sourceSheet: SourceSheet) => PreparationPatch
+}
+
+export interface PrepareImportResult {
+  readonly preparedSheet: PreparedSheet
+  readonly mappingSuggestions: Readonly<Partial<Record<ImportField, string>>>
+  readonly issues: readonly ImportIssue[]
+}
