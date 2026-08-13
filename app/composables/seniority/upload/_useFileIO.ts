@@ -1,7 +1,7 @@
 import type { FilePhase, FilePhaseOptions } from './types'
 import { autoDetectColumnMap, isColumnMapComplete } from '~/utils/parse-spreadsheet'
 import { createLogger } from '~/utils/logger'
-import { decodeWorkbook } from '~/utils/import-pipeline/decode-workbook'
+import { decodeWorkbook } from '~/utils/spreadsheet/decode-workbook'
 import { getImportPlugin } from '~/utils/import-pipeline/plugins/registry'
 import { prepareImport } from '~/utils/import-pipeline/prepare-import'
 import type { DecodedWorkbook, ImportIssue, PreparedSheet } from '~/utils/import-pipeline/types'

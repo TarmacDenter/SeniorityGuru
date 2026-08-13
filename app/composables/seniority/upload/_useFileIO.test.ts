@@ -13,7 +13,7 @@ vi.mock('xlsx', () => ({
   utils: { sheet_to_json: mockSheetToJson },
 }))
 
-vi.mock('~/utils/import-pipeline/decode-workbook', () => ({ decodeWorkbook: mockDecodeWorkbook }))
+vi.mock('~/utils/spreadsheet/decode-workbook', () => ({ decodeWorkbook: mockDecodeWorkbook }))
 vi.mock('~/stores/user', () => ({ useUserStore: () => ({ getPreference: vi.fn().mockResolvedValue(null) }) }))
 
 function createFileIO() {

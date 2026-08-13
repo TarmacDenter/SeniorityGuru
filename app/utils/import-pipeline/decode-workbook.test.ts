@@ -1,7 +1,7 @@
 // @vitest-environment node
 import * as XLSX from 'xlsx'
 import { describe, expect, it } from 'vitest'
-import { decodeWorkbook } from './decode-workbook'
+import { decodeWorkbook } from '~/utils/spreadsheet/decode-workbook'
 
 function workbookFile(name: string, sheets: Record<string, unknown[][]>) {
   const workbook = XLSX.utils.book_new()
