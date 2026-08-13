@@ -27,7 +27,7 @@ const preparationPatchSchema = z.object({
   })).optional(),
   mappingSuggestions: z.record(importFieldSchema, z.string().min(1)).optional(),
   issues: z.array(z.object({
-    kind: z.enum(['ambiguous-alias', 'preparation-failed']),
+    kind: z.enum(['ambiguous-alias', 'preparation-failed', 'transformation-failed', 'validation-failed']),
     field: importFieldSchema.optional(),
     message: z.string().min(1),
   })).optional(),
@@ -38,6 +38,7 @@ const importPluginSchema = z.object({
   label: z.string().min(1),
   description: z.string().min(1),
   prepare: z.function(),
+  transformMappedEntry: z.function().optional(),
 }).strict()
 
 /**

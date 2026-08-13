@@ -61,7 +61,7 @@ export interface PreparedSheet {
 }
 
 export interface ImportIssue {
-  readonly kind: 'ambiguous-alias' | 'preparation-failed'
+  readonly kind: 'ambiguous-alias' | 'preparation-failed' | 'transformation-failed' | 'validation-failed'
   readonly field?: ImportField
   readonly message: string
 }
@@ -77,10 +77,39 @@ export interface ImportPlugin {
   readonly label: string
   readonly description: string
   readonly prepare: (sourceSheet: SourceSheet) => PreparationPatch
+  readonly transformMappedEntry?: (input: MappedEntryTransformationInput) => EntryPatch
 }
 
 export interface PrepareImportResult {
   readonly preparedSheet: PreparedSheet
   readonly mappingSuggestions: Readonly<Partial<Record<ImportField, string>>>
   readonly issues: readonly ImportIssue[]
+}
+
+export type MappingSelection =
+  | { readonly kind: 'column'; readonly columnId: string }
+  | { readonly kind: 'combined-name'; readonly firstNameColumnId: string; readonly lastNameColumnId: string }
+  | { readonly kind: 'retirement-from-birth-date'; readonly columnId: string; readonly retirementAge: number }
+
+export type ConfirmedMappings = Readonly<Partial<Record<ImportField, MappingSelection>>>
+
+export interface DraftSeniorityEntry {
+  readonly id: string
+  readonly sourceRowId: string
+  readonly entry: Readonly<Record<string, unknown>>
+  readonly issues: readonly ImportIssue[]
+}
+
+export interface MappedEntryTransformationInput {
+  readonly draft: DraftSeniorityEntry
+  readonly preparedRow: PreparedRow
+}
+
+export interface EntryPatch {
+  readonly entry?: Readonly<Partial<Record<string, unknown>>>
+  readonly issues?: readonly ImportIssue[]
+}
+
+export interface ProcessConfirmedMappingsResult {
+  readonly drafts: readonly DraftSeniorityEntry[]
 }
