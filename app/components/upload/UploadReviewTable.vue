@@ -15,7 +15,7 @@ const props = defineProps<{
   showEstimatedOnly?: boolean
   estimatedIndices?: Set<number>
   pipelineIssueRows?: Set<number>
-  sourceValues?: Map<number, Record<string, unknown>>
+  sourceValues?: ReadonlyMap<number, Readonly<Record<string, unknown>>>
 }>()
 
 const pagination = ref({ pageIndex: 0, pageSize: PAGE_SIZE })
