@@ -60,8 +60,8 @@ function sourceColumns(sheet: SourceSheet): PreparedColumn[] {
   }))
 }
 
-function applyPatch(sourceSheet: SourceSheet, patch: PreparationPatch): PreparedSheet {
-  const columns = [...sourceColumns(sourceSheet), ...(patch.columns ?? [])]
+function applyPatch(sourceSheet: SourceSheet, preparedSourceColumns: readonly PreparedColumn[], patch: PreparationPatch): PreparedSheet {
+  const columns = [...preparedSourceColumns, ...(patch.columns ?? [])]
   const sourceColumnIds = sourceSheet.columns.map(column => column.id)
 
   return {
@@ -117,7 +117,7 @@ export function prepareImport({
     }
   }
 
-  const preparedSheet = applyPatch(sheetForPreparation, patch)
+  const preparedSheet = applyPatch(sourceSheet, sourceColumns(sheetForPreparation), patch)
   const rows = headerRowIndex === undefined
     ? preparedSheet.rows
     : preparedSheet.rows.map((row, index) => index > headerRowIndex ? row : { ...row, included: false })

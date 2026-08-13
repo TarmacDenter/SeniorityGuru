@@ -102,7 +102,7 @@ export function _useColumnMapping(opts: MappingPhaseOptions): MappingPhase & { _
         })
       }
 
-      log.debug('Mapping complete', { entryCount: mapped.length, sampleEntry: mapped[0] })
+      log.debug('Mapping complete', { entryCount: mapped.length })
 
       await opts.onMapped(mapped)
 

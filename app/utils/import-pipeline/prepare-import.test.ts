@@ -142,6 +142,10 @@ describe('prepareImport', () => {
       employee_number: 'plugin:generic:employee-number',
     })
     expect(result.preparedSheet.rows.map(row => row.sourceRowId)).toEqual(['source:row:0', 'source:row:1', 'source:row:2'])
+    expect(result.preparedSheet.sourceSheet.columns).toEqual([
+      { id: 'source:column:0', label: 'Untitled 1' },
+      { id: 'source:column:1', label: 'Untitled 2' },
+    ])
     expect(result.preparedSheet.rows.filter(row => row.included !== false).map(row => row.sourceRowId)).toEqual(['source:row:2'])
   })
 })
