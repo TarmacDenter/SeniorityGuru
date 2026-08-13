@@ -27,8 +27,8 @@ function formatPipelineIssue(issue: { field?: string, message: string }): string
   return `${issue.field ?? 'row'}: ${issue.message}`
 }
 
-function reportReviewChange(opts: ReviewPhaseOptions, action: string) {
-  opts.onReviewChanged?.(opts.entries.value.map(entry => ({ ...entry, _reviewAction: action })))
+function reportReviewChange(opts: ReviewPhaseOptions, action: 'update-cell' | 'delete-row' | 'insert-row' | 'delete-error-rows') {
+  opts.onReviewChanged?.(action, opts.entries.value.map(entry => ({ ...entry })))
 }
 
 function isStructuralMessage(raw: string): boolean {

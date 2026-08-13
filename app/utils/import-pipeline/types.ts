@@ -88,6 +88,7 @@ export interface ImportPlugin {
 
 export interface PrepareImportResult {
   readonly preparedSheet: PreparedSheet
+  readonly patch: PreparationPatch
   readonly mappingSuggestions: Readonly<Partial<Record<ImportField, string>>>
   readonly issues: readonly ImportIssue[]
   readonly metadata: { readonly effectiveDate: string | null, readonly title: string | null }
@@ -124,4 +125,46 @@ export interface ProcessConfirmedMappingsResult {
     readonly includedRowCount: number
     readonly issueCount: number
   }
+}
+
+/** Durable, stage-by-stage record exported when an Upload Type needs diagnosis. */
+export interface ImportDiagnosticTrace {
+  readonly diagnosticSchemaVersion: 3
+  readonly appBuildVersion: string
+  readonly plugin: { readonly id: string, readonly label: string }
+  readonly file: { readonly name: string }
+  readonly createdAt: string
+  readonly updatedAt?: string
+  readonly stage: 'reading' | 'prepared' | 'mapped' | 'review' | 'completed'
+  readonly outcome: 'review' | 'saved' | 'failed'
+  readonly error?: string
+  readonly sourceSheet?: SourceSheet
+  readonly preparation?: {
+    readonly headerRowIndex: number
+    readonly patch: PreparationPatch
+    readonly preparedSheet: PreparedSheet
+    readonly issues: readonly ImportIssue[]
+    readonly metadata: { readonly effectiveDate: string | null, readonly title: string | null }
+  }
+  readonly mapping?: {
+    readonly confirmedMappings: ConfirmedMappings
+    readonly processedDrafts: readonly DraftSeniorityEntry[]
+    readonly transformationIssues: readonly ImportIssue[]
+  }
+  readonly validation?: { readonly rowErrors: Readonly<Record<string, readonly string[]>> }
+  readonly review?: {
+    readonly editPatches: readonly ReviewEditPatch[]
+  }
+  readonly final?: {
+    readonly entries: readonly unknown[]
+    readonly outcome: 'saved' | 'failed'
+    readonly savedListId?: number
+    readonly completedAt: string
+  }
+}
+
+export interface ReviewEditPatch {
+  readonly action: 'update-cell' | 'delete-row' | 'insert-row' | 'delete-error-rows'
+  readonly entries: readonly Partial<Record<string, unknown>>[]
+  readonly at: string
 }

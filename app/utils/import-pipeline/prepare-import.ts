@@ -119,6 +119,7 @@ export function prepareImport({
     : preparedSheet.rows.map((row, index) => index > headerRowIndex && !excluded.has(row.sourceRowId) ? row : { ...row, included: false })
   return {
     preparedSheet: { ...preparedSheet, rows },
+    patch,
     mappingSuggestions: patch.mappingSuggestions ?? {},
     issues: patch.issues ?? [],
     metadata: { effectiveDate: patch.metadata?.effectiveDate ?? null, title: patch.metadata?.title ?? null },

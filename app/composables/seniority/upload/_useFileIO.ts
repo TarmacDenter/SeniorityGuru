@@ -4,7 +4,7 @@ import { createLogger } from '~/utils/logger'
 import { decodeWorkbook } from '~/utils/spreadsheet/decode-workbook'
 import { getImportPlugin } from '~/utils/import-pipeline/plugins/registry'
 import { prepareImport } from '~/utils/import-pipeline/prepare-import'
-import type { DecodedWorkbook, ImportIssue, PreparedSheet } from '~/utils/import-pipeline/types'
+import type { DecodedWorkbook, ImportDiagnosticTrace, ImportIssue, PreparedSheet } from '~/utils/import-pipeline/types'
 import { useUserStore } from '~/stores/user'
 import { useImportAttemptsStore } from '~/stores/import-attempts'
 
@@ -65,15 +65,13 @@ export function _useFileIO(opts: FilePhaseOptions): FilePhase & { _reset: () => 
     selectedHeaderRow.value = headerRowIndex ?? plugin.suggestHeaderRow?.(sourceSheet) ?? 0
     const result = prepareImport({ plugin, sourceSheet, headerRowIndex: selectedHeaderRow.value })
     if (opts.importAttemptId?.value) {
-      await importAttemptsStore.update(opts.importAttemptId.value, {
-        data: {
-          ...JSON.parse(importAttemptsStore.exportAttempt(opts.importAttemptId.value) ?? '{}'),
+      await importAttemptsStore.updateTrace(opts.importAttemptId.value, trace => ({
+          ...trace,
           sourceSheet,
-          preparation: { headerRowIndex: selectedHeaderRow.value, issues: result.issues, metadata: result.metadata, preparedSheet: result.preparedSheet },
+          preparation: { headerRowIndex: selectedHeaderRow.value, patch: result.patch, issues: result.issues, metadata: result.metadata, preparedSheet: result.preparedSheet },
           stage: 'prepared',
           updatedAt: new Date().toISOString(),
-        },
-      })
+      }))
     }
     preparationIssues.value = [...result.issues]
     opts.extractedEffectiveDate.value = result.metadata.effectiveDate
@@ -124,14 +122,14 @@ export function _useFileIO(opts: FilePhaseOptions): FilePhase & { _reset: () => 
         pluginId: plugin.id,
         outcome: 'review',
         data: {
-          diagnosticSchemaVersion: 2,
+          diagnosticSchemaVersion: 3,
           appBuildVersion: 'local',
           plugin: { id: plugin.id, label: plugin.label },
           file: { name: file.name },
           createdAt: new Date().toISOString(),
           stage: 'reading',
-          logs: [{ stage: 'reading', at: new Date().toISOString() }],
-        },
+          outcome: 'review',
+        } satisfies ImportDiagnosticTrace,
       })
     }
     opts.progress.enter('reading')

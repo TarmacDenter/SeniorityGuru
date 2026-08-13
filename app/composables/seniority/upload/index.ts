@@ -1,7 +1,7 @@
 import { parseDate } from '@internationalized/date'
 import type { SeniorityEntry } from '~/utils/schemas/seniority-list'
 import { todayISO } from '~/utils/date'
-import type { ImportIssue, PreparedSheet } from '~/utils/import-pipeline/types'
+import type { ImportIssue, PreparedSheet, ReviewEditPatch } from '~/utils/import-pipeline/types'
 import type { SeniorityUpload, UploadColumnMap } from './types'
 import { _useProgressTracker } from './_useProgressTracker'
 import { _useFileIO } from './_useFileIO'
@@ -76,20 +76,18 @@ export function useSeniorityUpload(): SeniorityUpload {
     syntheticNote,
     syntheticIndices,
     progress,
-    onReviewChanged(entries) {
+    onReviewChanged(action, changedEntries) {
       const id = importAttemptId.value
       if (!id) return
-      void importAttemptsStore.update(id, {
-        data: {
-          ...JSON.parse(importAttemptsStore.exportAttempt(id) ?? '{}'),
+      const at = new Date().toISOString()
+      void importAttemptsStore.updateTrace(id, trace => ({
+          ...trace,
           review: {
-            entries,
-            editedAt: new Date().toISOString(),
-            editPatches: [...((JSON.parse(importAttemptsStore.exportAttempt(id) ?? '{}').review?.editPatches ?? [])), { entries, at: new Date().toISOString() }],
+            editPatches: [...(trace.review?.editPatches ?? []), { action, entries: changedEntries, at } satisfies ReviewEditPatch],
           },
           stage: 'review',
-        },
-      })
+          updatedAt: at,
+        }))
     },
   })
 
@@ -130,6 +128,16 @@ export function useSeniorityUpload(): SeniorityUpload {
       pipelineIssues.value = issues
       sourceValues.value = mappedSourceValues
       await review.validate()
+      const id = importAttemptId.value
+      if (id) {
+        const validationErrors = Object.fromEntries([...rowErrors.value].map(([index, issues]) => [String(index), issues]))
+        await importAttemptsStore.updateTrace(id, trace => ({
+          ...trace,
+          validation: { rowErrors: validationErrors },
+          stage: 'review',
+          updatedAt: new Date().toISOString(),
+        }))
+      }
     },
     onMetadataReady(date, title) {
       if (date) {

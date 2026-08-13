@@ -2,7 +2,7 @@ import type { ComputedRef, Ref, ShallowRef } from 'vue'
 import type { DateValue } from 'reka-ui'
 import type { SeniorityEntry } from '~/utils/schemas/seniority-list'
 import type { ColumnMap, MappingOptions } from '~/utils/parse-spreadsheet'
-import type { ImportIssue, ImportPlugin, PreparedSheet } from '~/utils/import-pipeline/types'
+import type { ImportIssue, ImportPlugin, PreparedSheet, ReviewEditPatch } from '~/utils/import-pipeline/types'
 
 // ── Progress ─────────────────────────────────────────────────────────────────
 
@@ -125,7 +125,7 @@ export interface ReviewPhaseOptions {
   syntheticNote: Ref<string | null>
   syntheticIndices: Ref<Set<number>>
   progress: ProgressTracker
-  onReviewChanged?: (entries: Partial<SeniorityEntry>[]) => void
+  onReviewChanged?: (action: ReviewEditPatch['action'], entries: Partial<SeniorityEntry>[]) => void
 }
 
 // ── Phase: Confirm ───────────────────────────────────────────────────────────

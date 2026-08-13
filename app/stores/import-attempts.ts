@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import type { LocalImportAttempt } from '~/utils/db'
 import { db } from '~/utils/db'
 import { createLogger } from '~/utils/logger'
+import type { ImportDiagnosticTrace } from '~/utils/import-pipeline/types'
 
 const MAX_ATTEMPTS = 5
 const MAX_BYTES = 50 * 1024 * 1024
@@ -80,6 +81,22 @@ export const useImportAttemptsStore = defineStore('import-attempts', () => {
     }
   }
 
+  async function updateTrace(id: string, merge: (trace: ImportDiagnosticTrace) => ImportDiagnosticTrace) {
+    try {
+      const existing = await db.importAttempts.get(id)
+      if (!existing) return
+      let trace: ImportDiagnosticTrace
+      try {
+        trace = JSON.parse(existing.data) as ImportDiagnosticTrace
+      } catch {
+        return
+      }
+      await update(id, { data: merge(trace) })
+    } catch (error) {
+      log.warn('Could not update import diagnostic trace', { error: String(error) })
+    }
+  }
+
   async function complete(id: string, input: { outcome: LocalImportAttempt['outcome'], listId?: number, finalEntries?: unknown, error?: string }) {
     const attempt = await db.importAttempts.get(id)
     if (!attempt) return
@@ -91,10 +108,15 @@ export const useImportAttemptsStore = defineStore('import-attempts', () => {
       data: {
         ...previous,
         outcome: input.outcome,
+        stage: 'completed',
         completedAt: new Date().toISOString(),
-        ...(input.listId !== undefined ? { savedListId: input.listId } : {}),
-        ...(input.finalEntries !== undefined ? { finalEntries: input.finalEntries } : {}),
         ...(input.error ? { error: input.error } : {}),
+        final: {
+          entries: input.finalEntries ?? previous.finalEntries ?? [],
+          outcome: input.outcome === 'saved' ? 'saved' : 'failed',
+          ...(input.listId !== undefined ? { savedListId: input.listId } : {}),
+          completedAt: new Date().toISOString(),
+        },
       },
     })
   }
@@ -113,5 +135,5 @@ export const useImportAttemptsStore = defineStore('import-attempts', () => {
     return attempts.value.find(attempt => attempt.id === id)?.data ?? null
   }
 
-  return { attempts, load, record, update, complete, remove, clear, exportAttempt }
+  return { attempts, load, record, update, updateTrace, complete, remove, clear, exportAttempt }
 })

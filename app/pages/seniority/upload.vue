@@ -378,6 +378,16 @@ async function onSave() {
               >
                 <template #actions>
                   <UButton
+                    v-if="upload.diagnosticAttemptId.value"
+                    size="sm"
+                    variant="outline"
+                    color="neutral"
+                    icon="i-lucide-download"
+                    @click="saveDiagnosticFile"
+                  >
+                    Save diagnostic file
+                  </UButton>
+                  <UButton
                     size="sm"
                     color="warning"
                     icon="i-lucide-trash-2"
@@ -448,7 +458,20 @@ async function onSave() {
                 color="error"
                 variant="soft"
                 :title="upload.confirm.error.value"
-              />
+              >
+                <template #actions>
+                  <UButton
+                    v-if="upload.diagnosticAttemptId.value"
+                    size="sm"
+                    variant="outline"
+                    color="neutral"
+                    icon="i-lucide-download"
+                    @click="saveDiagnosticFile"
+                  >
+                    Save diagnostic file
+                  </UButton>
+                </template>
+              </UAlert>
               <UFormField label="Effective Date" name="effectiveDate" required>
                 <UInputDate v-model="effectiveDateModel" class="w-full" />
               </UFormField>

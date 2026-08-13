@@ -92,26 +92,37 @@ export function _useColumnMapping(opts: MappingPhaseOptions): MappingPhase & { _
         try {
           const existing = await userStore.getPreference('importMappings') ?? {}
           await userStore.savePreference('importMappings', { ...existing, [plugin.id]: { columns, mappingOptions: mappingOptions.value as unknown as Record<string, unknown> } })
-          const diagnosticData = {
-              ...JSON.parse(opts.importAttemptId?.value ? importAttemptsStore.exportAttempt(opts.importAttemptId.value) ?? '{}' : '{}'),
-              diagnosticSchemaVersion: 1,
-              plugin: { id: plugin.id, label: plugin.label },
-              createdAt: new Date().toISOString(),
-              sourceSheet: opts.preparedSheet.value.sourceSheet,
-              preparedSheet: opts.preparedSheet.value,
-              preparationIssues: opts.preparationIssues?.value ?? [],
-              mappings: confirmedMappings,
-              mappingPreferences: { columns, mappingOptions: mappingOptions.value },
-              drafts: processed.drafts,
-              outcome: 'review',
-              stage: 'review',
-              mapping: { confirmedMappings, processedDrafts: processed.drafts, transformationIssues: processed.drafts.flatMap(draft => draft.issues) },
-            }
           const existingAttemptId = opts.importAttemptId?.value
           if (existingAttemptId) {
-            await importAttemptsStore.update(existingAttemptId, { data: diagnosticData })
+            await importAttemptsStore.updateTrace(existingAttemptId, trace => ({
+              ...trace,
+              mapping: {
+                confirmedMappings,
+                processedDrafts: processed.drafts,
+                transformationIssues: processed.drafts.flatMap(draft => draft.issues),
+              },
+              stage: 'mapped',
+              updatedAt: new Date().toISOString(),
+            }))
           } else {
-            const attemptId = await importAttemptsStore.record({ id: crypto.randomUUID(), pluginId: plugin.id, sheetName: opts.preparedSheet.value.sourceSheet.name, data: diagnosticData })
+            const now = new Date().toISOString()
+            const attemptId = await importAttemptsStore.record({
+              id: crypto.randomUUID(),
+              pluginId: plugin.id,
+              sheetName: opts.preparedSheet.value.sourceSheet.name,
+              data: {
+                diagnosticSchemaVersion: 3,
+                appBuildVersion: 'local',
+                plugin: { id: plugin.id, label: plugin.label },
+                file: { name: 'unknown' },
+                createdAt: now,
+                stage: 'mapped',
+                outcome: 'review',
+                sourceSheet: opts.preparedSheet.value.sourceSheet,
+                preparation: { headerRowIndex: 0, patch: {}, preparedSheet: opts.preparedSheet.value, issues: opts.preparationIssues?.value ?? [], metadata: { effectiveDate: opts.extractedEffectiveDate.value, title: opts.extractedTitle.value } },
+                mapping: { confirmedMappings, processedDrafts: processed.drafts, transformationIssues: processed.drafts.flatMap(draft => draft.issues) },
+              },
+            })
             if (opts.importAttemptId) opts.importAttemptId.value = attemptId
           }
         } catch (storageError) {
