@@ -120,4 +120,9 @@ export interface EntryPatch {
 
 export interface ProcessConfirmedMappingsResult {
   readonly drafts: readonly DraftSeniorityEntry[]
+  readonly issues: readonly ImportIssue[]
+  readonly diagnostics: {
+    readonly includedRowCount: number
+    readonly issueCount: number
+  }
 }

@@ -45,6 +45,7 @@ export function _useColumnMapping(opts: MappingPhaseOptions): MappingPhase & { _
   const importAttemptsStore = useImportAttemptsStore()
   const mappingOptions = opts.mappingOptions
   const error = ref<string | null>(null)
+  let activeRequest = 0
 
   const sampleRows = computed(() => opts.rawRows.value.slice(0, 3))
 
@@ -62,6 +63,7 @@ export function _useColumnMapping(opts: MappingPhaseOptions): MappingPhase & { _
   })
 
   async function apply() {
+    const request = ++activeRequest
     error.value = null
     try {
       opts.progress.report('mapping', 0, opts.rawRows.value.length)
@@ -74,6 +76,7 @@ export function _useColumnMapping(opts: MappingPhaseOptions): MappingPhase & { _
             plugin,
           })
         : undefined
+      if (request !== activeRequest) throw new DOMException('A newer mapping request replaced this one.', 'AbortError')
       if (!processed || !plugin || !opts.preparedSheet.value) {
         throw new Error('Choose an Upload Type before mapping columns.')
       }
@@ -139,6 +142,7 @@ export function _useColumnMapping(opts: MappingPhaseOptions): MappingPhase & { _
   }
 
   function reset() {
+    activeRequest++
     opts.columnMap.value = { ...DEFAULT_COLUMN_MAP }
     mappingOptions.value = { ...DEFAULT_MAPPING_OPTIONS }
   }

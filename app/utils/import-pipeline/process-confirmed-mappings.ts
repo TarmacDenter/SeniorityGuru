@@ -141,5 +141,10 @@ export async function processConfirmedMappings({
     if ((index + 1) % batchSize === 0) await nextBatch()
   }
 
-  return { drafts }
+  const issues = drafts.flatMap(draft => draft.issues)
+  return {
+    drafts,
+    issues,
+    diagnostics: { includedRowCount: drafts.length, issueCount: issues.length },
+  }
 }
