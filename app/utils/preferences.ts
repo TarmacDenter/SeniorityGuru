@@ -15,6 +15,7 @@ export interface PreferenceMap {
   'pwa-dismissed': boolean
   'pwa-snoozed-until': string
   demoBannerDismissed: boolean
+  lastUploadType: string
 }
 
 /** Serializes a typed preference value to the string stored in Dexie. */
@@ -26,6 +27,7 @@ export const PREFERENCE_SERIALIZERS: { [K in keyof PreferenceMap]: (v: Preferenc
   'pwa-dismissed': (v) => String(v),
   'pwa-snoozed-until': (v) => v,
   demoBannerDismissed: (v) => String(v),
+  lastUploadType: (v) => v,
 }
 
 /** Deserializes a raw Dexie string back to the typed preference value. */
@@ -37,4 +39,5 @@ export const PREFERENCE_DESERIALIZERS: { [K in keyof PreferenceMap]: (raw: strin
   'pwa-dismissed': (raw) => raw === 'true',
   'pwa-snoozed-until': (raw) => raw,
   demoBannerDismissed: (raw) => raw === 'true',
+  lastUploadType: (raw) => raw,
 }

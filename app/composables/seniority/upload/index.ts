@@ -10,10 +10,12 @@ import { _useColumnMapping } from './_useColumnMapping'
 import { _useReview } from './_useReview'
 import { _useConfirm } from './_useConfirm'
 import { DEFAULT_COLUMN_MAP } from './defaults'
+import { useUserStore } from '~/stores/user'
 
 export type { SeniorityUpload, ProcessingPhase, ProgressTracker } from './types'
 
 export function useSeniorityUpload(): SeniorityUpload {
+  const userStore = useUserStore()
   // ── Shared refs (owned here, passed to phases) ──────────────────────────
 
   const selectedParserId = ref<string | null>(null)
@@ -29,6 +31,10 @@ export function useSeniorityUpload(): SeniorityUpload {
   const entries = ref<Partial<SeniorityEntry>[]>([])
   const rowErrors = shallowRef<Map<number, string[]>>(new Map())
   const error = ref<string | null>(null)
+
+  watch(selectedParserId, (uploadType) => {
+    if (uploadType) userStore.savePreference('lastUploadType', uploadType).catch(() => {})
+  })
 
   // ── Progress (cross-cutting) ────────────────────────────────────────────
 
