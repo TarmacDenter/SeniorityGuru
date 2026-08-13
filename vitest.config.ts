@@ -20,6 +20,6 @@ export default defineVitestConfig({
       },
     },
     envFile: '.env.test',
-    exclude: ['node_modules/**', 'e2e/**', '.worktrees/**', '.claude/**', 'dev/**'],
+    exclude: ['node_modules/**', 'e2e/**', '.worktrees/**', 'dev/**'],
   },
 })

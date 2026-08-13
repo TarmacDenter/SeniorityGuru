@@ -18,8 +18,7 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "typecheck": "vue-tsc --noEmit",
-    "fuzz": "tsx --tsconfig scripts/tsconfig.json scripts/fuzz-data.ts",
-    "prepare": "husky"
+    "fuzz": "tsx --tsconfig scripts/tsconfig.json scripts/fuzz-data.ts"
   },
   "dependencies": {
     "@fontsource-variable/dm-sans": "^5.2.8",
@@ -57,7 +56,6 @@
     "eslint": "^9.39.4",
     "fake-indexeddb": "^6.2.5",
     "happy-dom": "^20.8.3",
-    "husky": "^9.1.7",
     "tsx": "^4.21.0",
     "typescript": "^5.7.0",
     "vitest": "^4.0.18",

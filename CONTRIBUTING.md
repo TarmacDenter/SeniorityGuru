@@ -10,7 +10,7 @@ SeniorityGuru is a **local-first PWA** for airline pilots to track seniority sta
 - **Runtime:** Node.js / pnpm (not npm or Bun)
 - **Setup:** `pnpm install && pnpm dev` -- no Docker, no database
 
-See [CLAUDE.md](CLAUDE.md) for full architecture rules and code conventions.
+Read [WORKFLOW.md](WORKFLOW.md) for the contribution workflow.
 
 ## Parser System Overview
 
@@ -119,8 +119,9 @@ Add your parser to `app/utils/parsers/registry.ts`:
 import { <airline>Parser } from './<airline>'
 
 export const parsers: readonly PreParser[] = [
+  jetblueParser,
   deltaParser,
-  <airline>Parser,  // Add before genericParser
+  <airline>Parser, // Add before genericParser
   genericParser,
 ]
 ```
@@ -197,7 +198,7 @@ pnpm test       # Vitest -- all tests pass
 - **Co-located tests** -- test file lives next to the file it tests
 - **Nuxt 4 conventions** -- `~/` maps to `app/`, use Nuxt auto-imports
 
-See [CLAUDE.md](CLAUDE.md) for the full set of architecture rules.
+See the [parser guide](app/utils/parsers/ADDING_PARSERS.md) for additional context.
 
 ## Submitting a PR
 

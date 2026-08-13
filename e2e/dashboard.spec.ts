@@ -30,11 +30,11 @@ test.describe('dashboard', () => {
     const page = await context.newPage()
     await uploadTestList(page)
     // Save storage state so all tests share this IndexedDB state
-    await context.storageState({ path: '/tmp/claude-1000/dashboard-state.json' })
+    await context.storageState({ path: '/tmp/seniority-guru-dashboard-state.json' })
     await context.close()
   })
 
-  test.use({ storageState: '/tmp/claude-1000/dashboard-state.json' })
+test.use({ storageState: '/tmp/seniority-guru-dashboard-state.json' })
 
   test('tabs navigate and show content', async ({ page }) => {
     await page.goto(`${BASE}/dashboard`)
