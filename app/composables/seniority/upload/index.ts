@@ -38,6 +38,7 @@ export function useSeniorityUpload(): SeniorityUpload {
   const entries = ref<Partial<SeniorityEntry>[]>([])
   const rowErrors = shallowRef<Map<number, string[]>>(new Map())
   const pipelineIssues = shallowRef<Map<number, ImportIssue[]>>(new Map())
+  const sourceValues = ref<Map<number, Record<string, unknown>>>(new Map())
   const importAttemptId = ref<string | null>(null)
   const error = ref<string | null>(null)
 
@@ -69,6 +70,7 @@ export function useSeniorityUpload(): SeniorityUpload {
     entries,
     rowErrors,
     pipelineIssues,
+    sourceValues,
     syntheticNote,
     syntheticIndices,
     progress,
@@ -104,9 +106,10 @@ export function useSeniorityUpload(): SeniorityUpload {
     selectedParserId,
     preparedSheet,
     importAttemptId,
-    async onMapped(mapped: Partial<SeniorityEntry>[], issues: Map<number, ImportIssue[]>) {
+    async onMapped(mapped: Partial<SeniorityEntry>[], issues: Map<number, ImportIssue[]>, mappedSourceValues: Map<number, Record<string, unknown>>) {
       entries.value = mapped
       pipelineIssues.value = issues
+      sourceValues.value = mappedSourceValues
       await review.validate()
     },
     onMetadataReady(date, title) {

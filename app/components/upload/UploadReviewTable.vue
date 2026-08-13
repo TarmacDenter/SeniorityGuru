@@ -15,6 +15,7 @@ const props = defineProps<{
   showEstimatedOnly?: boolean
   estimatedIndices?: Set<number>
   pipelineIssueRows?: Set<number>
+  sourceValues?: Map<number, Record<string, unknown>>
 }>()
 
 const pagination = ref({ pageIndex: 0, pageSize: PAGE_SIZE })
@@ -141,6 +142,12 @@ const columns: TableColumn<IndexedEntry>[] = [
           >
             Keep values
           </UButton>
+          <UTooltip v-if="pipelineIssueRows?.has(row.original._originalIndex) && sourceValues?.has(row.original._originalIndex)">
+            <UIcon name="i-lucide-database" class="text-muted" />
+            <template #text>
+              <p class="max-w-md break-words text-xs">Source values: {{ Object.entries(sourceValues.get(row.original._originalIndex) ?? {}).map(([key, value]) => `${key}: ${value ?? ''}`).join(' · ') }}</p>
+            </template>
+          </UTooltip>
         </div>
       </template>
 

@@ -80,7 +80,7 @@ export interface MappingPhaseOptions {
   selectedParserId: Ref<string | null>
   preparedSheet: Ref<PreparedSheet | null>
   importAttemptId?: Ref<string | null>
-  onMapped(entries: Partial<SeniorityEntry>[], issues: Map<number, ImportIssue[]>): Promise<void>
+  onMapped(entries: Partial<SeniorityEntry>[], issues: Map<number, ImportIssue[]>, sourceValues: Map<number, Record<string, unknown>>): Promise<void>
   onMetadataReady(effectiveDate: string | null, title: string | null): void
 }
 
@@ -100,6 +100,7 @@ export interface ReviewPhase {
   insertRowAt(rowIndex: number): void
   acknowledgePipelineIssues(rowIndex: number): void
   pipelineIssueRows: ComputedRef<Set<number>>
+  sourceValues: Readonly<Ref<ReadonlyMap<number, Readonly<Record<string, unknown>>>>>
   toValidatedEntries(): SeniorityEntry[]
   validate(): Promise<void>
 }
@@ -108,6 +109,7 @@ export interface ReviewPhaseOptions {
   entries: Ref<Partial<SeniorityEntry>[]>
   rowErrors: ShallowRef<Map<number, string[]>>
   pipelineIssues: ShallowRef<Map<number, ImportIssue[]>>
+  sourceValues: Ref<Map<number, Record<string, unknown>>>
   syntheticNote: Ref<string | null>
   syntheticIndices: Ref<Set<number>>
   progress: ProgressTracker

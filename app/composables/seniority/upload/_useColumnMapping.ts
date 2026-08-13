@@ -124,7 +124,11 @@ export function _useColumnMapping(opts: MappingPhaseOptions): MappingPhase & { _
         .map((draft, index) => [index, draft.issues] as const)
         .filter(([, issues]) => issues.length > 0)
         .map(([index, issues]) => [index, [...issues]] as const) ?? [])
-      await opts.onMapped(mapped, rowIssues)
+      const sourceValues = new Map(processed.drafts.map((draft, index) => [
+        index,
+        { ...(opts.preparedSheet.value!.rows.find(row => row.sourceRowId === draft.sourceRowId)?.cells ?? {}) },
+      ] as const))
+      await opts.onMapped(mapped, rowIssues, sourceValues)
 
       log.debug('Validation complete')
 
