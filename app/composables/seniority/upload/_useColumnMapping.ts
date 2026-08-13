@@ -68,12 +68,15 @@ export function _useColumnMapping(opts: MappingPhaseOptions): MappingPhase & { _
       opts.progress.report('mapping', 0, opts.rawRows.value.length)
 
       const plugin = getImportPlugin(opts.selectedParserId.value ?? '')
-      const mapped = plugin && opts.preparedSheet.value
-        ? (await processConfirmedMappings({
+      const processed = plugin && opts.preparedSheet.value
+        ? await processConfirmedMappings({
             preparedSheet: opts.preparedSheet.value,
             mappings: toConfirmedMappings(opts.columnMap.value, mappingOptions.value, opts.rawHeaders.value, opts.preparedSheet.value.columns),
             plugin,
-          })).drafts.map(draft => draft.entry)
+          })
+        : undefined
+      const mapped = processed
+        ? processed.drafts.map(draft => draft.entry)
         : await applyColumnMapAsync(
             opts.rawRows.value,
             opts.columnMap.value,
@@ -104,7 +107,11 @@ export function _useColumnMapping(opts: MappingPhaseOptions): MappingPhase & { _
 
       log.debug('Mapping complete', { entryCount: mapped.length })
 
-      await opts.onMapped(mapped)
+      const rowIssues = new Map<number, ImportIssue[]>(processed?.drafts
+        .map((draft, index) => [index, draft.issues] as const)
+        .filter(([, issues]) => issues.length > 0)
+        .map(([index, issues]) => [index, [...issues]] as const) ?? [])
+      await opts.onMapped(mapped, rowIssues)
 
       log.debug('Validation complete')
 

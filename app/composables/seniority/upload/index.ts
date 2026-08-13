@@ -2,7 +2,7 @@ import { parseDate } from '@internationalized/date'
 import type { SeniorityEntry } from '~/utils/schemas/seniority-list'
 import { todayISO } from '~/utils/date'
 import type { ColumnMap } from '~/utils/parse-spreadsheet'
-import type { PreparedSheet } from '~/utils/import-pipeline/types'
+import type { ImportIssue, PreparedSheet } from '~/utils/import-pipeline/types'
 import type { SeniorityUpload } from './types'
 import { _useProgressTracker } from './_useProgressTracker'
 import { _useFileIO } from './_useFileIO'
@@ -30,6 +30,7 @@ export function useSeniorityUpload(): SeniorityUpload {
   const columnMap = ref<ColumnMap>({ ...DEFAULT_COLUMN_MAP })
   const entries = ref<Partial<SeniorityEntry>[]>([])
   const rowErrors = shallowRef<Map<number, string[]>>(new Map())
+  const pipelineIssues = shallowRef<Map<number, ImportIssue[]>>(new Map())
   const error = ref<string | null>(null)
 
   watch(selectedParserId, (uploadType) => {
@@ -45,6 +46,7 @@ export function useSeniorityUpload(): SeniorityUpload {
   const review = _useReview({
     entries,
     rowErrors,
+    pipelineIssues,
     syntheticNote,
     syntheticIndices,
     progress,
@@ -77,8 +79,9 @@ export function useSeniorityUpload(): SeniorityUpload {
     extractedTitle,
     selectedParserId,
     preparedSheet,
-    async onMapped(mapped: Partial<SeniorityEntry>[]) {
+    async onMapped(mapped: Partial<SeniorityEntry>[], issues: Map<number, ImportIssue[]>) {
       entries.value = mapped
+      pipelineIssues.value = issues
       await review.validate()
     },
     onMetadataReady(date, title) {

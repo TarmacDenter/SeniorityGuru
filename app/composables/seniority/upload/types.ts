@@ -2,7 +2,7 @@ import type { ComputedRef, Ref, ShallowRef } from 'vue'
 import type { DateValue } from 'reka-ui'
 import type { SeniorityEntry } from '~/utils/schemas/seniority-list'
 import type { ColumnMap, MappingOptions } from '~/utils/parse-spreadsheet'
-import type { PreparedSheet } from '~/utils/import-pipeline/types'
+import type { ImportIssue, PreparedSheet } from '~/utils/import-pipeline/types'
 
 // ── Progress ─────────────────────────────────────────────────────────────────
 
@@ -72,7 +72,7 @@ export interface MappingPhaseOptions {
   extractedTitle: Ref<string | null>
   selectedParserId: Ref<string | null>
   preparedSheet: Ref<PreparedSheet | null>
-  onMapped(entries: Partial<SeniorityEntry>[]): Promise<void>
+  onMapped(entries: Partial<SeniorityEntry>[], issues: Map<number, ImportIssue[]>): Promise<void>
   onMetadataReady(effectiveDate: string | null, title: string | null): void
 }
 
@@ -97,6 +97,7 @@ export interface ReviewPhase {
 export interface ReviewPhaseOptions {
   entries: Ref<Partial<SeniorityEntry>[]>
   rowErrors: ShallowRef<Map<number, string[]>>
+  pipelineIssues: ShallowRef<Map<number, ImportIssue[]>>
   syntheticNote: Ref<string | null>
   syntheticIndices: Ref<Set<number>>
   progress: ProgressTracker

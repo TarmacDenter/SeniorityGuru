@@ -22,6 +22,10 @@ function formatIssueMessage(issue: ValidationIssue): string {
   return `${issue.field}: ${issue.message}`
 }
 
+function formatPipelineIssue(issue: { field?: string, message: string }): string {
+  return `${issue.field ?? 'row'}: ${issue.message}`
+}
+
 function isStructuralMessage(raw: string): boolean {
   return raw.startsWith('seniority_number: Duplicate seniority number')
     || raw.startsWith('seniority_number: Non-contiguous sequence')
@@ -61,9 +65,13 @@ export function _useReview(opts: ReviewPhaseOptions): ReviewPhase & { _reset: ()
       structural.set(idx, [...entryIssues, ...existing])
     }
 
-    opts.rowErrors.value = new Map(
+    const errors = new Map(
       Array.from(structural.entries()).map(([idx, rowIssues]) => [idx, rowIssues.map(formatIssueMessage)]),
     )
+    opts.pipelineIssues.value.forEach((issues, index) => {
+      errors.set(index, [...(errors.get(index) ?? []), ...issues.map(formatPipelineIssue)])
+    })
+    opts.rowErrors.value = errors
     if (opts.rowErrors.value.size > 0) {
       log.warn('Validation errors found', { errorCount: opts.rowErrors.value.size, totalRows: total })
     }
@@ -93,6 +101,11 @@ export function _useReview(opts: ReviewPhaseOptions): ReviewPhase & { _reset: ()
     const entry = opts.entries.value[rowIndex]
     if (!entry) return
     ;(entry as Record<string, unknown>)[field] = value
+    if (opts.pipelineIssues.value.has(rowIndex)) {
+      const remaining = new Map(opts.pipelineIssues.value)
+      remaining.delete(rowIndex)
+      opts.pipelineIssues.value = remaining
+    }
 
     // Update schema errors for the edited row (structural refreshed below)
     const issues = formatSchemaIssues(entry)
@@ -196,6 +209,7 @@ export function _useReview(opts: ReviewPhaseOptions): ReviewPhase & { _reset: ()
   function reset() {
     opts.entries.value = []
     opts.rowErrors.value = new Map()
+    opts.pipelineIssues.value = new Map()
   }
 
   function toValidatedEntries(): SeniorityEntry[] {

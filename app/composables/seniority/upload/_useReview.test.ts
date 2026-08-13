@@ -13,6 +13,7 @@ function createReview() {
   const review = _useReview({
     entries,
     rowErrors,
+    pipelineIssues: shallowRef(new Map()),
     syntheticNote,
     syntheticIndices,
     progress,
