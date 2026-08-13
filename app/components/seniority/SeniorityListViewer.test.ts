@@ -25,7 +25,7 @@ const stubs = {
   USelect: defineComponent({
     props: { modelValue: { type: String, default: '' }, items: { type: Array, default: () => [] } },
     emits: ['update:modelValue'],
-    template: '<select :value="modelValue" @change="$emit(\'update:modelValue\', $event.target.value)"><option value="">Company-wide</option><option v-for="item in items" :key="item.value" :value="item.value">{{ item.label }}</option></select>',
+    template: '<select :value="modelValue" @change="$emit(\'update:modelValue\', $event.target.value)"><option v-for="item in items" :key="item.value" :value="item.value">{{ item.label }}</option></select>',
   }),
   UInput: defineComponent({
     props: { modelValue: { type: String, default: '' } },
@@ -92,6 +92,10 @@ describe('SeniorityListViewer', () => {
     expect(wrapper.text()).toContain('JFK-737-CA · 2 pilots')
     expect(wrapper.text()).toContain('First|E1|1|1|active')
     expect(wrapper.find('div.flex-1.min-h-0.overflow-auto').exists()).toBe(true)
+
+    await wrapper.find('select').setValue('__company_wide__')
+
+    expect(wrapper.text()).toContain('Company-wide · 3 pilots')
   })
 
   it('keeps insertion synthetic and exposes pagination for large lists', async () => {

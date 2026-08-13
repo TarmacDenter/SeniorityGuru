@@ -13,6 +13,7 @@ const props = defineProps<{ loading?: boolean }>()
 
 type RetirementTimeline = 'past' | 'imminent' | 'soon' | null
 type SeniorityRow = QualViewerRow & { _retirementTimeline: RetirementTimeline }
+const COMPANY_WIDE_VALUE = '__company_wide__'
 
 function retirementTimeline(today: string, retireDate: string): RetirementTimeline {
   const days = diffYears(today, retireDate) * 365.25
@@ -35,7 +36,7 @@ const isLoading = computed(() => !!props.loading || entriesLoading.value)
 
 const qualOptions = computed(() => {
   const seen = new Set<string>()
-  return entries.value
+  const options = entries.value
     .toSorted((a, b) => a.seniority_number - b.seniority_number)
     .filter((entry) => {
       const key = `${entry.base}|${entry.fleet}|${entry.seat}`
@@ -47,10 +48,11 @@ const qualOptions = computed(() => {
       label: `${entry.base}-${entry.fleet}-${entry.seat}`,
       value: `${entry.base}|${entry.fleet}|${entry.seat}`,
     }))
+  return [{ label: 'Company-wide', value: COMPANY_WIDE_VALUE }, ...options]
 })
 
 const selectedQual = computed<QualSpec>(() => {
-  if (!selectedQualKey.value) return {}
+  if (!selectedQualKey.value || selectedQualKey.value === COMPANY_WIDE_VALUE) return {}
   const [base, fleet, seat] = selectedQualKey.value.split('|')
   return { base, fleet, seat }
 })
