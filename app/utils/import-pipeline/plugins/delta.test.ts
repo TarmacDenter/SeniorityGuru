@@ -17,8 +17,8 @@ describe('deltaImportPlugin', () => {
     expect(deltaImportPlugin.suggestHeaderRow?.(sourceSheet)).toBe(1)
     const result = prepareImport({ plugin: deltaImportPlugin, sourceSheet, headerRowIndex: 1 })
     expect(result.mappingSuggestions).toMatchObject({ base: 'plugin:delta:base', fleet: 'plugin:delta:fleet', seat: 'plugin:delta:seat' })
-    expect(result.preparedSheet.rows[0]!.cells['plugin:delta:base']).toBe('ATL')
-    expect(result.preparedSheet.rows[0]!.cells['source:column:2']).toBe('ATL350A')
+    expect(result.preparedSheet.rows[2]!.cells['plugin:delta:base']).toBe('ATL')
+    expect(result.preparedSheet.rows[2]!.cells['source:column:2']).toBe('ATL350A')
   })
 
   it('keeps Delta category fallbacks stable', () => {

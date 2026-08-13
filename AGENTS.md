@@ -33,6 +33,20 @@ Component → composable → store → Dexie
 
 ## References
 
-- **Parser work:** Read [app/utils/parsers/ADDING_PARSERS.md](app/utils/parsers/ADDING_PARSERS.md) before adding or changing an airline parser.
+- **Import plugin work:** Read [docs/import-plugins.md](docs/import-plugins.md) before adding or changing an airline upload type.
 - **Contribution workflow:** Read [WORKFLOW.md](WORKFLOW.md) before creating a branch or opening a pull request.
 - **Tests:** Keep tests next to the code they cover. Run `pnpm lint`, `pnpm typecheck`, and `pnpm test` after code changes.
+
+## Agent skills
+
+### Issue tracker
+
+Issues and specs are tracked in this repository's GitHub Issues. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+The default five canonical triage labels are in use. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+This repo uses a single-context layout. See `docs/agents/domain.md`.

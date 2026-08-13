@@ -1,0 +1,3 @@
+# Separate import processing from the user interface
+
+Import plugins and pipeline modules are pure and contain no Vue, browser-service, persistence, logging, or user-interface concerns. They return data and structured issues. The import pipeline is a deep module with a small public interface; reducers, mappers, validators, and helpers remain implementation details unless multiple real adapters need their interface. Composables coordinate pipeline state, persistence, and user actions; components only render that state. This separation keeps parser contributions deterministic, reviewable, and testable outside the upload wizard.
