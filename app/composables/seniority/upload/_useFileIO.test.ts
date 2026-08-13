@@ -13,15 +13,8 @@ vi.mock('xlsx', () => ({
   utils: { sheet_to_json: mockSheetToJson },
 }))
 
-// Mock parser registry
-const mockParse = vi.hoisted(() => vi.fn())
-vi.mock('~/utils/parsers/registry', () => ({
-  getParser: () => ({
-    id: 'generic',
-    parse: mockParse,
-  }),
-}))
 vi.mock('~/utils/import-pipeline/decode-workbook', () => ({ decodeWorkbook: mockDecodeWorkbook }))
+vi.mock('~/stores/user', () => ({ useUserStore: () => ({ getPreference: vi.fn().mockResolvedValue(null) }) }))
 
 function createFileIO() {
   const selectedParserId = ref<string | null>('generic')
@@ -139,29 +132,9 @@ describe('_useFileIO', () => {
     const { file, onSheetChange } = createFileIO()
 
     // Set up mock workbook buffer by first setting a file
-    mockRead.mockReturnValue({
-      SheetNames: ['Sheet1', 'Sheet2'],
-      Sheets: {
-        Sheet1: {},
-        Sheet2: {},
-      },
-    })
-    mockSheetToJson.mockReturnValue([
-      ['Col A', 'Col B'],
-      ['val1', 'val2'],
-    ])
-    mockParse.mockReturnValue({
-      rows: [['Col A', 'Col B'], ['val1', 'val2']],
-      metadata: { effectiveDate: '2026-01-01', title: 'Test' },
-    })
-
-    // Simulate multi-sheet detection (need to trigger setFile first for the buffer)
-    // Since selectSheet checks internal workbookBuffer, and the buffer is set in setFile,
-    // we need the full flow. Let's test via setFile then selectSheet.
     file.selectSheet('Sheet2')
 
-    // selectSheet without prior setFile has no buffer — should be a no-op
-    // This verifies the guard
+    // Selecting a sheet before decoding has no effect.
     expect(onSheetChange).not.toHaveBeenCalled()
   })
 

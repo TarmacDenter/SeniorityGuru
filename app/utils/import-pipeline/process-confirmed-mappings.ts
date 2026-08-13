@@ -113,6 +113,7 @@ export async function processConfirmedMappings({
   for (let index = 0; index < preparedSheet.rows.length; index++) {
     if (signal?.aborted) throw new DOMException('Import processing was cancelled.', 'AbortError')
     const preparedRow = preparedSheet.rows[index]!
+    if (preparedRow.included === false) continue
     let entry = mapEntry(preparedRow, mappings)
     let issues: ImportIssue[] = []
     let draft: DraftSeniorityEntry = {

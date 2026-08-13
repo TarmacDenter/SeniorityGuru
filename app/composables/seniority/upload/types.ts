@@ -31,7 +31,7 @@ export interface FilePhase {
   error: Readonly<Ref<string | null>>
 
   setFile(file: File | null): Promise<void>
-  selectSheet(name: string): void
+  selectSheet(name: string): Promise<void>
   selectHeaderRow(index: number): void
 }
 

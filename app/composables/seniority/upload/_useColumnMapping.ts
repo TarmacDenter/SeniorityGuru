@@ -94,7 +94,7 @@ export function _useColumnMapping(opts: MappingPhaseOptions): MappingPhase & { _
           .filter(([, index]) => index >= 0)
           .map(([field, index]) => [field, opts.preparedSheet.value!.columns[index]?.id])) as Record<string, string>
         const existing = await userStore.getPreference('importMappings') ?? {}
-        await userStore.savePreference('importMappings', { ...existing, [plugin.id]: { columns } })
+        await userStore.savePreference('importMappings', { ...existing, [plugin.id]: { columns, mappingOptions: mappingOptions.value } })
         await importAttemptsStore.record({
           id: crypto.randomUUID(),
           pluginId: plugin.id,

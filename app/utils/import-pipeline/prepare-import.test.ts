@@ -141,6 +141,7 @@ describe('prepareImport', () => {
       seniority_number: 'plugin:generic:seniority-number',
       employee_number: 'plugin:generic:employee-number',
     })
-    expect(result.preparedSheet.rows.map(row => row.sourceRowId)).toEqual(['source:row:2'])
+    expect(result.preparedSheet.rows.map(row => row.sourceRowId)).toEqual(['source:row:0', 'source:row:1', 'source:row:2'])
+    expect(result.preparedSheet.rows.filter(row => row.included !== false).map(row => row.sourceRowId)).toEqual(['source:row:2'])
   })
 })

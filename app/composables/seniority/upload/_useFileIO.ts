@@ -5,10 +5,12 @@ import { decodeWorkbook } from '~/utils/import-pipeline/decode-workbook'
 import { getImportPlugin } from '~/utils/import-pipeline/plugins/registry'
 import { prepareImport } from '~/utils/import-pipeline/prepare-import'
 import type { DecodedWorkbook, PreparedSheet } from '~/utils/import-pipeline/types'
+import { useUserStore } from '~/stores/user'
 
 const log = createLogger('upload:file')
 
 export function _useFileIO(opts: FilePhaseOptions): FilePhase & { _reset: () => void } {
+  const userStore = useUserStore()
   const fileName = ref('')
   const sheetNames = ref<string[]>([])
   const selectedSheet = ref<string | null>(null)
@@ -33,7 +35,7 @@ export function _useFileIO(opts: FilePhaseOptions): FilePhase & { _reset: () => 
   function applyPreparedSheet(preparedSheet: PreparedSheet, mappingSuggestions: Readonly<Partial<Record<keyof ColumnMap, string>>> = {}) {
     opts.preparedSheet.value = preparedSheet
     opts.rawHeaders.value = preparedSheet.columns.map(column => column.label)
-    opts.rawRows.value = opts.preparedSheet.value.rows.map(row =>
+    opts.rawRows.value = opts.preparedSheet.value.rows.filter(row => row.included !== false).map(row =>
       preparedSheet.columns.map(column => String(row.cells[column.id] ?? '')),
     )
     const detected = autoDetectColumnMap(opts.rawHeaders.value)
@@ -46,15 +48,24 @@ export function _useFileIO(opts: FilePhaseOptions): FilePhase & { _reset: () => 
     opts.autoDetectSucceeded.value = isColumnMapComplete(opts.columnMap.value)
   }
 
-  function processImportSheet(workbook: DecodedWorkbook, sheetName: string) {
+  async function processImportSheet(workbook: DecodedWorkbook, sheetName: string, headerRowIndex?: number) {
     const sourceSheet = workbook.sheets.find(sheet => sheet.name === sheetName)
     if (!sourceSheet) return
     const plugin = getImportPlugin(opts.selectedParserId.value ?? '')
     if (!plugin) return
     headerRows.value = sourceSheet.rows.map(row => row.cells.map(cell => cell === null ? '' : String(cell)))
-    selectedHeaderRow.value = plugin.suggestHeaderRow?.(sourceSheet) ?? 0
+    selectedHeaderRow.value = headerRowIndex ?? plugin.suggestHeaderRow?.(sourceSheet) ?? 0
     const result = prepareImport({ plugin, sourceSheet, headerRowIndex: selectedHeaderRow.value })
     applyPreparedSheet(result.preparedSheet, result.mappingSuggestions)
+    const saved = (await userStore.getPreference('importMappings'))?.[plugin.id]
+    if (saved) {
+      opts.columnMap.value = Object.fromEntries(Object.entries(opts.columnMap.value).map(([field, index]) => {
+        const savedId = saved.columns[field]
+        const savedIndex = savedId ? result.preparedSheet.columns.findIndex(column => column.id === savedId) : -1
+        return [field, savedIndex >= 0 ? savedIndex : index]
+      })) as ColumnMap
+      opts.autoDetectSucceeded.value = isColumnMapComplete(opts.columnMap.value)
+    }
     if (result.issues.length > 0) {
       log.warn('Generic sheet preparation needs manual mapping', { issueKinds: result.issues.map(issue => issue.kind) })
     }
@@ -87,7 +98,7 @@ export function _useFileIO(opts: FilePhaseOptions): FilePhase & { _reset: () => 
         if (decoded.workbook.sheetNames.length === 1) {
           const onlySheet = decoded.workbook.sheetNames[0]!
           selectedSheet.value = onlySheet
-          processImportSheet(decoded.workbook, onlySheet)
+          await processImportSheet(decoded.workbook, onlySheet)
         }
         return
       }
@@ -97,11 +108,11 @@ export function _useFileIO(opts: FilePhaseOptions): FilePhase & { _reset: () => 
     }
   }
 
-  function selectSheet(name: string) {
+  async function selectSheet(name: string) {
     if (!decodedWorkbook || !decodedWorkbook.sheetNames.includes(name)) return
     opts.onSheetChange()
     selectedSheet.value = name
-    processImportSheet(decodedWorkbook, name)
+    await processImportSheet(decodedWorkbook, name)
   }
 
   function selectHeaderRow(index: number) {
@@ -111,8 +122,7 @@ export function _useFileIO(opts: FilePhaseOptions): FilePhase & { _reset: () => 
     if (!sourceSheet || index < 0 || index >= sourceSheet.rows.length) return
     opts.onSheetChange()
     selectedHeaderRow.value = index
-    const result = prepareImport({ plugin, sourceSheet, headerRowIndex: index })
-    applyPreparedSheet(result.preparedSheet, result.mappingSuggestions)
+    void processImportSheet(decodedWorkbook, selectedSheet.value, index)
   }
 
   function reset() {

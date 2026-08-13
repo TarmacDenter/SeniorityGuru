@@ -9,6 +9,7 @@ export interface NewHireConfig {
 export interface ImportMappingPreference {
   /** Prepared-column IDs where available, otherwise normalized source labels. */
   columns: Record<string, string>
+  mappingOptions?: Record<string, unknown>
 }
 
 /** Maps every preference key to its strongly typed value. */

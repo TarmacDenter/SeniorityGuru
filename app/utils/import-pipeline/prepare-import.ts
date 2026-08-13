@@ -102,7 +102,7 @@ export function prepareImport({
           ...column,
           label: typeof headerRow.cells[index] === 'string' ? headerRow.cells[index] : column.label,
         })),
-        rows: sourceSheet.rows.filter((_, index) => index > headerRowIndex!),
+        rows: sourceSheet.rows,
       }
     : sourceSheet
   let patch: PreparationPatch
@@ -117,8 +117,12 @@ export function prepareImport({
     }
   }
 
+  const preparedSheet = applyPatch(sheetForPreparation, patch)
+  const rows = headerRowIndex === undefined
+    ? preparedSheet.rows
+    : preparedSheet.rows.map((row, index) => index > headerRowIndex ? row : { ...row, included: false })
   return {
-    preparedSheet: applyPatch(sheetForPreparation, patch),
+    preparedSheet: { ...preparedSheet, rows },
     mappingSuggestions: patch.mappingSuggestions ?? {},
     issues: patch.issues ?? [],
   }

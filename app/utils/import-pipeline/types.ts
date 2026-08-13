@@ -51,6 +51,8 @@ export interface PreparedColumn {
 
 export interface PreparedRow {
   readonly sourceRowId: string
+  /** A non-destructive data-row suggestion. Excluded rows remain available for recovery. */
+  readonly included?: boolean
   readonly cells: Readonly<Record<string, SourceCellValue>>
 }
 
