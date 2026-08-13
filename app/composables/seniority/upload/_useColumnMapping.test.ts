@@ -4,14 +4,11 @@ import { _useProgressTracker } from './_useProgressTracker'
 import type { ColumnMap } from '~/utils/parse-spreadsheet'
 import type { PreparedSheet } from '~/utils/import-pipeline/types'
 
-const { mockApplyColumnMapAsync } = vi.hoisted(() => ({
-  mockApplyColumnMapAsync: vi.fn(),
+const { mockProcessConfirmedMappings } = vi.hoisted(() => ({
+  mockProcessConfirmedMappings: vi.fn(),
 }))
 
-vi.mock('~/utils/parse-spreadsheet', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('~/utils/parse-spreadsheet')>()
-  return { ...actual, applyColumnMapAsync: mockApplyColumnMapAsync }
-})
+vi.mock('~/utils/import-pipeline/process-confirmed-mappings', () => ({ processConfirmedMappings: mockProcessConfirmedMappings }))
 
 function createMapping(overrides: Record<string, any> = {}) {
   const rawRows = ref<string[][]>([])
@@ -29,8 +26,12 @@ function createMapping(overrides: Record<string, any> = {}) {
   const mappingOptions = ref<MappingOptions>({ nameMode: 'single', retireMode: 'direct' })
   const extractedEffectiveDate = ref<string | null>(null)
   const extractedTitle = ref<string | null>(null)
-  const selectedParserId = ref<string | null>(null)
-  const preparedSheet = ref<PreparedSheet | null>(null)
+  const selectedParserId = ref<string | null>('generic')
+  const preparedSheet = ref<PreparedSheet | null>({
+    sourceSheet: { id: 'sheet:0', name: 'Sheet 1', columns: [], rows: [] },
+    columns: ['seniority_number', 'employee_number', 'seat', 'base', 'fleet', 'name', 'hire_date', 'retire_date'].map(id => ({ id, label: id })),
+    rows: [{ sourceRowId: 'row:1', cells: { seniority_number: '1' } }],
+  })
   const progress = _useProgressTracker()
   const onMapped = overrides.onMapped ?? vi.fn()
   const onMetadataReady = overrides.onMetadataReady ?? vi.fn()
@@ -101,7 +102,7 @@ describe('_useColumnMapping', () => {
 
   describe('apply', () => {
     it('calls onMapped with mapped entries and onMetadataReady', async () => {
-      mockApplyColumnMapAsync.mockResolvedValueOnce([{ seniority_number: 1 }])
+      mockProcessConfirmedMappings.mockResolvedValueOnce({ drafts: [{ id: 'draft:row:1', sourceRowId: 'row:1', entry: { seniority_number: 1 }, issues: [] }] })
       const onMapped = vi.fn()
       const onMetadataReady = vi.fn()
       const { mapping, rawRows, extractedEffectiveDate, extractedTitle } = createMapping({ onMapped, onMetadataReady })
@@ -135,11 +136,11 @@ describe('_useColumnMapping', () => {
 
   describe('apply — error handling', () => {
     beforeEach(() => {
-      mockApplyColumnMapAsync.mockReset()
+      mockProcessConfirmedMappings.mockReset()
     })
 
-    it('sets error.value when applyColumnMapAsync throws and does not call onMapped', async () => {
-      mockApplyColumnMapAsync.mockRejectedValueOnce(new Error('row transform failed'))
+    it('sets error.value when processing throws and does not call onMapped', async () => {
+      mockProcessConfirmedMappings.mockRejectedValueOnce(new Error('row transform failed'))
       const onMapped = vi.fn()
       const { mapping } = createMapping({ onMapped })
 
@@ -150,7 +151,7 @@ describe('_useColumnMapping', () => {
     })
 
     it('sets error.value when mapped result is empty and does not call onMapped', async () => {
-      mockApplyColumnMapAsync.mockResolvedValueOnce([])
+      mockProcessConfirmedMappings.mockResolvedValueOnce({ drafts: [] })
       const onMapped = vi.fn()
       const { mapping } = createMapping({ onMapped })
 
@@ -161,21 +162,21 @@ describe('_useColumnMapping', () => {
     })
 
     it('clears error.value at the start of the next apply() call', async () => {
-      mockApplyColumnMapAsync.mockRejectedValueOnce(new Error('first failure'))
+      mockProcessConfirmedMappings.mockRejectedValueOnce(new Error('first failure'))
       const onMapped = vi.fn()
       const { mapping } = createMapping({ onMapped })
 
       await mapping.apply()
       expect(mapping.error.value).not.toBeNull()
 
-      mockApplyColumnMapAsync.mockResolvedValueOnce([{ seniority_number: 1 }])
+      mockProcessConfirmedMappings.mockResolvedValueOnce({ drafts: [{ id: 'draft:row:1', sourceRowId: 'row:1', entry: { seniority_number: 1 }, issues: [] }] })
       await mapping.apply()
 
       expect(mapping.error.value).toBeNull()
     })
 
     it('error.value is null after a successful apply()', async () => {
-      mockApplyColumnMapAsync.mockResolvedValueOnce([{ seniority_number: 1 }])
+      mockProcessConfirmedMappings.mockResolvedValueOnce({ drafts: [{ id: 'draft:row:1', sourceRowId: 'row:1', entry: { seniority_number: 1 }, issues: [] }] })
       const { mapping } = createMapping()
 
       await mapping.apply()

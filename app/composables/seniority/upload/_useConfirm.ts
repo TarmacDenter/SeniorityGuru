@@ -4,6 +4,7 @@ import type { SeniorityEntry } from '~/utils/schemas/seniority-list'
 import { useSeniorityStore } from '~/stores/seniority'
 import { createSnapshot } from '~/utils/seniority-engine/snapshot'
 import { createLogger } from '~/utils/logger'
+import { useImportAttemptsStore } from '~/stores/import-attempts'
 
 const log = createLogger('upload:confirm')
 
@@ -32,20 +33,29 @@ export function _useConfirm(opts: ConfirmPhaseOptions): ConfirmPhase & { _reset:
         retireDate: e.retire_date,
       }))
 
-      await store.addList(
+      const listId = await store.addList(
         {
           title: title.value || null,
           effectiveDate: effectiveDate.value ? effectiveDate.value.toString() : '',
         },
         localEntries,
       )
-
+      if (opts.importAttemptId?.value) {
+        await useImportAttemptsStore().complete(opts.importAttemptId.value, {
+          outcome: 'saved',
+          listId,
+          finalEntries: entries,
+        })
+      }
       log.info('Upload succeeded', { count: localEntries.length })
       return localEntries.length
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Upload failed'
       log.error('Upload failed', { error: message })
       opts.error.value = message
+      if (opts.importAttemptId?.value) {
+        await useImportAttemptsStore().complete(opts.importAttemptId.value, { outcome: 'failed', error: message })
+      }
       throw err
     } finally {
       saving.value = false

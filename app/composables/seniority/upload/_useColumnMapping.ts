@@ -1,13 +1,12 @@
 import type { MappingPhase, MappingPhaseOptions } from './types'
 import type { MappingOptions } from '~/utils/parse-spreadsheet'
-import { applyColumnMapAsync } from '~/utils/parse-spreadsheet'
 import { createLogger } from '~/utils/logger'
 import { DEFAULT_COLUMN_MAP, DEFAULT_MAPPING_OPTIONS } from './defaults'
 import { processConfirmedMappings } from '~/utils/import-pipeline/process-confirmed-mappings'
 import { getImportPlugin } from '~/utils/import-pipeline/plugins/registry'
 import { useUserStore } from '~/stores/user'
 import { useImportAttemptsStore } from '~/stores/import-attempts'
-import type { ConfirmedMappings, PreparedColumn } from '~/utils/import-pipeline/types'
+import type { ConfirmedMappings, ImportIssue, PreparedColumn } from '~/utils/import-pipeline/types'
 
 function toConfirmedMappings(
   map: ColumnMap,
@@ -75,16 +74,10 @@ export function _useColumnMapping(opts: MappingPhaseOptions): MappingPhase & { _
             plugin,
           })
         : undefined
-      const mapped = processed
-        ? processed.drafts.map(draft => draft.entry)
-        : await applyColumnMapAsync(
-            opts.rawRows.value,
-            opts.columnMap.value,
-            mappingOptions.value,
-            (current, total) => {
-              opts.progress.report('mapping', current, total)
-            },
-          )
+      if (!processed || !plugin || !opts.preparedSheet.value) {
+        throw new Error('Choose an Upload Type before mapping columns.')
+      }
+      const mapped = processed.drafts.map(draft => draft.entry)
 
       if (mapped.length === 0) {
         error.value = 'No rows could be mapped. Verify the selected columns contain data.'
@@ -93,16 +86,33 @@ export function _useColumnMapping(opts: MappingPhaseOptions): MappingPhase & { _
       }
 
       if (plugin && opts.preparedSheet.value) {
+        const confirmedMappings = toConfirmedMappings(opts.columnMap.value, mappingOptions.value, opts.rawHeaders.value, opts.preparedSheet.value.columns)
         const columns = Object.fromEntries(Object.entries(opts.columnMap.value)
           .filter(([, index]) => index >= 0)
           .map(([field, index]) => [field, opts.preparedSheet.value!.columns[index]?.id])) as Record<string, string>
-        const existing = await userStore.getPreference('importMappings') ?? {}
-        await userStore.savePreference('importMappings', { ...existing, [plugin.id]: { columns, mappingOptions: mappingOptions.value } })
-        await importAttemptsStore.record({
-          id: crypto.randomUUID(),
-          pluginId: plugin.id,
-          data: { schemaVersion: 1, pluginId: plugin.id, preparedSheet: opts.preparedSheet.value, mappings: columns, drafts: mapped },
-        })
+        try {
+          const existing = await userStore.getPreference('importMappings') ?? {}
+          await userStore.savePreference('importMappings', { ...existing, [plugin.id]: { columns, mappingOptions: mappingOptions.value as unknown as Record<string, unknown> } })
+          const attemptId = await importAttemptsStore.record({
+            id: crypto.randomUUID(),
+            pluginId: plugin.id,
+            sheetName: opts.preparedSheet.value.sourceSheet.name,
+            data: {
+              diagnosticSchemaVersion: 1,
+              plugin: { id: plugin.id, label: plugin.label },
+              createdAt: new Date().toISOString(),
+              sourceSheet: opts.preparedSheet.value.sourceSheet,
+              preparedSheet: opts.preparedSheet.value,
+              mappings: confirmedMappings,
+              mappingPreferences: { columns, mappingOptions: mappingOptions.value },
+              drafts: processed.drafts,
+              outcome: 'review',
+            },
+          })
+          if (opts.importAttemptId) opts.importAttemptId.value = attemptId
+        } catch (storageError) {
+          log.warn('Could not save import preferences or diagnostic', { error: String(storageError) })
+        }
       }
 
       log.debug('Mapping complete', { entryCount: mapped.length })

@@ -76,6 +76,7 @@ export interface MappingPhaseOptions {
   extractedTitle: Ref<string | null>
   selectedParserId: Ref<string | null>
   preparedSheet: Ref<PreparedSheet | null>
+  importAttemptId?: Ref<string | null>
   onMapped(entries: Partial<SeniorityEntry>[], issues: Map<number, ImportIssue[]>): Promise<void>
   onMetadataReady(effectiveDate: string | null, title: string | null): void
 }
@@ -122,6 +123,7 @@ export interface ConfirmPhase {
 
 export interface ConfirmPhaseOptions {
   error: Ref<string | null>
+  importAttemptId?: Ref<string | null>
 }
 
 // ── Public interface ─────────────────────────────────────────────────────────

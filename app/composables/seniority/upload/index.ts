@@ -39,6 +39,7 @@ export function useSeniorityUpload(): SeniorityUpload {
   const entries = ref<Partial<SeniorityEntry>[]>([])
   const rowErrors = shallowRef<Map<number, string[]>>(new Map())
   const pipelineIssues = shallowRef<Map<number, ImportIssue[]>>(new Map())
+  const importAttemptId = ref<string | null>(null)
   const error = ref<string | null>(null)
 
   watch(selectedParserId, (uploadType) => {
@@ -76,7 +77,7 @@ export function useSeniorityUpload(): SeniorityUpload {
     progress,
   })
 
-  const confirm = _useConfirm({ error })
+  const confirm = _useConfirm({ error, importAttemptId })
 
   function resetDownstream() {
     rawHeaders.value = []
@@ -88,6 +89,7 @@ export function useSeniorityUpload(): SeniorityUpload {
     syntheticIndices.value = new Set()
     autoDetectSucceeded.value = false
     preparedSheet.value = null
+    importAttemptId.value = null
     error.value = null
     review._reset()
     confirm._reset()
@@ -103,9 +105,8 @@ export function useSeniorityUpload(): SeniorityUpload {
     extractedEffectiveDate,
     extractedTitle,
     selectedParserId,
-    uploadTypes,
-    selectUploadType,
     preparedSheet,
+    importAttemptId,
     async onMapped(mapped: Partial<SeniorityEntry>[], issues: Map<number, ImportIssue[]>) {
       entries.value = mapped
       pipelineIssues.value = issues

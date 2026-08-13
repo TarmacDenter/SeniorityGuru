@@ -32,6 +32,10 @@ export interface LocalImportAttempt {
   pluginId: string
   data: string
   size: number
+  outcome: 'review' | 'saved' | 'failed'
+  updatedAt: string
+  listId?: number
+  sheetName?: string
 }
 
 class SeniorityGuruDB extends Dexie {
@@ -57,6 +61,12 @@ class SeniorityGuruDB extends Dexie {
       seniorityEntries: '++id, listId, seniorityNumber, employeeNumber',
       preferences: 'key',
       importAttempts: 'id, createdAt, pluginId',
+    })
+    this.version(4).stores({
+      seniorityLists: '++id, effectiveDate, isDemo',
+      seniorityEntries: '++id, listId, seniorityNumber, employeeNumber',
+      preferences: 'key',
+      importAttempts: 'id, createdAt, pluginId, outcome, listId',
     })
   }
 

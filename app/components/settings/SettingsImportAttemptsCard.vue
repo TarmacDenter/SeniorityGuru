@@ -23,7 +23,11 @@ function download(attempt: { id: string, pluginId: string }) {
       <p class="text-sm text-muted">Diagnostic files include seniority-list data. They stay on this device unless you save and share one.</p>
       <p v-if="attempts.attempts.value.length === 0" class="text-sm text-muted">No import diagnostics are stored.</p>
       <div v-for="attempt in attempts.attempts.value" :key="attempt.id" class="flex items-center justify-between gap-3">
-        <span class="text-sm">{{ attempt.pluginId }} · {{ new Date(attempt.createdAt).toLocaleString() }}</span>
+        <span class="text-sm">
+          {{ attempt.pluginId }} · {{ attempt.sheetName ?? 'Unknown sheet' }} · {{ new Date(attempt.createdAt).toLocaleString() }}
+          <span class="text-muted">· {{ attempt.outcome }}</span>
+          <span v-if="attempt.listId" class="text-muted">· saved list #{{ attempt.listId }}</span>
+        </span>
         <div class="flex gap-2">
           <UButton size="xs" variant="outline" @click="download(attempt)">Export</UButton>
           <UButton size="xs" color="error" variant="ghost" @click="attempts.remove(attempt.id)">Delete</UButton>
