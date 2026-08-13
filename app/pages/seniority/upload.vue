@@ -79,8 +79,8 @@ const canAdvance = computed(() => {
   return true
 })
 
-async function selectParser(parserId: string) {
-  await upload.selectUploadType(parserId)
+async function selectUploadType(uploadTypeId: string) {
+  await upload.selectUploadType(uploadTypeId)
 }
 
 function changeFormat() {
@@ -141,12 +141,12 @@ async function onSave() {
 
     <template #body>
       <div class="max-w-5xl mx-auto p-4 sm:p-6">
-        <!-- State 1: Parser Selection (before wizard) -->
+        <!-- State 1: Upload Type selection (before wizard) -->
         <template v-if="!upload.selectedParserId.value">
-          <ParserSelector :upload-types="upload.uploadTypes.value" @select="selectParser" />
+          <ParserSelector :upload-types="upload.uploadTypes.value" @select="selectUploadType" />
         </template>
 
-        <!-- State 2: Upload Wizard (after parser selected) -->
+        <!-- State 2: Upload wizard (after Upload Type selection) -->
         <template v-else>
           <!-- Change format link -->
           <div class="mb-4">
