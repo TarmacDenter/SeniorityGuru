@@ -297,7 +297,20 @@ async function onSave() {
                 color="error"
                 variant="soft"
                 :title="upload.mapping.error.value"
-              />
+              >
+                <template #actions>
+                  <UButton
+                    v-if="upload.diagnosticAttemptId.value"
+                    size="sm"
+                    color="neutral"
+                    variant="outline"
+                    icon="i-lucide-download"
+                    @click="saveDiagnosticFile"
+                  >
+                    Save diagnostic file
+                  </UButton>
+                </template>
+              </UAlert>
               <UploadColumnMapper
                 :headers="upload.mapping.headers.value"
                 :column-ids="upload.mapping.columnIds.value"
