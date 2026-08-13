@@ -52,6 +52,7 @@ export interface FilePhaseOptions {
   mappingOptions: Ref<MappingOptions>
   autoDetectSucceeded: Ref<boolean>
   preparedSheet: Ref<PreparedSheet | null>
+  preparationIssues?: Ref<ImportIssue[]>
   progress: ProgressTracker
   onSheetChange: () => void
 }
@@ -79,6 +80,7 @@ export interface MappingPhaseOptions {
   extractedTitle: Ref<string | null>
   selectedParserId: Ref<string | null>
   preparedSheet: Ref<PreparedSheet | null>
+  preparationIssues?: Ref<ImportIssue[]>
   importAttemptId?: Ref<string | null>
   onMapped(entries: Partial<SeniorityEntry>[], issues: Map<number, ImportIssue[]>, sourceValues: Map<number, Record<string, unknown>>): Promise<void>
   onMetadataReady(effectiveDate: string | null, title: string | null): void

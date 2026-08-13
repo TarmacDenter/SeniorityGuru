@@ -18,7 +18,7 @@ export function _useFileIO(opts: FilePhaseOptions): FilePhase & { _reset: () => 
   const error = ref<string | null>(null)
   const headerRows = ref<string[][]>([])
   const sourceHeaders = ref<string[]>([])
-  const preparationIssues = ref<ImportIssue[]>([])
+  const preparationIssues = opts.preparationIssues ?? ref<ImportIssue[]>([])
 
   let decodedWorkbook: DecodedWorkbook | null = null
 

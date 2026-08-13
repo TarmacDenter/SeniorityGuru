@@ -106,6 +106,7 @@ export function _useColumnMapping(opts: MappingPhaseOptions): MappingPhase & { _
               createdAt: new Date().toISOString(),
               sourceSheet: opts.preparedSheet.value.sourceSheet,
               preparedSheet: opts.preparedSheet.value,
+              preparationIssues: opts.preparationIssues?.value ?? [],
               mappings: confirmedMappings,
               mappingPreferences: { columns, mappingOptions: mappingOptions.value },
               drafts: processed.drafts,
