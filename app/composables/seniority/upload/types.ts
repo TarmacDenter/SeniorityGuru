@@ -137,6 +137,7 @@ export interface ConfirmPhaseOptions {
 
 export interface SeniorityUpload {
   selectedParserId: Ref<string | null>
+  diagnosticAttemptId: Readonly<Ref<string | null>>
   uploadTypes: ComputedRef<readonly ImportPlugin[]>
   selectUploadType(id: string): Promise<void>
   clearUploadType(): void

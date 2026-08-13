@@ -2,6 +2,7 @@
 import type { StepperItem } from '@nuxt/ui'
 import type { DateValue } from '@internationalized/date'
 import { useSeniorityUpload } from '~/composables/seniority'
+import { useImportAttempts } from '~/composables/useImportAttempts'
 import { createLogger } from '~/utils/logger'
 
 const log = createLogger('upload-page')
@@ -11,6 +12,7 @@ definePageMeta({ layout: 'dashboard' })
 defineExpose({ onSave })
 
 const upload = useSeniorityUpload()
+const importAttempts = useImportAttempts()
 const toast = useToast()
 const files = ref<File | null>(null)
 const activeRowFilter = ref<'all' | 'errors' | 'estimated'>('all')
@@ -39,6 +41,19 @@ function toggleEstimatedOnly() {
 
 function clearRowFilter() {
   activeRowFilter.value = 'all'
+}
+
+function saveDiagnosticFile() {
+  const attemptId = upload.diagnosticAttemptId.value
+  if (!attemptId) return
+  const data = importAttempts.exportAttempt(attemptId)
+  if (!data) return
+  const url = URL.createObjectURL(new Blob([data], { type: 'application/json' }))
+  const link = document.createElement('a')
+  link.href = url
+  link.download = `seniority-guru-import-${attemptId}.json`
+  link.click()
+  URL.revokeObjectURL(url)
 }
 
 const stepOrder = ['upload', 'mapping', 'review', 'confirm'] as const
@@ -208,6 +223,16 @@ async function onSave() {
                 :title="upload.file.error.value"
               >
                 <template #actions>
+                  <UButton
+                    v-if="upload.diagnosticAttemptId.value"
+                    size="sm"
+                    color="neutral"
+                    variant="outline"
+                    icon="i-lucide-download"
+                    @click="saveDiagnosticFile"
+                  >
+                    Save diagnostic file
+                  </UButton>
                   <UButton
                     size="sm"
                     color="error"

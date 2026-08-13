@@ -155,6 +155,7 @@ export function useSeniorityUpload(): SeniorityUpload {
 
   return {
     selectedParserId,
+    diagnosticAttemptId: readonly(importAttemptId),
     uploadTypes,
     selectUploadType,
     clearUploadType,
