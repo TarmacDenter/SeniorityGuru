@@ -124,14 +124,11 @@ const columns: TableColumn<IndexedEntry>[] = [
 
       <template #errors-cell="{ row }">
         <div v-if="rowErrors.has(row.original._originalIndex)" class="flex items-center gap-1">
-          <UTooltip>
-            <UIcon name="i-lucide-alert-triangle" class="text-error" />
-            <template #text>
-              <ul class="list-disc pl-3 text-xs space-y-0.5">
-                <li v-for="(err, i) in rowErrors.get(row.original._originalIndex)" :key="i">{{ formatRowError(err) }}</li>
-              </ul>
-            </template>
-          </UTooltip>
+          <UIcon
+            name="i-lucide-alert-triangle"
+            class="text-error"
+            :title="rowErrors.get(row.original._originalIndex)?.map(formatRowError).join('\n')"
+          />
           <UButton
             v-if="pipelineIssueRows?.has(row.original._originalIndex)"
             size="xs"
@@ -142,12 +139,12 @@ const columns: TableColumn<IndexedEntry>[] = [
           >
             Keep values
           </UButton>
-          <UTooltip v-if="pipelineIssueRows?.has(row.original._originalIndex) && sourceValues?.has(row.original._originalIndex)">
-            <UIcon name="i-lucide-database" class="text-muted" />
-            <template #text>
-              <p class="max-w-md break-words text-xs">Source values: {{ Object.entries(sourceValues.get(row.original._originalIndex) ?? {}).map(([key, value]) => `${key}: ${value ?? ''}`).join(' · ') }}</p>
-            </template>
-          </UTooltip>
+          <UIcon
+            v-if="pipelineIssueRows?.has(row.original._originalIndex) && sourceValues?.has(row.original._originalIndex)"
+            name="i-lucide-database"
+            class="text-muted"
+            :title="`Source values: ${Object.entries(sourceValues.get(row.original._originalIndex) ?? {}).map(([key, value]) => `${key}: ${value ?? ''}`).join(' · ')}`"
+          />
         </div>
       </template>
 
