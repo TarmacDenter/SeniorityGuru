@@ -30,6 +30,7 @@ function createFileIO() {
     seniority_number: -1, employee_number: -1, seat: -1,
     base: -1, fleet: -1, name: -1, hire_date: -1, retire_date: -1,
   })
+  const mappingOptions = ref({ nameMode: 'single' as const, retireMode: 'direct' as const })
   const progress = _useProgressTracker()
   const onSheetChange = vi.fn()
 
@@ -42,6 +43,7 @@ function createFileIO() {
     syntheticNote,
     syntheticIndices,
     columnMap,
+    mappingOptions,
     autoDetectSucceeded,
     preparedSheet,
     progress,

@@ -44,7 +44,7 @@ const log = createLogger('upload:mapping')
 export function _useColumnMapping(opts: MappingPhaseOptions): MappingPhase & { _reset: () => void } {
   const userStore = useUserStore()
   const importAttemptsStore = useImportAttemptsStore()
-  const mappingOptions = ref<MappingOptions>({ ...DEFAULT_MAPPING_OPTIONS })
+  const mappingOptions = opts.mappingOptions
   const error = ref<string | null>(null)
 
   const sampleRows = computed(() => opts.rawRows.value.slice(0, 3))

@@ -26,6 +26,7 @@ function createMapping(overrides: Record<string, any> = {}) {
     hire_date: -1,
     retire_date: -1,
   })
+  const mappingOptions = ref<MappingOptions>({ nameMode: 'single', retireMode: 'direct' })
   const extractedEffectiveDate = ref<string | null>(null)
   const extractedTitle = ref<string | null>(null)
   const selectedParserId = ref<string | null>(null)
@@ -38,6 +39,7 @@ function createMapping(overrides: Record<string, any> = {}) {
     rawRows,
     rawHeaders,
     columnMap,
+    mappingOptions,
     progress,
     extractedEffectiveDate,
     extractedTitle,

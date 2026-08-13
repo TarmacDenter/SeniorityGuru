@@ -10,6 +10,7 @@ import { _useColumnMapping } from './_useColumnMapping'
 import { _useReview } from './_useReview'
 import { _useConfirm } from './_useConfirm'
 import { DEFAULT_COLUMN_MAP } from './defaults'
+import { DEFAULT_MAPPING_OPTIONS } from './defaults'
 import { useUserStore } from '~/stores/user'
 import { getImportPlugin, importPlugins } from '~/utils/import-pipeline/plugins/registry'
 
@@ -34,6 +35,7 @@ export function useSeniorityUpload(): SeniorityUpload {
   const autoDetectSucceeded = ref(false)
   const preparedSheet = ref<PreparedSheet | null>(null)
   const columnMap = ref<ColumnMap>({ ...DEFAULT_COLUMN_MAP })
+  const mappingOptions = ref({ ...DEFAULT_MAPPING_OPTIONS })
   const entries = ref<Partial<SeniorityEntry>[]>([])
   const rowErrors = shallowRef<Map<number, string[]>>(new Map())
   const pipelineIssues = shallowRef<Map<number, ImportIssue[]>>(new Map())
@@ -87,6 +89,7 @@ export function useSeniorityUpload(): SeniorityUpload {
     rawRows,
     rawHeaders,
     columnMap,
+    mappingOptions,
     progress,
     extractedEffectiveDate,
     extractedTitle,
@@ -120,6 +123,7 @@ export function useSeniorityUpload(): SeniorityUpload {
     syntheticNote,
     syntheticIndices,
     columnMap,
+    mappingOptions,
     autoDetectSucceeded,
     preparedSheet,
     progress,

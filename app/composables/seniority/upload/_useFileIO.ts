@@ -65,6 +65,7 @@ export function _useFileIO(opts: FilePhaseOptions): FilePhase & { _reset: () => 
         return [field, savedIndex >= 0 ? savedIndex : index]
       })) as ColumnMap
       opts.autoDetectSucceeded.value = isColumnMapComplete(opts.columnMap.value)
+      if (saved.mappingOptions) opts.mappingOptions.value = { ...opts.mappingOptions.value, ...saved.mappingOptions } as MappingOptions
     }
     if (result.issues.length > 0) {
       log.warn('Generic sheet preparation needs manual mapping', { issueKinds: result.issues.map(issue => issue.kind) })

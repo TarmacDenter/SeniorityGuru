@@ -45,6 +45,7 @@ export interface FilePhaseOptions {
   syntheticNote: Ref<string | null>
   syntheticIndices: Ref<Set<number>>
   columnMap: Ref<ColumnMap>
+  mappingOptions: Ref<MappingOptions>
   autoDetectSucceeded: Ref<boolean>
   preparedSheet: Ref<PreparedSheet | null>
   progress: ProgressTracker
@@ -68,6 +69,7 @@ export interface MappingPhaseOptions {
   rawRows: Ref<string[][]>
   rawHeaders: Ref<string[]>
   columnMap: Ref<ColumnMap>
+  mappingOptions: Ref<MappingOptions>
   progress: ProgressTracker
   extractedEffectiveDate: Ref<string | null>
   extractedTitle: Ref<string | null>
