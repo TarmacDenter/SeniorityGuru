@@ -33,7 +33,6 @@ export function useSeniorityUpload(): SeniorityUpload {
   const syntheticIndices = ref<Set<number>>(new Set())
   const autoDetectSucceeded = ref(false)
   const preparedSheet = ref<PreparedSheet | null>(null)
-  const preparationIssues = ref<ImportIssue[]>([])
   const columnMap = ref<ColumnMap>({ ...DEFAULT_COLUMN_MAP })
   const mappingOptions = ref({ ...DEFAULT_MAPPING_OPTIONS })
   const entries = ref<Partial<SeniorityEntry>[]>([])
@@ -87,7 +86,6 @@ export function useSeniorityUpload(): SeniorityUpload {
     syntheticIndices.value = new Set()
     autoDetectSucceeded.value = false
     preparedSheet.value = null
-    preparationIssues.value = []
     importAttemptId.value = null
     error.value = null
     review._reset()
@@ -105,7 +103,6 @@ export function useSeniorityUpload(): SeniorityUpload {
     extractedTitle,
     selectedParserId,
     preparedSheet,
-    preparationIssues,
     importAttemptId,
     async onMapped(mapped: Partial<SeniorityEntry>[], issues: Map<number, ImportIssue[]>) {
       entries.value = mapped

@@ -52,7 +52,6 @@ export interface FilePhaseOptions {
   mappingOptions: Ref<MappingOptions>
   autoDetectSucceeded: Ref<boolean>
   preparedSheet: Ref<PreparedSheet | null>
-  preparationIssues: Ref<ImportIssue[]>
   progress: ProgressTracker
   onSheetChange: () => void
 }
