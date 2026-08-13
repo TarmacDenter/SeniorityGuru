@@ -4,7 +4,7 @@ import { createLogger } from '~/utils/logger'
 import { decodeWorkbook } from '~/utils/import-pipeline/decode-workbook'
 import { getImportPlugin } from '~/utils/import-pipeline/plugins/registry'
 import { prepareImport } from '~/utils/import-pipeline/prepare-import'
-import type { DecodedWorkbook, PreparedSheet } from '~/utils/import-pipeline/types'
+import type { DecodedWorkbook, ImportIssue, PreparedSheet } from '~/utils/import-pipeline/types'
 import { useUserStore } from '~/stores/user'
 
 const log = createLogger('upload:file')
@@ -17,6 +17,7 @@ export function _useFileIO(opts: FilePhaseOptions): FilePhase & { _reset: () => 
   const selectedHeaderRow = ref(0)
   const error = ref<string | null>(null)
   const headerRows = ref<string[][]>([])
+  const preparationIssues = ref<ImportIssue[]>([])
 
   let decodedWorkbook: DecodedWorkbook | null = null
 
@@ -31,6 +32,7 @@ export function _useFileIO(opts: FilePhaseOptions): FilePhase & { _reset: () => 
   const autoDetected = computed(
     () => opts.autoDetectSucceeded.value,
   )
+  const excludedRowCount = computed(() => opts.preparedSheet.value?.rows.filter(row => row.included === false).length ?? 0)
 
   function applyPreparedSheet(preparedSheet: PreparedSheet, mappingSuggestions: Readonly<Partial<Record<keyof ColumnMap, string>>> = {}) {
     opts.preparedSheet.value = preparedSheet
@@ -56,6 +58,7 @@ export function _useFileIO(opts: FilePhaseOptions): FilePhase & { _reset: () => 
     headerRows.value = sourceSheet.rows.map(row => row.cells.map(cell => cell === null ? '' : String(cell)))
     selectedHeaderRow.value = headerRowIndex ?? plugin.suggestHeaderRow?.(sourceSheet) ?? 0
     const result = prepareImport({ plugin, sourceSheet, headerRowIndex: selectedHeaderRow.value })
+    preparationIssues.value = [...result.issues]
     applyPreparedSheet(result.preparedSheet, result.mappingSuggestions)
     const saved = (await userStore.getPreference('importMappings'))?.[plugin.id]
     if (saved) {
@@ -72,6 +75,14 @@ export function _useFileIO(opts: FilePhaseOptions): FilePhase & { _reset: () => 
     }
   }
 
+  function includeExcludedRows() {
+    if (!opts.preparedSheet.value) return
+    applyPreparedSheet({
+      ...opts.preparedSheet.value,
+      rows: opts.preparedSheet.value.rows.map(row => ({ ...row, included: true })),
+    })
+  }
+
   async function setFile(file: File | null) {
     fileName.value = ''
     sheetNames.value = []
@@ -80,6 +91,7 @@ export function _useFileIO(opts: FilePhaseOptions): FilePhase & { _reset: () => 
     headerRows.value = []
     selectedHeaderRow.value = 0
     error.value = null
+    preparationIssues.value = []
     opts.onSheetChange()
 
     if (!file) return
@@ -151,11 +163,14 @@ export function _useFileIO(opts: FilePhaseOptions): FilePhase & { _reset: () => 
     needsSheetSelection,
     hasData,
     autoDetected,
+    excludedRowCount,
+    preparationIssues: readonly(preparationIssues),
     error: readonly(error),
     setFile,
     selectSheet,
     selectHeaderRow,
     reprepare,
+    includeExcludedRows,
     _reset: reset,
   } as FilePhase & { _reset: () => void }
 }

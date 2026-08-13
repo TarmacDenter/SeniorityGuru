@@ -241,6 +241,26 @@ async function onSave() {
                 :title="`Loaded: ${upload.file.fileName.value}${upload.file.selectedSheet.value ? ` — ${upload.file.selectedSheet.value}` : ''}`"
                 :description="`${upload.mapping.headers.value.length} columns detected`"
               />
+              <UAlert
+                v-if="upload.file.preparationIssues?.value?.length"
+                icon="i-lucide-info"
+                color="warning"
+                variant="soft"
+                title="Preparation needs your review"
+                :description="upload.file.preparationIssues?.value?.map(issue => issue.message).join(' ')"
+              />
+              <UAlert
+                v-if="upload.file.excludedRowCount?.value"
+                icon="i-lucide-list-restart"
+                color="neutral"
+                variant="soft"
+                :title="`${upload.file.excludedRowCount?.value} nonblank row${upload.file.excludedRowCount?.value === 1 ? '' : 's'} excluded by preparation`"
+                description="These rows remain available. Include them if they contain seniority entries."
+              >
+                <template #actions>
+                  <UButton size="xs" color="neutral" @click="upload.file.includeExcludedRows">Include excluded rows</UButton>
+                </template>
+              </UAlert>
             </div>
 
             <!-- Step 2: Match Columns -->

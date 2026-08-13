@@ -29,12 +29,15 @@ export interface FilePhase {
   needsSheetSelection: ComputedRef<boolean>
   hasData: ComputedRef<boolean>
   autoDetected: ComputedRef<boolean>
+  excludedRowCount: ComputedRef<number>
+  preparationIssues: Readonly<Ref<ImportIssue[]>>
   error: Readonly<Ref<string | null>>
 
   setFile(file: File | null): Promise<void>
   selectSheet(name: string): Promise<void>
   selectHeaderRow(index: number): void
   reprepare(): Promise<void>
+  includeExcludedRows(): void
 }
 
 export interface FilePhaseOptions {
@@ -49,6 +52,7 @@ export interface FilePhaseOptions {
   mappingOptions: Ref<MappingOptions>
   autoDetectSucceeded: Ref<boolean>
   preparedSheet: Ref<PreparedSheet | null>
+  preparationIssues: Ref<ImportIssue[]>
   progress: ProgressTracker
   onSheetChange: () => void
 }
