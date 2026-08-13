@@ -9,8 +9,7 @@ import { _useFileIO } from './_useFileIO'
 import { _useColumnMapping } from './_useColumnMapping'
 import { _useReview } from './_useReview'
 import { _useConfirm } from './_useConfirm'
-import { DEFAULT_COLUMN_MAP } from './defaults'
-import { DEFAULT_MAPPING_OPTIONS } from './defaults'
+import { DEFAULT_COLUMN_MAP, DEFAULT_MAPPING_OPTIONS } from './defaults'
 import { useUserStore } from '~/stores/user'
 import { getImportPlugin, importPlugins } from '~/utils/import-pipeline/plugins/registry'
 
@@ -49,8 +48,6 @@ export function useSeniorityUpload(): SeniorityUpload {
   void userStore.getPreference('lastUploadType').then((id) => {
     if (id && getImportPlugin(id)) preferredUploadType.value = id
   }).catch(() => {})
-
-  let file: ReturnType<typeof _useFileIO>
 
   async function selectUploadType(id: string) {
     if (!getImportPlugin(id)) return
@@ -127,7 +124,7 @@ export function useSeniorityUpload(): SeniorityUpload {
     },
   })
 
-  file = _useFileIO({
+  const file = _useFileIO({
     selectedParserId,
     rawHeaders,
     rawRows,
