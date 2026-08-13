@@ -23,6 +23,7 @@ export interface FilePhase {
   fileName: Readonly<Ref<string>>
   sheetNames: Readonly<Ref<string[]>>
   selectedSheet: Readonly<Ref<string | null>>
+  headerRows: Readonly<Ref<string[][]>>
   needsSheetSelection: ComputedRef<boolean>
   hasData: ComputedRef<boolean>
   autoDetected: ComputedRef<boolean>
@@ -30,6 +31,7 @@ export interface FilePhase {
 
   setFile(file: File | null): Promise<void>
   selectSheet(name: string): void
+  selectHeaderRow(index: number): void
 }
 
 export interface FilePhaseOptions {

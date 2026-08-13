@@ -259,6 +259,15 @@ async function onSave() {
                 @update:column-map="upload.mapping.columnMap.value = $event"
                 @update:mapping-options="upload.mapping.mappingOptions.value = $event"
               />
+              <UFormField v-if="upload.file.headerRows.value.length > 1" label="Column heading row">
+                <USelectMenu
+                  :model-value="0"
+                  :items="upload.file.headerRows.value.map((row, index) => ({ label: `Row ${index + 1}: ${row.filter(Boolean).slice(0, 3).join(' · ') || 'blank'}`, value: index }))"
+                  value-key="value"
+                  class="w-full"
+                  @update:model-value="upload.file.selectHeaderRow($event)"
+                />
+              </UFormField>
             </div>
 
             <!-- Step 3: Review & Validate -->

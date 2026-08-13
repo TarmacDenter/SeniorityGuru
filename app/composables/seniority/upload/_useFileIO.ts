@@ -15,6 +15,7 @@ export function _useFileIO(opts: FilePhaseOptions): FilePhase & { _reset: () => 
   const sheetNames = ref<string[]>([])
   const selectedSheet = ref<string | null>(null)
   const error = ref<string | null>(null)
+  const headerRows = ref<string[][]>([])
 
   let workbookBuffer: ArrayBuffer | null = null
   let decodedWorkbook: DecodedWorkbook | null = null
@@ -85,10 +86,7 @@ export function _useFileIO(opts: FilePhaseOptions): FilePhase & { _reset: () => 
   }
 
   function applyPreparedSheet(preparedSheet: PreparedSheet) {
-    opts.preparedSheet.value = {
-      ...preparedSheet,
-      rows: preparedSheet.rows.slice(1),
-    }
+    opts.preparedSheet.value = preparedSheet
     opts.rawHeaders.value = preparedSheet.columns.map(column => column.label)
     opts.rawRows.value = opts.preparedSheet.value.rows.map(row =>
       preparedSheet.columns.map(column => String(row.cells[column.id] ?? '')),
@@ -100,7 +98,8 @@ export function _useFileIO(opts: FilePhaseOptions): FilePhase & { _reset: () => 
   function processGenericSheet(workbook: DecodedWorkbook, sheetName: string) {
     const sourceSheet = workbook.sheets.find(sheet => sheet.name === sheetName)
     if (!sourceSheet) return
-    const result = prepareImport({ plugin: genericImportPlugin, sourceSheet })
+    headerRows.value = sourceSheet.rows.map(row => row.cells.map(cell => cell === null ? '' : String(cell)))
+    const result = prepareImport({ plugin: genericImportPlugin, sourceSheet, headerRowIndex: 0 })
     applyPreparedSheet(result.preparedSheet)
     if (result.issues.length > 0) {
       log.warn('Generic sheet preparation needs manual mapping', { issueKinds: result.issues.map(issue => issue.kind) })
@@ -113,6 +112,7 @@ export function _useFileIO(opts: FilePhaseOptions): FilePhase & { _reset: () => 
     selectedSheet.value = null
     workbookBuffer = null
     decodedWorkbook = null
+    headerRows.value = []
     error.value = null
     opts.onSheetChange()
 
@@ -197,12 +197,22 @@ export function _useFileIO(opts: FilePhaseOptions): FilePhase & { _reset: () => 
     processSheet(workbook, name)
   }
 
+  function selectHeaderRow(index: number) {
+    if (opts.selectedParserId.value !== 'generic' || !decodedWorkbook || !selectedSheet.value) return
+    const sourceSheet = decodedWorkbook.sheets.find(sheet => sheet.name === selectedSheet.value)
+    if (!sourceSheet || index < 0 || index >= sourceSheet.rows.length) return
+    opts.onSheetChange()
+    const result = prepareImport({ plugin: genericImportPlugin, sourceSheet, headerRowIndex: index })
+    applyPreparedSheet(result.preparedSheet)
+  }
+
   function reset() {
     fileName.value = ''
     sheetNames.value = []
     selectedSheet.value = null
     workbookBuffer = null
     decodedWorkbook = null
+    headerRows.value = []
     error.value = null
   }
 
@@ -210,12 +220,14 @@ export function _useFileIO(opts: FilePhaseOptions): FilePhase & { _reset: () => 
     fileName: readonly(fileName),
     sheetNames: readonly(sheetNames),
     selectedSheet: readonly(selectedSheet),
+    headerRows: readonly(headerRows),
     needsSheetSelection,
     hasData,
     autoDetected,
     error: readonly(error),
     setFile,
     selectSheet,
+    selectHeaderRow,
     _reset: reset,
   } as FilePhase & { _reset: () => void }
 }
