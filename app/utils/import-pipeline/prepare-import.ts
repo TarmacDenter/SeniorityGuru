@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { IMPORT_FIELDS } from './fields'
 import type {
   ImportPlugin,
   PrepareImportResult,
@@ -8,16 +9,7 @@ import type {
   SourceSheet,
 } from './types'
 
-const importFieldSchema = z.enum([
-  'seniority_number',
-  'employee_number',
-  'name',
-  'seat',
-  'base',
-  'fleet',
-  'hire_date',
-  'retire_date',
-])
+const importFieldSchema = z.enum(IMPORT_FIELDS)
 
 const preparationPatchSchema = z.object({
   columns: z.array(z.object({

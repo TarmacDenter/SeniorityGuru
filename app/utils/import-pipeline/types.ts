@@ -1,3 +1,5 @@
+import type { ImportField } from './fields'
+
 /** A decoded spreadsheet value retained by the import pipeline. */
 export type SourceCellValue = string | number | boolean | null
 
@@ -33,15 +35,7 @@ export type DecodeWorkbookResult =
   | { readonly ok: true; readonly workbook: DecodedWorkbook }
   | { readonly ok: false; readonly error: DecodeError }
 
-export type ImportField =
-  | 'seniority_number'
-  | 'employee_number'
-  | 'name'
-  | 'seat'
-  | 'base'
-  | 'fleet'
-  | 'hire_date'
-  | 'retire_date'
+export type { ImportField } from './fields'
 
 export interface PreparedColumn {
   readonly id: string

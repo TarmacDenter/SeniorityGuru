@@ -1,9 +1,7 @@
 import type { ImportField, PreparedColumn, SourceColumn } from '../types'
+import { IMPORT_FIELD_LABELS } from '../fields'
 
-export const FIELD_LABELS: Readonly<Record<ImportField, string>> = {
-  seniority_number: 'Seniority Number', employee_number: 'Employee Number', name: 'Name',
-  seat: 'Seat', base: 'Base', fleet: 'Fleet', hire_date: 'Hire Date', retire_date: 'Retire Date',
-}
+export const FIELD_LABELS = IMPORT_FIELD_LABELS
 
 /** Normalizes complete spreadsheet headings without attempting fuzzy matching. */
 export function normalizeHeader(value: string): string {
