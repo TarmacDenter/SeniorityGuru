@@ -34,6 +34,14 @@ const entryPatchSchema = z.object({
   issues: z.array(importIssueSchema).optional(),
 }).strict()
 
+function deepFreeze<T>(value: T): T {
+  if (value && typeof value === 'object' && !Object.isFrozen(value)) {
+    Object.freeze(value)
+    for (const nested of Object.values(value)) deepFreeze(nested)
+  }
+  return value
+}
+
 function text(value: unknown): string | undefined {
   if (value === null || value === undefined) return undefined
   const result = String(value).trim()
@@ -125,7 +133,7 @@ export async function processConfirmedMappings({
 
     if (plugin?.transformMappedEntry) {
       try {
-        const patch = entryPatchSchema.parse(plugin.transformMappedEntry({ draft, preparedRow }))
+        const patch = entryPatchSchema.parse(plugin.transformMappedEntry(deepFreeze({ draft, preparedRow })))
         entry = { ...entry, ...(patch.entry ?? {}) }
         issues = [...issues, ...(patch.issues ?? [])]
       } catch {

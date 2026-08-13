@@ -93,4 +93,57 @@ describe('processConfirmedMappings', () => {
     })
     expect(result.drafts[1]!.entry.base).toBe('JFK')
   })
+
+  it('preserves a row when a transformation returns an invalid patch', async () => {
+    const result = await processConfirmedMappings({
+      preparedSheet: {
+        ...preparedSheet,
+        rows: [
+          preparedSheet.rows[0]!,
+          { ...preparedSheet.rows[0]!, sourceRowId: 'source:row:2' },
+        ],
+      },
+      mappings: {
+        base: { kind: 'column', columnId: 'base' },
+      },
+      plugin: {
+        id: 'test', label: 'Test', description: 'Test plugin', icon: 'i-lucide-test', formatDescription: 'Test format.', prepare: () => ({}),
+        transformMappedEntry: ({ draft }) => draft.sourceRowId === 'source:row:1'
+          ? { entry: { unknown_field: 'not allowed' } }
+          : { entry: { base: 'JFK' } },
+      },
+    })
+
+    expect(result.drafts[0]!.entry.base).toBe('BOS')
+    expect(result.drafts[0]!.issues[0]!.kind).toBe('transformation-failed')
+    expect(result.drafts[1]!.entry.base).toBe('JFK')
+  })
+
+  it('does not allow a plugin to mutate transformation inputs', async () => {
+    const result = await processConfirmedMappings({
+      preparedSheet,
+      mappings: { base: { kind: 'column', columnId: 'base' } },
+      plugin: {
+        id: 'test', label: 'Test', description: 'Test plugin', icon: 'i-lucide-test', formatDescription: 'Test format.', prepare: () => ({}),
+        transformMappedEntry: ({ draft }) => {
+          ;(draft.entry as Record<string, unknown>).base = 'MUTATED'
+          return {}
+        },
+      },
+    })
+
+    expect(result.drafts[0]!.entry.base).toBe('BOS')
+    expect(result.drafts[0]!.issues[0]!.kind).toBe('transformation-failed')
+  })
+
+  it('rejects an already-cancelled request before processing rows', async () => {
+    const controller = new AbortController()
+    controller.abort()
+
+    await expect(processConfirmedMappings({
+      preparedSheet,
+      mappings: {},
+      signal: controller.signal,
+    })).rejects.toMatchObject({ name: 'AbortError' })
+  })
 })
