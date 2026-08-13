@@ -217,7 +217,7 @@ const sections = [
           <USeparator class="mb-4" />
           <div class="space-y-6 text-sm text-[--ui-text]">
             <p>
-              SeniorityGuru accepts CSV and Excel files (.csv, .xlsx, .xls). Choose the parser that
+              SeniorityGuru accepts CSV and Excel files (.csv, .xlsx, .xls). Choose the Upload Type that
               matches your airline when uploading, or use the generic importer for any spreadsheet.
             </p>
 
@@ -228,7 +228,7 @@ const sections = [
                 Delta Air Lines (Native Support)
               </h3>
               <p class="text-[--ui-text-muted]">
-                The Delta parser auto-detects and processes PBS seniority list exports. It handles:
+                The Delta Upload Type processes PBS seniority list exports. It handles:
               </p>
               <ul class="list-disc list-inside space-y-1 text-[--ui-text-muted]">
                 <li>
@@ -355,7 +355,7 @@ const sections = [
               variant="soft"
               icon="i-lucide-info"
               title="Parser contributions welcome"
-              description="If your airline's format isn't supported natively, we accept community-contributed parsers. See the CONTRIBUTING guide on GitHub for details."
+              description="If your airline's format isn't supported natively, we accept community-contributed Import Plugins. See the CONTRIBUTING guide on GitHub for details."
             />
           </div>
         </section>

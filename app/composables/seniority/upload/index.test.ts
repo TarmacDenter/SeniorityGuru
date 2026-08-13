@@ -16,16 +16,6 @@ vi.mock('xlsx', () => ({
   utils: { sheet_to_json: vi.fn() },
 }))
 
-vi.mock('~/utils/parsers/registry', () => ({
-  getParser: () => ({
-    id: 'generic',
-    parse: vi.fn().mockReturnValue({
-      rows: [],
-      metadata: { effectiveDate: null, title: null },
-    }),
-  }),
-}))
-
 describe('useSeniorityUpload (orchestrator)', () => {
   beforeEach(() => {
     mockStore.addList.mockReset()

@@ -253,7 +253,7 @@ const demoWaveBuckets = computed(() => demoWaveData[demoQual.value])
 
 const config = useRuntimeConfig()
 const feedbackEmail = config.public.feedbackEmail as string
-const parserRequestMailto = `mailto:${feedbackEmail}?subject=${encodeURIComponent('SeniorityGuru: Airline Parser Request')}`
+const parserRequestMailto = `mailto:${feedbackEmail}?subject=${encodeURIComponent('SeniorityGuru: Airline Import Plugin Request')}`
 
 const demoEntering = ref(false)
 
@@ -338,7 +338,7 @@ async function enterDemo() {
           </p>
         </div>
 
-        <!-- Airline parser cards -->
+        <!-- Airline Import Plugin cards -->
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-3xl mx-auto mb-10">
           <UCard>
             <div class="flex flex-col gap-3">
@@ -348,7 +348,7 @@ async function enterDemo() {
                 </div>
                 <div>
                   <h3 class="font-semibold">Delta Air Lines</h3>
-                  <p class="text-xs text-muted">Native parser</p>
+                  <p class="text-xs text-muted">Native Import Plugin</p>
                 </div>
               </div>
               <ul class="text-sm text-muted space-y-1.5">
@@ -477,7 +477,7 @@ async function enterDemo() {
         <div class="max-w-3xl mx-auto text-center">
           <h3 class="font-semibold mb-2">Your airline not listed?</h3>
           <p class="text-sm text-muted mb-4">
-            This project is open source. Request a parser for your airline, or contribute one yourself.
+            This project is open source. Request an Import Plugin for your airline, or contribute one yourself.
           </p>
           <div class="flex flex-wrap justify-center gap-3 mb-3">
             <UButton
@@ -505,7 +505,7 @@ async function enterDemo() {
               target="_blank"
               class="text-primary hover:underline"
             >contributor guide</a>
-            to add a parser for your airline.
+            to add an Import Plugin for your airline.
           </p>
         </div>
       </UContainer>
