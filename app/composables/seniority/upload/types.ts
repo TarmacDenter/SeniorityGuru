@@ -93,6 +93,8 @@ export interface ReviewPhase {
   deleteRow(rowIndex: number): void
   deleteErrorRows(): number
   insertRowAt(rowIndex: number): void
+  acknowledgePipelineIssues(rowIndex: number): void
+  pipelineIssueRows: ComputedRef<Set<number>>
   toValidatedEntries(): SeniorityEntry[]
   validate(): Promise<void>
 }

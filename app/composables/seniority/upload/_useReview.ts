@@ -4,6 +4,7 @@ import { SeniorityEntrySchema } from '~/utils/schemas/seniority-list'
 import { computeStructuralIssues, type ValidationIssue } from '~/utils/validate-entries'
 import { BATCH_SIZE } from '~/utils/parse-spreadsheet'
 import { createLogger } from '~/utils/logger'
+import type { ImportIssue } from '~/utils/import-pipeline/types'
 
 const log = createLogger('upload:review')
 
@@ -34,6 +35,7 @@ function isStructuralMessage(raw: string): boolean {
 
 export function _useReview(opts: ReviewPhaseOptions): ReviewPhase & { _reset: () => void } {
   const errorCount = computed(() => opts.rowErrors.value.size)
+  const pipelineIssueRows = computed(() => new Set(opts.pipelineIssues.value.keys()))
 
   const canAdvance = computed(
     () => errorCount.value === 0 && opts.entries.value.length > 0,
@@ -143,6 +145,7 @@ export function _useReview(opts: ReviewPhaseOptions): ReviewPhase & { _reset: ()
       else if (idx > rowIndex) reindexed.set(idx - 1, errs)
     })
     opts.rowErrors.value = reindexed
+    opts.pipelineIssues.value = reindexPipelineIssues(rowIndex, -1)
 
     revalidateStructural()
   }
@@ -184,6 +187,7 @@ export function _useReview(opts: ReviewPhaseOptions): ReviewPhase & { _reset: ()
     }
 
     opts.rowErrors.value = reindexed
+    opts.pipelineIssues.value = reindexPipelineIssues(rowIndex, 1)
 
     revalidateStructural()
   }
@@ -193,6 +197,14 @@ export function _useReview(opts: ReviewPhaseOptions): ReviewPhase & { _reset: ()
     if (errorIndices.size === 0) return 0
     const count = errorIndices.size
     opts.entries.value = opts.entries.value.filter((_, i) => !errorIndices.has(i))
+
+    const survivingIssues = new Map<number, ImportIssue[]>()
+    opts.pipelineIssues.value.forEach((issues, index) => {
+      if (errorIndices.has(index)) return
+      const removedBefore = [...errorIndices].filter(errorIndex => errorIndex < index).length
+      survivingIssues.set(index - removedBefore, issues)
+    })
+    opts.pipelineIssues.value = survivingIssues
 
     // Renumber surviving entries to keep the sequence contiguous
     opts.entries.value.forEach((entry, i) => {
@@ -204,6 +216,23 @@ export function _useReview(opts: ReviewPhaseOptions): ReviewPhase & { _reset: ()
     opts.rowErrors.value = new Map()
     revalidateStructural()
     return count
+  }
+
+  function reindexPipelineIssues(rowIndex: number, offset: 1 | -1): Map<number, ImportIssue[]> {
+    const reindexed = new Map<number, ImportIssue[]>()
+    opts.pipelineIssues.value.forEach((issues, index) => {
+      if (offset === -1 && index === rowIndex) return
+      reindexed.set(index < rowIndex ? index : index + offset, issues)
+    })
+    return reindexed
+  }
+
+  function acknowledgePipelineIssues(rowIndex: number) {
+    if (!opts.pipelineIssues.value.has(rowIndex)) return
+    const remaining = new Map(opts.pipelineIssues.value)
+    remaining.delete(rowIndex)
+    opts.pipelineIssues.value = remaining
+    void validate()
   }
 
   function reset() {
@@ -231,11 +260,13 @@ export function _useReview(opts: ReviewPhaseOptions): ReviewPhase & { _reset: ()
     errorCount,
     syntheticNote: opts.syntheticNote,
     syntheticIndices: opts.syntheticIndices,
+    pipelineIssueRows,
     canAdvance,
     updateCell,
     deleteRow,
     deleteErrorRows,
     insertRowAt,
+    acknowledgePipelineIssues,
     toValidatedEntries,
     validate,
     _reset: reset,

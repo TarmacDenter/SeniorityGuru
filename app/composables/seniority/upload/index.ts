@@ -141,6 +141,8 @@ export function useSeniorityUpload(): SeniorityUpload {
 
   return {
     selectedParserId,
+    uploadTypes,
+    selectUploadType,
     file,
     mapping,
     review,

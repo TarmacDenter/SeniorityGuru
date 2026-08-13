@@ -368,9 +368,11 @@ async function onSave() {
                 :show-errors-only="showErrorsOnly"
                 :show-estimated-only="showEstimatedOnly"
                 :estimated-indices="upload.review.syntheticIndices.value"
+                :pipeline-issue-rows="upload.review.pipelineIssueRows?.value"
                 @update-cell="upload.review.updateCell"
                 @delete-row="upload.review.deleteRow"
                 @insert-row="upload.review.insertRowAt"
+                @acknowledge-pipeline-issues="upload.review.acknowledgePipelineIssues"
               />
             </div>
 
