@@ -4,6 +4,7 @@ import { applyColumnMapAsync } from '~/utils/parse-spreadsheet'
 import { createLogger } from '~/utils/logger'
 import { DEFAULT_COLUMN_MAP, DEFAULT_MAPPING_OPTIONS } from './defaults'
 import { processConfirmedMappings } from '~/utils/import-pipeline/process-confirmed-mappings'
+import { getImportPlugin } from '~/utils/import-pipeline/plugins/registry'
 import type { ConfirmedMappings, PreparedColumn } from '~/utils/import-pipeline/types'
 
 function toConfirmedMappings(
@@ -62,10 +63,12 @@ export function _useColumnMapping(opts: MappingPhaseOptions): MappingPhase & { _
     try {
       opts.progress.report('mapping', 0, opts.rawRows.value.length)
 
-      const mapped = opts.selectedParserId.value === 'generic' && opts.preparedSheet.value
+      const plugin = getImportPlugin(opts.selectedParserId.value ?? '')
+      const mapped = plugin && opts.preparedSheet.value
         ? (await processConfirmedMappings({
             preparedSheet: opts.preparedSheet.value,
             mappings: toConfirmedMappings(opts.columnMap.value, mappingOptions.value, opts.rawHeaders.value, opts.preparedSheet.value.columns),
+            plugin,
           })).drafts.map(draft => draft.entry)
         : await applyColumnMapAsync(
             opts.rawRows.value,

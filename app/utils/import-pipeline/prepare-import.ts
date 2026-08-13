@@ -25,6 +25,7 @@ const preparationPatchSchema = z.object({
     label: z.string().min(1),
     sourceColumnId: z.string().min(1).optional(),
   })).optional(),
+  cellValues: z.record(z.string().min(1), z.record(z.string().min(1), z.union([z.string(), z.number(), z.boolean(), z.null()]))).optional(),
   mappingSuggestions: z.record(importFieldSchema, z.string().min(1)).optional(),
   issues: z.array(z.object({
     kind: z.enum(['ambiguous-alias', 'preparation-failed', 'transformation-failed', 'validation-failed']),
@@ -37,6 +38,9 @@ const importPluginSchema = z.object({
   id: z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, 'Import plugin id must be a permanent lowercase slug.'),
   label: z.string().min(1),
   description: z.string().min(1),
+  icon: z.string().min(1),
+  formatDescription: z.string().min(1),
+  suggestHeaderRow: z.function().optional(),
   prepare: z.function(),
   transformMappedEntry: z.function().optional(),
 }).strict()
@@ -67,7 +71,8 @@ function applyPatch(sourceSheet: SourceSheet, patch: PreparationPatch): Prepared
       const cells: Record<string, typeof row.cells[number]> = {}
       for (const [index, columnId] of sourceColumnIds.entries()) cells[columnId] = row.cells[index] ?? null
       for (const column of patch.columns ?? []) {
-        cells[column.id] = column.sourceColumnId ? cells[column.sourceColumnId] ?? null : null
+        cells[column.id] = patch.cellValues?.[column.id]?.[row.id]
+          ?? (column.sourceColumnId ? cells[column.sourceColumnId] ?? null : null)
       }
       return { sourceRowId: row.id, cells }
     }),

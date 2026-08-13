@@ -1,10 +1,9 @@
 import * as XLSX from 'xlsx'
 import type { FilePhase, FilePhaseOptions } from './types'
 import { parseSpreadsheetData, autoDetectColumnMap, isColumnMapComplete } from '~/utils/parse-spreadsheet'
-import { getParser } from '~/utils/parsers/registry'
 import { createLogger } from '~/utils/logger'
 import { decodeWorkbook } from '~/utils/import-pipeline/decode-workbook'
-import { genericImportPlugin } from '~/utils/import-pipeline/plugins/generic'
+import { getImportPlugin } from '~/utils/import-pipeline/plugins/registry'
 import { prepareImport } from '~/utils/import-pipeline/prepare-import'
 import type { DecodedWorkbook, PreparedSheet } from '~/utils/import-pipeline/types'
 
@@ -96,12 +95,14 @@ export function _useFileIO(opts: FilePhaseOptions): FilePhase & { _reset: () => 
     opts.autoDetectSucceeded.value = isColumnMapComplete(opts.columnMap.value)
   }
 
-  function processGenericSheet(workbook: DecodedWorkbook, sheetName: string) {
+  function processImportSheet(workbook: DecodedWorkbook, sheetName: string) {
     const sourceSheet = workbook.sheets.find(sheet => sheet.name === sheetName)
     if (!sourceSheet) return
+    const plugin = getImportPlugin(opts.selectedParserId.value ?? '')
+    if (!plugin) return
     headerRows.value = sourceSheet.rows.map(row => row.cells.map(cell => cell === null ? '' : String(cell)))
-    selectedHeaderRow.value = 0
-    const result = prepareImport({ plugin: genericImportPlugin, sourceSheet, headerRowIndex: 0 })
+    selectedHeaderRow.value = plugin.suggestHeaderRow?.(sourceSheet) ?? 0
+    const result = prepareImport({ plugin, sourceSheet, headerRowIndex: selectedHeaderRow.value })
     applyPreparedSheet(result.preparedSheet)
     if (result.issues.length > 0) {
       log.warn('Generic sheet preparation needs manual mapping', { issueKinds: result.issues.map(issue => issue.kind) })
@@ -125,7 +126,7 @@ export function _useFileIO(opts: FilePhaseOptions): FilePhase & { _reset: () => 
     opts.progress.enter('reading')
 
     try {
-      if (opts.selectedParserId.value === 'generic') {
+      if (getImportPlugin(opts.selectedParserId.value ?? '')) {
         const decoded = await decodeWorkbook(file)
         if (!decoded.ok) {
           error.value = decoded.error.message
@@ -136,7 +137,7 @@ export function _useFileIO(opts: FilePhaseOptions): FilePhase & { _reset: () => 
         if (decoded.workbook.sheetNames.length === 1) {
           const onlySheet = decoded.workbook.sheetNames[0]!
           selectedSheet.value = onlySheet
-          processGenericSheet(decoded.workbook, onlySheet)
+          processImportSheet(decoded.workbook, onlySheet)
         }
         return
       }
@@ -179,11 +180,11 @@ export function _useFileIO(opts: FilePhaseOptions): FilePhase & { _reset: () => 
   }
 
   function selectSheet(name: string) {
-    if (opts.selectedParserId.value === 'generic' && decodedWorkbook) {
+    if (getImportPlugin(opts.selectedParserId.value ?? '') && decodedWorkbook) {
       if (!decodedWorkbook.sheetNames.includes(name)) return
       opts.onSheetChange()
       selectedSheet.value = name
-      processGenericSheet(decodedWorkbook, name)
+      processImportSheet(decodedWorkbook, name)
       return
     }
     if (!workbookBuffer) return
@@ -201,12 +202,13 @@ export function _useFileIO(opts: FilePhaseOptions): FilePhase & { _reset: () => 
   }
 
   function selectHeaderRow(index: number) {
-    if (opts.selectedParserId.value !== 'generic' || !decodedWorkbook || !selectedSheet.value) return
+    const plugin = getImportPlugin(opts.selectedParserId.value ?? '')
+    if (!plugin || !decodedWorkbook || !selectedSheet.value) return
     const sourceSheet = decodedWorkbook.sheets.find(sheet => sheet.name === selectedSheet.value)
     if (!sourceSheet || index < 0 || index >= sourceSheet.rows.length) return
     opts.onSheetChange()
     selectedHeaderRow.value = index
-    const result = prepareImport({ plugin: genericImportPlugin, sourceSheet, headerRowIndex: index })
+    const result = prepareImport({ plugin, sourceSheet, headerRowIndex: index })
     applyPreparedSheet(result.preparedSheet)
   }
 

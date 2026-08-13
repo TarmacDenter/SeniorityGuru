@@ -2,7 +2,7 @@
 import type { StepperItem } from '@nuxt/ui'
 import type { DateValue } from '@internationalized/date'
 import { useSeniorityUpload } from '~/composables/seniority'
-import { parsers } from '~/utils/parsers/registry'
+import { importPlugins } from '~/utils/import-pipeline/plugins/registry'
 import { createLogger } from '~/utils/logger'
 
 const log = createLogger('upload-page')
@@ -142,7 +142,7 @@ async function onSave() {
       <div class="max-w-5xl mx-auto p-4 sm:p-6">
         <!-- State 1: Parser Selection (before wizard) -->
         <template v-if="!upload.selectedParserId.value">
-          <ParserSelector :parsers="parsers" @select="selectParser" />
+          <ParserSelector :parsers="importPlugins" @select="selectParser" />
         </template>
 
         <!-- State 2: Upload Wizard (after parser selected) -->

@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import type { PreParser } from '~/utils/parsers/types'
+import type { ImportPlugin } from '~/utils/import-pipeline/types'
 
 const props = defineProps<{
-  parsers: readonly PreParser[]
+  parsers: readonly ImportPlugin[]
 }>()
 
 const emit = defineEmits<{
@@ -13,10 +13,10 @@ const config = useRuntimeConfig()
 const feedbackEmail = config.public.feedbackEmail as string
 const mailtoHref = `mailto:${feedbackEmail}?subject=${encodeURIComponent('SeniorityGuru: Airline Parser Request')}`
 
-const infoParser = ref<PreParser | null>(null)
+const infoParser = ref<ImportPlugin | null>(null)
 const showInfoModal = ref(false)
 
-function openInfo(parser: PreParser) {
+function openInfo(parser: ImportPlugin) {
   infoParser.value = parser
   showInfoModal.value = true
 }

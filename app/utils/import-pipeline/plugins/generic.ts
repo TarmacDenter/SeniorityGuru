@@ -64,5 +64,7 @@ export const genericImportPlugin: ImportPlugin = defineImportPlugin({
   id: 'generic',
   label: 'Generic spreadsheet',
   description: 'Map columns from a standard CSV, XLSX, or XLS spreadsheet.',
+  icon: 'i-lucide-sheet',
+  formatDescription: 'Use this option for a spreadsheet with recognizable pilot columns. You can match every column manually.',
   prepare,
 })

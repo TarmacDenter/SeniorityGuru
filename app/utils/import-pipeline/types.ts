@@ -68,6 +68,8 @@ export interface ImportIssue {
 
 export interface PreparationPatch {
   readonly columns?: readonly PreparedColumn[]
+  /** Values for derived prepared columns, keyed by prepared column and source row ID. */
+  readonly cellValues?: Readonly<Record<string, Readonly<Record<string, SourceCellValue>>>>
   readonly mappingSuggestions?: Readonly<Partial<Record<ImportField, string>>>
   readonly issues?: readonly ImportIssue[]
 }
@@ -76,6 +78,10 @@ export interface ImportPlugin {
   readonly id: string
   readonly label: string
   readonly description: string
+  readonly icon: string
+  readonly formatDescription: string
+  /** Returns the source row that should provide headings, when the format has a preamble. */
+  readonly suggestHeaderRow?: (sourceSheet: SourceSheet) => number | undefined
   readonly prepare: (sourceSheet: SourceSheet) => PreparationPatch
   readonly transformMappedEntry?: (input: MappedEntryTransformationInput) => EntryPatch
 }
