@@ -1,9 +1,8 @@
 import { parseDate } from '@internationalized/date'
 import type { SeniorityEntry } from '~/utils/schemas/seniority-list'
 import { todayISO } from '~/utils/date'
-import type { ColumnMap } from '~/utils/parse-spreadsheet'
 import type { ImportIssue, PreparedSheet } from '~/utils/import-pipeline/types'
-import type { SeniorityUpload } from './types'
+import type { SeniorityUpload, UploadColumnMap } from './types'
 import { _useProgressTracker } from './_useProgressTracker'
 import { _useFileIO } from './_useFileIO'
 import { _useColumnMapping } from './_useColumnMapping'
@@ -19,7 +18,7 @@ export function useSeniorityUpload(): SeniorityUpload {
   const userStore = useUserStore()
   // ── Shared refs (owned here, passed to phases) ──────────────────────────
 
-  const selectedParserId = ref<string | null>(null)
+  const selectedUploadTypeId = ref<string | null>(null)
   const preferredUploadType = ref<string | null>(null)
   const uploadTypes = computed(() => {
     const preferred = preferredUploadType.value
@@ -34,7 +33,7 @@ export function useSeniorityUpload(): SeniorityUpload {
   const autoDetectSucceeded = ref(false)
   const preparedSheet = ref<PreparedSheet | null>(null)
   const preparationIssues = ref<ImportIssue[]>([])
-  const columnMap = ref<ColumnMap>({ ...DEFAULT_COLUMN_MAP })
+  const columnMap = ref<UploadColumnMap>({ ...DEFAULT_COLUMN_MAP })
   const mappingOptions = ref({ ...DEFAULT_MAPPING_OPTIONS })
   const entries = ref<Partial<SeniorityEntry>[]>([])
   const rowErrors = shallowRef<Map<number, string[]>>(new Map())
@@ -43,7 +42,7 @@ export function useSeniorityUpload(): SeniorityUpload {
   const importAttemptId = ref<string | null>(null)
   const error = ref<string | null>(null)
 
-  watch(selectedParserId, (uploadType) => {
+  watch(selectedUploadTypeId, (uploadType) => {
     if (uploadType) userStore.savePreference('lastUploadType', uploadType).catch(() => {})
   })
   void userStore.getPreference('lastUploadType').then((id) => {
@@ -52,12 +51,12 @@ export function useSeniorityUpload(): SeniorityUpload {
 
   async function selectUploadType(id: string) {
     if (!getImportPlugin(id)) return
-    selectedParserId.value = id
+    selectedUploadTypeId.value = id
     await file.reprepare()
   }
 
   function clearUploadType() {
-    selectedParserId.value = null
+    selectedUploadTypeId.value = null
     resetDownstream()
   }
 
@@ -105,7 +104,7 @@ export function useSeniorityUpload(): SeniorityUpload {
     progress,
     extractedEffectiveDate,
     extractedTitle,
-    selectedParserId,
+    selectedUploadTypeId,
     preparedSheet,
     preparationIssues,
     importAttemptId,
@@ -128,7 +127,7 @@ export function useSeniorityUpload(): SeniorityUpload {
   })
 
   const file = _useFileIO({
-    selectedParserId,
+    selectedUploadTypeId,
     rawHeaders,
     rawRows,
     extractedEffectiveDate,
@@ -147,14 +146,14 @@ export function useSeniorityUpload(): SeniorityUpload {
   // ── Reset ───────────────────────────────────────────────────────────────
 
   function reset() {
-    selectedParserId.value = null
+    selectedUploadTypeId.value = null
     file._reset()
     resetDownstream()
     progress.idle()
   }
 
   return {
-    selectedParserId,
+    selectedUploadTypeId,
     diagnosticAttemptId: readonly(importAttemptId),
     uploadTypes,
     selectUploadType,

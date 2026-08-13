@@ -1,22 +1,18 @@
-import type { MappingPhase, MappingPhaseOptions } from './types'
-import type { MappingOptions } from '~/utils/parse-spreadsheet'
+import type { MappingPhase, MappingPhaseOptions, UploadColumnMap, UploadMappingOptions } from './types'
 import { createLogger } from '~/utils/logger'
 import { DEFAULT_COLUMN_MAP, DEFAULT_MAPPING_OPTIONS } from './defaults'
 import { processConfirmedMappings } from '~/utils/import-pipeline/process-confirmed-mappings'
 import { getImportPlugin } from '~/utils/import-pipeline/plugins/registry'
 import { useUserStore } from '~/stores/user'
 import { useImportAttemptsStore } from '~/stores/import-attempts'
-import type { ConfirmedMappings, ImportIssue, PreparedColumn } from '~/utils/import-pipeline/types'
+import type { ConfirmedMappings, ImportIssue } from '~/utils/import-pipeline/types'
 
 function toConfirmedMappings(
-  map: ColumnMap,
-  options: MappingOptions,
-  headers: string[],
-  columns?: readonly PreparedColumn[],
+  map: UploadColumnMap,
+  options: UploadMappingOptions,
 ): ConfirmedMappings {
-  const columnId = (index: number) => columns?.[index]?.id ?? headers[index]
-  const column = (index: number) => index >= 0 && columnId(index) ? { kind: 'column' as const, columnId: columnId(index)! } : undefined
-  const mappings: Partial<Record<keyof ColumnMap, ConfirmedMappings[keyof ConfirmedMappings]>> = {
+  const column = (columnId: string | null) => columnId ? { kind: 'column' as const, columnId } : undefined
+  const mappings: Partial<Record<keyof UploadColumnMap, ConfirmedMappings[keyof ConfirmedMappings]>> = {
     seniority_number: column(map.seniority_number),
     employee_number: column(map.employee_number),
     seat: column(map.seat),
@@ -26,14 +22,12 @@ function toConfirmedMappings(
   }
 
   mappings.name = options.nameMode === 'separate'
-    && options.firstNameCol != null
-    && options.lastNameCol != null
-    && columnId(options.firstNameCol)
-    && columnId(options.lastNameCol)
-    ? { kind: 'combined-name', firstNameColumnId: columnId(options.firstNameCol)!, lastNameColumnId: columnId(options.lastNameCol)! }
+    && options.firstNameCol
+    && options.lastNameCol
+    ? { kind: 'combined-name', firstNameColumnId: options.firstNameCol, lastNameColumnId: options.lastNameCol }
     : column(map.name)
-  mappings.retire_date = options.retireMode === 'dob' && options.dobCol != null && columnId(options.dobCol)
-    ? { kind: 'retirement-from-birth-date', columnId: columnId(options.dobCol)!, retirementAge: options.retirementAge ?? 65 }
+  mappings.retire_date = options.retireMode === 'dob' && options.dobCol
+    ? { kind: 'retirement-from-birth-date', columnId: options.dobCol, retirementAge: options.retirementAge ?? 65 }
     : column(map.retire_date)
   return mappings as ConfirmedMappings
 }
@@ -48,17 +42,18 @@ export function _useColumnMapping(opts: MappingPhaseOptions): MappingPhase & { _
   let activeRequest = 0
 
   const sampleRows = computed(() => opts.rawRows.value.slice(0, 3))
+  const columnIds = computed(() => opts.preparedSheet.value?.columns.map(column => column.id) ?? [])
 
   const canAdvance = computed(() => {
     const m = opts.columnMap.value
     const dobActive = mappingOptions.value.retireMode === 'dob'
-    const retireSatisfied = m.retire_date >= 0 || dobActive
-    return m.seniority_number >= 0
-      && m.employee_number >= 0
-      && m.seat >= 0
-      && m.base >= 0
-      && m.fleet >= 0
-      && m.hire_date >= 0
+    const retireSatisfied = Boolean(m.retire_date) || dobActive
+    return Boolean(m.seniority_number)
+      && Boolean(m.employee_number)
+      && Boolean(m.seat)
+      && Boolean(m.base)
+      && Boolean(m.fleet)
+      && Boolean(m.hire_date)
       && retireSatisfied
   })
 
@@ -68,11 +63,11 @@ export function _useColumnMapping(opts: MappingPhaseOptions): MappingPhase & { _
     try {
       opts.progress.report('mapping', 0, opts.rawRows.value.length)
 
-      const plugin = getImportPlugin(opts.selectedParserId.value ?? '')
+      const plugin = getImportPlugin(opts.selectedUploadTypeId.value ?? '')
       const processed = plugin && opts.preparedSheet.value
         ? await processConfirmedMappings({
             preparedSheet: opts.preparedSheet.value,
-            mappings: toConfirmedMappings(opts.columnMap.value, mappingOptions.value, opts.rawHeaders.value, opts.preparedSheet.value.columns),
+            mappings: toConfirmedMappings(opts.columnMap.value, mappingOptions.value),
             plugin,
           })
         : undefined
@@ -89,10 +84,9 @@ export function _useColumnMapping(opts: MappingPhaseOptions): MappingPhase & { _
       }
 
       if (plugin && opts.preparedSheet.value) {
-        const confirmedMappings = toConfirmedMappings(opts.columnMap.value, mappingOptions.value, opts.rawHeaders.value, opts.preparedSheet.value.columns)
+        const confirmedMappings = toConfirmedMappings(opts.columnMap.value, mappingOptions.value)
         const columns = Object.fromEntries(Object.entries(opts.columnMap.value)
-          .filter(([, index]) => index >= 0)
-          .map(([field, index]) => [field, opts.preparedSheet.value!.columns[index]?.id])) as Record<string, string>
+          .filter(([, columnId]) => Boolean(columnId))) as Record<string, string>
         try {
           const existing = await userStore.getPreference('importMappings') ?? {}
           await userStore.savePreference('importMappings', { ...existing, [plugin.id]: { columns, mappingOptions: mappingOptions.value as unknown as Record<string, unknown> } })
@@ -156,6 +150,7 @@ export function _useColumnMapping(opts: MappingPhaseOptions): MappingPhase & { _
     columnMap: opts.columnMap,
     mappingOptions,
     headers: opts.rawHeaders,
+    columnIds,
     sampleRows,
     canAdvance,
     error: readonly(error),

@@ -17,7 +17,7 @@ vi.mock('~/utils/spreadsheet/decode-workbook', () => ({ decodeWorkbook: mockDeco
 vi.mock('~/stores/user', () => ({ useUserStore: () => ({ getPreference: vi.fn().mockResolvedValue(null) }) }))
 
 function createFileIO() {
-  const selectedParserId = ref<string | null>('generic')
+  const selectedUploadTypeId = ref<string | null>('generic')
   const rawHeaders = ref<string[]>([])
   const rawRows = ref<string[][]>([])
   const extractedEffectiveDate = ref<string | null>(null)
@@ -35,7 +35,7 @@ function createFileIO() {
   const onSheetChange = vi.fn()
 
   const file = _useFileIO({
-    selectedParserId,
+    selectedUploadTypeId,
     rawHeaders,
     rawRows,
     extractedEffectiveDate,
@@ -48,9 +48,9 @@ function createFileIO() {
     preparedSheet,
     progress,
     onSheetChange,
-  })
+  } as any) as any
 
-  return { file, rawHeaders, rawRows, extractedEffectiveDate, extractedTitle, syntheticNote, syntheticIndices, autoDetectSucceeded, columnMap, progress, onSheetChange, selectedParserId }
+  return { file, rawHeaders, rawRows, extractedEffectiveDate, extractedTitle, syntheticNote, syntheticIndices, autoDetectSucceeded, columnMap, progress, onSheetChange, selectedUploadTypeId }
 }
 
 describe('_useFileIO', () => {
@@ -150,7 +150,7 @@ describe('_useFileIO', () => {
     expect(onSheetChange).toHaveBeenCalled()
   })
 
-  it('does not rely on legacy parser metadata', async () => {
+  it('does not rely on legacy format metadata', async () => {
     const { file, extractedEffectiveDate, extractedTitle, syntheticNote } = createFileIO()
 
 

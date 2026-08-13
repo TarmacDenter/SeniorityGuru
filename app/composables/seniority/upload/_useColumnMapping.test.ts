@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { _useColumnMapping } from './_useColumnMapping'
 import { _useProgressTracker } from './_useProgressTracker'
-import type { ColumnMap } from '~/utils/parse-spreadsheet'
 import type { PreparedSheet } from '~/utils/import-pipeline/types'
 
 const { mockProcessConfirmedMappings } = vi.hoisted(() => ({
@@ -13,20 +12,14 @@ vi.mock('~/utils/import-pipeline/process-confirmed-mappings', () => ({ processCo
 function createMapping(overrides: Record<string, any> = {}) {
   const rawRows = ref<string[][]>([])
   const rawHeaders = ref<string[]>([])
-  const columnMap = ref<ColumnMap>({
-    seniority_number: -1,
-    employee_number: -1,
-    seat: -1,
-    base: -1,
-    fleet: -1,
-    name: -1,
-    hire_date: -1,
-    retire_date: -1,
+  const columnMap = ref({
+    seniority_number: null, employee_number: null, seat: null, base: null,
+    fleet: null, name: null, hire_date: null, retire_date: null,
   })
-  const mappingOptions = ref<MappingOptions>({ nameMode: 'single', retireMode: 'direct' })
+  const mappingOptions = ref({ nameMode: 'single' as const, retireMode: 'direct' as const })
   const extractedEffectiveDate = ref<string | null>(null)
   const extractedTitle = ref<string | null>(null)
-  const selectedParserId = ref<string | null>('generic')
+  const selectedUploadTypeId = ref<string | null>('generic')
   const preparedSheet = ref<PreparedSheet | null>({
     sourceSheet: { id: 'sheet:0', name: 'Sheet 1', columns: [], rows: [] },
     columns: ['seniority_number', 'employee_number', 'seat', 'base', 'fleet', 'name', 'hire_date', 'retire_date'].map(id => ({ id, label: id })),
@@ -44,13 +37,13 @@ function createMapping(overrides: Record<string, any> = {}) {
     progress,
     extractedEffectiveDate,
     extractedTitle,
-    selectedParserId,
+    selectedUploadTypeId,
     preparedSheet,
     onMapped,
     onMetadataReady,
-  })
+  } as any) as any
 
-  return { mapping, rawRows, rawHeaders, columnMap, extractedEffectiveDate, extractedTitle, selectedParserId, preparedSheet, progress, onMapped, onMetadataReady }
+  return { mapping, rawRows, rawHeaders, columnMap, extractedEffectiveDate, extractedTitle, selectedUploadTypeId, preparedSheet, progress, onMapped, onMetadataReady }
 }
 
 describe('_useColumnMapping', () => {
@@ -63,14 +56,8 @@ describe('_useColumnMapping', () => {
     it('is true when all required columns are mapped', () => {
       const { mapping } = createMapping()
       mapping.columnMap.value = {
-        seniority_number: 0,
-        employee_number: 1,
-        seat: 2,
-        base: 3,
-        fleet: 4,
-        name: 5,
-        hire_date: 6,
-        retire_date: 7,
+        seniority_number: 'seniority_number', employee_number: 'employee_number', seat: 'seat', base: 'base',
+        fleet: 'fleet', name: 'name', hire_date: 'hire_date', retire_date: 'retire_date',
       }
       expect(mapping.canAdvance.value).toBe(true)
     })
@@ -78,14 +65,8 @@ describe('_useColumnMapping', () => {
     it('accepts DOB mode as substitute for retire_date', () => {
       const { mapping } = createMapping()
       mapping.columnMap.value = {
-        seniority_number: 0,
-        employee_number: 1,
-        seat: 2,
-        base: 3,
-        fleet: 4,
-        name: 5,
-        hire_date: 6,
-        retire_date: -1,
+        seniority_number: 'seniority_number', employee_number: 'employee_number', seat: 'seat', base: 'base',
+        fleet: 'fleet', name: 'name', hire_date: 'hire_date', retire_date: null,
       }
       mapping.mappingOptions.value = { nameMode: 'single', retireMode: 'dob' }
       expect(mapping.canAdvance.value).toBe(true)
@@ -111,14 +92,8 @@ describe('_useColumnMapping', () => {
         ['1', '100', 'CA', 'LAX', '737', 'Pilot A', '2020-06-15', '2050-01-01'],
       ]
       mapping.columnMap.value = {
-        seniority_number: 0,
-        employee_number: 1,
-        seat: 2,
-        base: 3,
-        fleet: 4,
-        name: 5,
-        hire_date: 6,
-        retire_date: 7,
+        seniority_number: 'seniority_number', employee_number: 'employee_number', seat: 'seat', base: 'base',
+        fleet: 'fleet', name: 'name', hire_date: 'hire_date', retire_date: 'retire_date',
       }
       extractedEffectiveDate.value = '2026-03-01'
       extractedTitle.value = 'March List'

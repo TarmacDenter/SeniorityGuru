@@ -157,8 +157,8 @@ async function onSave() {
     <template #body>
       <div class="max-w-5xl mx-auto p-4 sm:p-6">
         <!-- State 1: Upload Type selection (before wizard) -->
-        <template v-if="!upload.selectedParserId.value">
-          <ParserSelector :upload-types="upload.uploadTypes.value" @select="selectUploadType" />
+        <template v-if="!upload.selectedUploadTypeId.value">
+          <UploadTypeSelector :upload-types="upload.uploadTypes.value" @select="selectUploadType" />
         </template>
 
         <!-- State 2: Upload wizard (after Upload Type selection) -->
@@ -299,6 +299,7 @@ async function onSave() {
               />
               <UploadColumnMapper
                 :headers="upload.mapping.headers.value"
+                :column-ids="upload.mapping.columnIds.value"
                 :column-map="upload.mapping.columnMap.value"
                 :mapping-options="upload.mapping.mappingOptions.value"
                 :sample-rows="upload.mapping.sampleRows.value"

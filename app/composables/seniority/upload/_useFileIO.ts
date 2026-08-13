@@ -1,5 +1,5 @@
-import type { FilePhase, FilePhaseOptions } from './types'
-import { autoDetectColumnMap, isColumnMapComplete } from '~/utils/parse-spreadsheet'
+import type { FilePhase, FilePhaseOptions, UploadColumnMap, UploadMappingOptions } from './types'
+import { autoDetectColumnMap } from '~/utils/parse-spreadsheet'
 import { createLogger } from '~/utils/logger'
 import { decodeWorkbook } from '~/utils/spreadsheet/decode-workbook'
 import { getImportPlugin } from '~/utils/import-pipeline/plugins/registry'
@@ -34,6 +34,9 @@ export function _useFileIO(opts: FilePhaseOptions): FilePhase & { _reset: () => 
     () => opts.autoDetectSucceeded.value,
   )
   const excludedRowCount = computed(() => opts.preparedSheet.value?.rows.filter(row => row.included === false).length ?? 0)
+  const hasRequiredMappings = (map: UploadColumnMap) => [
+    map.seniority_number, map.employee_number, map.seat, map.base, map.fleet, map.hire_date,
+  ].every(Boolean) && (Boolean(map.retire_date) || opts.mappingOptions.value.retireMode === 'dob')
 
   function applyPreparedSheet(preparedSheet: PreparedSheet, mappingSuggestions: Readonly<Partial<Record<keyof ColumnMap, string>>> = {}) {
     opts.preparedSheet.value = preparedSheet
@@ -45,16 +48,15 @@ export function _useFileIO(opts: FilePhaseOptions): FilePhase & { _reset: () => 
     opts.columnMap.value = Object.fromEntries(Object.entries(detected).map(([field, index]) => [
       field,
       mappingSuggestions[field as keyof ColumnMap]
-        ? preparedSheet.columns.findIndex(column => column.id === mappingSuggestions[field as keyof ColumnMap])
-        : index,
-    ])) as ColumnMap
-    opts.autoDetectSucceeded.value = isColumnMapComplete(opts.columnMap.value)
+        ?? (index >= 0 ? preparedSheet.columns[index]?.id ?? null : null),
+    ])) as UploadColumnMap
+    opts.autoDetectSucceeded.value = hasRequiredMappings(opts.columnMap.value)
   }
 
   async function processImportSheet(workbook: DecodedWorkbook, sheetName: string, headerRowIndex?: number) {
     const sourceSheet = workbook.sheets.find(sheet => sheet.name === sheetName)
     if (!sourceSheet) return
-    const plugin = getImportPlugin(opts.selectedParserId.value ?? '')
+    const plugin = getImportPlugin(opts.selectedUploadTypeId.value ?? '')
     if (!plugin) return
     headerRows.value = sourceSheet.rows.map(row => row.cells.map(cell => cell === null ? '' : String(cell)))
     sourceHeaders.value = sourceSheet.columns.map(column => column.label ?? column.id)
@@ -66,13 +68,12 @@ export function _useFileIO(opts: FilePhaseOptions): FilePhase & { _reset: () => 
     applyPreparedSheet(result.preparedSheet, result.mappingSuggestions)
     const saved = (await userStore.getPreference('importMappings'))?.[plugin.id]
     if (saved) {
-      opts.columnMap.value = Object.fromEntries(Object.entries(opts.columnMap.value).map(([field, index]) => {
+      opts.columnMap.value = Object.fromEntries(Object.entries(opts.columnMap.value).map(([field, columnId]) => {
         const savedId = saved.columns[field]
-        const savedIndex = savedId ? result.preparedSheet.columns.findIndex(column => column.id === savedId) : -1
-        return [field, savedIndex >= 0 ? savedIndex : index]
-      })) as ColumnMap
-      opts.autoDetectSucceeded.value = isColumnMapComplete(opts.columnMap.value)
-      if (saved.mappingOptions) opts.mappingOptions.value = { ...opts.mappingOptions.value, ...saved.mappingOptions } as MappingOptions
+        return [field, savedId && result.preparedSheet.columns.some(column => column.id === savedId) ? savedId : columnId]
+      })) as UploadColumnMap
+      opts.autoDetectSucceeded.value = hasRequiredMappings(opts.columnMap.value)
+      if (saved.mappingOptions) opts.mappingOptions.value = { ...opts.mappingOptions.value, ...saved.mappingOptions } as UploadMappingOptions
     }
     if (result.issues.length > 0) {
       log.warn('Generic sheet preparation needs manual mapping', { issueKinds: result.issues.map(issue => issue.kind) })
@@ -105,7 +106,7 @@ export function _useFileIO(opts: FilePhaseOptions): FilePhase & { _reset: () => 
     opts.progress.enter('reading')
 
     try {
-      if (getImportPlugin(opts.selectedParserId.value ?? '')) {
+      if (getImportPlugin(opts.selectedUploadTypeId.value ?? '')) {
         const decoded = await decodeWorkbook(file)
         if (!decoded.ok) {
           error.value = decoded.error.message
@@ -134,7 +135,7 @@ export function _useFileIO(opts: FilePhaseOptions): FilePhase & { _reset: () => 
   }
 
   function selectHeaderRow(index: number) {
-    const plugin = getImportPlugin(opts.selectedParserId.value ?? '')
+    const plugin = getImportPlugin(opts.selectedUploadTypeId.value ?? '')
     if (!plugin || !decodedWorkbook || !selectedSheet.value) return
     const sourceSheet = decodedWorkbook.sheets.find(sheet => sheet.name === selectedSheet.value)
     if (!sourceSheet || index < 0 || index >= sourceSheet.rows.length) return
@@ -144,7 +145,7 @@ export function _useFileIO(opts: FilePhaseOptions): FilePhase & { _reset: () => 
   }
 
   async function reprepare() {
-    if (!decodedWorkbook || !selectedSheet.value || !opts.selectedParserId.value) return
+    if (!decodedWorkbook || !selectedSheet.value || !opts.selectedUploadTypeId.value) return
     opts.onSheetChange()
     await processImportSheet(decodedWorkbook, selectedSheet.value)
   }

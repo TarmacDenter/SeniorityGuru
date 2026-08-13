@@ -17,7 +17,7 @@ const {
   mockReviewCanAdvance,
   mockApplyMapping,
   mockInsertRowAt,
-  mockSelectedParserId,
+  mockSelectedUploadTypeId,
 } = vi.hoisted(() => ({
   mockSave: vi.fn(),
   mockReset: vi.fn(),
@@ -29,12 +29,12 @@ const {
   mockReviewCanAdvance: { value: false },
   mockApplyMapping: vi.fn().mockResolvedValue(undefined),
   mockInsertRowAt: vi.fn(),
-  mockSelectedParserId: { value: 'generic' as string | null },
+  mockSelectedUploadTypeId: { value: 'generic' as string | null },
 }))
 
 mockNuxtImport('navigateTo', () => mockNavigateTo)
 mockNuxtImport('useSeniorityUpload', () => () => ({
-  selectedParserId: mockSelectedParserId,
+  selectedUploadTypeId: mockSelectedUploadTypeId,
   file: {
     fileName: { value: null },
     sheetNames: { value: [] },
@@ -53,6 +53,7 @@ mockNuxtImport('useSeniorityUpload', () => () => ({
     columnMap: { value: { seniority_number: -1, employee_number: -1, seat: -1, base: -1, fleet: -1, hire_date: -1, retire_date: -1, name: -1 } },
     mappingOptions: { value: {} },
     headers: { value: [] },
+    columnIds: { value: [] },
     sampleRows: { value: [] },
     canAdvance: mockMappingCanAdvance,
     error: mockMappingError,

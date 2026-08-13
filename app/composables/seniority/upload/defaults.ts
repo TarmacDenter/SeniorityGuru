@@ -1,17 +1,17 @@
-import type { ColumnMap, MappingOptions } from '~/utils/parse-spreadsheet'
+import type { UploadColumnMap, UploadMappingOptions } from './types'
 
-export const DEFAULT_COLUMN_MAP: ColumnMap = {
-  seniority_number: -1,
-  employee_number: -1,
-  seat: -1,
-  base: -1,
-  fleet: -1,
-  name: -1,
-  hire_date: -1,
-  retire_date: -1,
+export const DEFAULT_COLUMN_MAP: UploadColumnMap = {
+  seniority_number: null,
+  employee_number: null,
+  seat: null,
+  base: null,
+  fleet: null,
+  name: null,
+  hire_date: null,
+  retire_date: null,
 }
 
-export const DEFAULT_MAPPING_OPTIONS: MappingOptions = {
+export const DEFAULT_MAPPING_OPTIONS: UploadMappingOptions = {
   nameMode: 'single',
   retireMode: 'direct',
 }

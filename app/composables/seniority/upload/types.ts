@@ -17,6 +17,14 @@ export interface ProgressTracker {
   idle(): void
 }
 
+/** Durable prepared-column selections used by the upload UI. */
+export type UploadColumnMap = Record<keyof ColumnMap, string | null>
+export type UploadMappingOptions = Omit<MappingOptions, 'firstNameCol' | 'lastNameCol' | 'dobCol'> & {
+  firstNameCol?: string | null
+  lastNameCol?: string | null
+  dobCol?: string | null
+}
+
 // ── Phase: File ──────────────────────────────────────────────────────────────
 
 export interface FilePhase {
@@ -41,15 +49,15 @@ export interface FilePhase {
 }
 
 export interface FilePhaseOptions {
-  selectedParserId: Ref<string | null>
+  selectedUploadTypeId: Ref<string | null>
   rawHeaders: Ref<string[]>
   rawRows: Ref<string[][]>
   extractedEffectiveDate: Ref<string | null>
   extractedTitle: Ref<string | null>
   syntheticNote: Ref<string | null>
   syntheticIndices: Ref<Set<number>>
-  columnMap: Ref<ColumnMap>
-  mappingOptions: Ref<MappingOptions>
+  columnMap: Ref<UploadColumnMap>
+  mappingOptions: Ref<UploadMappingOptions>
   autoDetectSucceeded: Ref<boolean>
   preparedSheet: Ref<PreparedSheet | null>
   preparationIssues?: Ref<ImportIssue[]>
@@ -60,9 +68,10 @@ export interface FilePhaseOptions {
 // ── Phase: Mapping ───────────────────────────────────────────────────────────
 
 export interface MappingPhase {
-  columnMap: Ref<ColumnMap>
-  mappingOptions: Ref<MappingOptions>
+  columnMap: Ref<UploadColumnMap>
+  mappingOptions: Ref<UploadMappingOptions>
   headers: Readonly<Ref<string[]>>
+  columnIds: ComputedRef<string[]>
   sampleRows: ComputedRef<string[][]>
   canAdvance: ComputedRef<boolean>
   error: Readonly<Ref<string | null>>
@@ -73,12 +82,12 @@ export interface MappingPhase {
 export interface MappingPhaseOptions {
   rawRows: Ref<string[][]>
   rawHeaders: Ref<string[]>
-  columnMap: Ref<ColumnMap>
-  mappingOptions: Ref<MappingOptions>
+  columnMap: Ref<UploadColumnMap>
+  mappingOptions: Ref<UploadMappingOptions>
   progress: ProgressTracker
   extractedEffectiveDate: Ref<string | null>
   extractedTitle: Ref<string | null>
-  selectedParserId: Ref<string | null>
+  selectedUploadTypeId: Ref<string | null>
   preparedSheet: Ref<PreparedSheet | null>
   preparationIssues?: Ref<ImportIssue[]>
   importAttemptId?: Ref<string | null>
@@ -136,7 +145,7 @@ export interface ConfirmPhaseOptions {
 // ── Public interface ─────────────────────────────────────────────────────────
 
 export interface SeniorityUpload {
-  selectedParserId: Ref<string | null>
+  selectedUploadTypeId: Ref<string | null>
   diagnosticAttemptId: Readonly<Ref<string | null>>
   uploadTypes: ComputedRef<readonly ImportPlugin[]>
   selectUploadType(id: string): Promise<void>

@@ -1,17 +1,19 @@
 <script setup lang="ts">
-import type { ColumnMap, MappingOptions } from '~/utils/parse-spreadsheet'
+import type { ColumnMap } from '~/utils/parse-spreadsheet'
+import type { UploadColumnMap, UploadMappingOptions } from '~/composables/seniority/upload/types'
 
 const props = defineProps<{
   headers: string[]
-  columnMap: ColumnMap
-  mappingOptions: MappingOptions
+  columnIds: string[]
+  columnMap: UploadColumnMap
+  mappingOptions: UploadMappingOptions
   sampleRows: string[][]
   sourceHeaders?: string[]
 }>()
 
 const emit = defineEmits<{
-  'update:columnMap': [map: ColumnMap]
-  'update:mappingOptions': [options: MappingOptions]
+  'update:columnMap': [map: UploadColumnMap]
+  'update:mappingOptions': [options: UploadMappingOptions]
 }>()
 
 const requiredFields: { key: keyof ColumnMap; label: string }[] = [
@@ -23,16 +25,17 @@ const requiredFields: { key: keyof ColumnMap; label: string }[] = [
 ]
 
 const columnOptions = computed(() =>
-  props.headers.map((h, i) => ({ label: h || `Column ${i + 1}`, value: i }))
+  props.headers.map((h, i) => ({ label: h || `Column ${i + 1}`, value: props.columnIds[i] }))
 )
 
 function sampleValue(field: keyof ColumnMap): string | undefined {
-  const idx = props.columnMap[field]
+  const columnId = props.columnMap[field]
+  const idx = columnId ? props.columnIds.indexOf(columnId) : -1
   if (idx < 0 || !props.sampleRows[0]) return undefined
   return props.sampleRows[0][idx]
 }
 
-function updateOption<K extends keyof MappingOptions>(key: K, value: MappingOptions[K]) {
+function updateOption<K extends keyof UploadMappingOptions>(key: K, value: UploadMappingOptions[K]) {
   emit('update:mappingOptions', { ...props.mappingOptions, [key]: value })
 }
 </script>
@@ -55,7 +58,7 @@ function updateOption<K extends keyof MappingOptions>(key: K, value: MappingOpti
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
       <UFormField v-for="field in requiredFields" :key="field.key" :label="field.label" required>
         <USelectMenu
-          :model-value="columnMap[field.key] >= 0 ? columnMap[field.key] : undefined"
+          :model-value="columnMap[field.key] ?? undefined"
           :items="columnOptions"
           value-key="value"
           placeholder="Select column..."
@@ -89,12 +92,12 @@ function updateOption<K extends keyof MappingOptions>(key: K, value: MappingOpti
       <div v-if="mappingOptions.nameMode === 'single'" class="max-w-sm">
         <UFormField label="Name column">
           <USelectMenu
-            :model-value="columnMap.name >= 0 ? columnMap.name : undefined"
+            :model-value="columnMap.name ?? undefined"
             :items="columnOptions"
             value-key="value"
             placeholder="Not mapped"
             class="w-full"
-            @update:model-value="emit('update:columnMap', { ...columnMap, name: $event ?? -1 })"
+            @update:model-value="emit('update:columnMap', { ...columnMap, name: $event ?? null })"
           />
         </UFormField>
       </div>
@@ -102,22 +105,22 @@ function updateOption<K extends keyof MappingOptions>(key: K, value: MappingOpti
       <div v-else class="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-lg">
         <UFormField label="Last name column">
           <USelectMenu
-            :model-value="mappingOptions.lastNameCol != null && mappingOptions.lastNameCol >= 0 ? mappingOptions.lastNameCol : undefined"
+            :model-value="mappingOptions.lastNameCol ?? undefined"
             :items="columnOptions"
             value-key="value"
             placeholder="Not mapped"
             class="w-full"
-            @update:model-value="updateOption('lastNameCol', $event ?? -1)"
+            @update:model-value="updateOption('lastNameCol', $event ?? null)"
           />
         </UFormField>
         <UFormField label="First name column">
           <USelectMenu
-            :model-value="mappingOptions.firstNameCol != null && mappingOptions.firstNameCol >= 0 ? mappingOptions.firstNameCol : undefined"
+            :model-value="mappingOptions.firstNameCol ?? undefined"
             :items="columnOptions"
             value-key="value"
             placeholder="Not mapped"
             class="w-full"
-            @update:model-value="updateOption('firstNameCol', $event ?? -1)"
+            @update:model-value="updateOption('firstNameCol', $event ?? null)"
           />
         </UFormField>
       </div>
@@ -142,12 +145,12 @@ function updateOption<K extends keyof MappingOptions>(key: K, value: MappingOpti
       <div v-if="mappingOptions.retireMode === 'direct'" class="max-w-sm">
         <UFormField label="Retirement date column" required>
           <USelectMenu
-            :model-value="columnMap.retire_date >= 0 ? columnMap.retire_date : undefined"
+            :model-value="columnMap.retire_date ?? undefined"
             :items="columnOptions"
             value-key="value"
             placeholder="Not mapped"
             class="w-full"
-            @update:model-value="emit('update:columnMap', { ...columnMap, retire_date: $event ?? -1 })"
+            @update:model-value="emit('update:columnMap', { ...columnMap, retire_date: $event ?? null })"
           />
         </UFormField>
       </div>
@@ -155,12 +158,12 @@ function updateOption<K extends keyof MappingOptions>(key: K, value: MappingOpti
       <div v-else class="max-w-sm">
         <UFormField label="Date of birth column" required>
           <USelectMenu
-            :model-value="mappingOptions.dobCol != null && mappingOptions.dobCol >= 0 ? mappingOptions.dobCol : undefined"
+            :model-value="mappingOptions.dobCol ?? undefined"
             :items="columnOptions"
             value-key="value"
             placeholder="Not mapped"
             class="w-full"
-            @update:model-value="updateOption('dobCol', $event ?? -1)"
+            @update:model-value="updateOption('dobCol', $event ?? null)"
           />
         </UFormField>
       </div>
@@ -172,12 +175,12 @@ function updateOption<K extends keyof MappingOptions>(key: K, value: MappingOpti
     <div class="max-w-sm">
       <UFormField label="Hire date column" required>
         <USelectMenu
-          :model-value="columnMap.hire_date >= 0 ? columnMap.hire_date : undefined"
+          :model-value="columnMap.hire_date ?? undefined"
           :items="columnOptions"
           value-key="value"
           placeholder="Select column..."
           class="w-full"
-          @update:model-value="emit('update:columnMap', { ...columnMap, hire_date: $event })"
+          @update:model-value="emit('update:columnMap', { ...columnMap, hire_date: $event ?? null })"
         />
         <template #hint>
           <span v-if="sampleValue('hire_date')" class="text-xs text-muted truncate">

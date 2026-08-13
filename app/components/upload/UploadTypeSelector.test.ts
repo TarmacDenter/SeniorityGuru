@@ -1,20 +1,20 @@
 import { describe, it, expect } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
-import ParserSelector from './ParserSelector.vue'
+import UploadTypeSelector from './UploadTypeSelector.vue'
 import { importPlugins } from '~/utils/import-pipeline/plugins/registry'
 
-describe('ParserSelector', () => {
-  it('renders a card for each registered parser', async () => {
-    const wrapper = await mountSuspended(ParserSelector, {
+describe('UploadTypeSelector', () => {
+  it('renders a card for each registered Upload Type', async () => {
+    const wrapper = await mountSuspended(UploadTypeSelector, {
       props: { uploadTypes: importPlugins },
     })
-    for (const parser of importPlugins) {
-      expect(wrapper.text()).toContain(parser.label)
+    for (const uploadType of importPlugins) {
+      expect(wrapper.text()).toContain(uploadType.label)
     }
   })
 
-  it('emits select with parser id when card is clicked', async () => {
-    const wrapper = await mountSuspended(ParserSelector, {
+  it('emits select with Upload Type ID when card is clicked', async () => {
+    const wrapper = await mountSuspended(UploadTypeSelector, {
       props: { uploadTypes: importPlugins },
     })
     const cards = wrapper.findAllComponents({ name: 'UCard' })
@@ -24,15 +24,15 @@ describe('ParserSelector', () => {
   })
 
   it('renders "Don\'t see your airline?" contact link', async () => {
-    const wrapper = await mountSuspended(ParserSelector, {
+    const wrapper = await mountSuspended(UploadTypeSelector, {
       props: { uploadTypes: importPlugins },
     })
     expect(wrapper.text()).toContain("Don't see your airline?")
     expect(wrapper.html()).toContain('mailto:')
   })
 
-  it('renders Learn More button for each parser', async () => {
-    const wrapper = await mountSuspended(ParserSelector, {
+  it('renders Learn More button for each Upload Type', async () => {
+    const wrapper = await mountSuspended(UploadTypeSelector, {
       props: { uploadTypes: importPlugins },
     })
     const learnMoreButtons = wrapper.findAll('button').filter(b => b.text().includes('Learn More'))

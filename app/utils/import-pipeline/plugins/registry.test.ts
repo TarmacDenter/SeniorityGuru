@@ -11,15 +11,27 @@ const sourceSheet: SourceSheet = {
 }
 
 describe('registered Import Plugins', () => {
-  it('have unique namespaced IDs and prepare deterministic immutable output', () => {
+  it('conform to the shared preparation contract', () => {
     expect(new Set(importPlugins.map(plugin => plugin.id)).size).toBe(importPlugins.length)
     for (const plugin of importPlugins) {
-      const first = prepareImport({ plugin, sourceSheet })
-      const second = prepareImport({ plugin, sourceSheet })
+      const frozenSource = structuredClone(sourceSheet)
+      Object.freeze(frozenSource.columns)
+      Object.freeze(frozenSource.rows)
+      Object.freeze(frozenSource)
+      const first = prepareImport({ plugin, sourceSheet: frozenSource })
+      const second = prepareImport({ plugin, sourceSheet: frozenSource })
       expect(first).toEqual(second)
-      expect(first.preparedSheet.sourceSheet).toBe(sourceSheet)
+      expect(first.preparedSheet.sourceSheet).toBe(frozenSource)
+      expect(first.preparedSheet.rows).toHaveLength(frozenSource.rows.length)
+      expect(first.preparedSheet.rows.map(row => row.sourceRowId)).toEqual(frozenSource.rows.map(row => row.id))
+      expect(Object.keys(first.mappingSuggestions)).toEqual(expect.arrayContaining(
+        first.preparedSheet.columns.filter(column => column.id.startsWith('plugin:')).map(column =>
+          column.id.slice(`plugin:${plugin.id}:`.length).replace(/-/g, '_'),
+        ),
+      ))
       for (const column of first.preparedSheet.columns.filter(column => column.id.startsWith('plugin:'))) {
         expect(column.id).toMatch(new RegExp(`^plugin:${plugin.id}:`))
+        expect(column.sourceColumnId).toBeTruthy()
       }
     }
   })
