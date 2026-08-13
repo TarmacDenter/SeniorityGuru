@@ -5,6 +5,8 @@ import { createLogger } from '~/utils/logger'
 import { DEFAULT_COLUMN_MAP, DEFAULT_MAPPING_OPTIONS } from './defaults'
 import { processConfirmedMappings } from '~/utils/import-pipeline/process-confirmed-mappings'
 import { getImportPlugin } from '~/utils/import-pipeline/plugins/registry'
+import { useUserStore } from '~/stores/user'
+import { useImportAttemptsStore } from '~/stores/import-attempts'
 import type { ConfirmedMappings, PreparedColumn } from '~/utils/import-pipeline/types'
 
 function toConfirmedMappings(
@@ -40,6 +42,8 @@ function toConfirmedMappings(
 const log = createLogger('upload:mapping')
 
 export function _useColumnMapping(opts: MappingPhaseOptions): MappingPhase & { _reset: () => void } {
+  const userStore = useUserStore()
+  const importAttemptsStore = useImportAttemptsStore()
   const mappingOptions = ref<MappingOptions>({ ...DEFAULT_MAPPING_OPTIONS })
   const error = ref<string | null>(null)
 
@@ -83,6 +87,19 @@ export function _useColumnMapping(opts: MappingPhaseOptions): MappingPhase & { _
         error.value = 'No rows could be mapped. Verify the selected columns contain data.'
         log.warn('Mapping produced zero rows')
         return
+      }
+
+      if (plugin && opts.preparedSheet.value) {
+        const columns = Object.fromEntries(Object.entries(opts.columnMap.value)
+          .filter(([, index]) => index >= 0)
+          .map(([field, index]) => [field, opts.preparedSheet.value!.columns[index]?.id])) as Record<string, string>
+        const existing = await userStore.getPreference('importMappings') ?? {}
+        await userStore.savePreference('importMappings', { ...existing, [plugin.id]: { columns } })
+        await importAttemptsStore.record({
+          id: crypto.randomUUID(),
+          pluginId: plugin.id,
+          data: { schemaVersion: 1, pluginId: plugin.id, preparedSheet: opts.preparedSheet.value, mappings: columns, drafts: mapped },
+        })
       }
 
       log.debug('Mapping complete', { entryCount: mapped.length, sampleEntry: mapped[0] })

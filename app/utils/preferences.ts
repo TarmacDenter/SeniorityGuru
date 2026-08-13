@@ -6,6 +6,11 @@ export interface NewHireConfig {
   selectedFleet: string | null
 }
 
+export interface ImportMappingPreference {
+  /** Prepared-column IDs where available, otherwise normalized source labels. */
+  columns: Record<string, string>
+}
+
 /** Maps every preference key to its strongly typed value. */
 export interface PreferenceMap {
   employeeNumber: string
@@ -16,6 +21,7 @@ export interface PreferenceMap {
   'pwa-snoozed-until': string
   demoBannerDismissed: boolean
   lastUploadType: string
+  importMappings: Record<string, ImportMappingPreference>
 }
 
 /** Serializes a typed preference value to the string stored in Dexie. */
@@ -28,6 +34,7 @@ export const PREFERENCE_SERIALIZERS: { [K in keyof PreferenceMap]: (v: Preferenc
   'pwa-snoozed-until': (v) => v,
   demoBannerDismissed: (v) => String(v),
   lastUploadType: (v) => v,
+  importMappings: (v) => JSON.stringify(v),
 }
 
 /** Deserializes a raw Dexie string back to the typed preference value. */
@@ -40,4 +47,5 @@ export const PREFERENCE_DESERIALIZERS: { [K in keyof PreferenceMap]: (raw: strin
   'pwa-snoozed-until': (raw) => raw,
   demoBannerDismissed: (raw) => raw === 'true',
   lastUploadType: (raw) => raw,
+  importMappings: (raw) => JSON.parse(raw) as Record<string, ImportMappingPreference>,
 }

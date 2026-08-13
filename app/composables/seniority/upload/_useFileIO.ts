@@ -86,13 +86,19 @@ export function _useFileIO(opts: FilePhaseOptions): FilePhase & { _reset: () => 
     })
   }
 
-  function applyPreparedSheet(preparedSheet: PreparedSheet) {
+  function applyPreparedSheet(preparedSheet: PreparedSheet, mappingSuggestions: Readonly<Partial<Record<keyof ColumnMap, string>>> = {}) {
     opts.preparedSheet.value = preparedSheet
     opts.rawHeaders.value = preparedSheet.columns.map(column => column.label)
     opts.rawRows.value = opts.preparedSheet.value.rows.map(row =>
       preparedSheet.columns.map(column => String(row.cells[column.id] ?? '')),
     )
-    opts.columnMap.value = autoDetectColumnMap(opts.rawHeaders.value)
+    const detected = autoDetectColumnMap(opts.rawHeaders.value)
+    opts.columnMap.value = Object.fromEntries(Object.entries(detected).map(([field, index]) => [
+      field,
+      mappingSuggestions[field as keyof ColumnMap]
+        ? preparedSheet.columns.findIndex(column => column.id === mappingSuggestions[field as keyof ColumnMap])
+        : index,
+    ])) as ColumnMap
     opts.autoDetectSucceeded.value = isColumnMapComplete(opts.columnMap.value)
   }
 
@@ -104,7 +110,7 @@ export function _useFileIO(opts: FilePhaseOptions): FilePhase & { _reset: () => 
     headerRows.value = sourceSheet.rows.map(row => row.cells.map(cell => cell === null ? '' : String(cell)))
     selectedHeaderRow.value = plugin.suggestHeaderRow?.(sourceSheet) ?? 0
     const result = prepareImport({ plugin, sourceSheet, headerRowIndex: selectedHeaderRow.value })
-    applyPreparedSheet(result.preparedSheet)
+    applyPreparedSheet(result.preparedSheet, result.mappingSuggestions)
     if (result.issues.length > 0) {
       log.warn('Generic sheet preparation needs manual mapping', { issueKinds: result.issues.map(issue => issue.kind) })
     }
@@ -210,7 +216,7 @@ export function _useFileIO(opts: FilePhaseOptions): FilePhase & { _reset: () => 
     opts.onSheetChange()
     selectedHeaderRow.value = index
     const result = prepareImport({ plugin, sourceSheet, headerRowIndex: index })
-    applyPreparedSheet(result.preparedSheet)
+    applyPreparedSheet(result.preparedSheet, result.mappingSuggestions)
   }
 
   function reset() {
