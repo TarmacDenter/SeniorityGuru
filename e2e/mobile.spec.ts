@@ -6,19 +6,21 @@ test.describe('mobile layout (375×812)', () => {
   test.use({ viewport: MOBILE_VIEWPORT })
 
   test('dashboard renders tab navigation on mobile', async ({ page }) => {
-    await page.goto('http://localhost:3000/dashboard')
+    await page.goto('/dashboard')
+    await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible()
 
     // Desktop toolbar is hidden on mobile
-    const desktopToolbar = page.locator('.hidden.sm\\:flex').first()
+    const desktopToolbar = page.getByRole('tablist')
     await expect(desktopToolbar).toBeHidden()
 
-    // Mobile tab bar is visible (sm:hidden div containing UTabs)
-    const mobileTabBar = page.locator('.sm\\:hidden').first()
+    // The mobile tab chips render as buttons rather than desktop tabs.
+    const mobileTabBar = page.getByRole('button', { name: 'My Status' })
     await expect(mobileTabBar).toBeVisible()
   })
 
   test('dashboard has no horizontal overflow', async ({ page }) => {
-    await page.goto('http://localhost:3000/dashboard')
+    await page.goto('/dashboard')
+    await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible()
 
     const bodyScrollWidth = await page.evaluate(() => document.body.scrollWidth)
     const bodyClientWidth = await page.evaluate(() => document.body.clientWidth)
@@ -26,7 +28,8 @@ test.describe('mobile layout (375×812)', () => {
   })
 
   test('settings page renders without horizontal overflow', async ({ page }) => {
-    await page.goto('http://localhost:3000/settings')
+    await page.goto('/settings')
+    await expect(page.getByRole('heading', { name: 'Settings' })).toBeVisible()
 
     const bodyScrollWidth = await page.evaluate(() => document.body.scrollWidth)
     const bodyClientWidth = await page.evaluate(() => document.body.clientWidth)
