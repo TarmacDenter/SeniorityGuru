@@ -2,7 +2,7 @@
 import type { ImportPlugin } from '~/utils/import-pipeline/types'
 
 const props = defineProps<{
-  parsers: readonly ImportPlugin[]
+  uploadTypes: readonly ImportPlugin[]
 }>()
 
 const emit = defineEmits<{
@@ -13,11 +13,11 @@ const config = useRuntimeConfig()
 const feedbackEmail = config.public.feedbackEmail as string
 const mailtoHref = `mailto:${feedbackEmail}?subject=${encodeURIComponent('SeniorityGuru: Airline Parser Request')}`
 
-const infoParser = ref<ImportPlugin | null>(null)
+const infoUploadType = ref<ImportPlugin | null>(null)
 const showInfoModal = ref(false)
 
-function openInfo(parser: ImportPlugin) {
-  infoParser.value = parser
+function openInfo(uploadType: ImportPlugin) {
+  infoUploadType.value = uploadType
   showInfoModal.value = true
 }
 </script>
@@ -33,23 +33,23 @@ function openInfo(parser: ImportPlugin) {
 
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl mx-auto">
       <UCard
-        v-for="parser in props.parsers"
-        :key="parser.id"
+        v-for="uploadType in props.uploadTypes"
+        :key="uploadType.id"
         class="cursor-pointer hover:ring-2 hover:ring-primary transition-all"
-        @click="emit('select', parser.id)"
+        @click="emit('select', uploadType.id)"
       >
         <div class="flex flex-col items-center text-center gap-3 py-2">
-          <UIcon :name="parser.icon" class="text-3xl text-primary" />
+          <UIcon :name="uploadType.icon" class="text-3xl text-primary" />
           <div>
-            <p class="font-semibold">{{ parser.label }}</p>
-            <p class="text-sm text-muted mt-1">{{ parser.description }}</p>
+            <p class="font-semibold">{{ uploadType.label }}</p>
+            <p class="text-sm text-muted mt-1">{{ uploadType.description }}</p>
           </div>
           <UButton
             variant="link"
             size="xs"
             color="neutral"
             label="Learn More"
-            @click.stop="openInfo(parser)"
+            @click.stop="openInfo(uploadType)"
           />
         </div>
       </UCard>
@@ -66,10 +66,10 @@ function openInfo(parser: ImportPlugin) {
       />
     </div>
 
-    <UModal v-model:open="showInfoModal" :title="infoParser?.label ?? 'Format Details'">
+    <UModal v-model:open="showInfoModal" :title="infoUploadType?.label ?? 'Format Details'">
       <template #body>
         <p class="text-sm text-muted whitespace-pre-line">
-          {{ infoParser?.formatDescription }}
+          {{ infoUploadType?.formatDescription }}
         </p>
       </template>
     </UModal>

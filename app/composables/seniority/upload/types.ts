@@ -3,6 +3,7 @@ import type { DateValue } from 'reka-ui'
 import type { SeniorityEntry } from '~/utils/schemas/seniority-list'
 import type { ColumnMap, MappingOptions } from '~/utils/parse-spreadsheet'
 import type { ImportIssue, PreparedSheet } from '~/utils/import-pipeline/types'
+import type { ImportPlugin } from '~/utils/import-pipeline/types'
 
 // ── Progress ─────────────────────────────────────────────────────────────────
 
@@ -122,6 +123,8 @@ export interface ConfirmPhaseOptions {
 
 export interface SeniorityUpload {
   selectedParserId: Ref<string | null>
+  uploadTypes: ComputedRef<readonly ImportPlugin[]>
+  selectUploadType(id: string): void
   file: FilePhase
   mapping: MappingPhase
   review: ReviewPhase

@@ -11,6 +11,7 @@ import { _useReview } from './_useReview'
 import { _useConfirm } from './_useConfirm'
 import { DEFAULT_COLUMN_MAP } from './defaults'
 import { useUserStore } from '~/stores/user'
+import { getImportPlugin, importPlugins } from '~/utils/import-pipeline/plugins/registry'
 
 export type { SeniorityUpload, ProcessingPhase, ProgressTracker } from './types'
 
@@ -19,6 +20,11 @@ export function useSeniorityUpload(): SeniorityUpload {
   // ── Shared refs (owned here, passed to phases) ──────────────────────────
 
   const selectedParserId = ref<string | null>(null)
+  const preferredUploadType = ref<string | null>(null)
+  const uploadTypes = computed(() => {
+    const preferred = preferredUploadType.value
+    return preferred ? [...importPlugins].sort((a, b) => Number(b.id === preferred) - Number(a.id === preferred)) : importPlugins
+  })
   const rawHeaders = ref<string[]>([])
   const rawRows = ref<string[][]>([])
   const extractedEffectiveDate = ref<string | null>(null)
@@ -36,6 +42,13 @@ export function useSeniorityUpload(): SeniorityUpload {
   watch(selectedParserId, (uploadType) => {
     if (uploadType) userStore.savePreference('lastUploadType', uploadType).catch(() => {})
   })
+  void userStore.getPreference('lastUploadType').then((id) => {
+    if (id && getImportPlugin(id)) preferredUploadType.value = id
+  }).catch(() => {})
+
+  function selectUploadType(id: string) {
+    if (getImportPlugin(id)) selectedParserId.value = id
+  }
 
   // ── Progress (cross-cutting) ────────────────────────────────────────────
 
@@ -78,6 +91,8 @@ export function useSeniorityUpload(): SeniorityUpload {
     extractedEffectiveDate,
     extractedTitle,
     selectedParserId,
+    uploadTypes,
+    selectUploadType,
     preparedSheet,
     async onMapped(mapped: Partial<SeniorityEntry>[], issues: Map<number, ImportIssue[]>) {
       entries.value = mapped
