@@ -46,7 +46,7 @@ const stepOrder = ['upload', 'mapping', 'review', 'confirm'] as const
 type Step = typeof stepOrder[number]
 const steps: StepperItem[] = [
   { title: 'Upload', description: 'Choose file', icon: 'i-lucide-upload', value: 'upload' },
-  { title: 'Map Columns', description: 'Match fields', icon: 'i-lucide-columns-3', value: 'mapping' },
+  { title: 'Match Columns', description: 'Confirm fields', icon: 'i-lucide-columns-3', value: 'mapping' },
   { title: 'Review', description: 'Validate data', icon: 'i-lucide-scan-eye', value: 'review' },
   { title: 'Save', description: 'Confirm & upload', icon: 'i-lucide-check-circle', value: 'confirm' },
 ]
@@ -242,7 +242,7 @@ async function onSave() {
               />
             </div>
 
-            <!-- Step 2: Map Columns -->
+            <!-- Step 2: Match Columns -->
             <div v-else-if="currentStep === 'mapping'" class="space-y-6">
               <UAlert
                 v-if="upload.mapping.error.value"

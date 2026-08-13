@@ -164,7 +164,7 @@ describe('upload page nextStep — Match Columns', () => {
     await wrapper.vm.$nextTick()
 
     // Suggestions require confirmation before Review.
-    expect(wrapper.text()).toContain('Map Columns')
+    expect(wrapper.text()).toContain('Match Columns')
   })
 })
 
