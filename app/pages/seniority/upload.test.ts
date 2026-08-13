@@ -34,6 +34,7 @@ const {
 
 mockNuxtImport('navigateTo', () => mockNavigateTo)
 mockNuxtImport('useSeniorityUpload', () => () => ({
+  diagnosticAttemptId: { value: null },
   selectedUploadTypeId: mockSelectedUploadTypeId,
   file: {
     fileName: { value: null },

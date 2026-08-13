@@ -82,7 +82,11 @@ export function useSeniorityUpload(): SeniorityUpload {
       void importAttemptsStore.update(id, {
         data: {
           ...JSON.parse(importAttemptsStore.exportAttempt(id) ?? '{}'),
-          review: { entries, editedAt: new Date().toISOString() },
+          review: {
+            entries,
+            editedAt: new Date().toISOString(),
+            editPatches: [...((JSON.parse(importAttemptsStore.exportAttempt(id) ?? '{}').review?.editPatches ?? [])), { entries, at: new Date().toISOString() }],
+          },
           stage: 'review',
         },
       })

@@ -27,8 +27,8 @@ function formatPipelineIssue(issue: { field?: string, message: string }): string
   return `${issue.field ?? 'row'}: ${issue.message}`
 }
 
-function reportReviewChange(opts: ReviewPhaseOptions) {
-  opts.onReviewChanged?.(opts.entries.value)
+function reportReviewChange(opts: ReviewPhaseOptions, action: string) {
+  opts.onReviewChanged?.(opts.entries.value.map(entry => ({ ...entry, _reviewAction: action })))
 }
 
 function isStructuralMessage(raw: string): boolean {
@@ -122,7 +122,7 @@ export function _useReview(opts: ReviewPhaseOptions): ReviewPhase & { _reset: ()
     }
 
     revalidateStructural()
-    reportReviewChange(opts)
+    reportReviewChange(opts, 'update-cell')
   }
 
   function deleteRow(rowIndex: number) {
@@ -154,7 +154,7 @@ export function _useReview(opts: ReviewPhaseOptions): ReviewPhase & { _reset: ()
     opts.sourceValues.value = reindexSourceValues(rowIndex, -1)
 
     revalidateStructural()
-    reportReviewChange(opts)
+    reportReviewChange(opts, 'delete-row')
   }
 
   function insertRowAt(rowIndex: number) {
@@ -198,7 +198,7 @@ export function _useReview(opts: ReviewPhaseOptions): ReviewPhase & { _reset: ()
     opts.sourceValues.value = reindexSourceValues(rowIndex, 1)
 
     revalidateStructural()
-    reportReviewChange(opts)
+    reportReviewChange(opts, 'insert-row')
   }
 
   function deleteErrorRows(): number {
@@ -229,7 +229,7 @@ export function _useReview(opts: ReviewPhaseOptions): ReviewPhase & { _reset: ()
 
     opts.rowErrors.value = new Map()
     revalidateStructural()
-    reportReviewChange(opts)
+    reportReviewChange(opts, 'delete-error-rows')
     return count
   }
 
