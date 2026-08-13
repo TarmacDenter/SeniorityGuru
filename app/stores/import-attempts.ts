@@ -98,27 +98,31 @@ export const useImportAttemptsStore = defineStore('import-attempts', () => {
   }
 
   async function complete(id: string, input: { outcome: LocalImportAttempt['outcome'], listId?: number, finalEntries?: unknown, error?: string }) {
-    const attempt = await db.importAttempts.get(id)
-    if (!attempt) return
-    let previous: Record<string, unknown> = {}
-    try { previous = JSON.parse(attempt.data) as Record<string, unknown> } catch { /* retain the raw record if it is malformed */ }
-    await update(id, {
-      outcome: input.outcome,
-      listId: input.listId,
-      data: {
-        ...previous,
+    try {
+      const attempt = await db.importAttempts.get(id)
+      if (!attempt) return
+      let previous: Record<string, unknown> = {}
+      try { previous = JSON.parse(attempt.data) as Record<string, unknown> } catch { /* retain the raw record if it is malformed */ }
+      await update(id, {
         outcome: input.outcome,
-        stage: 'completed',
-        completedAt: new Date().toISOString(),
-        ...(input.error ? { error: input.error } : {}),
-        final: {
-          entries: input.finalEntries ?? previous.finalEntries ?? [],
-          outcome: input.outcome === 'saved' ? 'saved' : 'failed',
-          ...(input.listId !== undefined ? { savedListId: input.listId } : {}),
+        listId: input.listId,
+        data: {
+          ...previous,
+          outcome: input.outcome,
+          stage: 'completed',
           completedAt: new Date().toISOString(),
+          ...(input.error ? { error: input.error } : {}),
+          final: {
+            entries: input.finalEntries ?? previous.finalEntries ?? [],
+            outcome: input.outcome === 'saved' ? 'saved' : 'failed',
+            ...(input.listId !== undefined ? { savedListId: input.listId } : {}),
+            completedAt: new Date().toISOString(),
+          },
         },
-      },
-    })
+      })
+    } catch (error) {
+      log.warn('Could not complete import diagnostic', { error: String(error) })
+    }
   }
 
   async function remove(id: string) {

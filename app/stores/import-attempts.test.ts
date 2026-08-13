@@ -5,6 +5,7 @@ const records = vi.hoisted(() => [] as Array<{ id: string, createdAt: string, pl
 vi.mock('~/utils/db', () => ({
   db: { importAttempts: {
     toArray: vi.fn(async () => [...records]),
+    get: vi.fn(async (id: string) => records.find(item => item.id === id)),
     put: vi.fn(async (record) => { const index = records.findIndex(item => item.id === record.id); if (index >= 0) records[index] = record; else records.push(record) }),
     bulkDelete: vi.fn(async (ids: string[]) => { for (const id of ids) { const index = records.findIndex(item => item.id === id); if (index >= 0) records.splice(index, 1) } }),
     delete: vi.fn(async (id: string) => { const index = records.findIndex(item => item.id === id); if (index >= 0) records.splice(index, 1) }),
@@ -21,5 +22,14 @@ describe('useImportAttemptsStore', () => {
     for (let index = 0; index < 6; index++) await store.record({ id: String(index), pluginId: 'generic', data: { index } })
     expect(store.attempts).toHaveLength(5)
     expect(records).toHaveLength(5)
+  })
+
+  it('does not interrupt an import when completing a diagnostic fails', async () => {
+    const { useImportAttemptsStore } = await import('./import-attempts')
+    const store = useImportAttemptsStore()
+    const dbModule = await import('~/utils/db')
+    vi.mocked(dbModule.db.importAttempts.get).mockRejectedValueOnce(new Error('quota exceeded'))
+
+    await expect(store.complete('missing', { outcome: 'failed', error: 'Import failed' })).resolves.toBeUndefined()
   })
 })
