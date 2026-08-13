@@ -16,6 +16,14 @@ const sourceSheet: SourceSheet = {
   ],
 }
 
+function deepFreeze<T>(value: T): T {
+  if (value && typeof value === 'object') {
+    Object.freeze(value)
+    for (const nested of Object.values(value)) deepFreeze(nested)
+  }
+  return value
+}
+
 describe('registered Upload Types conformance', () => {
   it('satisfy the immutable, deterministic preparation contract', () => {
     expect(new Set(importPlugins.map(plugin => plugin.id)).size).toBe(importPlugins.length)
@@ -27,10 +35,7 @@ describe('registered Upload Types conformance', () => {
       expect(plugin.icon).toBeTruthy()
       expect(plugin.formatDescription).toBeTruthy()
 
-      const frozenSource = structuredClone(sourceSheet)
-      Object.freeze(frozenSource.columns)
-      Object.freeze(frozenSource.rows)
-      Object.freeze(frozenSource)
+      const frozenSource = deepFreeze(structuredClone(sourceSheet))
       const before = structuredClone(frozenSource)
       const first = prepareImport({ plugin, sourceSheet: frozenSource })
       const second = prepareImport({ plugin, sourceSheet: frozenSource })
