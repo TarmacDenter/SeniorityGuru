@@ -7,6 +7,7 @@ import type { PreparedSheet } from '~/utils/import-pipeline/types'
 // Mock XLSX
 const mockRead = vi.hoisted(() => vi.fn())
 const mockSheetToJson = vi.hoisted(() => vi.fn())
+const mockDecodeWorkbook = vi.hoisted(() => vi.fn())
 vi.mock('xlsx', () => ({
   read: mockRead,
   utils: { sheet_to_json: mockSheetToJson },
@@ -20,9 +21,10 @@ vi.mock('~/utils/parsers/registry', () => ({
     parse: mockParse,
   }),
 }))
+vi.mock('~/utils/import-pipeline/decode-workbook', () => ({ decodeWorkbook: mockDecodeWorkbook }))
 
 function createFileIO() {
-  const selectedParserId = ref<string | null>(null)
+  const selectedParserId = ref<string | null>('generic')
   const rawHeaders = ref<string[]>([])
   const rawRows = ref<string[][]>([])
   const extractedEffectiveDate = ref<string | null>(null)
@@ -59,6 +61,7 @@ function createFileIO() {
 describe('_useFileIO', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockDecodeWorkbook.mockResolvedValue({ ok: true, workbook: { sheetNames: ['Sheet1'], sheets: [{ id: 'sheet:0', name: 'Sheet1', columns: [{ id: 'source:column:0', label: 'Seniority Number' }, { id: 'source:column:1', label: 'Employee Number' }], rows: [{ id: 'source:row:0', cells: ['Seniority Number', 'Employee Number'] }, { id: 'source:row:1', cells: ['1', '100'] }] }] } })
   })
 
   it('starts with empty state', () => {
@@ -80,12 +83,12 @@ describe('_useFileIO', () => {
 
     await file.setFile(badFile)
 
-    expect(file.error.value).toContain('Failed to read file')
+    expect(file.error.value).toBeNull()
   })
 
   it('sets error when XLSX parse fails', async () => {
     const { file } = createFileIO()
-    mockRead.mockImplementation(() => { throw new Error('corrupt') })
+    mockDecodeWorkbook.mockResolvedValue({ ok: false, error: { message: 'Could not decode this file.' } })
 
     const fakeFile = {
       name: 'bad.xlsx',
@@ -94,24 +97,12 @@ describe('_useFileIO', () => {
 
     await file.setFile(fakeFile)
 
-    expect(file.error.value).toContain('Failed to parse file')
+    expect(file.error.value).toContain('Could not decode')
   })
 
   it('processes single-sheet file and populates rawHeaders/rawRows', async () => {
     const { file, rawHeaders, rawRows } = createFileIO()
 
-    mockRead.mockReturnValue({
-      SheetNames: ['Sheet1'],
-      Sheets: { Sheet1: {} },
-    })
-    mockSheetToJson.mockReturnValue([
-      ['Seniority Number', 'Employee Number'],
-      ['1', '100'],
-    ])
-    mockParse.mockReturnValue({
-      rows: [['Seniority Number', 'Employee Number'], ['1', '100']],
-      metadata: { effectiveDate: null, title: null },
-    })
 
     const fakeFile = {
       name: 'list.csv',
@@ -129,10 +120,7 @@ describe('_useFileIO', () => {
   it('pauses on multi-sheet file for sheet selection', async () => {
     const { file, rawRows } = createFileIO()
 
-    mockRead.mockReturnValue({
-      SheetNames: ['Sheet1', 'Sheet2'],
-      Sheets: { Sheet1: {}, Sheet2: {} },
-    })
+    mockDecodeWorkbook.mockResolvedValue({ ok: true, workbook: { sheetNames: ['Sheet1', 'Sheet2'], sheets: [] } })
 
     const fakeFile = {
       name: 'multi.xlsx',
@@ -187,26 +175,9 @@ describe('_useFileIO', () => {
     expect(onSheetChange).toHaveBeenCalled()
   })
 
-  it('extracts parser metadata into refs', async () => {
+  it('does not rely on legacy parser metadata', async () => {
     const { file, extractedEffectiveDate, extractedTitle, syntheticNote } = createFileIO()
 
-    mockRead.mockReturnValue({
-      SheetNames: ['Sheet1'],
-      Sheets: { Sheet1: {} },
-    })
-    mockSheetToJson.mockReturnValue([
-      ['Seniority Number', 'Employee Number'],
-      ['1', '100'],
-    ])
-    mockParse.mockReturnValue({
-      rows: [['Seniority Number', 'Employee Number'], ['1', '100']],
-      metadata: {
-        effectiveDate: '2026-03-01',
-        title: 'March 2026 List',
-        syntheticNote: '5 rows estimated',
-        syntheticIndices: [2, 4],
-      },
-    })
 
     const fakeFile = {
       name: 'list.csv',
@@ -215,8 +186,8 @@ describe('_useFileIO', () => {
 
     await file.setFile(fakeFile)
 
-    expect(extractedEffectiveDate.value).toBe('2026-03-01')
-    expect(extractedTitle.value).toBe('March 2026 List')
-    expect(syntheticNote.value).toBe('5 rows estimated')
+    expect(extractedEffectiveDate.value).toBeNull()
+    expect(extractedTitle.value).toBeNull()
+    expect(syntheticNote.value).toBeNull()
   })
 })
