@@ -6,29 +6,44 @@ import type { SourceSheet } from '../types'
 const sourceSheet: SourceSheet = {
   id: 'sheet:test',
   name: 'Test',
-  columns: [{ id: 'source:column:0', label: 'Name' }],
-  rows: [{ id: 'source:row:0', cells: ['Name'] }, { id: 'source:row:1', cells: ['Example'] }],
+  columns: [
+    { id: 'source:column:0', label: 'Name' },
+    { id: 'source:column:1', label: 'Base' },
+  ],
+  rows: [
+    { id: 'source:row:0', cells: ['Name', 'Base'] },
+    { id: 'source:row:1', cells: ['Example', 'JFK'] },
+  ],
 }
 
-describe('registered Import Plugins', () => {
-  it('conform to the shared preparation contract', () => {
+describe('registered Upload Types conformance', () => {
+  it('satisfy the immutable, deterministic preparation contract', () => {
     expect(new Set(importPlugins.map(plugin => plugin.id)).size).toBe(importPlugins.length)
+
     for (const plugin of importPlugins) {
+      expect(plugin.id).toMatch(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
+      expect(plugin.label).toBeTruthy()
+      expect(plugin.description).toBeTruthy()
+      expect(plugin.icon).toBeTruthy()
+      expect(plugin.formatDescription).toBeTruthy()
+
       const frozenSource = structuredClone(sourceSheet)
       Object.freeze(frozenSource.columns)
       Object.freeze(frozenSource.rows)
       Object.freeze(frozenSource)
+      const before = structuredClone(frozenSource)
       const first = prepareImport({ plugin, sourceSheet: frozenSource })
       const second = prepareImport({ plugin, sourceSheet: frozenSource })
+
       expect(first).toEqual(second)
+      expect(frozenSource).toEqual(before)
       expect(first.preparedSheet.sourceSheet).toBe(frozenSource)
-      expect(first.preparedSheet.rows).toHaveLength(frozenSource.rows.length)
       expect(first.preparedSheet.rows.map(row => row.sourceRowId)).toEqual(frozenSource.rows.map(row => row.id))
-      expect(Object.keys(first.mappingSuggestions)).toEqual(expect.arrayContaining(
-        first.preparedSheet.columns.filter(column => column.id.startsWith('plugin:')).map(column =>
-          column.id.slice(`plugin:${plugin.id}:`.length).replace(/-/g, '_'),
-        ),
-      ))
+      expect(first.preparedSheet.rows).toHaveLength(frozenSource.rows.length)
+      for (const row of first.preparedSheet.rows) {
+        expect(Object.keys(row.cells)).toEqual(expect.arrayContaining(frozenSource.columns.map(column => column.id)))
+      }
+
       for (const column of first.preparedSheet.columns.filter(column => column.id.startsWith('plugin:'))) {
         expect(column.id).toMatch(new RegExp(`^plugin:${plugin.id}:`))
         expect(column.sourceColumnId).toBeTruthy()
