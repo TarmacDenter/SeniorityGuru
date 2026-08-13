@@ -24,9 +24,14 @@ const requiredFields: { key: keyof ColumnMap; label: string }[] = [
   { key: 'fleet', label: 'Fleet / Aircraft' },
 ]
 
-const columnOptions = computed(() =>
-  props.headers.map((h, i) => ({ label: h || `Column ${i + 1}`, value: props.columnIds[i] }))
-)
+const columnOptions = computed(() => [
+  props.headers.flatMap((header, index) => props.columnIds[index]?.startsWith('plugin:')
+    ? [{ label: `Suggested: ${header || `Column ${index + 1}`}`, value: props.columnIds[index]! }]
+    : []),
+  props.headers.flatMap((header, index) => !props.columnIds[index]?.startsWith('plugin:')
+    ? [{ label: `Original: ${header || `Column ${index + 1}`}`, value: props.columnIds[index]! }]
+    : []),
+].filter(group => group.length > 0))
 
 function sampleValue(field: keyof ColumnMap): string | undefined {
   const columnId = props.columnMap[field]
