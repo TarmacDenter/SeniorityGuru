@@ -1,4 +1,5 @@
 import type { SeniorityEntry } from '~/utils/schemas/seniority-list'
+import { normalizeEmployeeNumber } from '~/utils/schemas/seniority-list'
 import { isRetiredBy } from '~/utils/date'
 import { computePercentile } from './percentile'
 import type { QualSpec } from './qual-spec'
@@ -47,11 +48,14 @@ export interface QualViewerOptions {
 export function projectQualViewer(options: QualViewerOptions): QualViewerResult {
   const { entries, employeeNumber, asOfDate } = options
   const qual = options.qual ?? {}
+  const userEmployeeKey = employeeNumber ? normalizeEmployeeNumber(employeeNumber) : null
   const ordered = [...entries].sort((a, b) => a.seniority_number - b.seniority_number)
-  const anchor = employeeNumber ? ordered.find(e => e.employee_number === employeeNumber) : undefined
+  const anchor = userEmployeeKey
+    ? ordered.find(e => normalizeEmployeeNumber(e.employee_number) === userEmployeeKey)
+    : undefined
   const canInsert = !!anchor
   const matches = ordered.filter(qualSpecToFilter(qual))
-  const anchorInQual = !!anchor && matches.some(e => e.employee_number === anchor.employee_number)
+  const anchorInQual = !!anchor && matches.some(e => normalizeEmployeeNumber(e.employee_number) === userEmployeeKey)
   const markerEnabled = !!options.insertSelf && canInsert && !anchorInQual && !!(qual.base && qual.seat && qual.fleet)
   const markerRetired = !!anchor && isRetiredBy(anchor.retire_date, asOfDate)
 
@@ -85,7 +89,7 @@ export function projectQualViewer(options: QualViewerOptions): QualViewerResult 
       hireDate: entry.hire_date,
       retireDate: entry.retire_date,
       status: retired ? 'retired' : 'active',
-      isUser: entry.employee_number === employeeNumber,
+      isUser: !!userEmployeeKey && normalizeEmployeeNumber(entry.employee_number) === userEmployeeKey,
       isMarker: false,
       selectedListCompanySeniority: selected.seniorityNumber,
       selectedListCompanyPercentile: selected.percentile,

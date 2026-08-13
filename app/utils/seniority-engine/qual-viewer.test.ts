@@ -30,6 +30,16 @@ describe('projectQualViewer', () => {
     expect(result.rows.find(row => row.employeeNumber === 'B')).toMatchObject({ isUser: true, isMarker: false })
   })
 
+  it('preserves the actual user row when insertion is deselected on the user qual', () => {
+    const options = { entries, qual: { base: 'BOS', fleet: '220', seat: 'CA' }, employeeNumber: '00123', asOfDate: '2026-06-16' }
+    const paddedEntries = entries.map((entry, index) => index === 1 ? { ...entry, employee_number: '00123' } : entry)
+
+    for (const insertSelf of [true, false]) {
+      const result = projectQualViewer({ ...options, entries: paddedEntries, insertSelf })
+      expect(result.rows.find(row => row.employeeNumber === '00123')).toMatchObject({ isUser: true, isMarker: false })
+    }
+  })
+
   it('inserts a marker into another qual and shifts affected active ranks', () => {
     const result = projectQualViewer({ entries, qual: { base: 'JFK', fleet: '737', seat: 'FO' }, employeeNumber: 'B', insertSelf: true, asOfDate: '2026-06-16' })
     expect(result.rows).toHaveLength(2)
