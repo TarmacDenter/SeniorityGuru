@@ -48,8 +48,17 @@ export function useSeniorityUpload(): SeniorityUpload {
     if (id && getImportPlugin(id)) preferredUploadType.value = id
   }).catch(() => {})
 
-  function selectUploadType(id: string) {
-    if (getImportPlugin(id)) selectedParserId.value = id
+  let file: ReturnType<typeof _useFileIO>
+
+  async function selectUploadType(id: string) {
+    if (!getImportPlugin(id)) return
+    selectedParserId.value = id
+    await file.reprepare()
+  }
+
+  function clearUploadType() {
+    selectedParserId.value = null
+    resetDownstream()
   }
 
   // ── Progress (cross-cutting) ────────────────────────────────────────────
@@ -114,7 +123,7 @@ export function useSeniorityUpload(): SeniorityUpload {
     },
   })
 
-  const file = _useFileIO({
+  file = _useFileIO({
     selectedParserId,
     rawHeaders,
     rawRows,
@@ -143,6 +152,7 @@ export function useSeniorityUpload(): SeniorityUpload {
     selectedParserId,
     uploadTypes,
     selectUploadType,
+    clearUploadType,
     file,
     mapping,
     review,

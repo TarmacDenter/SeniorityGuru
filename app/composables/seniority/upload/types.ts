@@ -34,6 +34,7 @@ export interface FilePhase {
   setFile(file: File | null): Promise<void>
   selectSheet(name: string): Promise<void>
   selectHeaderRow(index: number): void
+  reprepare(): Promise<void>
 }
 
 export interface FilePhaseOptions {
@@ -128,7 +129,8 @@ export interface ConfirmPhaseOptions {
 export interface SeniorityUpload {
   selectedParserId: Ref<string | null>
   uploadTypes: ComputedRef<readonly ImportPlugin[]>
-  selectUploadType(id: string): void
+  selectUploadType(id: string): Promise<void>
+  clearUploadType(): void
   file: FilePhase
   mapping: MappingPhase
   review: ReviewPhase

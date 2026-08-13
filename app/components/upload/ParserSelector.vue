@@ -6,12 +6,12 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  select: [parserId: string]
+  select: [uploadTypeId: string]
 }>()
 
 const config = useRuntimeConfig()
 const feedbackEmail = config.public.feedbackEmail as string
-const mailtoHref = `mailto:${feedbackEmail}?subject=${encodeURIComponent('SeniorityGuru: Airline Parser Request')}`
+const mailtoHref = `mailto:${feedbackEmail}?subject=${encodeURIComponent('SeniorityGuru: Upload Type Request')}`
 
 const infoUploadType = ref<ImportPlugin | null>(null)
 const showInfoModal = ref(false)
@@ -25,9 +25,9 @@ function openInfo(uploadType: ImportPlugin) {
 <template>
   <div class="space-y-6">
     <div class="text-center space-y-2">
-      <h2 class="text-xl font-semibold">Select Your File Format</h2>
+      <h2 class="text-xl font-semibold">Select an Upload Type</h2>
       <p class="text-sm text-muted">
-        Choose the format that matches your seniority list export.
+        Choose the Upload Type that matches your seniority list export.
       </p>
     </div>
 

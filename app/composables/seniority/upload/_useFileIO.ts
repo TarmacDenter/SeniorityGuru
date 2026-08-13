@@ -126,6 +126,12 @@ export function _useFileIO(opts: FilePhaseOptions): FilePhase & { _reset: () => 
     void processImportSheet(decodedWorkbook, selectedSheet.value, index)
   }
 
+  async function reprepare() {
+    if (!decodedWorkbook || !selectedSheet.value || !opts.selectedParserId.value) return
+    opts.onSheetChange()
+    await processImportSheet(decodedWorkbook, selectedSheet.value)
+  }
+
   function reset() {
     fileName.value = ''
     sheetNames.value = []
@@ -149,6 +155,7 @@ export function _useFileIO(opts: FilePhaseOptions): FilePhase & { _reset: () => 
     setFile,
     selectSheet,
     selectHeaderRow,
+    reprepare,
     _reset: reset,
   } as FilePhase & { _reset: () => void }
 }

@@ -79,14 +79,16 @@ const canAdvance = computed(() => {
   return true
 })
 
-function selectParser(parserId: string) {
-  upload.selectUploadType(parserId)
+async function selectParser(parserId: string) {
+  await upload.selectUploadType(parserId)
 }
 
 function changeFormat() {
-  upload.reset()
+  const replacingReview = currentStep.value === 'review' && upload.review.entries.value.length > 0
+  if (replacingReview && !window.confirm('Changing the upload type replaces your review edits. Continue?')) return
+  upload.clearUploadType()
+  currentStep.value = 'upload'
   clearRowFilter()
-  files.value = null
 }
 
 async function nextStep() {
