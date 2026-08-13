@@ -6,6 +6,7 @@ const props = defineProps<{
   columnMap: ColumnMap
   mappingOptions: MappingOptions
   sampleRows: string[][]
+  sourceHeaders?: string[]
 }>()
 
 const emit = defineEmits<{
@@ -38,6 +39,18 @@ function updateOption<K extends keyof MappingOptions>(key: K, value: MappingOpti
 
 <template>
   <div class="space-y-6">
+    <div v-if="sourceHeaders?.length" class="grid gap-3 text-sm sm:grid-cols-2">
+      <div>
+        <p class="font-medium">Suggested columns</p>
+        <p class="text-muted">Prepared labels used for mapping.</p>
+        <p class="mt-1 text-xs">{{ headers.filter(Boolean).join(' · ') }}</p>
+      </div>
+      <div>
+        <p class="font-medium">Original source columns</p>
+        <p class="text-muted">Labels decoded from the unchanged worksheet.</p>
+        <p class="mt-1 text-xs">{{ sourceHeaders.filter(Boolean).join(' · ') }}</p>
+      </div>
+    </div>
     <!-- Required field mappings -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
       <UFormField v-for="field in requiredFields" :key="field.key" :label="field.label" required>

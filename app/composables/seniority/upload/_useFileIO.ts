@@ -17,6 +17,7 @@ export function _useFileIO(opts: FilePhaseOptions): FilePhase & { _reset: () => 
   const selectedHeaderRow = ref(0)
   const error = ref<string | null>(null)
   const headerRows = ref<string[][]>([])
+  const sourceHeaders = ref<string[]>([])
   const preparationIssues = ref<ImportIssue[]>([])
 
   let decodedWorkbook: DecodedWorkbook | null = null
@@ -56,6 +57,7 @@ export function _useFileIO(opts: FilePhaseOptions): FilePhase & { _reset: () => 
     const plugin = getImportPlugin(opts.selectedParserId.value ?? '')
     if (!plugin) return
     headerRows.value = sourceSheet.rows.map(row => row.cells.map(cell => cell === null ? '' : String(cell)))
+    sourceHeaders.value = sourceSheet.columns.map(column => column.label ?? column.id)
     selectedHeaderRow.value = headerRowIndex ?? plugin.suggestHeaderRow?.(sourceSheet) ?? 0
     const result = prepareImport({ plugin, sourceSheet, headerRowIndex: selectedHeaderRow.value })
     preparationIssues.value = [...result.issues]
@@ -89,6 +91,7 @@ export function _useFileIO(opts: FilePhaseOptions): FilePhase & { _reset: () => 
     selectedSheet.value = null
     decodedWorkbook = null
     headerRows.value = []
+    sourceHeaders.value = []
     selectedHeaderRow.value = 0
     error.value = null
     preparationIssues.value = []
@@ -160,6 +163,7 @@ export function _useFileIO(opts: FilePhaseOptions): FilePhase & { _reset: () => 
     selectedSheet: readonly(selectedSheet),
     selectedHeaderRow: readonly(selectedHeaderRow),
     headerRows: readonly(headerRows),
+    sourceHeaders: readonly(sourceHeaders),
     needsSheetSelection,
     hasData,
     autoDetected,
