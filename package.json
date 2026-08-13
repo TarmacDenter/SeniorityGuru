@@ -44,15 +44,6 @@
     "xlsx": "^0.18.5",
     "zod": "^3.24.0"
   },
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "@parcel/watcher",
-      "better-sqlite3",
-      "esbuild",
-      "unrs-resolver",
-      "vue-demi"
-    ]
-  },
   "devDependencies": {
     "@commitlint/cli": "^20.4.3",
     "@commitlint/config-conventional": "^20.4.3",
