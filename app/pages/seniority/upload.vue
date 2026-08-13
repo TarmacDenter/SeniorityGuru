@@ -261,7 +261,7 @@ async function onSave() {
               />
               <UFormField v-if="upload.file.headerRows.value.length > 1" label="Column heading row">
                 <USelectMenu
-                  :model-value="0"
+                  :model-value="upload.file.selectedHeaderRow.value"
                   :items="upload.file.headerRows.value.map((row, index) => ({ label: `Row ${index + 1}: ${row.filter(Boolean).slice(0, 3).join(' · ') || 'blank'}`, value: index }))"
                   value-key="value"
                   class="w-full"

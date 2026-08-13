@@ -39,6 +39,7 @@ mockNuxtImport('useSeniorityUpload', () => () => ({
     fileName: { value: null },
     sheetNames: { value: [] },
     selectedSheet: { value: null },
+    selectedHeaderRow: { value: 0 },
     headerRows: { value: [] },
     needsSheetSelection: { value: false },
     hasData: mockFileHasData,

@@ -23,6 +23,7 @@ export interface FilePhase {
   fileName: Readonly<Ref<string>>
   sheetNames: Readonly<Ref<string[]>>
   selectedSheet: Readonly<Ref<string | null>>
+  selectedHeaderRow: Readonly<Ref<number>>
   headerRows: Readonly<Ref<string[][]>>
   needsSheetSelection: ComputedRef<boolean>
   hasData: ComputedRef<boolean>

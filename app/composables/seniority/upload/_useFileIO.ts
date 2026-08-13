@@ -14,6 +14,7 @@ export function _useFileIO(opts: FilePhaseOptions): FilePhase & { _reset: () => 
   const fileName = ref('')
   const sheetNames = ref<string[]>([])
   const selectedSheet = ref<string | null>(null)
+  const selectedHeaderRow = ref(0)
   const error = ref<string | null>(null)
   const headerRows = ref<string[][]>([])
 
@@ -99,6 +100,7 @@ export function _useFileIO(opts: FilePhaseOptions): FilePhase & { _reset: () => 
     const sourceSheet = workbook.sheets.find(sheet => sheet.name === sheetName)
     if (!sourceSheet) return
     headerRows.value = sourceSheet.rows.map(row => row.cells.map(cell => cell === null ? '' : String(cell)))
+    selectedHeaderRow.value = 0
     const result = prepareImport({ plugin: genericImportPlugin, sourceSheet, headerRowIndex: 0 })
     applyPreparedSheet(result.preparedSheet)
     if (result.issues.length > 0) {
@@ -113,6 +115,7 @@ export function _useFileIO(opts: FilePhaseOptions): FilePhase & { _reset: () => 
     workbookBuffer = null
     decodedWorkbook = null
     headerRows.value = []
+    selectedHeaderRow.value = 0
     error.value = null
     opts.onSheetChange()
 
@@ -202,6 +205,7 @@ export function _useFileIO(opts: FilePhaseOptions): FilePhase & { _reset: () => 
     const sourceSheet = decodedWorkbook.sheets.find(sheet => sheet.name === selectedSheet.value)
     if (!sourceSheet || index < 0 || index >= sourceSheet.rows.length) return
     opts.onSheetChange()
+    selectedHeaderRow.value = index
     const result = prepareImport({ plugin: genericImportPlugin, sourceSheet, headerRowIndex: index })
     applyPreparedSheet(result.preparedSheet)
   }
@@ -213,6 +217,7 @@ export function _useFileIO(opts: FilePhaseOptions): FilePhase & { _reset: () => 
     workbookBuffer = null
     decodedWorkbook = null
     headerRows.value = []
+    selectedHeaderRow.value = 0
     error.value = null
   }
 
@@ -220,6 +225,7 @@ export function _useFileIO(opts: FilePhaseOptions): FilePhase & { _reset: () => 
     fileName: readonly(fileName),
     sheetNames: readonly(sheetNames),
     selectedSheet: readonly(selectedSheet),
+    selectedHeaderRow: readonly(selectedHeaderRow),
     headerRows: readonly(headerRows),
     needsSheetSelection,
     hasData,
