@@ -91,6 +91,7 @@ describe('SeniorityListViewer', () => {
 
     expect(wrapper.text()).toContain('JFK-737-CA · 2 pilots')
     expect(wrapper.text()).toContain('First|E1|1|1|active')
+    expect(wrapper.find('div.flex-1.min-h-0.overflow-auto').exists()).toBe(true)
   })
 
   it('keeps insertion synthetic and exposes pagination for large lists', async () => {
