@@ -3,12 +3,12 @@ definePageMeta({ layout: 'default' })
 
 const sections = [
   { id: 'percentile', title: 'Seniority Percentile' },
-  { id: 'adjusted-rank', title: 'Adjusted vs Raw Rank' },
-  { id: 'holdability', title: 'Holdability & The Plug' },
-  { id: 'growth-model', title: 'Growth Modeling' },
+  { id: 'adjusted-rank', title: 'Raw and Adjusted Rank' },
+  { id: 'holdability', title: 'Holdability and the Plug' },
+  { id: 'growth-model', title: 'Growth Assumptions' },
   { id: 'projection-limits', title: 'Projection Limitations' },
-  { id: 'threshold-calculator', title: 'Percentile Threshold Calculator' },
-  { id: 'data-compatibility', title: 'Data Compatibility' },
+  { id: 'threshold-calculator', title: 'Percentile Thresholds' },
+  { id: 'data-compatibility', title: 'Import Plugins and Data' },
 ] as const
 </script>
 
@@ -27,10 +27,7 @@ const sections = [
         <nav>
           <ul class="flex flex-wrap gap-x-6 gap-y-2">
             <li v-for="section in sections" :key="section.id">
-              <a
-                :href="`#${section.id}`"
-                class="text-sm text-primary hover:underline"
-              >{{ section.title }}</a>
+              <a :href="`#${section.id}`" class="text-sm text-primary hover:underline">{{ section.title }}</a>
             </li>
           </ul>
         </nav>
@@ -44,91 +41,88 @@ const sections = [
           <USeparator class="mb-4" />
           <div class="space-y-3 text-sm text-[--ui-text]">
             <p>
-              Your percentile shows where you rank among all active pilots on the list.
+              Seniority percentile expresses your position within the selected list or qualification.
+              It is inverted: 100% is the most senior position and 0% is the most junior position.
             </p>
             <UCard variant="soft" class="font-mono text-sm">
               percentile = ((total &minus; rank + 1) / total) &times; 100
             </UCard>
             <ul class="list-disc list-inside space-y-1 text-[--ui-text-muted]">
-              <li>Rank #1 (most senior) = 100th percentile</li>
-              <li>Most junior pilot = ~0th percentile</li>
+              <li>The calculation uses the selected scope, such as company-wide or a qualification.</li>
+              <li>Displayed values are rounded to one decimal place.</li>
+              <li>Rank #1 (most senior) = 100th percentile.</li>
+              <li>The most junior position = 0th percentile.</li>
             </ul>
-            <UAlert
-              color="info"
-              variant="soft"
-              icon="i-lucide-calculator"
-              title="Example"
-              description="If you're #50 out of 200 pilots, your percentile is ((200 − 50 + 1) / 200) × 100 = 75.5%."
-            />
+            <UAlert color="info" variant="soft" icon="i-lucide-calculator" title="Example"
+              description="If you're #50 out of 200 pilots, your percentile is ((200 − 50 + 1) / 200) × 100 = 75.5%." />
           </div>
         </section>
 
         <!-- Adjusted vs Raw Rank -->
         <section id="adjusted-rank">
-          <h2 class="text-xl font-bold mb-3">Adjusted vs Raw Rank</h2>
+          <h2 class="text-xl font-bold mb-3">Raw and Adjusted Rank</h2>
           <USeparator class="mb-4" />
           <div class="space-y-3 text-sm text-[--ui-text]">
             <p>
-              <strong>Raw rank</strong> is your position among everyone on the seniority list.
-              <strong>Adjusted rank</strong> is your position after removing pilots who have already
-              retired.
+              <strong>Raw rank</strong> is your position among every row in the selected seniority list.
+              <strong>Adjusted rank</strong> removes pilots who have retired as of today from the rank
+              and total.
             </p>
-            <UAlert
-              color="info"
-              variant="soft"
-              icon="i-lucide-calculator"
-              title="Example"
-              description="You're raw #50; 3 senior pilots retired → adjusted rank = 47. Adjusted total = full list minus retired pilots."
-            />
+            <UAlert color="info" variant="soft" icon="i-lucide-calculator" title="Example"
+              description="If your raw rank is #50 and 3 more-senior pilots have retired, your adjusted rank is #47. The adjusted total also excludes retired pilots." />
             <p class="text-[--ui-text-muted]">
-              The toggle in the Position tab switches between these two views.
+              The Status by Base / Seat / Fleet table in the My Status view defaults to adjusted values.
+              Its toggle switches between adjusted and raw rank, total, and percentile.
             </p>
           </div>
         </section>
 
         <!-- Holdability & The Plug -->
         <section id="holdability">
-          <h2 class="text-xl font-bold mb-3">Holdability &amp; The Plug</h2>
+          <h2 class="text-xl font-bold mb-3">Holdability and the Plug</h2>
           <USeparator class="mb-4" />
           <div class="space-y-3 text-sm text-[--ui-text]">
             <p>
-              The <strong>plug</strong> is the most junior pilot currently active in a given
-              qualification (fleet + seat combination). If your seniority number is lower than
-              (more senior than) the plug, the position is "holdable" — you have enough seniority
-              to hold that qualification.
+              The <strong>plug</strong> is the most junior pilot currently active in a given base,
+              fleet, and seat combination. If your seniority number is less than or equal to the
+              plug's seniority number, the position is "holdable" in that combination.
             </p>
-            <UAlert
-              color="warning"
-              variant="soft"
-              icon="i-lucide-alert-triangle"
-              title="Important"
-              description='"Holdable" is a forward-looking projection based on scheduled retirements, not a guarantee of an open bid or vacancy.'
-            />
+            <p class="text-[--ui-text-muted]">
+              The Position view can project this comparison forward. It removes pilots whose
+              retirement date has passed and compares your seniority number with the remaining plug's rank.
+              Growth assumptions affect projected percentiles, but do not create specific pilots or
+              change seniority numbers.
+            </p>
+            <UAlert color="warning" variant="soft" icon="i-lucide-alert-triangle" title="Important"
+              description='"Holdable" is a calculation based on the current or projected list. It means you would not be the most junior pilot in that qual.' />
           </div>
         </section>
 
         <!-- Growth Modeling -->
         <section id="growth-model">
-          <h2 class="text-xl font-bold mb-3">Growth Modeling</h2>
+          <h2 class="text-xl font-bold mb-3">Growth Assumptions</h2>
           <USeparator class="mb-4" />
           <div class="space-y-3 text-sm text-[--ui-text]">
             <p>
-              The optional growth rate adds simulated new hires each year using compound growth:
+              The optional growth assumption adds a calculated number of junior pilots to the
+              projected total each year using compound growth:
             </p>
             <UCard variant="soft" class="font-mono text-sm">
               newPilots = round(total &times; ((1 + rate)<sup>years</sup> &minus; 1))
             </UCard>
             <ul class="list-disc list-inside space-y-1 text-[--ui-text-muted]">
               <li>
-                Growth <strong>affects your percentile</strong> (dilutes it — more pilots in the
-                denominator)
+                Growth <strong>changes your percentile</strong> because it changes the projected
+                total used as the denominator.
               </li>
               <li>
-                Growth does <strong>NOT change your raw rank</strong> (you're still #50 regardless
-                of how many junior pilots join)
+                Growth does <strong>not change your rank</strong>. The model does not add rows or
+                assign seniority numbers to the simulated pilots. This means equal distribution across quals. Which is
+                obviously not
+                how that generally works. <em>Per qual growth settings are on the roadmap.</em>
               </li>
-              <li>Range: 0.5%–10% annual growth</li>
-              <li>Default: disabled</li>
+              <li>Available range: 0.5%–10% annual growth in 0.5% steps.</li>
+              <li>Default: disabled.</li>
             </ul>
           </div>
         </section>
@@ -139,96 +133,63 @@ const sections = [
           <USeparator class="mb-4" />
           <div class="space-y-3 text-sm text-[--ui-text]">
             <p>
-              All projections are based solely on scheduled retirements visible in the uploaded
-              seniority list. The following are <strong>NOT modeled</strong>:
+              The base projection uses scheduled retirement dates from the uploaded seniority list.
+              When enabled, the growth assumption changes the projected total. The following are
+              not modeled as individual events:
             </p>
             <ul class="list-disc list-inside space-y-1 text-[--ui-text-muted]">
-              <li>New hires (except a single synthetic pilot in New Hire Mode)</li>
+              <li>Specific new-hire rows (growth adds only to the projected total; New Hire Mode creates one synthetic
+                pilot)
+              </li>
               <li>Pilot upgrades or downgrades between qualifications</li>
               <li>Base or seat reassignments</li>
               <li>Furloughs or voluntary leaves</li>
-              <li>Non-retirement attrition (resignations, medical, etc.)</li>
-              <li>Regulatory changes to mandatory retirement age</li>
+              <li>Non-retirement attrition, such as resignations or medical leave.</li>
+              <li>Changes to the mandatory retirement age.</li>
+              <li>Corrections to source-list data after upload.</li>
             </ul>
-            <UAlert
-              color="neutral"
-              variant="subtle"
-              icon="i-lucide-clock"
-              title="Projection Window"
-              description="Up to 30 years from today, or until your retirement date, whichever is earlier. Treat all figures as directional estimates."
-            />
+            <UAlert color="neutral" variant="subtle" icon="i-lucide-clock" title="Projection Window"
+              description="The trajectory ends at your retirement date when one is available. Without one, it uses a 30-year horizon. Results are directional estimates." />
           </div>
         </section>
 
         <!-- Percentile Threshold Calculator -->
         <section id="threshold-calculator">
-          <h2 class="text-xl font-bold mb-3">Percentile Threshold Calculator</h2>
+          <h2 class="text-xl font-bold mb-3">Percentile Thresholds</h2>
           <USeparator class="mb-4" />
           <div class="space-y-3 text-sm text-[--ui-text]">
             <p>
-              The threshold calculator estimates when your seniority percentile will cross a target
-              (50th, 75th, or 90th percentile).
+              The threshold calculator finds the first projected year in which your percentile
+              reaches a selected target: 50th, 75th, or 90th percentile.
             </p>
-            <p>Three scenarios are modeled:</p>
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-2">
-              <UCard variant="outline">
-                <div class="space-y-1">
-                  <div class="flex items-center gap-2">
-                    <UBadge color="neutral" variant="soft" size="sm">Base</UBadge>
-                  </div>
-                  <p class="text-[--ui-text-muted] text-xs">
-                    Scheduled retirements as-is.
-                  </p>
-                </div>
-              </UCard>
-              <UCard variant="outline">
-                <div class="space-y-1">
-                  <div class="flex items-center gap-2">
-                    <UBadge color="success" variant="soft" size="sm">Optimistic</UBadge>
-                  </div>
-                  <p class="text-[--ui-text-muted] text-xs">
-                    Retirements occur 10% sooner — retirement dates scaled by &times;0.9.
-                  </p>
-                </div>
-              </UCard>
-              <UCard variant="outline">
-                <div class="space-y-1">
-                  <div class="flex items-center gap-2">
-                    <UBadge color="warning" variant="soft" size="sm">Pessimistic</UBadge>
-                  </div>
-                  <p class="text-[--ui-text-muted] text-xs">
-                    Retirements occur 10% later — retirement dates scaled by &times;1.1.
-                  </p>
-                </div>
-              </UCard>
-            </div>
-            <UAlert
-              color="neutral"
-              variant="subtle"
-              icon="i-lucide-info"
-              title="Modeling convention"
-              description="The ±10% scaling is a modeling convention. If the threshold isn't crossed within 15 years, the calculator shows &quot;not projected within 15 years.&quot;"
-            />
+            <p>
+              The result uses the selected qualification filter and the current growth assumption.
+              It follows the same retirement-only trajectory used by the chart.
+            </p>
+            <UAlert color="neutral" variant="subtle" icon="i-lucide-info" title="Projection horizon"
+              description="If the threshold is not reached within the trajectory horizon, the calculator reports that it is not projected. The horizon is up to 30 years, or your retirement date when one is available." />
           </div>
         </section>
         <!-- Data Compatibility -->
         <section id="data-compatibility">
-          <h2 class="text-xl font-bold mb-3">Data Compatibility</h2>
+          <h2 class="text-xl font-bold mb-3">Import Plugins and Data</h2>
           <USeparator class="mb-4" />
           <div class="space-y-6 text-sm text-[--ui-text]">
             <p>
-              SeniorityGuru accepts CSV and Excel files (.csv, .xlsx, .xls). Choose the Upload Type that
-              matches your airline when uploading, or use the generic importer for any spreadsheet.
+              SeniorityGuru accepts CSV and Excel files (.csv, .xlsx, .xls). Choose an Import Plugin
+              that matches your airline when uploading, or use the Generic upload type and map the
+              columns yourself.
             </p>
 
             <!-- Delta -->
             <div class="space-y-3">
               <h3 class="font-semibold text-base flex items-center gap-2">
                 <UIcon name="i-lucide-graduation-cap" class="size-5 text-primary" />
-                Delta Air Lines (Native Support)
+                Delta Air Lines
               </h3>
               <p class="text-[--ui-text-muted]">
-                The Delta Upload Type processes PBS seniority list exports. It handles:
+                The Delta Import Plugin processes PBS seniority list exports. It detects the header
+                row and prepares the standard fields automatically:
               </p>
               <ul class="list-disc list-inside space-y-1 text-[--ui-text-muted]">
                 <li>
@@ -258,6 +219,31 @@ const sections = [
               </ul>
             </div>
 
+            <!-- JetBlue -->
+            <div class="space-y-3">
+              <h3 class="font-semibold text-base flex items-center gap-2">
+                <UIcon name="i-lucide-plane" class="size-5 text-primary" />
+                JetBlue Airways
+              </h3>
+              <p class="text-[--ui-text-muted]">
+                The JetBlue Import Plugin recognizes common ALPA export headers and normalizes
+                hire and retirement dates. It handles:
+              </p>
+              <ul class="list-disc list-inside space-y-1 text-[--ui-text-muted]">
+                <li><strong>Header aliases</strong> — recognizes fields such as <code
+                    class="text-xs bg-(--ui-bg-elevated) px-1 py-0.5 rounded">SEN</code>, <code
+                    class="text-xs bg-(--ui-bg-elevated) px-1 py-0.5 rounded">CMID</code>, <code
+                    class="text-xs bg-(--ui-bg-elevated) px-1 py-0.5 rounded">BASE</code>, and <code
+                    class="text-xs bg-(--ui-bg-elevated) px-1 py-0.5 rounded">RTRDATE</code>.</li>
+                <li><strong>Date normalization</strong> — converts supported M/D/YY and M/D/YYYY date values to the
+                  standard
+                  date format.</li>
+                <li><strong>Unneeded columns</strong> — drops YRS2RTR because the application calculates projections
+                  from
+                  retirement dates.</li>
+              </ul>
+            </div>
+
             <!-- Generic -->
             <div class="space-y-3">
               <h3 class="font-semibold text-base flex items-center gap-2">
@@ -265,8 +251,9 @@ const sections = [
                 Generic / Other Airlines
               </h3>
               <p class="text-[--ui-text-muted]">
-                The generic importer works with any airline's spreadsheet. It expects a header row
-                followed by data rows.
+                The Generic upload type can prepare other airline spreadsheets when the required
+                fields are present. It finds a likely header row and keeps the remaining columns
+                available for manual mapping.
               </p>
 
               <div class="space-y-2">
@@ -275,8 +262,12 @@ const sections = [
                   <table class="w-full text-sm border-collapse">
                     <thead>
                       <tr class="border-b border-(--ui-border)">
-                        <th class="text-left py-2 px-3 font-semibold text-xs uppercase tracking-wide text-[--ui-text-muted]">Column</th>
-                        <th class="text-left py-2 px-3 font-semibold text-xs uppercase tracking-wide text-[--ui-text-muted]">Description</th>
+                        <th
+                          class="text-left py-2 px-3 font-semibold text-xs uppercase tracking-wide text-[--ui-text-muted]">
+                          Column</th>
+                        <th
+                          class="text-left py-2 px-3 font-semibold text-xs uppercase tracking-wide text-[--ui-text-muted]">
+                          Description</th>
                       </tr>
                     </thead>
                     <tbody class="text-[--ui-text-muted]">
@@ -312,29 +303,29 @@ const sections = [
                   </table>
                 </div>
                 <p class="text-xs text-[--ui-text-muted]">
-                  <strong>Name</strong> is optional and never leaves your device. If your data includes a date of birth
-                  instead of a retirement date, the upload wizard can derive the retirement date using the FAA mandatory
-                  retirement age of 65.
+                  <strong>Name</strong> is optional. If the file has a date of birth instead of a
+                  retirement date, select the DOB mapping option to derive retirement dates using
+                  the mandatory retirement age configured in Settings.
                 </p>
               </div>
 
               <p class="text-[--ui-text-muted]">
-                The importer auto-detects common column names (e.g. "Seniority Number", "Sen Nbr", "SEN_NUM").
-                If auto-detection fails, you can manually map each column in the column mapper step.
+                The upload wizard suggests mappings for common column names. Review and confirm
+                those suggestions, or manually map each required field in the column-mapping step.
               </p>
             </div>
 
             <!-- Tips -->
             <div class="space-y-3">
-              <h3 class="font-semibold text-base">Tips for Preparing Your Data</h3>
+              <h3 class="font-semibold text-base">Preparing a File</h3>
               <ul class="list-disc list-inside space-y-1 text-[--ui-text-muted]">
                 <li>
                   <strong>Export a single sheet</strong> — if your workbook has multiple sheets, select the one
                   containing the seniority data. Multi-sheet files will prompt you to pick a sheet during upload.
                 </li>
                 <li>
-                  <strong>Preamble rows are OK</strong> — title rows, blank rows, and metadata above the header
-                  are automatically detected and skipped.
+                  <strong>Header rows</strong> — supported Import Plugins detect their expected header;
+                  the Generic upload type looks for a row with enough populated cells.
                 </li>
                 <li>
                   <strong>Date formats</strong> — most common formats are accepted: YYYY-MM-DD, MM/DD/YYYY,
@@ -342,7 +333,8 @@ const sections = [
                 </li>
                 <li>
                   <strong>DOB to retire date</strong> — if your list has date of birth instead of retirement date,
-                  the upload wizard offers a "Derive from DOB" option that calculates retirement at age 65.
+                  the upload wizard offers a "Derive from DOB" option that uses the mandatory retirement age in
+                  Settings.
                 </li>
                 <li>
                   <strong>File formats</strong> — CSV (.csv), Excel (.xlsx), and legacy Excel (.xls) are all supported.
@@ -350,13 +342,8 @@ const sections = [
               </ul>
             </div>
 
-            <UAlert
-              color="info"
-              variant="soft"
-              icon="i-lucide-info"
-              title="Parser contributions welcome"
-              description="If your airline's format isn't supported natively, we accept community-contributed Import Plugins. See the CONTRIBUTING guide on GitHub for details."
-            />
+            <UAlert color="info" variant="soft" icon="i-lucide-info" title="Import Plugin contributions"
+              description="If your airline format is not supported, see the CONTRIBUTING guide for the current process for proposing an Import Plugin." />
           </div>
         </section>
       </div>
