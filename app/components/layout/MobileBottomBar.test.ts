@@ -1,9 +1,11 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mountSuspended, mockNuxtImport } from '@nuxt/test-utils/runtime'
+import { ref } from 'vue'
 import MobileBottomBar from './MobileBottomBar.vue'
 
 const mockRoute = vi.hoisted(() => ({ path: '/dashboard', query: {} }))
 mockNuxtImport('useRoute', () => () => mockRoute)
+mockNuxtImport('useChangelog', () => () => ({ hasUnseenChanges: ref(false) }))
 
 beforeEach(() => {
   mockRoute.path = '/dashboard'

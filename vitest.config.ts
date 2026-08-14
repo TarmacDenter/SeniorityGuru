@@ -4,7 +4,7 @@ import { resolve } from 'node:path'
 export default defineVitestConfig({
   resolve: {
     alias: {
-      '#server': resolve(__dirname, 'server'),
+      '#server': resolve(import.meta.dirname, 'server'),
     },
   },
   test: {

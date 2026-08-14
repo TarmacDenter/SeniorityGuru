@@ -17,7 +17,7 @@ const {
   mockReviewCanAdvance,
   mockApplyMapping,
   mockInsertRowAt,
-  mockSelectedParserId,
+  mockSelectedUploadTypeId,
 } = vi.hoisted(() => ({
   mockSave: vi.fn(),
   mockReset: vi.fn(),
@@ -29,27 +29,32 @@ const {
   mockReviewCanAdvance: { value: false },
   mockApplyMapping: vi.fn().mockResolvedValue(undefined),
   mockInsertRowAt: vi.fn(),
-  mockSelectedParserId: { value: 'generic' as string | null },
+  mockSelectedUploadTypeId: { value: 'generic' as string | null },
 }))
 
 mockNuxtImport('navigateTo', () => mockNavigateTo)
 mockNuxtImport('useSeniorityUpload', () => () => ({
-  selectedParserId: mockSelectedParserId,
+  diagnosticAttemptId: { value: null },
+  selectedUploadTypeId: mockSelectedUploadTypeId,
   file: {
     fileName: { value: null },
     sheetNames: { value: [] },
     selectedSheet: { value: null },
+    selectedHeaderRow: { value: 0 },
+    headerRows: { value: [] },
     needsSheetSelection: { value: false },
     hasData: mockFileHasData,
     autoDetected: mockFileAutoDetected,
     error: { value: null },
     setFile: vi.fn().mockResolvedValue(undefined),
     selectSheet: vi.fn(),
+    selectHeaderRow: vi.fn(),
   },
   mapping: {
     columnMap: { value: { seniority_number: -1, employee_number: -1, seat: -1, base: -1, fleet: -1, hire_date: -1, retire_date: -1, name: -1 } },
     mappingOptions: { value: {} },
     headers: { value: [] },
+    columnIds: { value: [] },
     sampleRows: { value: [] },
     canAdvance: mockMappingCanAdvance,
     error: mockMappingError,
@@ -140,7 +145,7 @@ describe('upload page onSave', () => {
   })
 })
 
-describe('upload page nextStep — mapping error handling', () => {
+describe('upload page nextStep — Match Columns', () => {
   beforeEach(() => {
     mockFileHasData.value = true
     mockFileAutoDetected.value = true
@@ -151,7 +156,7 @@ describe('upload page nextStep — mapping error handling', () => {
     mockApplyMapping.mockResolvedValue(undefined)
   })
 
-  it('navigates to mapping step when auto-detect apply sets an error', async () => {
+  it('always navigates to Match Columns even when every field is suggested', async () => {
     mockMappingError.value = 'No rows could be mapped. Verify the selected columns contain data.'
 
     const wrapper = await mountSuspended(UploadPage)
@@ -160,15 +165,16 @@ describe('upload page nextStep — mapping error handling', () => {
     await nextBtn!.trigger('click')
     await wrapper.vm.$nextTick()
 
-    // Should be on mapping step, not review
-    expect(wrapper.text()).toContain('Map Columns')
+    // Suggestions require confirmation before Review.
+    expect(wrapper.text()).toContain('Match Columns')
   })
 })
 
 describe('upload page review filter behavior', () => {
   beforeEach(() => {
     mockFileHasData.value = true
-    mockFileAutoDetected.value = true
+    mockFileAutoDetected.value = false
+    mockMappingCanAdvance.value = true
     mockMappingError.value = null
     mockReviewErrorCount.value = 1
   })
@@ -177,6 +183,10 @@ describe('upload page review filter behavior', () => {
     const wrapper = await mountSuspended(UploadPage)
     const nextBtn = wrapper.findAll('button').find(b => b.text().includes('Next'))
     await nextBtn!.trigger('click')
+    await wrapper.vm.$nextTick()
+
+    const mappingNextButton = wrapper.findAll('button').find(b => b.text().includes('Next'))
+    await mappingNextButton!.trigger('click')
     await wrapper.vm.$nextTick()
 
     const showOnlyErrorsBtn = wrapper.findAll('button').find(b => b.text().includes('Show only errors'))
@@ -196,6 +206,10 @@ describe('upload page review filter behavior', () => {
     const wrapper = await mountSuspended(UploadPage)
     const nextBtn = wrapper.findAll('button').find(b => b.text().includes('Next'))
     await nextBtn!.trigger('click')
+    await wrapper.vm.$nextTick()
+
+    const mappingNextButton = wrapper.findAll('button').find(b => b.text().includes('Next'))
+    await mappingNextButton!.trigger('click')
     await wrapper.vm.$nextTick()
 
     const topContinueButton = wrapper.findAll('button').find(b => b.text().includes('Continue to Save'))

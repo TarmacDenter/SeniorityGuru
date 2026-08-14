@@ -253,7 +253,7 @@ const demoWaveBuckets = computed(() => demoWaveData[demoQual.value])
 
 const config = useRuntimeConfig()
 const feedbackEmail = config.public.feedbackEmail as string
-const parserRequestMailto = `mailto:${feedbackEmail}?subject=${encodeURIComponent('SeniorityGuru: Airline Parser Request')}`
+const parserRequestMailto = `mailto:${feedbackEmail}?subject=${encodeURIComponent('SeniorityGuru: Airline Import Plugin Request')}`
 
 const demoEntering = ref(false)
 
@@ -338,7 +338,7 @@ async function enterDemo() {
           </p>
         </div>
 
-        <!-- Airline parser cards -->
+        <!-- Airline Import Plugin cards -->
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-3xl mx-auto mb-10">
           <UCard>
             <div class="flex flex-col gap-3">
@@ -505,7 +505,7 @@ async function enterDemo() {
               target="_blank"
               class="text-primary hover:underline"
             >contributor guide</a>
-            to add a parser for your airline.
+            to add an Import Plugin for your airline.
           </p>
         </div>
       </UContainer>

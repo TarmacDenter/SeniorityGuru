@@ -14,6 +14,8 @@ const props = defineProps<{
   showErrorsOnly?: boolean
   showEstimatedOnly?: boolean
   estimatedIndices?: Set<number>
+  pipelineIssueRows?: Set<number>
+  sourceValues?: ReadonlyMap<number, Readonly<Record<string, unknown>>>
 }>()
 
 const pagination = ref({ pageIndex: 0, pageSize: PAGE_SIZE })
@@ -39,6 +41,7 @@ const emit = defineEmits<{
   updateCell: [rowIndex: number, field: keyof SeniorityEntry, value: string | number]
   deleteRow: [rowIndex: number]
   insertRow: [rowIndex: number]
+  acknowledgePipelineIssues: [rowIndex: number]
 }>()
 
 const editingCell = ref<{ row: number; field: string } | null>(null)
@@ -120,14 +123,29 @@ const columns: TableColumn<IndexedEntry>[] = [
       </template>
 
       <template #errors-cell="{ row }">
-        <UTooltip v-if="rowErrors.has(row.original._originalIndex)">
-          <UIcon name="i-lucide-alert-triangle" class="text-error" />
-          <template #text>
-            <ul class="list-disc pl-3 text-xs space-y-0.5">
-              <li v-for="(err, i) in rowErrors.get(row.original._originalIndex)" :key="i">{{ formatRowError(err) }}</li>
-            </ul>
-          </template>
-        </UTooltip>
+        <div v-if="rowErrors.has(row.original._originalIndex)" class="flex items-center gap-1">
+          <UIcon
+            name="i-lucide-alert-triangle"
+            class="text-error"
+            :title="rowErrors.get(row.original._originalIndex)?.map(formatRowError).join('\n')"
+          />
+          <UButton
+            v-if="pipelineIssueRows?.has(row.original._originalIndex)"
+            size="xs"
+            color="warning"
+            variant="link"
+            aria-label="Keep current values"
+            @click="emit('acknowledgePipelineIssues', row.original._originalIndex)"
+          >
+            Keep values
+          </UButton>
+          <UIcon
+            v-if="pipelineIssueRows?.has(row.original._originalIndex) && sourceValues?.has(row.original._originalIndex)"
+            name="i-lucide-database"
+            class="text-muted"
+            :title="`Source values: ${Object.entries(sourceValues.get(row.original._originalIndex) ?? {}).map(([key, value]) => `${key}: ${value ?? ''}`).join(' · ')}`"
+          />
+        </div>
       </template>
 
       <template #actions-cell="{ row }">

@@ -26,10 +26,23 @@ export interface LocalPreference {
   value: string
 }
 
+export interface LocalImportAttempt {
+  id: string
+  createdAt: string
+  pluginId: string
+  data: string
+  size: number
+  outcome: 'review' | 'saved' | 'failed'
+  updatedAt: string
+  listId?: number
+  sheetName?: string
+}
+
 class SeniorityGuruDB extends Dexie {
   seniorityLists!: Dexie.Table<LocalSeniorityList, number>
   seniorityEntries!: Dexie.Table<LocalSeniorityEntry, number>
   preferences!: Dexie.Table<LocalPreference, string>
+  importAttempts!: Dexie.Table<LocalImportAttempt, string>
 
   constructor() {
     super('SeniorityGuru')
@@ -42,6 +55,18 @@ class SeniorityGuruDB extends Dexie {
       seniorityLists: '++id, effectiveDate, isDemo',
       seniorityEntries: '++id, listId, seniorityNumber, employeeNumber',
       preferences: 'key',
+    })
+    this.version(3).stores({
+      seniorityLists: '++id, effectiveDate, isDemo',
+      seniorityEntries: '++id, listId, seniorityNumber, employeeNumber',
+      preferences: 'key',
+      importAttempts: 'id, createdAt, pluginId',
+    })
+    this.version(4).stores({
+      seniorityLists: '++id, effectiveDate, isDemo',
+      seniorityEntries: '++id, listId, seniorityNumber, employeeNumber',
+      preferences: 'key',
+      importAttempts: 'id, createdAt, pluginId, outcome, listId',
     })
   }
 

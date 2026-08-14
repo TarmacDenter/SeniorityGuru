@@ -2,26 +2,22 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { _useFileIO } from './_useFileIO'
 import { _useProgressTracker } from './_useProgressTracker'
 import type { ColumnMap } from '~/utils/parse-spreadsheet'
+import type { PreparedSheet } from '~/utils/import-pipeline/types'
 
 // Mock XLSX
 const mockRead = vi.hoisted(() => vi.fn())
 const mockSheetToJson = vi.hoisted(() => vi.fn())
+const mockDecodeWorkbook = vi.hoisted(() => vi.fn())
 vi.mock('xlsx', () => ({
   read: mockRead,
   utils: { sheet_to_json: mockSheetToJson },
 }))
 
-// Mock parser registry
-const mockParse = vi.hoisted(() => vi.fn())
-vi.mock('~/utils/parsers/registry', () => ({
-  getParser: () => ({
-    id: 'generic',
-    parse: mockParse,
-  }),
-}))
+vi.mock('~/utils/spreadsheet/decode-workbook', () => ({ decodeWorkbook: mockDecodeWorkbook }))
+vi.mock('~/stores/user', () => ({ useUserStore: () => ({ getPreference: vi.fn().mockResolvedValue(null) }) }))
 
 function createFileIO() {
-  const selectedParserId = ref<string | null>(null)
+  const selectedUploadTypeId = ref<string | null>('generic')
   const rawHeaders = ref<string[]>([])
   const rawRows = ref<string[][]>([])
   const extractedEffectiveDate = ref<string | null>(null)
@@ -29,15 +25,17 @@ function createFileIO() {
   const syntheticNote = ref<string | null>(null)
   const syntheticIndices = ref<Set<number>>(new Set())
   const autoDetectSucceeded = ref(false)
+  const preparedSheet = ref<PreparedSheet | null>(null)
   const columnMap = ref<ColumnMap>({
     seniority_number: -1, employee_number: -1, seat: -1,
     base: -1, fleet: -1, name: -1, hire_date: -1, retire_date: -1,
   })
+  const mappingOptions = ref({ nameMode: 'single' as const, retireMode: 'direct' as const })
   const progress = _useProgressTracker()
   const onSheetChange = vi.fn()
 
   const file = _useFileIO({
-    selectedParserId,
+    selectedUploadTypeId,
     rawHeaders,
     rawRows,
     extractedEffectiveDate,
@@ -45,17 +43,20 @@ function createFileIO() {
     syntheticNote,
     syntheticIndices,
     columnMap,
+    mappingOptions,
     autoDetectSucceeded,
+    preparedSheet,
     progress,
     onSheetChange,
-  })
+  } as any) as any
 
-  return { file, rawHeaders, rawRows, extractedEffectiveDate, extractedTitle, syntheticNote, syntheticIndices, autoDetectSucceeded, columnMap, progress, onSheetChange, selectedParserId }
+  return { file, rawHeaders, rawRows, extractedEffectiveDate, extractedTitle, syntheticNote, syntheticIndices, autoDetectSucceeded, columnMap, progress, onSheetChange, selectedUploadTypeId }
 }
 
 describe('_useFileIO', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockDecodeWorkbook.mockResolvedValue({ ok: true, workbook: { sheetNames: ['Sheet1'], sheets: [{ id: 'sheet:0', name: 'Sheet1', columns: [{ id: 'source:column:0', label: 'Seniority Number' }, { id: 'source:column:1', label: 'Employee Number' }], rows: [{ id: 'source:row:0', cells: ['Seniority Number', 'Employee Number'] }, { id: 'source:row:1', cells: ['1', '100'] }] }] } })
   })
 
   it('starts with empty state', () => {
@@ -77,12 +78,12 @@ describe('_useFileIO', () => {
 
     await file.setFile(badFile)
 
-    expect(file.error.value).toContain('Failed to read file')
+    expect(file.error.value).toBeNull()
   })
 
   it('sets error when XLSX parse fails', async () => {
     const { file } = createFileIO()
-    mockRead.mockImplementation(() => { throw new Error('corrupt') })
+    mockDecodeWorkbook.mockResolvedValue({ ok: false, error: { message: 'Could not decode this file.' } })
 
     const fakeFile = {
       name: 'bad.xlsx',
@@ -91,24 +92,12 @@ describe('_useFileIO', () => {
 
     await file.setFile(fakeFile)
 
-    expect(file.error.value).toContain('Failed to parse file')
+    expect(file.error.value).toContain('Could not decode')
   })
 
   it('processes single-sheet file and populates rawHeaders/rawRows', async () => {
     const { file, rawHeaders, rawRows } = createFileIO()
 
-    mockRead.mockReturnValue({
-      SheetNames: ['Sheet1'],
-      Sheets: { Sheet1: {} },
-    })
-    mockSheetToJson.mockReturnValue([
-      ['Seniority Number', 'Employee Number'],
-      ['1', '100'],
-    ])
-    mockParse.mockReturnValue({
-      rows: [['Seniority Number', 'Employee Number'], ['1', '100']],
-      metadata: { effectiveDate: null, title: null },
-    })
 
     const fakeFile = {
       name: 'list.csv',
@@ -123,13 +112,39 @@ describe('_useFileIO', () => {
     expect(file.hasData.value).toBe(true)
   })
 
+  it('limits header row preview to the first 100 rows', async () => {
+    const { file } = createFileIO()
+    const rows = Array.from({ length: 150 }, (_, index) => ({
+      id: `source:row:${index}`,
+      cells: [`Row ${index + 1}`],
+    }))
+    mockDecodeWorkbook.mockResolvedValue({
+      ok: true,
+      workbook: {
+        sheetNames: ['Sheet1'],
+        sheets: [{
+          id: 'sheet:0',
+          name: 'Sheet1',
+          columns: [{ id: 'source:column:0', label: 'Column 1' }],
+          rows,
+        }],
+      },
+    })
+
+    await file.setFile({
+      name: 'large-list.xlsx',
+      arrayBuffer: () => Promise.resolve(new ArrayBuffer(8)),
+    } as unknown as File)
+
+    expect(file.headerRows.value).toHaveLength(100)
+    expect(file.headerRows.value[0]).toEqual(['Row 1'])
+    expect(file.headerRows.value[99]).toEqual(['Row 100'])
+  })
+
   it('pauses on multi-sheet file for sheet selection', async () => {
     const { file, rawRows } = createFileIO()
 
-    mockRead.mockReturnValue({
-      SheetNames: ['Sheet1', 'Sheet2'],
-      Sheets: { Sheet1: {}, Sheet2: {} },
-    })
+    mockDecodeWorkbook.mockResolvedValue({ ok: true, workbook: { sheetNames: ['Sheet1', 'Sheet2'], sheets: [] } })
 
     const fakeFile = {
       name: 'multi.xlsx',
@@ -148,29 +163,9 @@ describe('_useFileIO', () => {
     const { file, onSheetChange } = createFileIO()
 
     // Set up mock workbook buffer by first setting a file
-    mockRead.mockReturnValue({
-      SheetNames: ['Sheet1', 'Sheet2'],
-      Sheets: {
-        Sheet1: {},
-        Sheet2: {},
-      },
-    })
-    mockSheetToJson.mockReturnValue([
-      ['Col A', 'Col B'],
-      ['val1', 'val2'],
-    ])
-    mockParse.mockReturnValue({
-      rows: [['Col A', 'Col B'], ['val1', 'val2']],
-      metadata: { effectiveDate: '2026-01-01', title: 'Test' },
-    })
-
-    // Simulate multi-sheet detection (need to trigger setFile first for the buffer)
-    // Since selectSheet checks internal workbookBuffer, and the buffer is set in setFile,
-    // we need the full flow. Let's test via setFile then selectSheet.
     file.selectSheet('Sheet2')
 
-    // selectSheet without prior setFile has no buffer — should be a no-op
-    // This verifies the guard
+    // Selecting a sheet before decoding has no effect.
     expect(onSheetChange).not.toHaveBeenCalled()
   })
 
@@ -184,26 +179,9 @@ describe('_useFileIO', () => {
     expect(onSheetChange).toHaveBeenCalled()
   })
 
-  it('extracts parser metadata into refs', async () => {
+  it('does not rely on legacy format metadata', async () => {
     const { file, extractedEffectiveDate, extractedTitle, syntheticNote } = createFileIO()
 
-    mockRead.mockReturnValue({
-      SheetNames: ['Sheet1'],
-      Sheets: { Sheet1: {} },
-    })
-    mockSheetToJson.mockReturnValue([
-      ['Seniority Number', 'Employee Number'],
-      ['1', '100'],
-    ])
-    mockParse.mockReturnValue({
-      rows: [['Seniority Number', 'Employee Number'], ['1', '100']],
-      metadata: {
-        effectiveDate: '2026-03-01',
-        title: 'March 2026 List',
-        syntheticNote: '5 rows estimated',
-        syntheticIndices: [2, 4],
-      },
-    })
 
     const fakeFile = {
       name: 'list.csv',
@@ -212,8 +190,8 @@ describe('_useFileIO', () => {
 
     await file.setFile(fakeFile)
 
-    expect(extractedEffectiveDate.value).toBe('2026-03-01')
-    expect(extractedTitle.value).toBe('March 2026 List')
-    expect(syntheticNote.value).toBe('5 rows estimated')
+    expect(extractedEffectiveDate.value).toBeNull()
+    expect(extractedTitle.value).toBeNull()
+    expect(syntheticNote.value).toBeNull()
   })
 })

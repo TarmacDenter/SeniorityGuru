@@ -22,8 +22,6 @@ export interface MappingOptions {
   retirementAge?: number
 }
 
-export const BATCH_SIZE = 500
-
 export function parseSpreadsheetData(raw: string[][]): { headers: string[]; rows: string[][] } {
   const [headers, ...rows] = raw
   return { headers: headers ?? [], rows }
@@ -104,33 +102,6 @@ export function applyColumnMap(
   options: MappingOptions,
 ): Partial<SeniorityEntry>[] {
   return rows.map(row => mapSingleRow(row, map, options))
-}
-
-/**
- * Async version of applyColumnMap that processes rows in batches,
- * yielding to the event loop between batches for UI responsiveness.
- */
-export async function applyColumnMapAsync(
-  rows: string[][],
-  map: ColumnMap,
-  options: MappingOptions,
-  onProgress?: (current: number, total: number) => void,
-): Promise<Partial<SeniorityEntry>[]> {
-  const total = rows.length
-  const result: Partial<SeniorityEntry>[] = []
-
-  for (let i = 0; i < total; i += BATCH_SIZE) {
-    const end = Math.min(i + BATCH_SIZE, total)
-    for (let j = i; j < end; j++) {
-      result.push(mapSingleRow(rows[j]!, map, options))
-    }
-    onProgress?.(end, total)
-    if (end < total) {
-      await new Promise(resolve => setTimeout(resolve, 0))
-    }
-  }
-
-  return result
 }
 
 /** Check if all required columns in a ColumnMap are mapped (index >= 0). Name is optional. */

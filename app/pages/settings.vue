@@ -15,6 +15,7 @@ definePageMeta({ layout: 'dashboard' })
         <SettingsPreferencesCard />
         <SettingsNewHireModeCard />
         <SettingsDebugLogCard />
+        <SettingsImportAttemptsCard />
         <SettingsClearDataCard />
       </div>
     </template>

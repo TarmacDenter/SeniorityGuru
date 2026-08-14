@@ -1,21 +1,31 @@
 import { parseDate } from '@internationalized/date'
 import type { SeniorityEntry } from '~/utils/schemas/seniority-list'
 import { todayISO } from '~/utils/date'
-import type { ColumnMap } from '~/utils/parse-spreadsheet'
-import type { SeniorityUpload } from './types'
+import type { ImportIssue, PreparedSheet, ReviewEditPatch } from '~/utils/import-pipeline/types'
+import type { SeniorityUpload, UploadColumnMap } from './types'
 import { _useProgressTracker } from './_useProgressTracker'
 import { _useFileIO } from './_useFileIO'
 import { _useColumnMapping } from './_useColumnMapping'
 import { _useReview } from './_useReview'
 import { _useConfirm } from './_useConfirm'
-import { DEFAULT_COLUMN_MAP } from './defaults'
+import { DEFAULT_COLUMN_MAP, DEFAULT_MAPPING_OPTIONS } from './defaults'
+import { useUserStore } from '~/stores/user'
+import { getImportPlugin, importPlugins } from '~/utils/import-pipeline/plugins/registry'
+import { useImportAttemptsStore } from '~/stores/import-attempts'
 
 export type { SeniorityUpload, ProcessingPhase, ProgressTracker } from './types'
 
 export function useSeniorityUpload(): SeniorityUpload {
+  const userStore = useUserStore()
+  const importAttemptsStore = useImportAttemptsStore()
   // ── Shared refs (owned here, passed to phases) ──────────────────────────
 
-  const selectedParserId = ref<string | null>(null)
+  const selectedUploadTypeId = ref<string | null>(null)
+  const preferredUploadType = ref<string | null>(null)
+  const uploadTypes = computed(() => {
+    const preferred = preferredUploadType.value
+    return preferred ? [...importPlugins].sort((a, b) => Number(b.id === preferred) - Number(a.id === preferred)) : importPlugins
+  })
   const rawHeaders = ref<string[]>([])
   const rawRows = ref<string[][]>([])
   const extractedEffectiveDate = ref<string | null>(null)
@@ -23,10 +33,34 @@ export function useSeniorityUpload(): SeniorityUpload {
   const syntheticNote = ref<string | null>(null)
   const syntheticIndices = ref<Set<number>>(new Set())
   const autoDetectSucceeded = ref(false)
-  const columnMap = ref<ColumnMap>({ ...DEFAULT_COLUMN_MAP })
+  const preparedSheet = ref<PreparedSheet | null>(null)
+  const preparationIssues = ref<ImportIssue[]>([])
+  const columnMap = ref<UploadColumnMap>({ ...DEFAULT_COLUMN_MAP })
+  const mappingOptions = ref({ ...DEFAULT_MAPPING_OPTIONS })
   const entries = ref<Partial<SeniorityEntry>[]>([])
   const rowErrors = shallowRef<Map<number, string[]>>(new Map())
+  const pipelineIssues = shallowRef<Map<number, ImportIssue[]>>(new Map())
+  const sourceValues = ref<Map<number, Record<string, unknown>>>(new Map())
+  const importAttemptId = ref<string | null>(null)
   const error = ref<string | null>(null)
+
+  watch(selectedUploadTypeId, (uploadType) => {
+    if (uploadType) userStore.savePreference('lastUploadType', uploadType).catch(() => {})
+  })
+  void userStore.getPreference('lastUploadType').then((id) => {
+    if (id && getImportPlugin(id)) preferredUploadType.value = id
+  }).catch(() => {})
+
+  async function selectUploadType(id: string) {
+    if (!getImportPlugin(id)) return
+    selectedUploadTypeId.value = id
+    await file.reprepare()
+  }
+
+  function clearUploadType() {
+    selectedUploadTypeId.value = null
+    resetDownstream()
+  }
 
   // ── Progress (cross-cutting) ────────────────────────────────────────────
 
@@ -37,12 +71,27 @@ export function useSeniorityUpload(): SeniorityUpload {
   const review = _useReview({
     entries,
     rowErrors,
+    pipelineIssues,
+    sourceValues,
     syntheticNote,
     syntheticIndices,
     progress,
+    onReviewChanged(action, changedEntries) {
+      const id = importAttemptId.value
+      if (!id) return
+      const at = new Date().toISOString()
+      void importAttemptsStore.updateTrace(id, trace => ({
+          ...trace,
+          review: {
+            editPatches: [...(trace.review?.editPatches ?? []), { action, entries: changedEntries, at } satisfies ReviewEditPatch],
+          },
+          stage: 'review',
+          updatedAt: at,
+        }))
+    },
   })
 
-  const confirm = _useConfirm({ error })
+  const confirm = _useConfirm({ error, importAttemptId })
 
   function resetDownstream() {
     rawHeaders.value = []
@@ -53,6 +102,9 @@ export function useSeniorityUpload(): SeniorityUpload {
     syntheticNote.value = null
     syntheticIndices.value = new Set()
     autoDetectSucceeded.value = false
+    preparedSheet.value = null
+    preparationIssues.value = []
+    importAttemptId.value = null
     error.value = null
     review._reset()
     confirm._reset()
@@ -63,12 +115,29 @@ export function useSeniorityUpload(): SeniorityUpload {
     rawRows,
     rawHeaders,
     columnMap,
+    mappingOptions,
     progress,
     extractedEffectiveDate,
     extractedTitle,
-    async onMapped(mapped: Partial<SeniorityEntry>[]) {
+    selectedUploadTypeId,
+    preparedSheet,
+    preparationIssues,
+    importAttemptId,
+    async onMapped(mapped: Partial<SeniorityEntry>[], issues: Map<number, ImportIssue[]>, mappedSourceValues: Map<number, Record<string, unknown>>) {
       entries.value = mapped
+      pipelineIssues.value = issues
+      sourceValues.value = mappedSourceValues
       await review.validate()
+      const id = importAttemptId.value
+      if (id) {
+        const validationErrors = Object.fromEntries([...rowErrors.value].map(([index, issues]) => [String(index), issues]))
+        await importAttemptsStore.updateTrace(id, trace => ({
+          ...trace,
+          validation: { rowErrors: validationErrors },
+          stage: 'review',
+          updatedAt: new Date().toISOString(),
+        }))
+      }
     },
     onMetadataReady(date, title) {
       if (date) {
@@ -83,7 +152,7 @@ export function useSeniorityUpload(): SeniorityUpload {
   })
 
   const file = _useFileIO({
-    selectedParserId,
+    selectedUploadTypeId,
     rawHeaders,
     rawRows,
     extractedEffectiveDate,
@@ -91,7 +160,10 @@ export function useSeniorityUpload(): SeniorityUpload {
     syntheticNote,
     syntheticIndices,
     columnMap,
+    mappingOptions,
     autoDetectSucceeded,
+    preparedSheet,
+    preparationIssues,
     progress,
     onSheetChange: resetDownstream,
   })
@@ -99,14 +171,18 @@ export function useSeniorityUpload(): SeniorityUpload {
   // ── Reset ───────────────────────────────────────────────────────────────
 
   function reset() {
-    selectedParserId.value = null
+    selectedUploadTypeId.value = null
     file._reset()
     resetDownstream()
     progress.idle()
   }
 
   return {
-    selectedParserId,
+    selectedUploadTypeId,
+    diagnosticAttemptId: readonly(importAttemptId),
+    uploadTypes,
+    selectUploadType,
+    clearUploadType,
     file,
     mapping,
     review,

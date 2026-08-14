@@ -2,7 +2,7 @@
 import type { StepperItem } from '@nuxt/ui'
 import type { DateValue } from '@internationalized/date'
 import { useSeniorityUpload } from '~/composables/seniority'
-import { parsers } from '~/utils/parsers/registry'
+import { useImportAttempts } from '~/composables/useImportAttempts'
 import { createLogger } from '~/utils/logger'
 
 const log = createLogger('upload-page')
@@ -12,9 +12,9 @@ definePageMeta({ layout: 'dashboard' })
 defineExpose({ onSave })
 
 const upload = useSeniorityUpload()
+const importAttempts = useImportAttempts()
 const toast = useToast()
 const files = ref<File | null>(null)
-const mappingSkipped = ref(false)
 const activeRowFilter = ref<'all' | 'errors' | 'estimated'>('all')
 
 const showErrorsOnly = computed(() => activeRowFilter.value === 'errors')
@@ -43,11 +43,24 @@ function clearRowFilter() {
   activeRowFilter.value = 'all'
 }
 
+function saveDiagnosticFile() {
+  const attemptId = upload.diagnosticAttemptId.value
+  if (!attemptId) return
+  const data = importAttempts.exportAttempt(attemptId)
+  if (!data) return
+  const url = URL.createObjectURL(new Blob([data], { type: 'application/json' }))
+  const link = document.createElement('a')
+  link.href = url
+  link.download = `seniority-guru-import-${attemptId}.json`
+  link.click()
+  URL.revokeObjectURL(url)
+}
+
 const stepOrder = ['upload', 'mapping', 'review', 'confirm'] as const
 type Step = typeof stepOrder[number]
 const steps: StepperItem[] = [
   { title: 'Upload', description: 'Choose file', icon: 'i-lucide-upload', value: 'upload' },
-  { title: 'Map Columns', description: 'Match fields', icon: 'i-lucide-columns-3', value: 'mapping' },
+  { title: 'Match Columns', description: 'Confirm fields', icon: 'i-lucide-columns-3', value: 'mapping' },
   { title: 'Review', description: 'Validate data', icon: 'i-lucide-scan-eye', value: 'review' },
   { title: 'Save', description: 'Confirm & upload', icon: 'i-lucide-check-circle', value: 'confirm' },
 ]
@@ -81,33 +94,21 @@ const canAdvance = computed(() => {
   return true
 })
 
-function selectParser(parserId: string) {
-  upload.selectedParserId.value = parserId
+async function selectUploadType(uploadTypeId: string) {
+  await upload.selectUploadType(uploadTypeId)
 }
 
 function changeFormat() {
-  upload.reset()
+  const replacingReview = currentStep.value === 'review' && upload.review.entries.value.length > 0
+  if (replacingReview && !window.confirm('Changing the upload type replaces your review edits. Continue?')) return
+  upload.clearUploadType()
+  currentStep.value = 'upload'
   clearRowFilter()
-  files.value = null
-  mappingSkipped.value = false
 }
 
 async function nextStep() {
-  if (currentStep.value === 'upload' && upload.file.autoDetected.value) {
-    await upload.mapping.apply()
-    if (upload.mapping.error.value) {
-      log.error('applyMapping failed during auto-detect step', { error: upload.mapping.error.value })
-      currentStep.value = 'mapping'
-      mappingSkipped.value = false
-      return
-    }
-    mappingSkipped.value = true
-    currentStep.value = 'review'
-    log.info('Upload step advanced (mapping skipped)', { step: 'review' })
-    toast.add({ title: 'All columns auto-detected — skipped to review', color: 'info' })
-    return
-  }
   if (currentStep.value === 'mapping') {
+    if (upload.review.entries.value.length > 0 && !window.confirm('Changing column mappings replaces your review edits. Continue?')) return
     await upload.mapping.apply()
     if (upload.mapping.error.value) {
       log.error('applyMapping failed during mapping step', { error: upload.mapping.error.value })
@@ -122,11 +123,6 @@ async function nextStep() {
 }
 
 function prevStep() {
-  if (currentStep.value === 'review' && mappingSkipped.value) {
-    mappingSkipped.value = false
-    currentStep.value = 'upload'
-    return
-  }
   const prevIdx = currentStepIndex.value - 1
   if (prevIdx >= 0) {
     currentStep.value = stepOrder[prevIdx]!
@@ -161,12 +157,12 @@ async function onSave() {
 
     <template #body>
       <div class="max-w-5xl mx-auto p-4 sm:p-6">
-        <!-- State 1: Parser Selection (before wizard) -->
-        <template v-if="!upload.selectedParserId.value">
-          <ParserSelector :parsers="parsers" @select="selectParser" />
+        <!-- State 1: Upload Type selection (before wizard) -->
+        <template v-if="!upload.selectedUploadTypeId.value">
+          <UploadTypeSelector :upload-types="upload.uploadTypes.value" @select="selectUploadType" />
         </template>
 
-        <!-- State 2: Upload Wizard (after parser selected) -->
+        <!-- State 2: Upload wizard (after Upload Type selection) -->
         <template v-else>
           <!-- Change format link -->
           <div class="mb-4">
@@ -229,6 +225,16 @@ async function onSave() {
               >
                 <template #actions>
                   <UButton
+                    v-if="upload.diagnosticAttemptId.value"
+                    size="sm"
+                    color="neutral"
+                    variant="outline"
+                    icon="i-lucide-download"
+                    @click="saveDiagnosticFile"
+                  >
+                    Save diagnostic file
+                  </UButton>
+                  <UButton
                     size="sm"
                     color="error"
                     icon="i-lucide-rotate-ccw"
@@ -261,9 +267,29 @@ async function onSave() {
                 :title="`Loaded: ${upload.file.fileName.value}${upload.file.selectedSheet.value ? ` — ${upload.file.selectedSheet.value}` : ''}`"
                 :description="`${upload.mapping.headers.value.length} columns detected`"
               />
+              <UAlert
+                v-if="upload.file.preparationIssues?.value?.length"
+                icon="i-lucide-info"
+                color="warning"
+                variant="soft"
+                title="Preparation needs your review"
+                :description="upload.file.preparationIssues?.value?.map(issue => issue.message).join(' ')"
+              />
+              <UAlert
+                v-if="upload.file.excludedRowCount?.value"
+                icon="i-lucide-list-restart"
+                color="neutral"
+                variant="soft"
+                :title="`${upload.file.excludedRowCount?.value} nonblank row${upload.file.excludedRowCount?.value === 1 ? '' : 's'} excluded by preparation`"
+                description="These rows remain available. Include them if they contain seniority entries."
+              >
+                <template #actions>
+                  <UButton size="xs" color="neutral" @click="upload.file.includeExcludedRows">Include excluded rows</UButton>
+                </template>
+              </UAlert>
             </div>
 
-            <!-- Step 2: Map Columns -->
+            <!-- Step 2: Match Columns -->
             <div v-else-if="currentStep === 'mapping'" class="space-y-6">
               <UAlert
                 v-if="upload.mapping.error.value"
@@ -271,15 +297,39 @@ async function onSave() {
                 color="error"
                 variant="soft"
                 :title="upload.mapping.error.value"
-              />
+              >
+                <template #actions>
+                  <UButton
+                    v-if="upload.diagnosticAttemptId.value"
+                    size="sm"
+                    color="neutral"
+                    variant="outline"
+                    icon="i-lucide-download"
+                    @click="saveDiagnosticFile"
+                  >
+                    Save diagnostic file
+                  </UButton>
+                </template>
+              </UAlert>
               <UploadColumnMapper
                 :headers="upload.mapping.headers.value"
+                :column-ids="upload.mapping.columnIds.value"
                 :column-map="upload.mapping.columnMap.value"
                 :mapping-options="upload.mapping.mappingOptions.value"
                 :sample-rows="upload.mapping.sampleRows.value"
+                :source-headers="upload.file.sourceHeaders?.value"
                 @update:column-map="upload.mapping.columnMap.value = $event"
                 @update:mapping-options="upload.mapping.mappingOptions.value = $event"
               />
+              <UFormField v-if="upload.file.headerRows.value.length > 1" label="Column heading row">
+                <USelectMenu
+                  :model-value="upload.file.selectedHeaderRow.value"
+                  :items="upload.file.headerRows.value.map((row, index) => ({ label: `Row ${index + 1}: ${row.filter(Boolean).slice(0, 3).join(' · ') || 'blank'}`, value: index }))"
+                  value-key="value"
+                  class="w-full"
+                  @update:model-value="upload.file.selectHeaderRow($event)"
+                />
+              </UFormField>
             </div>
 
             <!-- Step 3: Review & Validate -->
@@ -327,6 +377,16 @@ async function onSave() {
                 description="Fix or remove them to continue."
               >
                 <template #actions>
+                  <UButton
+                    v-if="upload.diagnosticAttemptId.value"
+                    size="sm"
+                    variant="outline"
+                    color="neutral"
+                    icon="i-lucide-download"
+                    @click="saveDiagnosticFile"
+                  >
+                    Save diagnostic file
+                  </UButton>
                   <UButton
                     size="sm"
                     color="warning"
@@ -381,9 +441,12 @@ async function onSave() {
                 :show-errors-only="showErrorsOnly"
                 :show-estimated-only="showEstimatedOnly"
                 :estimated-indices="upload.review.syntheticIndices.value"
+                :pipeline-issue-rows="upload.review.pipelineIssueRows?.value"
+                :source-values="upload.review.sourceValues?.value"
                 @update-cell="upload.review.updateCell"
                 @delete-row="upload.review.deleteRow"
                 @insert-row="upload.review.insertRowAt"
+                @acknowledge-pipeline-issues="upload.review.acknowledgePipelineIssues"
               />
             </div>
 
@@ -395,7 +458,20 @@ async function onSave() {
                 color="error"
                 variant="soft"
                 :title="upload.confirm.error.value"
-              />
+              >
+                <template #actions>
+                  <UButton
+                    v-if="upload.diagnosticAttemptId.value"
+                    size="sm"
+                    variant="outline"
+                    color="neutral"
+                    icon="i-lucide-download"
+                    @click="saveDiagnosticFile"
+                  >
+                    Save diagnostic file
+                  </UButton>
+                </template>
+              </UAlert>
               <UFormField label="Effective Date" name="effectiveDate" required>
                 <UInputDate v-model="effectiveDateModel" class="w-full" />
               </UFormField>

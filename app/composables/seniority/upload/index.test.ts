@@ -16,16 +16,6 @@ vi.mock('xlsx', () => ({
   utils: { sheet_to_json: vi.fn() },
 }))
 
-vi.mock('~/utils/parsers/registry', () => ({
-  getParser: () => ({
-    id: 'generic',
-    parse: vi.fn().mockReturnValue({
-      rows: [],
-      metadata: { effectiveDate: null, title: null },
-    }),
-  }),
-}))
-
 describe('useSeniorityUpload (orchestrator)', () => {
   beforeEach(() => {
     mockStore.addList.mockReset()
@@ -34,7 +24,7 @@ describe('useSeniorityUpload (orchestrator)', () => {
 
   it('returns grouped interface with all phases', () => {
     const upload = useSeniorityUpload()
-    expect(upload.selectedParserId).toBeDefined()
+    expect(upload.selectedUploadTypeId).toBeDefined()
     expect(upload.file).toBeDefined()
     expect(upload.mapping).toBeDefined()
     expect(upload.review).toBeDefined()
@@ -137,14 +127,14 @@ describe('useSeniorityUpload (orchestrator)', () => {
   describe('reset', () => {
     it('clears all phases', () => {
       const upload = useSeniorityUpload()
-      upload.selectedParserId.value = 'delta'
+      upload.selectedUploadTypeId.value = 'delta'
       upload.review.entries.value = [makePartialEntry({ seniority_number: 1 })]
       upload.review.rowErrors.value = new Map([[0, ['err']]])
       upload.confirm.title.value = 'Something'
 
       upload.reset()
 
-      expect(upload.selectedParserId.value).toBeNull()
+      expect(upload.selectedUploadTypeId.value).toBeNull()
       expect(upload.review.entries.value).toEqual([])
       expect(upload.review.rowErrors.value.size).toBe(0)
       expect(upload.confirm.title.value).toBe('')
