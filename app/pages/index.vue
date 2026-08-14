@@ -7,78 +7,78 @@ const { install } = usePwaInstall()
 
 useSeoMeta({
   title: 'SeniorityGuru — Pilot Seniority Tracker',
-  description: 'Track your seniority rank, percentile, and career trajectory. Upload your airline\'s seniority list and see exactly where you stand.',
+  description: 'Upload an airline seniority list to view rank, percentile, and career projections. Data stays on your device.',
   ogTitle: 'SeniorityGuru — Pilot Seniority Tracker',
-  ogDescription: 'Upload your airline\'s seniority list and instantly see your rank, percentile, and career projections.',
+  ogDescription: 'Upload an airline seniority list to view rank, percentile, and career projections. Data stays on your device.',
   twitterCard: 'summary',
 })
 
 const howItWorksSteps = [
   {
     icon: 'i-lucide-upload',
-    title: 'Upload your list',
-    description: 'CSV or Excel. We need Seniority Number, Employee Number, Hire Date, Retire Date, Base, Seat, and Fleet — column names don\'t matter, we\'ll map them.',
+    title: 'Upload a list',
+    description: 'Use CSV or Excel. Map the seniority number, employee number, dates, base, seat, and fleet columns during upload.',
   },
   {
     icon: 'i-lucide-user-check',
-    title: 'Confirm your entry',
-    description: 'Enter your employee number. We find your row automatically.',
+    title: 'Select your entry',
+    description: 'Enter your employee number to select your row from the list.',
   },
   {
     icon: 'i-lucide-trending-up',
-    title: 'Explore your trajectory',
-    description: 'Instant dashboard: rank, percentile, career-length projections, and retirement forecast.',
+    title: 'Review your position',
+    description: 'View rank, percentile, career projections, and retirement estimates in the dashboard.',
   },
 ]
 
 const dataOwnershipItems = [
   {
     icon: 'i-lucide-plane',
-    title: 'Works with your airline\'s data',
-    description: 'If they gave you a spreadsheet, you\'re in. No special access needed.',
+    title: 'Use your airline\'s data',
+    description: 'Upload a seniority spreadsheet without special access or an airline account.',
   },
   {
     icon: 'i-lucide-hard-drive',
-    title: 'Your data never leaves your device',
-    description: 'Everything lives in your browser\'s local storage. SeniorityGuru never sees it.',
+    title: 'Local data',
+    description: 'Your lists stay in your browser. SeniorityGuru does not receive them.',
   },
   {
     icon: 'i-lucide-user-x',
-    title: 'No account required',
-    description: 'No sign-up, no password, no email. Open the app and go.',
+    title: 'No account',
+    description: 'Use the app without creating an account or entering an email address.',
   },
 ]
 
 const featureCards = [
   {
     icon: 'i-lucide-trending-up',
-    title: 'Trajectory Projections',
-    description: 'Career-length percentile forecast based on retirements and company percentiles (much more realistic).',
+    title: 'Trajectory projections',
+    description: 'Estimate percentile changes over time using scheduled retirements and optional growth assumptions.',
   },
   {
     icon: 'i-lucide-calendar-clock',
-    title: 'Retirement Forecasting',
-    description: 'Drill down as deep as you want into retirement data.',
+    title: 'Retirement estimates',
+    description: 'Review projected retirements by year and see how they affect seniority position.',
   },
   {
     icon: 'i-lucide-map-pin',
-    title: 'Position by Base & Seat',
-    description: 'Dig into your rank within your base, seat category, and fleet — not just company-wide.',
+    title: 'Position by base and seat',
+    description: 'Compare your position within a base, seat category, and fleet as well as company-wide.',
   },
   {
     icon: 'i-lucide-git-compare-arrows',
-    title: 'List Comparison',
-    description: 'Diff any two lists: retirements, departures, qual moves, and your rank change at a glance.',
+    title: 'List comparison',
+    description: 'Compare two lists to identify retirements, departures, qualification changes, and rank changes.',
   },
   {
     icon: 'i-lucide-bar-chart-3',
-    title: 'Demographics Breakdown',
-    description: 'Age distribution, years of service, and cohort data for the whole airline.',
+    title: 'Demographics',
+    description: 'View age distribution, years of service, and cohort data for the list.',
   },
   {
     icon: 'i-lucide-upload',
-    title: 'Smart Upload',
-    description: 'CSV or Excel, any column order. Auto-detects employee numbers, hire dates, and seat data.',
+    title: 'Column mapping',
+    description: 'Upload CSV or Excel files in any column order and map common fields during review.',
   },
 ]
 
@@ -280,10 +280,10 @@ async function enterDemo() {
 
           <div>
             <h1 class="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight leading-tight">
-              Seniority is everything.
+              Check your seniority position.
             </h1>
             <h1 class="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight leading-tight text-muted">
-              Know yours.
+              Use your list.
             </h1>
           </div>
 
@@ -293,10 +293,10 @@ async function enterDemo() {
 
           <div class="flex flex-wrap justify-center gap-3">
             <UButton to="/dashboard" size="xl" icon="i-lucide-arrow-right" trailing>
-              Go to Dashboard
+            Open Dashboard
             </UButton>
             <UButton size="xl" variant="soft" icon="i-lucide-play" trailing :loading="demoEntering" @click="enterDemo">
-              Try Demo
+              View Demo
             </UButton>
             <UButton size="xl" variant="ghost" icon="i-lucide-download" trailing @click="install">
               Install App
@@ -321,20 +321,20 @@ async function enterDemo() {
       </UContainer>
     </section>
 
-    <!-- ── Section 2: Bring Your Airline's Data ─────────────────────────── -->
+    <!-- ── Section 2: Upload an Airline Seniority List ───────────────────── -->
     <section class="py-16 sm:py-20 bg-(--ui-bg-elevated)">
       <UContainer>
         <!-- Open-source banner -->
         <div class="text-center mb-12">
           <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium mb-4">
             <UIcon name="i-lucide-github" class="size-4" />
-            Open Source — Community Driven
+            Open source
           </div>
           <h2 class="text-2xl sm:text-3xl font-bold tracking-tight mb-3">
-            Bring Your Airline's Data
+            Upload an airline seniority list
           </h2>
           <p class="text-muted max-w-xl mx-auto">
-            SeniorityGuru is open source. We support Delta natively, and any airline with a standard spreadsheet. Anyone can add support for their airline.
+            Use the Delta format or a standard CSV or Excel file. The project is open source, and additional airline formats can be added.
           </p>
         </div>
 
@@ -348,21 +348,21 @@ async function enterDemo() {
                 </div>
                 <div>
                   <h3 class="font-semibold">Delta Air Lines</h3>
-                  <p class="text-xs text-muted">Native parser</p>
+                  <p class="text-xs text-muted">Delta format</p>
                 </div>
               </div>
               <ul class="text-sm text-muted space-y-1.5">
                 <li class="flex items-start gap-2">
                   <UIcon name="i-lucide-check" class="size-4 text-primary shrink-0 mt-0.5" />
-                  <span>Auto-parses PBS seniority list exports</span>
+                  <span>Parses PBS seniority list exports</span>
                 </li>
                 <li class="flex items-start gap-2">
                   <UIcon name="i-lucide-check" class="size-4 text-primary shrink-0 mt-0.5" />
-                  <span>Category column split into Base, Fleet, and Seat</span>
+                  <span>Maps category values to Base, Fleet, and Seat</span>
                 </li>
                 <li class="flex items-start gap-2">
                   <UIcon name="i-lucide-check" class="size-4 text-primary shrink-0 mt-0.5" />
-                  <span>Effective date extracted from preamble</span>
+                  <span>Reads the effective date from the file header</span>
                 </li>
               </ul>
             </div>
@@ -386,11 +386,11 @@ async function enterDemo() {
                 </li>
                 <li class="flex items-start gap-2">
                   <UIcon name="i-lucide-check" class="size-4 text-primary shrink-0 mt-0.5" />
-                  <span>Auto-detects common column names</span>
+                  <span>Recognizes common column names</span>
                 </li>
                 <li class="flex items-start gap-2">
                   <UIcon name="i-lucide-check" class="size-4 text-primary shrink-0 mt-0.5" />
-                  <span>Manual column mapping available as fallback</span>
+                  <span>Supports manual column mapping</span>
                 </li>
               </ul>
             </div>
@@ -477,7 +477,7 @@ async function enterDemo() {
         <div class="max-w-3xl mx-auto text-center">
           <h3 class="font-semibold mb-2">Your airline not listed?</h3>
           <p class="text-sm text-muted mb-4">
-            This project is open source. Request a parser for your airline, or contribute one yourself.
+            Request an import plugin for your airline, or contribute one to the project.
           </p>
           <div class="flex flex-wrap justify-center gap-3 mb-3">
             <UButton
@@ -487,7 +487,7 @@ async function enterDemo() {
               variant="outline"
               icon="i-lucide-github"
             >
-              Request a Parser
+              Request an Import Plugin
             </UButton>
             <UButton
               :to="parserRequestMailto"
@@ -516,10 +516,10 @@ async function enterDemo() {
       <UContainer>
         <div class="text-center mb-10">
           <h2 class="text-2xl sm:text-3xl font-bold tracking-tight mb-3">
-            Your number, from every angle
+            Your position by qualification
           </h2>
           <p class="text-muted max-w-xl mx-auto">
-            Your company rank is one number. Your qual rank is another. Both matter.
+            Compare company-wide rank with position within each qualification.
           </p>
         </div>
 
@@ -537,7 +537,7 @@ async function enterDemo() {
       <UContainer>
         <div class="text-center mb-12">
           <h2 class="text-2xl sm:text-3xl font-bold tracking-tight">
-            Get started in three steps
+            Use the dashboard in three steps
           </h2>
         </div>
 
@@ -574,10 +574,10 @@ async function enterDemo() {
               New Hire Mode
             </UBadge>
             <h2 class="text-2xl sm:text-3xl font-bold tracking-tight">
-              You're the plug. For now.
+              Estimate your starting position
             </h2>
             <p class="text-muted leading-relaxed">
-              Day one, you're last on the list. That's not a problem. Upload your company's list and see roughly where you will stand in any qual, and how fast retirements will move you up.
+              If your employee number is not on the list, choose your base, seat, fleet, and birth date to estimate your starting position and how retirements may change it.
             </p>
           </div>
 
@@ -631,10 +631,10 @@ async function enterDemo() {
       <UContainer>
         <div class="text-center mb-10">
           <h2 class="text-2xl sm:text-3xl font-bold tracking-tight mb-3">
-            Track what changed since last quarter
+            Compare lists over time
           </h2>
           <p class="text-muted max-w-xl mx-auto">
-            Upload a new list anytime — SeniorityGuru diffs it against your previous one, highlighting retirements, departures, qual moves, and new hires.
+            Upload a second list to identify retirements, departures, qualification changes, and new hires.
           </p>
         </div>
 
@@ -649,10 +649,10 @@ async function enterDemo() {
       <UContainer>
         <div class="text-center mb-8">
           <h2 class="text-2xl sm:text-3xl font-bold tracking-tight mb-3">
-            The retirement wave is already in the data
+            Review retirement timing
           </h2>
           <p class="text-muted max-w-xl mx-auto">
-            Toggle between seat categories to see how the math changes.
+            Select a seat category to compare the yearly counts.
           </p>
         </div>
 
@@ -681,7 +681,7 @@ async function enterDemo() {
             </template>
             <div class="space-y-3">
               <p class="text-sm text-muted">
-                Every bar past 55 is a pilot ahead of you leaving this decade.
+                The chart groups pilots by age range.
               </p>
               <AnalyticsAgeDistributionChart :buckets="demoAgeBuckets" :null-count="0" />
             </div>
@@ -694,7 +694,7 @@ async function enterDemo() {
             </template>
             <div class="space-y-3">
               <p class="text-sm text-muted">
-                Most retirements concentrate between 2028 and 2033.
+                The chart shows projected retirements by year.
               </p>
               <AnalyticsRetirementWaveChart
                 :wave-buckets="demoWaveBuckets"
@@ -710,7 +710,7 @@ async function enterDemo() {
           <UCard>
             <template #header>
               <div class="flex items-center gap-4 flex-wrap">
-                <h3 class="font-semibold text-sm">Your Position by Qual</h3>
+                <h3 class="font-semibold text-sm">Position by qualification</h3>
                 <div class="flex items-center gap-3 ml-auto flex-wrap">
                   <div class="flex items-center gap-2">
                     <USwitch v-model="demoProjection" size="sm" />
@@ -728,7 +728,7 @@ async function enterDemo() {
             </template>
             <div class="space-y-3">
               <p class="text-sm text-muted">
-                Each row shows where your seniority number lands within that qual. The dot turns green when you're senior enough to hold it.
+                Each row compares your seniority number with the selected qualification range.
               </p>
               <AnalyticsQualSeniorityScale :scales="demoQualScales" />
             </div>
@@ -763,7 +763,7 @@ async function enterDemo() {
       <UContainer>
         <div class="text-center mb-12">
           <h2 class="text-2xl sm:text-3xl font-bold tracking-tight">
-            Everything you need to understand your standing
+            Review your seniority data
           </h2>
         </div>
 
@@ -788,20 +788,20 @@ async function enterDemo() {
       <UContainer>
         <div class="max-w-xl mx-auto space-y-6">
           <h2 class="text-2xl sm:text-3xl font-bold tracking-tight">
-            Know where you stand.
+            Review your seniority position.
           </h2>
           <p class="text-muted">
             Free to use. Your data stays on your device.
           </p>
           <UButton to="/dashboard" size="xl" icon="i-lucide-arrow-right" trailing>
-            Get Started
+            Open Dashboard
           </UButton>
 
           <!-- Trust signals -->
           <div class="flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm text-muted pt-2">
             <span class="flex items-center gap-1.5">
               <UIcon name="i-lucide-shield-check" class="size-4" />
-              No airline partnership required
+              No airline partnership needed
             </span>
             <span class="flex items-center gap-1.5">
               <UIcon name="i-lucide-hard-drive" class="size-4" />
