@@ -1,4 +1,5 @@
-import type { ImportField } from './fields'
+import type { ImportField, MappingSelection } from './fields'
+import type { SeniorityEntry } from '../schemas/seniority-list'
 
 /** A decoded spreadsheet value retained by the import pipeline. */
 export type SourceCellValue = string | number | boolean | null
@@ -40,6 +41,7 @@ export type DecodeWorkbookResult =
   | { readonly ok: false; readonly error: DecodeError }
 
 export type { ImportField } from './fields'
+export type { MappingSelection } from './fields'
 
 /** A canonical or derived column exposed during Match Columns. */
 export interface PreparedColumn {
@@ -118,11 +120,6 @@ export interface PrepareImportResult {
   readonly metadata: { readonly effectiveDate: string | null, readonly title: string | null }
 }
 
-export type MappingSelection =
-  | { readonly kind: 'column'; readonly columnId: string }
-  | { readonly kind: 'combined-name'; readonly firstNameColumnId: string; readonly lastNameColumnId: string }
-  | { readonly kind: 'retirement-from-birth-date'; readonly columnId: string; readonly retirementAge: number }
-
 /** The user-confirmed mapping choices passed to the processing operation. */
 export type ConfirmedMappings = Readonly<Partial<Record<ImportField, MappingSelection>>>
 
@@ -130,7 +127,7 @@ export type ConfirmedMappings = Readonly<Partial<Record<ImportField, MappingSele
 export interface DraftSeniorityEntry {
   readonly id: string
   readonly sourceRowId: string
-  readonly entry: Readonly<Record<string, unknown>>
+  readonly entry: Readonly<Partial<SeniorityEntry>>
   readonly issues: readonly ImportIssue[]
 }
 
@@ -142,7 +139,7 @@ export interface MappedEntryTransformationInput {
 
 /** The only changes a plugin may make to a mapped entry. */
 export interface EntryPatch {
-  readonly entry?: Readonly<Partial<Record<string, unknown>>>
+  readonly entry?: Readonly<Partial<SeniorityEntry>>
   readonly issues?: readonly ImportIssue[]
 }
 

@@ -6,30 +6,29 @@ import { getImportPlugin } from '~/utils/import-pipeline/plugins/registry'
 import { useUserStore } from '~/stores/user'
 import { useImportAttemptsStore } from '~/stores/import-attempts'
 import type { ConfirmedMappings, ImportIssue } from '~/utils/import-pipeline/types'
+import { hasRequiredImportMappings } from '~/utils/import-pipeline/fields'
 
 function toConfirmedMappings(
   map: UploadColumnMap,
   options: UploadMappingOptions,
 ): ConfirmedMappings {
   const column = (columnId: string | null) => columnId ? { kind: 'column' as const, columnId } : undefined
-  const mappings: Partial<Record<keyof UploadColumnMap, ConfirmedMappings[keyof ConfirmedMappings]>> = {
+  return {
     seniority_number: column(map.seniority_number),
     employee_number: column(map.employee_number),
     seat: column(map.seat),
     base: column(map.base),
     fleet: column(map.fleet),
     hire_date: column(map.hire_date),
+    name: options.nameMode === 'separate'
+      && options.firstNameCol
+      && options.lastNameCol
+      ? { kind: 'combined-name', firstNameColumnId: options.firstNameCol, lastNameColumnId: options.lastNameCol }
+      : column(map.name),
+    retire_date: options.retireMode === 'dob' && options.dobCol
+      ? { kind: 'retirement-from-birth-date', columnId: options.dobCol, retirementAge: options.retirementAge ?? 65 }
+      : column(map.retire_date),
   }
-
-  mappings.name = options.nameMode === 'separate'
-    && options.firstNameCol
-    && options.lastNameCol
-    ? { kind: 'combined-name', firstNameColumnId: options.firstNameCol, lastNameColumnId: options.lastNameCol }
-    : column(map.name)
-  mappings.retire_date = options.retireMode === 'dob' && options.dobCol
-    ? { kind: 'retirement-from-birth-date', columnId: options.dobCol, retirementAge: options.retirementAge ?? 65 }
-    : column(map.retire_date)
-  return mappings as ConfirmedMappings
 }
 
 const log = createLogger('upload:mapping')
@@ -45,18 +44,12 @@ export function _useColumnMapping(opts: MappingPhaseOptions): MappingPhase & { _
   const columnIds = computed(() => opts.preparedSheet.value?.columns.map(column => column.id) ?? [])
 
   const canAdvance = computed(() => {
-    const m = opts.columnMap.value
-    const required = getImportPlugin(opts.selectedUploadTypeId.value ?? '')?.requiredMappings ?? []
-    const dobActive = mappingOptions.value.retireMode === 'dob'
-    const retireSatisfied = Boolean(m.retire_date) || dobActive
-    return Boolean(m.seniority_number)
-      && Boolean(m.employee_number)
-      && Boolean(m.seat)
-      && Boolean(m.base)
-      && Boolean(m.fleet)
-      && Boolean(m.hire_date)
-      && retireSatisfied
-      && required.every(field => Boolean(m[field]))
+    const pluginRequired = getImportPlugin(opts.selectedUploadTypeId.value ?? '')?.requiredMappings
+    return hasRequiredImportMappings(
+      toConfirmedMappings(opts.columnMap.value, mappingOptions.value),
+      pluginRequired,
+      { retirementFromBirthDate: mappingOptions.value.retireMode === 'dob' },
+    )
   })
 
   async function apply() {
@@ -87,11 +80,13 @@ export function _useColumnMapping(opts: MappingPhaseOptions): MappingPhase & { _
 
       if (plugin && opts.preparedSheet.value) {
         const confirmedMappings = toConfirmedMappings(opts.columnMap.value, mappingOptions.value)
-        const columns = Object.fromEntries(Object.entries(opts.columnMap.value)
-          .filter(([, columnId]) => Boolean(columnId))) as Record<string, string>
+        const columns: Record<string, string> = {}
+        for (const [field, columnId] of Object.entries(opts.columnMap.value)) {
+          if (columnId) columns[field] = columnId
+        }
         try {
           const existing = await userStore.getPreference('importMappings') ?? {}
-          await userStore.savePreference('importMappings', { ...existing, [plugin.id]: { columns, mappingOptions: mappingOptions.value as unknown as Record<string, unknown> } })
+          await userStore.savePreference('importMappings', { ...existing, [plugin.id]: { columns, mappingOptions: mappingOptions.value } })
           const existingAttemptId = opts.importAttemptId?.value
           if (existingAttemptId) {
             await importAttemptsStore.updateTrace(existingAttemptId, trace => ({

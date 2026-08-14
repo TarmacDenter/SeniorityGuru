@@ -3,6 +3,7 @@ import type { LocalImportAttempt } from '~/utils/db'
 import { db } from '~/utils/db'
 import { createLogger } from '~/utils/logger'
 import type { ImportDiagnosticTrace } from '~/utils/import-pipeline/types'
+import { ImportDiagnosticTraceSchema } from '~/utils/import-pipeline/diagnostic-schema'
 
 const MAX_ATTEMPTS = 5
 const MAX_BYTES = 50 * 1024 * 1024
@@ -85,13 +86,17 @@ export const useImportAttemptsStore = defineStore('import-attempts', () => {
     try {
       const existing = await db.importAttempts.get(id)
       if (!existing) return
-      let trace: ImportDiagnosticTrace
-      try {
-        trace = JSON.parse(existing.data) as ImportDiagnosticTrace
-      } catch {
+      const parsed = ImportDiagnosticTraceSchema.safeParse(JSON.parse(existing.data))
+      if (!parsed.success) {
+        log.warn('Could not update an invalid import diagnostic trace', { id })
         return
       }
-      await update(id, { data: merge(trace) })
+      const next = ImportDiagnosticTraceSchema.safeParse(merge(parsed.data))
+      if (!next.success) {
+        log.warn('Could not save an invalid import diagnostic trace transition', { id })
+        return
+      }
+      await update(id, { data: next.data })
     } catch (error) {
       log.warn('Could not update import diagnostic trace', { error: String(error) })
     }
@@ -101,24 +106,29 @@ export const useImportAttemptsStore = defineStore('import-attempts', () => {
     try {
       const attempt = await db.importAttempts.get(id)
       if (!attempt) return
-      let previous: Record<string, unknown> = {}
-      try { previous = JSON.parse(attempt.data) as Record<string, unknown> } catch { /* retain the raw record if it is malformed */ }
+      const parsed = ImportDiagnosticTraceSchema.safeParse(JSON.parse(attempt.data))
+      if (!parsed.success) {
+        log.warn('Could not complete an invalid import diagnostic trace', { id })
+        return
+      }
+      const completedAt = new Date().toISOString()
+      const trace = ImportDiagnosticTraceSchema.parse({
+        ...parsed.data,
+        outcome: input.outcome,
+        stage: 'completed',
+        updatedAt: completedAt,
+        ...(input.error ? { error: input.error } : {}),
+        final: {
+          entries: input.finalEntries ?? parsed.data.final?.entries ?? [],
+          outcome: input.outcome === 'saved' ? 'saved' : 'failed',
+          ...(input.listId !== undefined ? { savedListId: input.listId } : {}),
+          completedAt,
+        },
+      })
       await update(id, {
         outcome: input.outcome,
         listId: input.listId,
-        data: {
-          ...previous,
-          outcome: input.outcome,
-          stage: 'completed',
-          completedAt: new Date().toISOString(),
-          ...(input.error ? { error: input.error } : {}),
-          final: {
-            entries: input.finalEntries ?? previous.finalEntries ?? [],
-            outcome: input.outcome === 'saved' ? 'saved' : 'failed',
-            ...(input.listId !== undefined ? { savedListId: input.listId } : {}),
-            completedAt: new Date().toISOString(),
-          },
-        },
+        data: trace,
       })
     } catch (error) {
       log.warn('Could not complete import diagnostic', { error: String(error) })

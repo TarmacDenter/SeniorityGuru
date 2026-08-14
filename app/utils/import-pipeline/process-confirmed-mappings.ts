@@ -1,9 +1,12 @@
-import { normalizeDate, normalizeDateFuture, computeRetireDate } from '../date'
-import { normalizeEmployeeNumber, SeniorityEntrySchema } from '../schemas/seniority-list'
+import type { SeniorityEntry } from '../schemas/seniority-list'
+import { SeniorityEntrySchema } from '../schemas/seniority-list'
+import { computeRetireDate, normalizeDate } from '../date'
 import { z } from 'zod'
+import { ImportFieldSchema, normalizeMappedEntry, validateImportEntry } from './fields'
 import type {
   ConfirmedMappings,
   DraftSeniorityEntry,
+  EntryPatch,
   ImportField,
   ImportIssue,
   ImportPlugin,
@@ -14,22 +17,20 @@ import type {
 
 const importIssueSchema = z.object({
   kind: z.enum(['ambiguous-alias', 'preparation-failed', 'transformation-failed', 'validation-failed']),
-  field: z.enum([
-    'seniority_number', 'employee_number', 'name', 'seat', 'base', 'fleet', 'hire_date', 'retire_date',
-  ]).optional(),
+  field: ImportFieldSchema.optional(),
   message: z.string().min(1),
 }).strict()
 
-const entryPatchSchema = z.object({
+const entryPatchSchema: z.ZodType<EntryPatch> = z.object({
   entry: z.object({
-    seniority_number: z.unknown(),
-    employee_number: z.unknown(),
-    name: z.unknown(),
-    seat: z.unknown(),
-    base: z.unknown(),
-    fleet: z.unknown(),
-    hire_date: z.unknown(),
-    retire_date: z.unknown(),
+    seniority_number: SeniorityEntrySchema.shape.seniority_number,
+    employee_number: SeniorityEntrySchema.shape.employee_number,
+    name: SeniorityEntrySchema.shape.name.unwrap(),
+    seat: SeniorityEntrySchema.shape.seat,
+    base: SeniorityEntrySchema.shape.base,
+    fleet: SeniorityEntrySchema.shape.fleet,
+    hire_date: SeniorityEntrySchema.shape.hire_date,
+    retire_date: SeniorityEntrySchema.shape.retire_date,
   }).partial().strict().optional(),
   issues: z.array(importIssueSchema).optional(),
 }).strict()
@@ -52,7 +53,7 @@ function columnValue(row: PreparedRow, columnId: string): string | undefined {
   return text(row.cells[columnId])
 }
 
-function mapField(field: ImportField, row: PreparedRow, mappings: ConfirmedMappings): unknown {
+function mapField(field: ImportField, row: PreparedRow, mappings: ConfirmedMappings): string | undefined {
   const mapping = mappings[field]
   if (!mapping) return undefined
   if (mapping.kind === 'column') return columnValue(row, mapping.columnId)
@@ -68,29 +69,25 @@ function mapField(field: ImportField, row: PreparedRow, mappings: ConfirmedMappi
   return undefined
 }
 
-function mapEntry(row: PreparedRow, mappings: ConfirmedMappings): Record<string, unknown> {
-  const entry: Record<string, unknown> = {}
-  for (const field of ['seniority_number', 'employee_number', 'name', 'seat', 'base', 'fleet', 'hire_date', 'retire_date'] as const) {
-    const value = mapField(field, row, mappings)
-    if (value !== undefined) entry[field] = value
-  }
-
-  if (typeof entry.seniority_number === 'string') entry.seniority_number = Number.parseInt(entry.seniority_number, 10)
-  if (typeof entry.employee_number === 'string') entry.employee_number = normalizeEmployeeNumber(entry.employee_number)
-  if (typeof entry.hire_date === 'string') entry.hire_date = normalizeDate(entry.hire_date)
-  if (typeof entry.retire_date === 'string') entry.retire_date = normalizeDateFuture(entry.retire_date)
-  for (const field of ['base', 'seat', 'fleet']) {
-    if (typeof entry[field] === 'string') entry[field] = entry[field].toUpperCase()
-  }
-  return entry
+function mapEntry(row: PreparedRow, mappings: ConfirmedMappings): Partial<SeniorityEntry> {
+  return normalizeMappedEntry({
+    seniority_number: mapField('seniority_number', row, mappings),
+    employee_number: mapField('employee_number', row, mappings),
+    name: mapField('name', row, mappings),
+    seat: mapField('seat', row, mappings),
+    base: mapField('base', row, mappings),
+    fleet: mapField('fleet', row, mappings),
+    hire_date: mapField('hire_date', row, mappings),
+    retire_date: mapField('retire_date', row, mappings),
+  })
 }
 
-function validationIssues(entry: Record<string, unknown>): ImportIssue[] {
-  const result = SeniorityEntrySchema.safeParse(entry)
+function validationIssues(entry: Partial<SeniorityEntry>): ImportIssue[] {
+  const result = validateImportEntry(entry)
   if (result.success) return []
   return result.error.issues.map(issue => ({
-    kind: 'validation-failed' as const,
-    field: issue.path[0] as ImportField | undefined,
+    kind: 'validation-failed',
+    field: ImportFieldSchema.safeParse(issue.path[0]).data,
     message: issue.message,
   }))
 }

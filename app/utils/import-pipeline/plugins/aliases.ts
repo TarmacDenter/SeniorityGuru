@@ -1,7 +1,5 @@
 import type { ImportField, PreparedColumn, SourceColumn } from '../types'
-import { IMPORT_FIELD_LABELS } from '../fields'
-
-export const FIELD_LABELS = IMPORT_FIELD_LABELS
+import { importFieldLabel } from '../fields'
 
 /** Normalizes complete spreadsheet headings without attempting fuzzy matching. */
 export function normalizeHeader(value: string): string {
@@ -18,5 +16,5 @@ export function matchingColumns(columns: readonly SourceColumn[], aliases: reado
 }
 
 export function preparedColumn(pluginId: string, field: ImportField, sourceColumnId?: string): PreparedColumn {
-  return { id: preparedColumnId(pluginId, field), label: FIELD_LABELS[field], ...(sourceColumnId ? { sourceColumnId } : {}) }
+  return { id: preparedColumnId(pluginId, field), label: importFieldLabel(field), ...(sourceColumnId ? { sourceColumnId } : {}) }
 }

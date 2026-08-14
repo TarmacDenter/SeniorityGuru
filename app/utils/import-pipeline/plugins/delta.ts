@@ -1,5 +1,5 @@
 import { defineImportPlugin } from '../prepare-import'
-import type { ImportField, ImportPlugin, PreparationPatch, SourceSheet } from '../types'
+import type { ImportField, ImportPlugin, PreparedColumn, PreparationPatch, SourceSheet } from '../types'
 import { normalizeDate } from '~/utils/date'
 import { normalizeHeader, preparedColumn, preparedColumnId } from './aliases'
 
@@ -14,7 +14,8 @@ const headerFields: Readonly<Record<string, ImportField>> = {
 }
 
 export function mapDeltaSeat(code: string): string {
-  return ({ A: 'CA', B: 'FO' } as Record<string, string>)[code] ?? code
+  const seatByCode: Readonly<Record<string, string>> = { A: 'CA', B: 'FO' }
+  return seatByCode[code] ?? code
 }
 
 export function decomposeDeltaCategory(category: string): { base: string, fleet: string, seat: string } {
@@ -30,7 +31,7 @@ function headerIndex(sourceSheet: SourceSheet): number | undefined {
 }
 
 function prepare(sourceSheet: SourceSheet): PreparationPatch {
-  const columns = [] as NonNullable<PreparationPatch['columns']>[number][]
+  const columns: PreparedColumn[] = []
   const mappingSuggestions: Partial<Record<ImportField, string>> = {}
   const cellValues: Record<string, Record<string, string>> = {}
   let categoryIndex = -1

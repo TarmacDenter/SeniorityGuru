@@ -1,10 +1,11 @@
-import type { FilePhase, FilePhaseOptions, UploadColumnMap, UploadMappingOptions } from './types'
+import type { FilePhase, FilePhaseOptions, UploadColumnMap } from './types'
 import { autoDetectColumnMap } from '~/utils/parse-spreadsheet'
 import { createLogger } from '~/utils/logger'
 import { decodeWorkbook } from '~/utils/spreadsheet/decode-workbook'
 import { getImportPlugin } from '~/utils/import-pipeline/plugins/registry'
 import { prepareImport } from '~/utils/import-pipeline/prepare-import'
-import type { DecodedWorkbook, ImportDiagnosticTrace, ImportIssue, PreparedSheet } from '~/utils/import-pipeline/types'
+import type { DecodedWorkbook, ImportDiagnosticTrace, ImportField, ImportIssue, PreparedSheet } from '~/utils/import-pipeline/types'
+import { hasRequiredColumnMappings } from '~/utils/import-pipeline/fields'
 import { useUserStore } from '~/stores/user'
 import { useImportAttemptsStore } from '~/stores/import-attempts'
 
@@ -37,23 +38,38 @@ export function _useFileIO(opts: FilePhaseOptions): FilePhase & { _reset: () => 
     () => opts.autoDetectSucceeded.value,
   )
   const excludedRowCount = computed(() => opts.preparedSheet.value?.rows.filter(row => row.included === false).length ?? 0)
-  const hasRequiredMappings = (map: UploadColumnMap) => [
-    map.seniority_number, map.employee_number, map.seat, map.base, map.fleet, map.hire_date,
-  ].every(Boolean) && (Boolean(map.retire_date) || opts.mappingOptions.value.retireMode === 'dob')
+  const hasRequiredMappings = (map: UploadColumnMap, pluginRequired: readonly ImportField[] = []) => hasRequiredColumnMappings(map, {
+    retirementFromBirthDate: opts.mappingOptions.value.retireMode === 'dob',
+    pluginRequired,
+  })
 
-  function applyPreparedSheet(preparedSheet: PreparedSheet, mappingSuggestions: Readonly<Partial<Record<keyof ColumnMap, string>>> = {}) {
+  function mappedColumnId(field: keyof UploadColumnMap, detected: ReturnType<typeof autoDetectColumnMap>, preparedSheet: PreparedSheet, mappingSuggestions: Readonly<Partial<Record<ImportField, string>>>): string | null {
+    return mappingSuggestions[field]
+      ?? (detected[field] >= 0 ? preparedSheet.columns[detected[field]]?.id ?? null : null)
+  }
+
+  function applyPreparedSheet(
+    preparedSheet: PreparedSheet,
+    mappingSuggestions: Readonly<Partial<Record<ImportField, string>>> = {},
+    pluginRequired: readonly ImportField[] = [],
+  ) {
     opts.preparedSheet.value = preparedSheet
     opts.rawHeaders.value = preparedSheet.columns.map(column => column.label)
     opts.rawRows.value = opts.preparedSheet.value.rows.filter(row => row.included !== false).map(row =>
       preparedSheet.columns.map(column => String(row.cells[column.id] ?? '')),
     )
     const detected = autoDetectColumnMap(opts.rawHeaders.value)
-    opts.columnMap.value = Object.fromEntries(Object.entries(detected).map(([field, index]) => [
-      field,
-      mappingSuggestions[field as keyof ColumnMap]
-        ?? (index >= 0 ? preparedSheet.columns[index]?.id ?? null : null),
-    ])) as UploadColumnMap
-    opts.autoDetectSucceeded.value = hasRequiredMappings(opts.columnMap.value)
+    opts.columnMap.value = {
+      seniority_number: mappedColumnId('seniority_number', detected, preparedSheet, mappingSuggestions),
+      employee_number: mappedColumnId('employee_number', detected, preparedSheet, mappingSuggestions),
+      name: mappedColumnId('name', detected, preparedSheet, mappingSuggestions),
+      seat: mappedColumnId('seat', detected, preparedSheet, mappingSuggestions),
+      base: mappedColumnId('base', detected, preparedSheet, mappingSuggestions),
+      fleet: mappedColumnId('fleet', detected, preparedSheet, mappingSuggestions),
+      hire_date: mappedColumnId('hire_date', detected, preparedSheet, mappingSuggestions),
+      retire_date: mappedColumnId('retire_date', detected, preparedSheet, mappingSuggestions),
+    }
+    opts.autoDetectSucceeded.value = hasRequiredMappings(opts.columnMap.value, pluginRequired)
   }
 
   async function processImportSheet(workbook: DecodedWorkbook, sheetName: string, headerRowIndex?: number) {
@@ -79,15 +95,27 @@ export function _useFileIO(opts: FilePhaseOptions): FilePhase & { _reset: () => 
     preparationIssues.value = [...result.issues]
     opts.extractedEffectiveDate.value = result.metadata.effectiveDate
     opts.extractedTitle.value = result.metadata.title
-    applyPreparedSheet(result.preparedSheet, result.mappingSuggestions)
+    applyPreparedSheet(result.preparedSheet, result.mappingSuggestions, plugin.requiredMappings)
     const saved = (await userStore.getPreference('importMappings'))?.[plugin.id]
     if (saved) {
-      opts.columnMap.value = Object.fromEntries(Object.entries(opts.columnMap.value).map(([field, columnId]) => {
+      const useSavedColumn = (field: keyof UploadColumnMap) => {
         const savedId = saved.columns[field]
-        return [field, savedId && result.preparedSheet.columns.some(column => column.id === savedId) ? savedId : columnId]
-      })) as UploadColumnMap
-      opts.autoDetectSucceeded.value = hasRequiredMappings(opts.columnMap.value)
-      if (saved.mappingOptions) opts.mappingOptions.value = { ...opts.mappingOptions.value, ...saved.mappingOptions } as UploadMappingOptions
+        return savedId && result.preparedSheet.columns.some(column => column.id === savedId)
+          ? savedId
+          : opts.columnMap.value[field]
+      }
+      opts.columnMap.value = {
+        seniority_number: useSavedColumn('seniority_number'),
+        employee_number: useSavedColumn('employee_number'),
+        name: useSavedColumn('name'),
+        seat: useSavedColumn('seat'),
+        base: useSavedColumn('base'),
+        fleet: useSavedColumn('fleet'),
+        hire_date: useSavedColumn('hire_date'),
+        retire_date: useSavedColumn('retire_date'),
+      }
+      opts.autoDetectSucceeded.value = hasRequiredMappings(opts.columnMap.value, plugin.requiredMappings)
+      if (saved.mappingOptions) opts.mappingOptions.value = { ...opts.mappingOptions.value, ...saved.mappingOptions }
     }
     if (result.issues.length > 0) {
       log.warn('Generic sheet preparation needs manual mapping', { issueKinds: result.issues.map(issue => issue.kind) })

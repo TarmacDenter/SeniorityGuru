@@ -32,4 +32,16 @@ describe('useImportAttemptsStore', () => {
 
     await expect(store.complete('missing', { outcome: 'failed', error: 'Import failed' })).resolves.toBeUndefined()
   })
+
+  it('does not pass a malformed persisted trace to a transition callback', async () => {
+    records.push({ id: 'bad', pluginId: 'generic', data: '{"stage":"mapped"}', size: 18, createdAt: '2026-01-01T00:00:00.000Z' })
+    const { useImportAttemptsStore } = await import('./import-attempts')
+    const store = useImportAttemptsStore()
+    const merge = vi.fn()
+
+    await store.updateTrace('bad', merge)
+
+    expect(merge).not.toHaveBeenCalled()
+    expect(records[0]!.data).toBe('{"stage":"mapped"}')
+  })
 })

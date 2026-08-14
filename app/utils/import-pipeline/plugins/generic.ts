@@ -1,6 +1,7 @@
 import { defineImportPlugin } from '../prepare-import'
+import { IMPORT_FIELDS, importFieldLabel } from '../fields'
 import type { ImportField, ImportIssue, ImportPlugin, PreparedColumn, PreparationPatch, SourceSheet } from '../types'
-import { FIELD_LABELS, matchingColumns, preparedColumn, preparedColumnId } from './aliases'
+import { matchingColumns, preparedColumn, preparedColumnId } from './aliases'
 
 const FIELD_ALIASES: Readonly<Record<ImportField, readonly string[]>> = {
   seniority_number: ['seniority number', 'seniority', 'sen #', 'sen num', 'sen_num'],
@@ -19,7 +20,7 @@ function prepare(sourceSheet: SourceSheet): PreparationPatch {
   const mappingSuggestions: Partial<Record<ImportField, string>> = {}
   const issues: ImportIssue[] = []
 
-  for (const field of Object.keys(FIELD_ALIASES) as ImportField[]) {
+  for (const field of IMPORT_FIELDS) {
     const matches = matchingColumns(sourceSheet.columns, FIELD_ALIASES[field])
     if (matches.length === 1) {
       const id = preparedColumnId('generic', field)
@@ -29,7 +30,7 @@ function prepare(sourceSheet: SourceSheet): PreparationPatch {
       issues.push({
         kind: 'ambiguous-alias',
         field,
-        message: `More than one column looks like ${FIELD_LABELS[field]}. Choose the correct column.`,
+        message: `More than one column looks like ${importFieldLabel(field)}. Choose the correct column.`,
       })
     }
   }

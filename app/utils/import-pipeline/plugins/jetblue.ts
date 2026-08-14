@@ -1,5 +1,6 @@
 import { defineImportPlugin } from '../prepare-import'
-import type { ImportField, ImportPlugin, PreparationPatch, SourceSheet } from '../types'
+import { IMPORT_FIELDS } from '../fields'
+import type { ImportField, ImportPlugin, PreparedColumn, PreparationPatch, SourceSheet } from '../types'
 import { matchingColumns, preparedColumn, preparedColumnId, normalizeHeader } from './aliases'
 
 const aliases: Readonly<Record<ImportField, readonly string[]>> = {
@@ -19,9 +20,9 @@ function headerIndex(sourceSheet: SourceSheet): number | undefined {
 }
 
 function prepare(sourceSheet: SourceSheet): PreparationPatch {
-  const columns = [] as NonNullable<PreparationPatch['columns']>[number][]
+  const columns: PreparedColumn[] = []
   const mappingSuggestions: Partial<Record<ImportField, string>> = {}
-  for (const field of Object.keys(aliases) as ImportField[]) {
+  for (const field of IMPORT_FIELDS) {
     const matches = matchingColumns(sourceSheet.columns, aliases[field])
     if (matches.length === 1) {
       const columnId = preparedColumnId('jetblue', field)
@@ -47,7 +48,7 @@ export const jetblueImportPlugin: ImportPlugin = defineImportPlugin({
   prepare,
   transformMappedEntry: ({ draft }) => {
     const name = typeof draft.entry.name === 'string' ? draft.entry.name : ''
-    if (!name) return { issues: [{ kind: 'transformation-failed' as const, field: 'name' as const, message: 'A name is needed to determine JetBlue EU status.' }] }
+    if (!name) return { issues: [{ kind: 'transformation-failed', field: 'name', message: 'A name is needed to determine JetBlue EU status.' }] }
     const base = typeof draft.entry.base === 'string' ? draft.entry.base.trim() : ''
     return hasJetBlueEuMarker(name) && !/-EU$/i.test(base)
       ? { entry: { base: `${base}-EU` } }

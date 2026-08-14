@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { IMPORT_FIELDS } from './fields'
+import { ImportFieldSchema } from './fields'
 import type {
   ImportPlugin,
   PrepareImportResult,
@@ -9,8 +9,6 @@ import type {
   SourceSheet,
 } from './types'
 
-const importFieldSchema = z.enum(IMPORT_FIELDS)
-
 const preparationPatchSchema = z.object({
   columns: z.array(z.object({
     id: z.string().min(1),
@@ -18,10 +16,10 @@ const preparationPatchSchema = z.object({
     sourceColumnId: z.string().min(1).optional(),
   })).optional(),
   cellValues: z.record(z.string().min(1), z.record(z.string().min(1), z.union([z.string(), z.number(), z.boolean(), z.null()]))).optional(),
-  mappingSuggestions: z.record(importFieldSchema, z.string().min(1)).optional(),
+  mappingSuggestions: z.record(ImportFieldSchema, z.string().min(1)).optional(),
   issues: z.array(z.object({
     kind: z.enum(['ambiguous-alias', 'preparation-failed', 'transformation-failed', 'validation-failed']),
-    field: importFieldSchema.optional(),
+    field: ImportFieldSchema.optional(),
     message: z.string().min(1),
   })).optional(),
   metadata: z.object({ effectiveDate: z.string().min(1).optional(), title: z.string().min(1).optional() }).optional(),
@@ -34,7 +32,7 @@ const importPluginSchema = z.object({
   description: z.string().min(1),
   icon: z.string().min(1),
   formatDescription: z.string().min(1),
-  requiredMappings: z.array(importFieldSchema).optional(),
+  requiredMappings: z.array(ImportFieldSchema).optional(),
   suggestHeaderRow: z.function().optional(),
   prepare: z.function(),
   transformMappedEntry: z.function().optional(),
@@ -45,7 +43,8 @@ const importPluginSchema = z.object({
  * synchronous definitions; the pipeline validates their returned patches.
  */
 export function defineImportPlugin(plugin: ImportPlugin): ImportPlugin {
-  return importPluginSchema.parse(plugin) as ImportPlugin
+  importPluginSchema.parse(plugin)
+  return plugin
 }
 
 function sourceColumns(sheet: SourceSheet): PreparedColumn[] {
