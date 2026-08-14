@@ -9,6 +9,7 @@ import { useUserStore } from '~/stores/user'
 import { useImportAttemptsStore } from '~/stores/import-attempts'
 
 const log = createLogger('upload:file')
+const HEADER_ROW_PREVIEW_LIMIT = 100
 
 export function _useFileIO(opts: FilePhaseOptions): FilePhase & { _reset: () => void } {
   const userStore = useUserStore()
@@ -60,7 +61,9 @@ export function _useFileIO(opts: FilePhaseOptions): FilePhase & { _reset: () => 
     if (!sourceSheet) return
     const plugin = getImportPlugin(opts.selectedUploadTypeId.value ?? '')
     if (!plugin) return
-    headerRows.value = sourceSheet.rows.map(row => row.cells.map(cell => cell === null ? '' : String(cell)))
+    headerRows.value = sourceSheet.rows
+      .slice(0, HEADER_ROW_PREVIEW_LIMIT)
+      .map(row => row.cells.map(cell => cell === null ? '' : String(cell)))
     sourceHeaders.value = sourceSheet.columns.map(column => column.label ?? column.id)
     selectedHeaderRow.value = headerRowIndex ?? plugin.suggestHeaderRow?.(sourceSheet) ?? 0
     const result = prepareImport({ plugin, sourceSheet, headerRowIndex: selectedHeaderRow.value })

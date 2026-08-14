@@ -112,6 +112,35 @@ describe('_useFileIO', () => {
     expect(file.hasData.value).toBe(true)
   })
 
+  it('limits header row preview to the first 100 rows', async () => {
+    const { file } = createFileIO()
+    const rows = Array.from({ length: 150 }, (_, index) => ({
+      id: `source:row:${index}`,
+      cells: [`Row ${index + 1}`],
+    }))
+    mockDecodeWorkbook.mockResolvedValue({
+      ok: true,
+      workbook: {
+        sheetNames: ['Sheet1'],
+        sheets: [{
+          id: 'sheet:0',
+          name: 'Sheet1',
+          columns: [{ id: 'source:column:0', label: 'Column 1' }],
+          rows,
+        }],
+      },
+    })
+
+    await file.setFile({
+      name: 'large-list.xlsx',
+      arrayBuffer: () => Promise.resolve(new ArrayBuffer(8)),
+    } as unknown as File)
+
+    expect(file.headerRows.value).toHaveLength(100)
+    expect(file.headerRows.value[0]).toEqual(['Row 1'])
+    expect(file.headerRows.value[99]).toEqual(['Row 100'])
+  })
+
   it('pauses on multi-sheet file for sheet selection', async () => {
     const { file, rawRows } = createFileIO()
 
