@@ -1,5 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
+import { reactive } from 'vue'
 import { processConfirmedMappings } from './process-confirmed-mappings'
 import type { PreparedSheet } from './types'
 
@@ -134,6 +135,22 @@ describe('processConfirmedMappings', () => {
 
     expect(result.drafts[0]!.entry.base).toBe('BOS')
     expect(result.drafts[0]!.issues[0]!.kind).toBe('transformation-failed')
+  })
+
+  it('accepts reactive application state without freezing the caller data', async () => {
+    const reactiveSheet = reactive(structuredClone(preparedSheet))
+    const result = await processConfirmedMappings({
+      preparedSheet: reactiveSheet,
+      mappings: { base: { kind: 'column', columnId: 'base' } },
+      plugin: {
+        id: 'test', label: 'Test', description: 'Test plugin', icon: 'i-lucide-test', formatDescription: 'Test format.', prepare: () => ({}),
+        transformMappedEntry: () => ({}),
+      },
+    })
+
+    expect(result.drafts[0]!.entry.base).toBe('BOS')
+    expect(result.drafts[0]!.issues.map(issue => issue.kind)).not.toContain('transformation-failed')
+    expect(Object.isFrozen(reactiveSheet.rows[0])).toBe(false)
   })
 
   it('rejects an already-cancelled request before processing rows', async () => {
