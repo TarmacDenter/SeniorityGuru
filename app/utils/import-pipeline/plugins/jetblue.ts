@@ -9,6 +9,10 @@ const aliases: Readonly<Record<ImportField, readonly string[]>> = {
   seat: ['SEAT', 'POS'], hire_date: ['HIREDATE', 'HIRE_DATE', 'DOH'],
   retire_date: ['RTRDATE', 'RTR_DATE', 'RETIRE_DATE', 'RET_DATE'],
 }
+export type JetBlueImportPluginOptions = {
+  readonly splitEuBases?: boolean
+}
+
 function normalize(value: string) { return normalizeHeader(value).toUpperCase() }
 
 function headerIndex(sourceSheet: SourceSheet): number | undefined {
@@ -37,21 +41,27 @@ export function hasJetBlueEuMarker(name: string): boolean {
   return /(?:^|\s)-EU(?=\s|$)/i.test(name)
 }
 
-export const jetblueImportPlugin: ImportPlugin = defineImportPlugin({
-  id: 'jetblue',
-  label: 'JetBlue Airways',
-  description: 'JetBlue ALPA seniority list with CMID and M/D/YYYY dates.',
-  icon: 'i-lucide-plane',
-  formatDescription: 'Expects a JetBlue ALPA export with SEN, CMID, NAME, BASE, FLEET, SEAT, HIREDATE, and RTRDATE columns.',
-  requiredMappings: ['name', 'base'],
-  suggestHeaderRow: headerIndex,
-  prepare,
-  transformMappedEntry: ({ draft }) => {
-    const name = typeof draft.entry.name === 'string' ? draft.entry.name : ''
-    if (!name) return { issues: [{ kind: 'transformation-failed', field: 'name', message: 'A name is needed to determine JetBlue EU status.' }] }
-    const base = typeof draft.entry.base === 'string' ? draft.entry.base.trim() : ''
-    return hasJetBlueEuMarker(name) && !/-EU$/i.test(base)
-      ? { entry: { base: `${base}-EU` } }
-      : {}
-  },
-})
+export function createJetBlueImportPlugin(options: JetBlueImportPluginOptions = {}): ImportPlugin {
+  const splitEuBases = options.splitEuBases ?? false
+
+  return defineImportPlugin({
+    id: 'jetblue',
+    label: 'JetBlue Airways',
+    description: 'JetBlue ALPA seniority list with CMID and M/D/YYYY dates.',
+    icon: 'i-lucide-plane',
+    formatDescription: 'Expects a JetBlue ALPA export with SEN, CMID, NAME, BASE, FLEET, SEAT, HIREDATE, and RTRDATE columns.',
+    requiredMappings: ['name', 'base'],
+    suggestHeaderRow: headerIndex,
+    prepare,
+    transformMappedEntry: ({ draft }) => {
+      const name = typeof draft.entry.name === 'string' ? draft.entry.name : ''
+      if (!name) return { issues: [{ kind: 'transformation-failed', field: 'name', message: 'A name is needed to determine JetBlue EU status.' }] }
+      const base = typeof draft.entry.base === 'string' ? draft.entry.base.trim() : ''
+      return splitEuBases && hasJetBlueEuMarker(name) && !/-EU$/i.test(base)
+        ? { entry: { base: `${base}-EU` } }
+        : {}
+    },
+  })
+}
+
+export const jetblueImportPlugin: ImportPlugin = createJetBlueImportPlugin()

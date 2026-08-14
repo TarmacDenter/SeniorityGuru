@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { hasJetBlueEuMarker, jetblueImportPlugin } from './jetblue'
+import { createJetBlueImportPlugin, hasJetBlueEuMarker, jetblueImportPlugin } from './jetblue'
 import { prepareImport } from '../prepare-import'
 import { processConfirmedMappings } from '../process-confirmed-mappings'
 
@@ -10,7 +10,7 @@ describe('jetblueImportPlugin', () => {
     expect(hasJetBlueEuMarker('Michael -EUROPE Dempsey')).toBe(false)
   })
 
-  it('derives canonical mappings and appends EU to the base once', async () => {
+  it('keeps the base unchanged when EU splitting is disabled', async () => {
     const sourceSheet = {
       id: 'sheet:0', name: 'JetBlue',
       columns: ['SEN', 'CMID', 'NAME', 'BASE', 'FLEET', 'SEAT', 'HIREDATE', 'RTRDATE'].map((label, index) => ({ id: `source:column:${index}`, label })),
@@ -25,7 +25,26 @@ describe('jetblueImportPlugin', () => {
       mappings: Object.fromEntries(Object.entries(prepared.mappingSuggestions).map(([field, columnId]) => [field, { kind: 'column', columnId }])) as never,
       plugin: jetblueImportPlugin,
     })
-    expect(result.drafts[0]!.entry.base).toBe('BOS-EU')
+    expect(result.drafts[0]!.entry.base).toBe('BOS')
     expect(result.drafts[0]!.entry.retire_date).toBe('2055-01-02')
+  })
+
+  it('appends EU to the base when EU splitting is enabled', async () => {
+    const jetbluePlugin = createJetBlueImportPlugin({ splitEuBases: true })
+    const sourceSheet = {
+      id: 'sheet:0', name: 'JetBlue',
+      columns: ['SEN', 'CMID', 'NAME', 'BASE', 'FLEET', 'SEAT', 'HIREDATE', 'RTRDATE'].map((label, index) => ({ id: `source:column:${index}`, label })),
+      rows: [
+        { id: 'source:row:0', cells: ['SEN', 'CMID', 'NAME', 'BASE', 'FLEET', 'SEAT', 'HIREDATE', 'RTRDATE'] },
+        { id: 'source:row:1', cells: ['1', '123', 'Michael -EU Dempsey', 'bos', '320', 'fo', '1/2/2000', '1/2/55'] },
+      ],
+    } as const
+    const prepared = prepareImport({ plugin: jetbluePlugin, sourceSheet, headerRowIndex: 0 })
+    const result = await processConfirmedMappings({
+      preparedSheet: prepared.preparedSheet,
+      mappings: Object.fromEntries(Object.entries(prepared.mappingSuggestions).map(([field, columnId]) => [field, { kind: 'column', columnId }])) as never,
+      plugin: jetbluePlugin,
+    })
+    expect(result.drafts[0]!.entry.base).toBe('BOS-EU')
   })
 })
