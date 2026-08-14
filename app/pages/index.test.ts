@@ -37,7 +37,7 @@ describe('index.vue — CTA rendering', () => {
   it('shows "Get Started" hero CTA linking to /dashboard', async () => {
     const IndexPage = await import('./index.vue')
     const wrapper = await mountSuspended(IndexPage.default)
-    expect(wrapper.text()).toContain('Get Started')
+    expect(wrapper.text()).toContain('Check your seniority position')
     expect(wrapper.html()).toContain('href="/dashboard"')
   })
 })
