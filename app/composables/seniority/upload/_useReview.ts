@@ -1,4 +1,4 @@
-import type { ReviewPhase, ReviewPhaseOptions } from './types'
+import type { ReviewPhase, UploadSession } from './types'
 import type { SeniorityEntry } from '~/utils/schemas/seniority-list'
 import { SeniorityEntrySchema } from '~/utils/schemas/seniority-list'
 import { computeStructuralIssues, type ValidationIssue } from '~/utils/validate-entries'
@@ -27,7 +27,7 @@ function formatPipelineIssue(issue: { field?: string, message: string }): string
   return `${issue.field ?? 'row'}: ${issue.message}`
 }
 
-function reportReviewChange(opts: ReviewPhaseOptions, action: 'update-cell' | 'delete-row' | 'insert-row' | 'delete-error-rows') {
+function reportReviewChange(opts: UploadSession, action: 'update-cell' | 'delete-row' | 'insert-row' | 'delete-error-rows') {
   opts.onReviewChanged?.(action, opts.entries.value.map(entry => ({ ...entry })))
 }
 
@@ -37,7 +37,7 @@ function isStructuralMessage(raw: string): boolean {
     || raw.startsWith('employee_number: Duplicate employee number')
 }
 
-export function _useReview(opts: ReviewPhaseOptions): ReviewPhase & { _reset: () => void } {
+export function _useReview(opts: UploadSession): ReviewPhase & { _reset: () => void } {
   const errorCount = computed(() => opts.rowErrors.value.size)
   const pipelineIssueRows = computed(() => new Set(opts.pipelineIssues.value.keys()))
 

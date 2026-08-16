@@ -1,5 +1,5 @@
 import type { DateValue } from 'reka-ui'
-import type { ConfirmPhase, ConfirmPhaseOptions } from './types'
+import type { ConfirmPhase, UploadSession } from './types'
 import type { SeniorityEntry } from '~/utils/schemas/seniority-list'
 import { useSeniorityStore } from '~/stores/seniority'
 import { createSnapshot } from '~/utils/seniority-engine/snapshot'
@@ -8,7 +8,7 @@ import { useImportAttemptsStore } from '~/stores/import-attempts'
 
 const log = createLogger('upload:confirm')
 
-export function _useConfirm(opts: ConfirmPhaseOptions): ConfirmPhase & { _reset: () => void } {
+export function _useConfirm(opts: UploadSession): ConfirmPhase & { _reset: () => void } {
   const effectiveDate = ref<DateValue | null>(null)
   const title = ref('')
   const saving = ref(false)

@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { _useConfirm } from './_useConfirm'
+import { createUploadSession } from './test-utils'
 import { makeDomainEntry } from '~/test-utils/factories'
 
 const mockStore = vi.hoisted(() => ({
@@ -18,7 +19,7 @@ describe('_useConfirm', () => {
 
   function createConfirm() {
     const error = ref<string | null>(null)
-    return _useConfirm({ error })
+    return _useConfirm(createUploadSession({ error }))
   }
 
   it('starts with null effectiveDate, empty title, not saving', () => {
@@ -70,7 +71,7 @@ describe('_useConfirm', () => {
   it('sets error on save failure and re-throws', async () => {
     mockStore.addList.mockRejectedValue(new Error('DB full'))
     const error = ref<string | null>(null)
-    const confirm = _useConfirm({ error })
+    const confirm = _useConfirm(createUploadSession({ error }))
     confirm.effectiveDate.value = { toString: () => '2025-01-01' } as never
 
     const entries = [
@@ -83,7 +84,7 @@ describe('_useConfirm', () => {
 
   it('rejects with snapshot error and does not call store when entries have duplicate seniority numbers', async () => {
     const error = ref<string | null>(null)
-    const confirm = _useConfirm({ error })
+    const confirm = _useConfirm(createUploadSession({ error }))
     confirm.effectiveDate.value = { toString: () => '2025-01-01' } as never
 
     const entries = [
@@ -98,7 +99,7 @@ describe('_useConfirm', () => {
 
   it('rejects with snapshot error and does not call store when entries have duplicate employee numbers', async () => {
     const error = ref<string | null>(null)
-    const confirm = _useConfirm({ error })
+    const confirm = _useConfirm(createUploadSession({ error }))
     confirm.effectiveDate.value = { toString: () => '2025-01-01' } as never
 
     const entries = [

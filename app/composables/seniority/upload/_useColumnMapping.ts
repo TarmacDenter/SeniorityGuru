@@ -1,4 +1,4 @@
-import type { MappingPhase, MappingPhaseOptions, UploadColumnMap, UploadMappingOptions } from './types'
+import type { MappingPhase, UploadColumnMap, UploadMappingOptions, UploadSession } from './types'
 import { createLogger } from '~/utils/logger'
 import { DEFAULT_COLUMN_MAP, DEFAULT_MAPPING_OPTIONS } from './defaults'
 import { processConfirmedMappings } from '~/utils/import-pipeline/process-confirmed-mappings'
@@ -33,7 +33,7 @@ function toConfirmedMappings(
 
 const log = createLogger('upload:mapping')
 
-export function _useColumnMapping(opts: MappingPhaseOptions): MappingPhase & { _reset: () => void } {
+export function _useColumnMapping(opts: UploadSession): MappingPhase & { _reset: () => void } {
   const userStore = useUserStore()
   const importAttemptsStore = useImportAttemptsStore()
   const mappingOptions = opts.mappingOptions

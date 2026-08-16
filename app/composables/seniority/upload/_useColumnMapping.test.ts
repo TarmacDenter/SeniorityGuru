@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { _useColumnMapping } from './_useColumnMapping'
-import { _useProgressTracker } from './_useProgressTracker'
 import type { PreparedSheet } from '~/utils/import-pipeline/types'
+import { createUploadSession } from './test-utils'
 
 const { mockProcessConfirmedMappings } = vi.hoisted(() => ({
   mockProcessConfirmedMappings: vi.fn(),
@@ -25,25 +25,24 @@ function createMapping(overrides: Record<string, any> = {}) {
     columns: ['seniority_number', 'employee_number', 'seat', 'base', 'fleet', 'name', 'hire_date', 'retire_date'].map(id => ({ id, label: id })),
     rows: [{ sourceRowId: 'row:1', cells: { seniority_number: '1' } }],
   })
-  const progress = _useProgressTracker()
   const onMapped = overrides.onMapped ?? vi.fn()
   const onMetadataReady = overrides.onMetadataReady ?? vi.fn()
 
-  const mapping = _useColumnMapping({
+  const session = createUploadSession({
     rawRows,
     rawHeaders,
     columnMap,
     mappingOptions,
-    progress,
     extractedEffectiveDate,
     extractedTitle,
     selectedUploadTypeId,
     preparedSheet,
     onMapped,
     onMetadataReady,
-  } as any) as any
+  })
+  const mapping = _useColumnMapping(session)
 
-  return { mapping, rawRows, rawHeaders, columnMap, extractedEffectiveDate, extractedTitle, selectedUploadTypeId, preparedSheet, progress, onMapped, onMetadataReady }
+  return { mapping, rawRows, rawHeaders, columnMap, extractedEffectiveDate, extractedTitle, selectedUploadTypeId, preparedSheet, progress: session.progress, onMapped, onMetadataReady }
 }
 
 describe('_useColumnMapping', () => {

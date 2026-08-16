@@ -48,7 +48,11 @@ export interface FilePhase {
   includeExcludedRows(): void
 }
 
-export interface FilePhaseOptions {
+/**
+ * Internal state owned by useSeniorityUpload and shared with its private phases.
+ * The public upload API deliberately does not expose this coordination detail.
+ */
+export interface UploadSession {
   selectedUploadTypeId: Ref<string | null>
   rawHeaders: Ref<string[]>
   rawRows: Ref<string[][]>
@@ -60,10 +64,18 @@ export interface FilePhaseOptions {
   mappingOptions: Ref<UploadMappingOptions>
   autoDetectSucceeded: Ref<boolean>
   preparedSheet: Ref<PreparedSheet | null>
-  preparationIssues?: Ref<ImportIssue[]>
-  importAttemptId?: Ref<string | null>
+  preparationIssues: Ref<ImportIssue[]>
+  entries: Ref<Partial<SeniorityEntry>[]>
+  rowErrors: ShallowRef<Map<number, string[]>>
+  pipelineIssues: ShallowRef<Map<number, ImportIssue[]>>
+  sourceValues: Ref<Map<number, Record<string, unknown>>>
+  importAttemptId: Ref<string | null>
+  error: Ref<string | null>
   progress: ProgressTracker
   onSheetChange: () => void
+  onMapped(entries: Partial<SeniorityEntry>[], issues: Map<number, ImportIssue[]>, sourceValues: Map<number, Record<string, unknown>>): Promise<void>
+  onMetadataReady(effectiveDate: string | null, title: string | null): void
+  onReviewChanged?: (action: ReviewEditPatch['action'], entries: Partial<SeniorityEntry>[]) => void
 }
 
 // ── Phase: Mapping ───────────────────────────────────────────────────────────
@@ -78,22 +90,6 @@ export interface MappingPhase {
   error: Readonly<Ref<string | null>>
 
   apply(): Promise<void>
-}
-
-export interface MappingPhaseOptions {
-  rawRows: Ref<string[][]>
-  rawHeaders: Ref<string[]>
-  columnMap: Ref<UploadColumnMap>
-  mappingOptions: Ref<UploadMappingOptions>
-  progress: ProgressTracker
-  extractedEffectiveDate: Ref<string | null>
-  extractedTitle: Ref<string | null>
-  selectedUploadTypeId: Ref<string | null>
-  preparedSheet: Ref<PreparedSheet | null>
-  preparationIssues?: Ref<ImportIssue[]>
-  importAttemptId?: Ref<string | null>
-  onMapped(entries: Partial<SeniorityEntry>[], issues: Map<number, ImportIssue[]>, sourceValues: Map<number, Record<string, unknown>>): Promise<void>
-  onMetadataReady(effectiveDate: string | null, title: string | null): void
 }
 
 // ── Phase: Review ────────────────────────────────────────────────────────────
@@ -117,17 +113,6 @@ export interface ReviewPhase {
   validate(): Promise<void>
 }
 
-export interface ReviewPhaseOptions {
-  entries: Ref<Partial<SeniorityEntry>[]>
-  rowErrors: ShallowRef<Map<number, string[]>>
-  pipelineIssues: ShallowRef<Map<number, ImportIssue[]>>
-  sourceValues: Ref<Map<number, Record<string, unknown>>>
-  syntheticNote: Ref<string | null>
-  syntheticIndices: Ref<Set<number>>
-  progress: ProgressTracker
-  onReviewChanged?: (action: ReviewEditPatch['action'], entries: Partial<SeniorityEntry>[]) => void
-}
-
 // ── Phase: Confirm ───────────────────────────────────────────────────────────
 
 export interface ConfirmPhase {
@@ -137,11 +122,6 @@ export interface ConfirmPhase {
   error: Readonly<Ref<string | null>>
 
   save(entries: SeniorityEntry[]): Promise<number>
-}
-
-export interface ConfirmPhaseOptions {
-  error: Ref<string | null>
-  importAttemptId?: Ref<string | null>
 }
 
 // ── Public interface ─────────────────────────────────────────────────────────

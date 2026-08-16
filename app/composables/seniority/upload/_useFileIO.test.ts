@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { _useFileIO } from './_useFileIO'
-import { _useProgressTracker } from './_useProgressTracker'
-import type { ColumnMap } from '~/utils/parse-spreadsheet'
 import type { PreparedSheet } from '~/utils/import-pipeline/types'
+import type { UploadColumnMap } from './types'
+import { createUploadSession } from './test-utils'
 
 // Mock XLSX
 const mockRead = vi.hoisted(() => vi.fn())
@@ -26,15 +26,14 @@ function createFileIO() {
   const syntheticIndices = ref<Set<number>>(new Set())
   const autoDetectSucceeded = ref(false)
   const preparedSheet = ref<PreparedSheet | null>(null)
-  const columnMap = ref<ColumnMap>({
-    seniority_number: -1, employee_number: -1, seat: -1,
-    base: -1, fleet: -1, name: -1, hire_date: -1, retire_date: -1,
+  const columnMap = ref<UploadColumnMap>({
+    seniority_number: null, employee_number: null, seat: null,
+    base: null, fleet: null, name: null, hire_date: null, retire_date: null,
   })
   const mappingOptions = ref({ nameMode: 'single' as const, retireMode: 'direct' as const })
-  const progress = _useProgressTracker()
   const onSheetChange = vi.fn()
 
-  const file = _useFileIO({
+  const session = createUploadSession({
     selectedUploadTypeId,
     rawHeaders,
     rawRows,
@@ -46,11 +45,11 @@ function createFileIO() {
     mappingOptions,
     autoDetectSucceeded,
     preparedSheet,
-    progress,
     onSheetChange,
-  } as any) as any
+  })
+  const file = _useFileIO(session)
 
-  return { file, rawHeaders, rawRows, extractedEffectiveDate, extractedTitle, syntheticNote, syntheticIndices, autoDetectSucceeded, columnMap, progress, onSheetChange, selectedUploadTypeId }
+  return { file, rawHeaders, rawRows, extractedEffectiveDate, extractedTitle, syntheticNote, syntheticIndices, autoDetectSucceeded, columnMap, progress: session.progress, onSheetChange, selectedUploadTypeId }
 }
 
 describe('_useFileIO', () => {

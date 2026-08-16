@@ -1,4 +1,4 @@
-import type { FilePhase, FilePhaseOptions, UploadColumnMap } from './types'
+import type { FilePhase, UploadColumnMap, UploadSession } from './types'
 import { autoDetectColumnMap } from '~/utils/parse-spreadsheet'
 import { createLogger } from '~/utils/logger'
 import { decodeWorkbook } from '~/utils/spreadsheet/decode-workbook'
@@ -12,7 +12,7 @@ import { useImportAttemptsStore } from '~/stores/import-attempts'
 const log = createLogger('upload:file')
 const HEADER_ROW_PREVIEW_LIMIT = 100
 
-export function _useFileIO(opts: FilePhaseOptions): FilePhase & { _reset: () => void } {
+export function _useFileIO(opts: UploadSession): FilePhase & { _reset: () => void } {
   const userStore = useUserStore()
   const importAttemptsStore = useImportAttemptsStore()
   const fileName = ref('')
