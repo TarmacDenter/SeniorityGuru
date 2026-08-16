@@ -37,7 +37,18 @@ Component → composable → store → Dexie
 - **Contribution workflow:** Read [WORKFLOW.md](WORKFLOW.md) before creating a branch or opening a pull request.
 - **Tests:** Keep tests next to the code they cover. Run `pnpm lint`, `pnpm typecheck`, and `pnpm test` after code changes.
 
+## Agent behavior
+- Think before coding. State assumptions, surface tradeoffs, push back when warranted.
+- Simplicity first. Minimum code that solves the problem. Nothing speculative.
+- Surgical changes. Touch only what you must. Clean up only your own mess.
+- Goal-driven execution. Define success criteria. Loop until verified.
+
+
 ## Agent skills
+
+### Code review
+
+When reviewing SeniorityGuru code, invoke [`.agents/skills/seniority-review/SKILL.md`](.agents/skills/seniority-review/SKILL.md). It defines the project-specific architecture and style review process.
 
 ### Issue tracker
 
