@@ -30,27 +30,7 @@ mockNuxtImport('useSeniorityCore', () => () => ({
   isNewHireMode: { value: false },
 }))
 
-mockNuxtImport('useUserStore', () => () => ({
-  employeeNumber: null,
-}))
-
-mockNuxtImport('useQualAnalytics', () => () => ({
-  selectedFleet: { value: null },
-  selectedSeat: { value: null },
-  selectedBase: { value: null },
-  availableFleets: { value: [] },
-  availableSeats: { value: [] },
-  availableBases: { value: [] },
-  qualSpec: { value: {} },
-  qualLabel: { value: '' },
-  isBannerDismissed: { value: false },
-  qualScales: { value: [] },
-  thresholdResult: { value: null },
-  targetPercentile: { value: 50 },
-  projectionYears: { value: 0 },
-  userEntry: { value: undefined },
-  dismissBanner: vi.fn(),
-}))
+mockNuxtImport('useUser', () => () => ({ employeeNumber: { value: null } }))
 
 describe('PositionTab', () => {
   it('shows empty state when no seniority data', async () => {

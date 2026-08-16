@@ -9,4 +9,4 @@ export type { RankCardData, BaseStatusRow, StatCard, RetirementSnapshotData } fr
 export { useCompanyOverview } from './modules/useCompanyOverview'
 export type { FleetBaseGroup, RecentList } from './modules/useCompanyOverview'
 export { useTrajectory } from './modules/useTrajectory'
-export { useQualAnalytics } from './modules/useQualAnalytics'
+export { useQualFilter } from './modules/useQualFilter'

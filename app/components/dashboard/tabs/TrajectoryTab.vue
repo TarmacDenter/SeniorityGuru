@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { useSeniorityCore, useStanding, useTrajectory, useQualAnalytics } from '~/composables/seniority'
-import { DEFAULT_GROWTH_CONFIG, type GrowthConfig } from '~/utils/seniority-engine'
+import { useSeniorityCore, useQualFilter, useStanding, useTrajectory } from '~/composables/seniority'
+import { DEFAULT_GROWTH_CONFIG, createScenario, type GrowthConfig } from '~/utils/seniority-engine'
 
 defineProps<{ loading?: boolean }>()
 
-const { hasData, hasAnchor, newHire, entries } = useSeniorityCore()
+const { hasData, hasAnchor, newHire, entries, lens } = useSeniorityCore()
 const hasEmployeeNumber = computed(() => hasAnchor.value || !!newHire.syntheticEntry.value)
 
 const growthConfig = ref<GrowthConfig>({ ...DEFAULT_GROWTH_CONFIG })
@@ -17,8 +17,24 @@ const {
   computeRetirementProjection,
 } = useTrajectory(growthConfig)
 
-const demographics = useQualAnalytics(growthConfig)
-const qualTrajectoryDeltas = demographics.trajectoryDeltas
+const qualFilter = useQualFilter()
+const scopedScenario = computed(() => createScenario({
+  growthConfig: growthConfig.value,
+  scopeFilter: qualFilter.qualSpec.value,
+}))
+const retirementWave = computed(() => lens.value?.retirementWave(scopedScenario.value) ?? [])
+const waveTrajectoryResult = computed(() => lens.value?.trajectory(scopedScenario.value) ?? null)
+const waveTrajectory = computed(() => waveTrajectoryResult.value?.points ?? [])
+const qualTrajectoryDeltas = computed(() => waveTrajectoryResult.value?.deltas ?? [])
+const targetPercentile = ref(50)
+const thresholdResult = computed(() => lens.value?.percentileCrossing(targetPercentile.value, scopedScenario.value) ?? null)
+const bannerKey = 'qual-projections-banner-dismissed'
+const isBannerDismissed = ref(typeof localStorage !== 'undefined' && localStorage.getItem(bannerKey) === 'true')
+
+function dismissBanner() {
+  isBannerDismissed.value = true
+  if (typeof localStorage !== 'undefined') localStorage.setItem(bannerKey, 'true')
+}
 
 const ready = useDeferredReady()
 </script>
@@ -93,16 +109,26 @@ const ready = useDeferredReady()
 
       <!-- Section B: Retirement & qual-filtered analysis -->
 
-      <AnalyticsQualFilterBar :demographics="demographics" />
+      <AnalyticsQualFilterBar
+        :fleet="qualFilter.selectedFleet.value"
+        :seat="qualFilter.selectedSeat.value"
+        :base="qualFilter.selectedBase.value"
+        :fleets="qualFilter.availableFleets.value"
+        :seats="qualFilter.availableSeats.value"
+        :bases="qualFilter.availableBases.value"
+        @update:fleet="qualFilter.selectedFleet.value = $event"
+        @update:seat="qualFilter.selectedSeat.value = $event"
+        @update:base="qualFilter.selectedBase.value = $event"
+      />
 
       <AnalyticsAssumptionsBanner
-        :is-banner-dismissed="demographics.isBannerDismissed.value"
+        :is-banner-dismissed="isBannerDismissed"
         context="trajectory"
-        @dismiss="demographics.dismissBanner()"
+        @dismiss="dismissBanner"
       />
 
       <!-- Retirement Wave + Percentile Threshold -->
-      <div v-if="!ready || !demographics.retirementWave.value.length" class="grid grid-cols-1 sm:grid-cols-11 gap-6">
+      <div v-if="!ready || !retirementWave.length" class="grid grid-cols-1 sm:grid-cols-11 gap-6">
         <USkeleton class="sm:col-span-6 h-64 rounded-lg" />
         <USkeleton class="sm:col-span-5 h-64 rounded-lg" />
       </div>
@@ -110,26 +136,26 @@ const ready = useDeferredReady()
         <div class="sm:col-span-6">
           <UCard >
             <template #header>
-              <h3 class="font-semibold">Retirement Wave{{ demographics.qualLabel.value ? ` — ${demographics.qualLabel.value}` : '' }}</h3>
+              <h3 class="font-semibold">Retirement Wave{{ qualFilter.qualLabel.value ? ` — ${qualFilter.qualLabel.value}` : '' }}</h3>
             </template>
             <AnalyticsRetirementWaveChart
-              :wave-buckets="demographics.retirementWave.value"
-              :trajectory-points="demographics.waveTrajectory.value"
-              :selected-qual="demographics.qualLabel.value"
+              :wave-buckets="retirementWave"
+              :trajectory-points="waveTrajectory"
+              :selected-qual="qualFilter.qualLabel.value"
             />
           </UCard>
         </div>
         <div class="sm:col-span-5">
           <UCard >
             <template #header>
-              <h3 class="font-semibold">Percentile Threshold{{ demographics.qualLabel.value ? ` — ${demographics.qualLabel.value}` : '' }}</h3>
+              <h3 class="font-semibold">Percentile Threshold{{ qualFilter.qualLabel.value ? ` — ${qualFilter.qualLabel.value}` : '' }}</h3>
             </template>
             <AnalyticsPercentileThresholdCalculator
-              :result="demographics.thresholdResult.value"
-              :target-percentile="demographics.targetPercentile.value"
-              :selected-qual="demographics.qualLabel.value"
+              :result="thresholdResult"
+              :target-percentile="targetPercentile"
+              :selected-qual="qualFilter.qualLabel.value"
               :has-employee-number="hasEmployeeNumber"
-              @percentile-change="demographics.targetPercentile.value = $event"
+              @percentile-change="targetPercentile = $event"
             />
           </UCard>
         </div>

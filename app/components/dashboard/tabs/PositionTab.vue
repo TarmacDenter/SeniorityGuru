@@ -1,29 +1,34 @@
 <script setup lang="ts">
-import { useSeniorityCore, useQualAnalytics } from '~/composables/seniority'
-import { diffYears, todayISO } from '~/utils/date'
-import { DEFAULT_GROWTH_CONFIG, type GrowthConfig } from '~/utils/seniority-engine'
+import { useSeniorityCore } from '~/composables/seniority'
+import { addYearsISO, diffYears, todayISO } from '~/utils/date'
+import { DEFAULT_GROWTH_CONFIG, createScenario, type GrowthConfig } from '~/utils/seniority-engine'
 
 defineProps<{ loading?: boolean }>()
 
-const { hasData, newHire } = useSeniorityCore()
+const { hasData, newHire, lens, userEntry } = useSeniorityCore()
 const { employeeNumber } = useUser()
 const hasEmployeeNumber = computed(() => !!employeeNumber.value || !!newHire.syntheticEntry.value)
 
 const growthConfig = ref<GrowthConfig>({ ...DEFAULT_GROWTH_CONFIG })
-const projections = useQualAnalytics(growthConfig)
-
 const usePositionProjection = ref(false)
 const positionYearsInput = ref(1)
+const projectionYears = ref(0)
+const projectionDate = computed(() => addYearsISO(todayISO(), projectionYears.value))
+const positionScenario = computed(() => createScenario({
+  projectionDate: projectionDate.value,
+  growthConfig: growthConfig.value,
+}))
+const qualScales = computed(() => lens.value?.qualScales(positionScenario.value) ?? [])
 
 const hasProjection = computed(() =>
-  projections.qualScales.value.some(
+  qualScales.value.some(
     s => Math.abs(s.userPercentile - s.currentUserPercentile) > 0.1,
   ),
 )
 let positionDebounceTimer: ReturnType<typeof setTimeout> | null = null
 
 const positionSliderMax = computed(() => {
-  const retireDate = projections.userEntry.value?.retire_date
+  const retireDate = userEntry.value?.retire_date
   if (!retireDate) return 30
   const years = Math.ceil(diffYears(todayISO(), retireDate))
   return Math.max(1, years)
@@ -32,14 +37,14 @@ const positionSliderMax = computed(() => {
 watch(usePositionProjection, (on) => {
   if (!on) {
     positionYearsInput.value = 1
-    projections.projectionYears.value = 0
+    projectionYears.value = 0
   }
 })
 
 watch(positionYearsInput, (val) => {
   if (positionDebounceTimer) clearTimeout(positionDebounceTimer)
   positionDebounceTimer = setTimeout(() => {
-    projections.projectionYears.value = val
+    projectionYears.value = val
   }, 500)
 })
 
@@ -160,11 +165,11 @@ onUnmounted(() => {
       </UCollapsible>
 
       <!-- Qual Seniority Scale -->
-      <UCard v-if="projections.qualScales.value.length > 0">
+      <UCard v-if="qualScales.length > 0">
         <template #header>
           <h3 class="font-semibold">Seniority Position by Qual</h3>
         </template>
-        <AnalyticsQualSeniorityScale :scales="projections.qualScales.value" />
+        <AnalyticsQualSeniorityScale :scales="qualScales" />
       </UCard>
 
       <UAlert
