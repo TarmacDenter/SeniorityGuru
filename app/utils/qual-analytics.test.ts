@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect } from 'vitest'
-import type { SeniorityEntry } from '~/utils/schemas/seniority-list'
+import type { SeniorityEntry, SeniorityEntryInput } from '~/utils/schemas/seniority-list'
 import { deriveAge, computeYOS } from '~/utils/date'
 import {
   qualKey,
@@ -18,8 +18,11 @@ import {
 } from './qual-analytics'
 import type { GrowthConfig } from '~/utils/seniority-engine'
 import { makeEntry as _makeEntry } from '~/test-utils/factories'
+import { parsePlainDate } from '~/utils/temporal'
 
-function makeEntry(overrides: Partial<SeniorityEntry> = {}): SeniorityEntry {
+const AS_OF = parsePlainDate('2026-01-01')
+
+function makeEntry(overrides: Partial<SeniorityEntryInput> = {}): SeniorityEntry {
   return _makeEntry({
     seat: 'FO',
     base: 'JFK',
@@ -43,13 +46,13 @@ describe('qualKey', () => {
 // ─── deriveAge ────────────────────────────────────────────────────────────────
 describe('deriveAge', () => {
   it('returns ~57 for pilot retiring in 2033 at age 65', () => {
-    const age = deriveAge('2033-01-01', 65)
+    const age = deriveAge('2033-01-01', 65, AS_OF)
     // Born ~2033 - 65 = 1968; current age ~57 (2026 - 1968)
     expect(age).toBeGreaterThanOrEqual(55)
     expect(age).toBeLessThanOrEqual(60)
   })
   it('returns ~40 for pilot retiring in 2051 at age 65', () => {
-    const age = deriveAge('2051-01-01', 65)
+    const age = deriveAge('2051-01-01', 65, AS_OF)
     expect(age).toBeGreaterThanOrEqual(38)
     expect(age).toBeLessThanOrEqual(43)
   })
@@ -58,13 +61,12 @@ describe('deriveAge', () => {
 // ─── computeYOS ──────────────────────────────────────────────────────────────
 describe('computeYOS', () => {
   it('returns ~16 for pilot hired 2010-01-01 (as of 2026)', () => {
-    const yos = computeYOS('2010-01-01')
+    const yos = computeYOS('2010-01-01', AS_OF)
     expect(yos).toBeGreaterThanOrEqual(15.5)
     expect(yos).toBeLessThanOrEqual(17)
   })
   it('returns near 0 for today', () => {
-    const today = new Date().toISOString().split('T')[0]!
-    expect(computeYOS(today)).toBeLessThan(0.01)
+    expect(computeYOS(AS_OF, AS_OF)).toBeLessThan(0.01)
   })
 })
 
@@ -77,7 +79,7 @@ describe('computeAgeDistribution', () => {
       // retire 2040 → born ~1975 → age ~51 → bucket "50–54"
       makeEntry({ retire_date: '2040-01-01' }),
     ]
-    const { buckets, nullCount } = computeAgeDistribution(entries, 65)
+    const { buckets, nullCount } = computeAgeDistribution(entries, 65, undefined, AS_OF)
     expect(nullCount).toBe(0)
     const bucket6064 = buckets.find((b) => b.label === '60–64')
     const bucket5054 = buckets.find((b) => b.label === '50–54')
@@ -90,7 +92,7 @@ describe('computeAgeDistribution', () => {
       makeEntry({ fleet: '737', retire_date: '2030-01-01' }),
       makeEntry({ fleet: '787', retire_date: '2030-01-01' }),
     ]
-    const { buckets } = computeAgeDistribution(entries, 65, (e) => e.fleet === '737')
+    const { buckets } = computeAgeDistribution(entries, 65, (e) => e.fleet === '737', AS_OF)
     const totalCount = buckets.reduce((sum, b) => sum + b.count, 0)
     expect(totalCount).toBe(1)
   })
@@ -105,7 +107,7 @@ describe('findMostJuniorCA', () => {
       makeEntry({ fleet: '737', seat: 'CA', base: 'LAX', seniority_number: 300 }),
       makeEntry({ fleet: '787', seat: 'CA', base: 'JFK', seniority_number: 50 }),
     ]
-    const result = findMostJuniorCA(entries)
+    const result = findMostJuniorCA(entries, AS_OF)
     const r737JFK = result.find((r) => r.fleet === '737' && r.base === 'JFK')
     const r737LAX = result.find((r) => r.fleet === '737' && r.base === 'LAX')
     const r787 = result.find((r) => r.fleet === '787')
@@ -118,7 +120,7 @@ describe('findMostJuniorCA', () => {
     const entries = [
       makeEntry({ fleet: '737', seat: 'CA', base: 'ATL', seniority_number: 200 }),
     ]
-    const result = findMostJuniorCA(entries)
+    const result = findMostJuniorCA(entries, AS_OF)
     expect(result[0]?.qualKey).toBe('737 CA ATL')
     expect(result[0]?.seat).toBe('CA')
     expect(result[0]?.base).toBe('ATL')
@@ -129,20 +131,20 @@ describe('findMostJuniorCA', () => {
       makeEntry({ fleet: '737', seat: 'FO', seniority_number: 1 }),
       makeEntry({ fleet: '737', seat: 'CA', seniority_number: 200 }),
     ]
-    const result = findMostJuniorCA(entries)
+    const result = findMostJuniorCA(entries, AS_OF)
     expect(result).toHaveLength(1)
     expect(result[0]?.seniorityNumber).toBe(200)
   })
 
   it('returns empty array when no CAs', () => {
-    expect(findMostJuniorCA([makeEntry({ seat: 'FO' })])).toEqual([])
+    expect(findMostJuniorCA([makeEntry({ seat: 'FO' })], AS_OF)).toEqual([])
   })
 })
 
 // ─── computeYosDistribution ───────────────────────────────────────────────────
 describe('computeYosDistribution', () => {
   it('returns zeros for empty input', () => {
-    const result = computeYosDistribution([])
+    const result = computeYosDistribution([], undefined, AS_OF)
     expect(result).toEqual({ entryFloor: 0, p10: 0, p25: 0, median: 0, p75: 0, p90: 0, max: 0 })
   })
 
@@ -151,7 +153,7 @@ describe('computeYosDistribution', () => {
       makeEntry({ seniority_number: 1, hire_date: '2000-01-01' }),  // most senior, hired early
       makeEntry({ seniority_number: 10, hire_date: '2018-01-01' }), // most junior, hired latest
     ]
-    const result = computeYosDistribution(entries)
+    const result = computeYosDistribution(entries, undefined, AS_OF)
     // Most junior (seniority_number 10) has hire_date 2018 → ~8 yos
     expect(result.entryFloor).toBeLessThan(10)
     expect(result.entryFloor).toBeGreaterThan(6)
@@ -163,7 +165,7 @@ describe('computeYosDistribution', () => {
       makeEntry({ seniority_number: 2, hire_date: '2010-01-01' }), // ~16 yos
       makeEntry({ seniority_number: 3, hire_date: '2020-01-01' }), // ~6 yos
     ]
-    const result = computeYosDistribution(entries)
+    const result = computeYosDistribution(entries, undefined, AS_OF)
     // Sorted: [~6, ~16, ~26] — median index 1 → ~16
     expect(result.median).toBeGreaterThan(14)
     expect(result.median).toBeLessThan(18)
@@ -173,12 +175,12 @@ describe('computeYosDistribution', () => {
 // ─── computeYosHistogram ──────────────────────────────────────────────────────
 describe('computeYosHistogram', () => {
   it('returns empty array for no entries', () => {
-    const result = computeYosHistogram([])
+    const result = computeYosHistogram([], undefined, AS_OF)
     expect(result).toHaveLength(0)
   })
 
   it('places pilot hired in 2010 in the year-16 bucket (2026 - 2010 ≈ 16 yos)', () => {
-    const result = computeYosHistogram([makeEntry({ hire_date: '2010-01-01' })])
+    const result = computeYosHistogram([makeEntry({ hire_date: '2010-01-01' })], undefined, AS_OF)
     const bucket = result.find((b) => b.label === '16')
     expect(bucket?.count).toBe(1)
   })
@@ -187,7 +189,7 @@ describe('computeYosHistogram', () => {
     const result = computeYosHistogram([
       makeEntry({ hire_date: '2020-01-01' }), // ~6 yos
       makeEntry({ hire_date: '2010-01-01' }), // ~16 yos
-    ])
+    ], undefined, AS_OF)
     // Buckets span 0 to ceil(maxYos), one per year
     expect(result[0]!.label).toBe('0')
     // The 2010 entry has ~16.2 yos → ceil = 17 → buckets 0..17
@@ -202,7 +204,7 @@ describe('computeYosHistogram', () => {
       makeEntry({ fleet: '737', hire_date: '2010-01-01' }),
       makeEntry({ fleet: '777', hire_date: '2010-01-01' }),
     ]
-    const result = computeYosHistogram(entries, (e) => e.fleet === '737')
+    const result = computeYosHistogram(entries, (e) => e.fleet === '737', AS_OF)
     const total = result.reduce((sum, b) => sum + b.count, 0)
     expect(total).toBe(1)
   })
@@ -284,8 +286,8 @@ describe('computeRetirementWave', () => {
 
 // ─── computePowerIndexCells ───────────────────────────────────────────────────
 describe('computePowerIndexCells', () => {
-  const TODAY = '2026-01-01'
-  const FUTURE = '2029-01-01'
+  const TODAY = AS_OF
+  const FUTURE = parsePlainDate('2029-01-01')
 
   it('green when user can hold today (more senior than most junior active)', () => {
     // User seniority_number=50. Cell has pilots with sen_nums 100,200,300 — all more junior.
@@ -294,7 +296,7 @@ describe('computePowerIndexCells', () => {
       makeEntry({ fleet: '737', seat: 'CA', base: 'JFK', seniority_number: 200, retire_date: undefined }),
       makeEntry({ fleet: '737', seat: 'CA', base: 'JFK', seniority_number: 300, retire_date: undefined }),
     ]
-    const cells = computePowerIndexCells(entries, 50, TODAY)
+    const cells = computePowerIndexCells(entries, 50, TODAY, undefined, AS_OF)
     expect(cells[0]?.state).toBe('green')
     expect(cells[0]?.pilotsAhead).toBe(0)
     expect(cells[0]?.isLowestSeniority).toBe(false) // user is NOT the most junior (300 is)
@@ -307,7 +309,7 @@ describe('computePowerIndexCells', () => {
       makeEntry({ fleet: '737', seat: 'CA', base: 'JFK', seniority_number: 100, retire_date: undefined }),
     ]
     // User at 100 — they ARE the most junior CA in the cell → amber (unlikely to hold)
-    const cells = computePowerIndexCells(entries, 100, TODAY)
+    const cells = computePowerIndexCells(entries, 100, TODAY, undefined, AS_OF)
     expect(cells[0]?.state).toBe('amber')
     expect(cells[0]?.isLowestSeniority).toBe(true)
     expect(cells[0]?.numbersJuniorToPlug).toBe(0) // holdable (lowest seniority but still holdable) → 0
@@ -320,7 +322,7 @@ describe('computePowerIndexCells', () => {
       makeEntry({ fleet: '737', seat: 'CA', base: 'JFK', seniority_number: 100, retire_date: '2028-01-01' }),
       makeEntry({ fleet: '737', seat: 'CA', base: 'JFK', seniority_number: 200, retire_date: undefined }),
     ]
-    const cells = computePowerIndexCells(entries, 150, FUTURE)
+    const cells = computePowerIndexCells(entries, 150, FUTURE, undefined, AS_OF)
     expect(cells[0]?.state).toBe('green')
     expect(cells[0]?.numbersJuniorToPlug).toBe(0) // holdable → 0
   })
@@ -334,7 +336,7 @@ describe('computePowerIndexCells', () => {
       entries.push(makeEntry({ fleet: '737', seat: 'CA', base: 'JFK', seniority_number: i, retire_date: '2025-01-01' }))
     }
     entries.push(makeEntry({ fleet: '737', seat: 'CA', base: 'JFK', seniority_number: 50, retire_date: undefined }))
-    const cells = computePowerIndexCells(entries, 100, TODAY)
+    const cells = computePowerIndexCells(entries, 100, TODAY, undefined, AS_OF)
     expect(cells[0]?.state).toBe('red')
     expect(cells[0]?.numbersJuniorToPlug).toBe(50)
   })
@@ -345,7 +347,7 @@ describe('computePowerIndexCells', () => {
       makeEntry({ fleet: '737', seat: 'CA', base: 'JFK', seniority_number: 2, retire_date: undefined }),
       makeEntry({ fleet: '737', seat: 'CA', base: 'JFK', seniority_number: 3, retire_date: undefined }),
     ]
-    const cells = computePowerIndexCells(entries, 9999, TODAY)
+    const cells = computePowerIndexCells(entries, 9999, TODAY, undefined, AS_OF)
     expect(cells[0]?.state).toBe('red')
     // user=9999, mostJuniorActive=3, numbersJuniorToPlug = 9999-3 = 9996
     expect(cells[0]?.numbersJuniorToPlug).toBe(9996)
@@ -362,7 +364,7 @@ describe('computePowerIndexCells', () => {
     for (let i = 6; i <= 10; i++) {
       entries.push(makeEntry({ fleet: '737', seat: 'CA', base: 'JFK', seniority_number: i, retire_date: undefined }))
     }
-    const cells = computePowerIndexCells(entries, 7, TODAY)
+    const cells = computePowerIndexCells(entries, 7, TODAY, undefined, AS_OF)
     expect(cells[0]?.state).toBe('green')
     expect(cells[0]?.cellPercentile).toBe(90)
     expect(cells[0]?.numbersJuniorToPlug).toBe(0)
@@ -371,7 +373,7 @@ describe('computePowerIndexCells', () => {
 
 // ─── computePowerIndexCells with growth ──────────────────────────────────────
 describe('computePowerIndexCells with growthConfig', () => {
-  const FUTURE = '2029-01-01'
+  const FUTURE = parsePlainDate('2029-01-01')
   const growthEnabled: GrowthConfig = { enabled: true, annualRate: 0.05 }
 
   it('growth increases userPercentile compared to no growth', () => {
@@ -381,8 +383,8 @@ describe('computePowerIndexCells with growthConfig', () => {
       fleet: '737', seat: 'CA', base: 'JFK',
       retire_date: i < 5 ? '2028-01-01' : '2045-01-01',
     }))
-    const cellsNoGrowth = computePowerIndexCells(entries, 10, FUTURE)
-    const cellsWithGrowth = computePowerIndexCells(entries, 10, FUTURE, growthEnabled)
+    const cellsNoGrowth = computePowerIndexCells(entries, 10, FUTURE, undefined, AS_OF)
+    const cellsWithGrowth = computePowerIndexCells(entries, 10, FUTURE, growthEnabled, AS_OF)
     expect(cellsWithGrowth[0]!.userPercentile).toBeGreaterThan(cellsNoGrowth[0]!.userPercentile)
   })
 
@@ -392,8 +394,8 @@ describe('computePowerIndexCells with growthConfig', () => {
       makeEntry({ fleet: '737', seat: 'CA', base: 'JFK', seniority_number: 2, retire_date: undefined }),
     ]
     const disabled: GrowthConfig = { enabled: false, annualRate: 0.05 }
-    const cellsNone = computePowerIndexCells(entries, 1, FUTURE)
-    const cellsDisabled = computePowerIndexCells(entries, 1, FUTURE, disabled)
+    const cellsNone = computePowerIndexCells(entries, 1, FUTURE, undefined, AS_OF)
+    const cellsDisabled = computePowerIndexCells(entries, 1, FUTURE, disabled, AS_OF)
     expect(cellsDisabled[0]!.userPercentile).toBe(cellsNone[0]!.userPercentile)
   })
 })
@@ -408,12 +410,12 @@ describe('applyProjectionToSnapshots with growthConfig', () => {
       fleet: '737', seat: 'CA', base: 'JFK',
       retire_date: `${2030 + i}-01-01`,
     }))
-    const snapshots = computeQualSnapshots(entries)
-    const projectionDate = '2035-01-01'
+    const snapshots = computeQualSnapshots(entries, AS_OF)
+    const projectionDate = parsePlainDate('2035-01-01')
     const growthEnabled: GrowthConfig = { enabled: true, annualRate: 0.05 }
 
-    const withoutGrowth = applyProjectionToSnapshots(snapshots, entries, 10, projectionDate)
-    const withGrowth = applyProjectionToSnapshots(snapshots, entries, 10, projectionDate, growthEnabled)
+    const withoutGrowth = applyProjectionToSnapshots(snapshots, entries, 10, projectionDate, undefined, AS_OF)
+    const withGrowth = applyProjectionToSnapshots(snapshots, entries, 10, projectionDate, growthEnabled, AS_OF)
 
     // currentUserPercentile should be the same (no growth at today's date)
     expect(withGrowth[0]!.currentUserPercentile).toBe(withoutGrowth[0]!.currentUserPercentile)

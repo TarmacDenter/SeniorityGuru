@@ -57,11 +57,13 @@
 
 // ── Formatting ──────────────────────────────────────────────────────────
 export { formatDate, formatMonthYear, formatYear, todayISO } from './format'
+export { plainDateToDateValue, dateValueToPlainDate } from './temporal-adapter'
 
 // ── Math ────────────────────────────────────────────────────────────────
 export {
   diffYears, deriveAge, computeYOS, computeRetireDate,
   isRetiredBy, extractYear, addYearsISO, retiresInYear, retiresWithinNextYear, currentYear,
+  addYearsDate, diffDateYears, computeYOSDate, computeRetireDateValue,
 } from './math'
 
 // ── Parsing ─────────────────────────────────────────────────────────────

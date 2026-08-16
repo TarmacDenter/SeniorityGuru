@@ -1,26 +1,27 @@
 import { defineStore } from 'pinia'
-import type { LocalSeniorityList, LocalSeniorityEntry } from '~/utils/db'
+import type { LocalSeniorityEntry, SeniorityList } from '~/utils/db'
 import { db } from '~/utils/db'
-import { localEntryToSeniorityEntry } from '~/utils/db-adapters'
+import { localEntryToSeniorityEntry, localListToSeniorityList, seniorityEntryToLocalEntry, seniorityListToLocalList } from '~/utils/db-adapters'
 import type { SeniorityEntry } from '~/utils/schemas/seniority-list'
+import { parsePlainDate, Temporal, nowInstant } from '~/utils/temporal'
 import { createLogger } from '~/utils/logger'
 import { emitHook } from '~/utils/hooks'
 
 const log = createLogger('seniority-store')
 
-function compareListsByRecency(a: LocalSeniorityList, b: LocalSeniorityList): number {
-  const effectiveCmp = b.effectiveDate.localeCompare(a.effectiveDate)
+function compareListsByRecency(a: SeniorityList, b: SeniorityList): number {
+  const effectiveCmp = Temporal.PlainDate.compare(b.effectiveDate, a.effectiveDate)
   if (effectiveCmp !== 0) return effectiveCmp
 
-  const createdCmp = (b.createdAt ?? '').localeCompare(a.createdAt ?? '')
+  const createdCmp = Temporal.Instant.compare(b.createdAt, a.createdAt)
   if (createdCmp !== 0) return createdCmp
 
   return (b.id ?? 0) - (a.id ?? 0)
 }
 
 export const useSeniorityStore = defineStore('seniority', () => {
-  const lists = ref<LocalSeniorityList[]>([])
-  const entries = ref<SeniorityEntry[]>([])
+  const lists = shallowRef<SeniorityList[]>([])
+  const entries = shallowRef<SeniorityEntry[]>([])
   const listsLoading = ref(false)
   const entriesLoading = ref(false)
   const listsError = ref<string | null>(null)
@@ -55,7 +56,7 @@ export const useSeniorityStore = defineStore('seniority', () => {
 
     try {
       const raw = await db.seniorityLists.toArray()
-      lists.value = raw.sort(compareListsByRecency)
+      lists.value = raw.map(localListToSeniorityList).sort(compareListsByRecency)
       log.debug('Lists fetched', { count: lists.value.length })
     }
     catch (e: unknown) {
@@ -91,24 +92,28 @@ export const useSeniorityStore = defineStore('seniority', () => {
   }
 
   async function addList(
-    listData: { title: string | null; effectiveDate: string; isDemo?: boolean },
-    entries: Omit<LocalSeniorityEntry, 'id' | 'listId'>[],
+    listData: { title: string | null; effectiveDate: Temporal.PlainDate | string; isDemo?: boolean },
+    entries: (SeniorityEntry | LocalSeniorityEntry | Omit<LocalSeniorityEntry, 'id' | 'listId'>)[],
   ): Promise<number> {
-    const listId = await db.seniorityLists.add({
+    const effectiveDate = typeof listData.effectiveDate === 'string' ? parsePlainDate(listData.effectiveDate) : listData.effectiveDate
+    const domainEntries = entries.map((entry) => 'seniorityNumber' in entry
+      ? localEntryToSeniorityEntry({ ...entry, listId: 'listId' in entry ? entry.listId : 0 })
+      : entry)
+    const createdAt = nowInstant()
+    const listId = await db.seniorityLists.add(seniorityListToLocalList({
       title: listData.title,
-      effectiveDate: listData.effectiveDate,
-      createdAt: new Date().toISOString(),
+      effectiveDate,
+      createdAt,
       ...(listData.isDemo ? { isDemo: true } : {}),
-    })
+    }))
 
-    const localEntries: LocalSeniorityEntry[] = entries.map(e => ({ ...e, listId }))
+    const localEntries: LocalSeniorityEntry[] = domainEntries.map(e => seniorityEntryToLocalEntry(e, listId))
     await db.seniorityEntries.bulkAdd(localEntries)
 
     const hasDemoListsBefore = lists.value.some(l => l.isDemo)
-    lists.value.push({ id: listId, ...listData, createdAt: new Date().toISOString() })
-    lists.value = [...lists.value].sort(compareListsByRecency)
+    lists.value = [...lists.value, { id: listId, ...listData, effectiveDate, createdAt }].sort(compareListsByRecency)
     entryCache.clear()
-    log.info('List added', { listId, entryCount: entries.length })
+    log.info('List added', { listId, entryCount: domainEntries.length })
     emitHook('list:added', listId).catch((e: unknown) => {
       log.warn('emitHook list:added failed', { error: String(e) })
     })
@@ -130,16 +135,20 @@ export const useSeniorityStore = defineStore('seniority', () => {
     return result
   }
 
-  async function getList(listId: number): Promise<LocalSeniorityList | undefined> {
-    return db.seniorityLists.get(listId)
+  async function getList(listId: number): Promise<SeniorityList | undefined> {
+    const list = await db.seniorityLists.get(listId)
+    return list ? localListToSeniorityList(list) : undefined
   }
 
-  async function updateList(id: number, updates: { title?: string | null; effectiveDate?: string }) {
-    await db.seniorityLists.update(id, updates)
+  async function updateList(id: number, updates: { title?: string | null; effectiveDate?: Temporal.PlainDate }) {
+    const { effectiveDate, ...metadata } = updates
+    await db.seniorityLists.update(id, {
+      ...metadata,
+      ...(effectiveDate ? { effectiveDate: effectiveDate.toString() } : {}),
+    })
     const idx = lists.value.findIndex(l => l.id === id)
     if (idx !== -1) {
-      lists.value[idx] = { ...lists.value[idx]!, ...updates }
-      lists.value = [...lists.value].sort(compareListsByRecency)
+      lists.value = lists.value.map((list, listIndex) => listIndex === idx ? { ...list, ...updates } : list).sort(compareListsByRecency)
     }
     log.info('List updated in store', { listId: id })
   }

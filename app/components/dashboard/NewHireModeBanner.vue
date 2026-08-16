@@ -1,7 +1,13 @@
 <script setup lang="ts">
 import { useSeniorityCore } from '~/composables/seniority'
+import { formatDate } from '~/utils/date'
+import { parsePlainDate } from '~/utils/temporal'
 const { newHire: newHireMode } = useSeniorityCore()
 const { employeeNumber } = useUser()
+const birthDateModel = computed({
+  get: () => newHireMode.birthDate.value ? formatDate(newHireMode.birthDate.value) : undefined,
+  set: (value: string | undefined) => { newHireMode.birthDate.value = value ? parsePlainDate(value) : null },
+})
 </script>
 
 <template>
@@ -88,11 +94,10 @@ const { employeeNumber } = useUser()
       <div class="flex flex-col gap-1 min-w-[140px]">
         <label class="text-xs font-medium text-muted">Birth Date</label>
         <UInput
-          :model-value="newHireMode.birthDate.value ?? undefined"
+          v-model="birthDateModel"
           type="date"
           class="w-44"
           size="sm"
-          @update:model-value="newHireMode.birthDate.value = $event || null"
         />
       </div>
     </div>

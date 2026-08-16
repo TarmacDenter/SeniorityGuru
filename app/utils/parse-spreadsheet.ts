@@ -1,6 +1,6 @@
 import { normalizeEmployeeNumber } from '~/utils/schemas/seniority-list'
 import { normalizeDate, computeRetireDate } from '~/utils/date'
-import type { SeniorityEntry } from '~/utils/schemas/seniority-list'
+import type { SeniorityEntryInput } from '~/utils/schemas/seniority-list'
 
 export interface ColumnMap {
   seniority_number: number
@@ -51,7 +51,7 @@ export function mapSingleRow(
   row: string[],
   map: ColumnMap,
   options: MappingOptions,
-): Partial<SeniorityEntry> {
+): Partial<SeniorityEntryInput> {
   const get = (idx: number) => {
     if (idx < 0 || idx >= row.length) return undefined
     const val = row[idx]
@@ -79,7 +79,7 @@ export function mapSingleRow(
     if (raw) retire_date = normalizeDate(raw)
   }
 
-  const entry: Partial<SeniorityEntry> = {
+  const entry: Partial<SeniorityEntryInput> = {
     seniority_number: senStr ? parseInt(senStr, 10) : undefined,
     employee_number: empStr ? normalizeEmployeeNumber(empStr) : undefined,
     seat: get(map.seat) || undefined,
@@ -100,7 +100,7 @@ export function applyColumnMap(
   rows: string[][],
   map: ColumnMap,
   options: MappingOptions,
-): Partial<SeniorityEntry>[] {
+): Partial<SeniorityEntryInput>[] {
   return rows.map(row => mapSingleRow(row, map, options))
 }
 

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useSeniorityCore, useQualFilter, useStanding, useTrajectory } from '~/composables/seniority'
 import { DEFAULT_GROWTH_CONFIG, createScenario, type GrowthConfig } from '~/utils/seniority-engine'
+import { todayPlainDate } from '~/utils/temporal'
 
 defineProps<{ loading?: boolean }>()
 
@@ -19,6 +20,7 @@ const {
 
 const qualFilter = useQualFilter()
 const scopedScenario = computed(() => createScenario({
+  projectionDate: todayPlainDate(),
   growthConfig: growthConfig.value,
   scopeFilter: qualFilter.qualSpec.value,
 }))

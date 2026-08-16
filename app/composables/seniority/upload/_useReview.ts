@@ -1,6 +1,5 @@
 import type { ReviewPhase, UploadSession } from './types'
-import type { SeniorityEntry } from '~/utils/schemas/seniority-list'
-import { SeniorityEntrySchema } from '~/utils/schemas/seniority-list'
+import { SeniorityEntrySchema, toSeniorityEntryInput, type SeniorityEntryInput } from '~/utils/schemas/seniority-list'
 import { computeStructuralIssues, type ValidationIssue } from '~/utils/validate-entries'
 import { createLogger } from '~/utils/logger'
 import type { ImportIssue } from '~/utils/import-pipeline/types'
@@ -8,7 +7,7 @@ import type { ImportIssue } from '~/utils/import-pipeline/types'
 const log = createLogger('upload:review')
 const BATCH_SIZE = 500
 
-function formatSchemaIssues(entry: Partial<SeniorityEntry>): ValidationIssue[] {
+function formatSchemaIssues(entry: Partial<SeniorityEntryInput>): ValidationIssue[] {
   const result = SeniorityEntrySchema.safeParse(entry)
   if (result.success) return []
   return result.error.issues.map(issue => ({
@@ -103,7 +102,7 @@ export function _useReview(opts: UploadSession): ReviewPhase & { _reset: () => v
     triggerRef(opts.rowErrors)
   }
 
-  function updateCell(rowIndex: number, field: keyof SeniorityEntry, value: string | number) {
+  function updateCell(rowIndex: number, field: keyof SeniorityEntryInput, value: string | number) {
     const entry = opts.entries.value[rowIndex]
     if (!entry) return
     ;(entry as Record<string, unknown>)[field] = value
@@ -169,7 +168,7 @@ export function _useReview(opts: UploadSession): ReviewPhase & { _reset: () => v
       }
     }
 
-    const newEntry: Partial<SeniorityEntry> = {
+    const newEntry: Partial<SeniorityEntryInput> = {
       seniority_number: targetSenNum ?? undefined,
       employee_number: '',
       name: '',
@@ -266,12 +265,13 @@ export function _useReview(opts: UploadSession): ReviewPhase & { _reset: () => v
     opts.sourceValues.value = new Map()
   }
 
-  function toValidatedEntries(): SeniorityEntry[] {
+  function toValidatedEntries(): SeniorityEntryInput[] {
     if (opts.rowErrors.value.size > 0) {
       throw new Error('Cannot convert to validated entries while row errors exist')
     }
     return opts.entries.value.map((entry, idx) => {
-      const parsed = SeniorityEntrySchema.safeParse(entry)
+      const normalized = typeof entry.hire_date === 'string' ? entry : toSeniorityEntryInput(entry as never)
+      const parsed = SeniorityEntrySchema.safeParse(normalized)
       if (!parsed.success) {
         throw new Error(`Row ${idx + 1} is not schema-valid`)
       }

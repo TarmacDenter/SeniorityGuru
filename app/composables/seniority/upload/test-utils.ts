@@ -1,6 +1,6 @@
 import { ref, shallowRef } from 'vue'
 import type { ImportIssue, PreparedSheet } from '~/utils/import-pipeline/types'
-import type { SeniorityEntry } from '~/utils/schemas/seniority-list'
+import type { SeniorityEntryInput } from '~/utils/schemas/seniority-list'
 import { DEFAULT_COLUMN_MAP, DEFAULT_MAPPING_OPTIONS } from './defaults'
 import { _useProgressTracker } from './_useProgressTracker'
 import type { UploadSession } from './types'
@@ -19,7 +19,7 @@ export function createUploadSession(overrides: Partial<UploadSession> = {}): Upl
     autoDetectSucceeded: ref(false),
     preparedSheet: ref<PreparedSheet | null>(null),
     preparationIssues: ref<ImportIssue[]>([]),
-    entries: ref<Partial<SeniorityEntry>[]>([]),
+    entries: ref<Partial<SeniorityEntryInput>[]>([]),
     rowErrors: shallowRef<Map<number, string[]>>(new Map()),
     pipelineIssues: shallowRef<Map<number, ImportIssue[]>>(new Map()),
     sourceValues: ref<Map<number, Record<string, unknown>>>(new Map()),

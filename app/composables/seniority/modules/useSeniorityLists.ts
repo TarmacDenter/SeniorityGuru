@@ -1,7 +1,8 @@
-import type { LocalSeniorityList } from '~/utils/db'
+import type { SeniorityList } from '~/utils/db'
+import { serializePlainDate } from '~/utils/temporal'
 import { useSeniorityStore } from '~/stores/seniority'
 
-export type SeniorityListSummary = Pick<LocalSeniorityList, 'id' | 'title' | 'effectiveDate' | 'createdAt' | 'isDemo'>
+export type SeniorityListSummary = SeniorityList
 
 export function useSeniorityLists() {
   const store = useSeniorityStore()
@@ -12,8 +13,8 @@ export function useSeniorityLists() {
   const entriesLoading = computed(() => store.entriesLoading)
 
   const listOptions = computed(() =>
-    store.lists.map((l: LocalSeniorityList) => ({
-      label: l.title ? `${l.title} — ${l.effectiveDate}` : l.effectiveDate,
+    store.lists.map((l: SeniorityList) => ({
+      label: l.title ? `${l.title} — ${serializePlainDate(l.effectiveDate)}` : serializePlainDate(l.effectiveDate),
       value: l.id,
     })),
   )
@@ -26,7 +27,7 @@ export function useSeniorityLists() {
     await store.deleteList(id)
   }
 
-  async function updateList(id: number, updates: { title?: string | null; effectiveDate?: string }) {
+  async function updateList(id: number, updates: { title?: string | null; effectiveDate?: import('~/utils/temporal').PlainDate }) {
     await store.updateList(id, updates)
   }
 

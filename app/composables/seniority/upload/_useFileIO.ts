@@ -8,6 +8,7 @@ import type { DecodedWorkbook, ImportDiagnosticTrace, ImportField, ImportIssue, 
 import { hasRequiredColumnMappings } from '~/utils/import-pipeline/fields'
 import { useUserStore } from '~/stores/user'
 import { useImportAttemptsStore } from '~/stores/import-attempts'
+import { nowInstant, serializeInstant } from '~/utils/temporal'
 
 const log = createLogger('upload:file')
 const HEADER_ROW_PREVIEW_LIMIT = 100
@@ -89,7 +90,7 @@ export function _useFileIO(opts: UploadSession): FilePhase & { _reset: () => voi
           sourceSheet,
           preparation: { headerRowIndex: selectedHeaderRow.value, patch: result.patch, issues: result.issues, metadata: result.metadata, preparedSheet: result.preparedSheet },
           stage: 'prepared',
-          updatedAt: new Date().toISOString(),
+          updatedAt: serializeInstant(nowInstant()),
       }))
     }
     preparationIssues.value = [...result.issues]
@@ -157,7 +158,7 @@ export function _useFileIO(opts: UploadSession): FilePhase & { _reset: () => voi
           appBuildVersion: 'local',
           plugin: { id: plugin.id, label: plugin.label },
           file: { name: file.name },
-          createdAt: new Date().toISOString(),
+          createdAt: serializeInstant(nowInstant()),
           stage: 'reading',
           outcome: 'review',
         } satisfies ImportDiagnosticTrace,

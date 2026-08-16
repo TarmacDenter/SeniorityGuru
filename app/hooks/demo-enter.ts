@@ -4,6 +4,8 @@ import { parseDemoCSV, DEMO_EMPLOYEE_NUMBER } from '~/utils/demo-parser'
 import { demoDataCSV, demoDataV2CSV } from '~/utils/demo-assets'
 import { useSeniorityStore } from '~/stores/seniority'
 import { useUserStore } from '~/stores/user'
+import { localEntryToSeniorityEntry } from '~/utils/db-adapters'
+import { parsePlainDate } from '~/utils/temporal'
 
 /** Parses both demo CSVs, writes them to Dexie, sets the demo employee, navigates to dashboard. */
 export default function registerDemoEnterHook(nuxtApp: NuxtApp) {
@@ -15,12 +17,12 @@ export default function registerDemoEnterHook(nuxtApp: NuxtApp) {
     const variantEntries = parseDemoCSV(demoDataV2CSV)
 
     await seniorityStore.addList(
-      { title: 'Demo — Base List', effectiveDate: '2025-01-01', isDemo: true },
-      baseEntries,
+      { title: 'Demo — Base List', effectiveDate: parsePlainDate('2025-01-01'), isDemo: true },
+      baseEntries.map(e => localEntryToSeniorityEntry({ ...e, listId: 0 })),
     )
     await seniorityStore.addList(
-      { title: 'Demo — Current List', effectiveDate: '2025-04-01', isDemo: true },
-      variantEntries,
+      { title: 'Demo — Current List', effectiveDate: parsePlainDate('2025-04-01'), isDemo: true },
+      variantEntries.map(e => localEntryToSeniorityEntry({ ...e, listId: 0 })),
     )
 
     await userStore.savePreference('employeeNumber', DEMO_EMPLOYEE_NUMBER)

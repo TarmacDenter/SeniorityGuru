@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { getLogBuffer, exportLogAsText } from '~/utils/logger'
+import { nowInstant, serializeInstant } from '~/utils/temporal'
 
 const entryCount = computed(() => getLogBuffer().length)
 
@@ -8,7 +9,7 @@ function downloadLog() {
   const blob = new Blob([text], { type: 'text/plain' })
   const url = URL.createObjectURL(blob)
 
-  const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
+  const timestamp = serializeInstant(nowInstant()).replace(/[:.]/g, '-')
   const filename = `seniority-guru-debug-${timestamp}.txt`
 
   const a = document.createElement('a')

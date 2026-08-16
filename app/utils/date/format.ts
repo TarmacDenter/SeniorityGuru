@@ -25,6 +25,5 @@ export function formatYear(dateStr: Temporal.PlainDate | string): string {
 
 /** Today's date as YYYY-MM-DD in local time. */
 export function todayISO(): string {
-  const now = new Date(Date.now())
-  return Temporal.PlainDate.from({ year: now.getFullYear(), month: now.getMonth() + 1, day: now.getDate() }).toString()
+  return Temporal.Now.plainDateISO().toString()
 }

@@ -1,15 +1,15 @@
 <script setup lang="ts">
 import { getPaginationRowModel } from '@tanstack/vue-table'
-import type { SeniorityEntry } from '~/utils/schemas/seniority-list'
+import type { SeniorityEntryInput } from '~/utils/schemas/seniority-list'
 import type { TableColumn } from '@nuxt/ui'
 import { formatRowError } from '~/utils/formatRowError'
 
 const PAGE_SIZE = 50
 
-type IndexedEntry = Partial<SeniorityEntry> & { _originalIndex: number }
+type IndexedEntry = Partial<SeniorityEntryInput> & { _originalIndex: number }
 
 const props = defineProps<{
-  entries: Partial<SeniorityEntry>[]
+  entries: Partial<SeniorityEntryInput>[]
   rowErrors: Map<number, string[]>
   showErrorsOnly?: boolean
   showEstimatedOnly?: boolean
@@ -38,7 +38,7 @@ const currentPage = computed({
 })
 
 const emit = defineEmits<{
-  updateCell: [rowIndex: number, field: keyof SeniorityEntry, value: string | number]
+  updateCell: [rowIndex: number, field: keyof SeniorityEntryInput, value: string | number]
   deleteRow: [rowIndex: number]
   insertRow: [rowIndex: number]
   acknowledgePipelineIssues: [rowIndex: number]
@@ -46,7 +46,7 @@ const emit = defineEmits<{
 
 const editingCell = ref<{ row: number; field: string } | null>(null)
 
-const editableFields: (keyof SeniorityEntry)[] = [
+const editableFields: (keyof SeniorityEntryInput)[] = [
   'seniority_number', 'employee_number', 'name', 'seat', 'base', 'fleet', 'hire_date', 'retire_date',
 ]
 

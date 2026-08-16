@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { _useConfirm } from './_useConfirm'
 import { createUploadSession } from './test-utils'
 import { makeDomainEntry } from '~/test-utils/factories'
+import { parsePlainDate } from '~/utils/temporal'
 
 const mockStore = vi.hoisted(() => ({
   addList: vi.fn(),
@@ -31,7 +32,7 @@ describe('_useConfirm', () => {
 
   it('calls store.addList with mapped entries and returns count', async () => {
     const confirm = createConfirm()
-    confirm.effectiveDate.value = { toString: () => '2025-01-01' } as never
+    confirm.effectiveDate.value = parsePlainDate('2025-01-01')
     confirm.title.value = 'Jan 2025'
 
     const entries = [
@@ -42,10 +43,10 @@ describe('_useConfirm', () => {
     const count = await confirm.save(entries)
 
     expect(mockStore.addList).toHaveBeenCalledWith(
-      { title: 'Jan 2025', effectiveDate: '2025-01-01' },
+      { title: 'Jan 2025', effectiveDate: parsePlainDate('2025-01-01') },
       expect.arrayContaining([
-        expect.objectContaining({ employeeNumber: 'E001', seniorityNumber: 1 }),
-        expect.objectContaining({ employeeNumber: 'E002', seniorityNumber: 2 }),
+        expect.objectContaining({ employee_number: 'E001', seniority_number: 1 }),
+        expect.objectContaining({ employee_number: 'E002', seniority_number: 2 }),
       ]),
     )
     expect(count).toBe(2)

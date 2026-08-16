@@ -2,14 +2,15 @@ import type { SeniorityEntry } from '~/utils/schemas/seniority-list'
 import type { FilterFn, GrowthConfig, TrajectoryDelta } from '~/utils/seniority-engine/types'
 import { computeAdditionalPilots } from '~/utils/growth-config'
 import { computePercentile } from '~/utils/seniority-engine/percentile'
-import { formatMonthYear, todayISO, addYearsISO, isRetiredBy } from '~/utils/date'
+import { addYearsDate, formatMonthYear, isRetiredBy } from '~/utils/date'
+import { Temporal, type PlainDate } from '~/utils/temporal'
 
 export type { FilterFn }
 
 export function countRetiredAbove(
   entries: readonly SeniorityEntry[],
   userSenNum: number,
-  asOfDate: string,
+  asOfDate: PlainDate,
   filterFn?: FilterFn,
 ): number {
   let count = 0;
@@ -23,12 +24,12 @@ export function countRetiredAbove(
   return count;
 }
 
-export function generateTimePoints(startDate: string, endDate: string): string[] {
-  const points: string[] = [];
-  let current = startDate;
-  while (current <= endDate) {
-    points.push(current);
-    current = addYearsISO(current, 1);
+export function generateTimePoints(startDate: PlainDate, endDate: PlainDate): PlainDate[] {
+  const points: PlainDate[] = []
+  let current = startDate
+  while (Temporal.PlainDate.compare(current, endDate) <= 0) {
+    points.push(current)
+    current = addYearsDate(current, 1);
   }
   return points;
 }
@@ -40,17 +41,18 @@ export function generateTimePoints(startDate: string, endDate: string): string[]
 export function buildTrajectory(
   entries: readonly SeniorityEntry[],
   userSenNum: number,
-  timePoints: string[],
+  timePoints: PlainDate[],
   filterFn?: FilterFn,
   growthConfig?: GrowthConfig,
-): { date: string; rank: number; percentile: number; }[] {
+): { date: PlainDate; rank: number; percentile: number; }[] {
   const filtered = filterFn ? entries.filter(filterFn) : entries;
   const totalInCategory = filtered.length;
   const aheadInCategory = filtered.filter((e) => e.seniority_number < userSenNum);
   const initialRank = aheadInCategory.length + 1;
-  const baseDate = timePoints[0];
+  const baseDate = timePoints[0]
 
   return timePoints.map((tp) => {
+    const pointDate = tp
     let retiredAhead = 0;
     for (const e of aheadInCategory) {
       if (!e.retire_date) continue;
@@ -58,11 +60,11 @@ export function buildTrajectory(
     }
     const rank = initialRank - retiredAhead;
     const additional = growthConfig?.enabled && baseDate
-      ? computeAdditionalPilots(totalInCategory, growthConfig.annualRate, baseDate, tp)
+      ? computeAdditionalPilots(totalInCategory, growthConfig.annualRate, baseDate, pointDate)
       : 0;
     const projectedTotal = totalInCategory + additional;
     return {
-      date: tp,
+      date: pointDate,
       rank,
       percentile: computePercentile(rank, projectedTotal),
     };
@@ -73,10 +75,13 @@ export function computeRank(entries: readonly SeniorityEntry[], userSenNum: numb
   return entries.filter((e) => e.seniority_number < userSenNum).length + 1;
 }
 
-export function getProjectionEndDate(retireDate: string | null, asOfDate = todayISO()): { today: string; endDate: string; } {
-  const today = asOfDate;
-  const endDate = retireDate ?? addYearsISO(today, 30);
-  return { today, endDate };
+/** Legacy serialized seam retained for chart callers during migration. */
+export function getProjectionEndDate(retireDate: PlainDate | null, asOfDate: PlainDate): { today: string; endDate: string } {
+  const today = asOfDate
+  return {
+    today: today.toString(),
+    endDate: (retireDate ? Temporal.PlainDate.from(retireDate) : addYearsDate(today, 30)).toString(),
+  }
 }
 
 export function formatNumber(n: number): string {
@@ -85,13 +90,14 @@ export function formatNumber(n: number): string {
 
 export function projectRetirements(
   entries: readonly SeniorityEntry[],
-  retireDate: string | null,
-  filterFn: FilterFn = () => true,
+  retireDate: PlainDate | null,
+  asOfDate: PlainDate,
+  filterFn?: FilterFn,
 ): { labels: string[]; data: number[]; filteredTotal: number; } {
-  const filteredEntries = entries.filter(filterFn);
+  const filteredEntries = entries.filter(filterFn ?? (() => true));
   const filteredTotal = filteredEntries.length;
 
-  const { today, endDate } = getProjectionEndDate(retireDate);
+  const { today, endDate } = getProjectionEndDateValue(retireDate, asOfDate)
   const timePoints = generateTimePoints(today, endDate);
   if (timePoints.length === 0) {
     return { labels: [], data: [], filteredTotal };
@@ -119,18 +125,19 @@ export function projectRetirements(
 export function projectComparativeTrajectory(
   allEntries: readonly SeniorityEntry[],
   userSenNum: number,
-  retireDate: string | null,
+  retireDate: PlainDate | null,
+  asOfDate: PlainDate,
   currentFilter: FilterFn,
   compareFilter: FilterFn,
   growthConfig?: GrowthConfig,
 ): { labels: string[]; currentData: number[]; compareData: number[]; } {
-  const { today, endDate } = getProjectionEndDate(retireDate);
+  const { today, endDate } = getProjectionEndDateValue(retireDate, asOfDate)
   const timePoints = generateTimePoints(today, endDate);
   const currentTrajectory = buildTrajectory(allEntries, userSenNum, timePoints, currentFilter, growthConfig);
   const compareTrajectory = buildTrajectory(allEntries, userSenNum, timePoints, compareFilter, growthConfig);
 
   return {
-    labels: currentTrajectory.map((t) => t.date),
+    labels: currentTrajectory.map((t) => t.date.toString()),
     currentData: currentTrajectory.map((t) => t.percentile),
     compareData: compareTrajectory.map((t) => t.percentile),
   };
@@ -138,8 +145,9 @@ export function projectComparativeTrajectory(
 
 export type { TrajectoryDelta }
 
+export function computeTrajectoryDeltas(trajectory: { date: PlainDate; rank: number; percentile: number }[]): TrajectoryDelta[]
 export function computeTrajectoryDeltas(
-  trajectory: { date: string; rank: number; percentile: number }[],
+  trajectory: { date: PlainDate; rank: number; percentile: number }[],
 ): TrajectoryDelta[] {
   if (trajectory.length < 2) return []
   const deltas: TrajectoryDelta[] = []
@@ -160,6 +168,10 @@ export function computeTrajectoryDeltas(
     }
   }
   return deltas
+}
+
+export function getProjectionEndDateValue(retireDate: PlainDate | null, asOfDate: PlainDate): { today: PlainDate; endDate: PlainDate } {
+  return { today: asOfDate, endDate: retireDate ?? addYearsDate(asOfDate, 30) }
 }
 
 export function formatRankDelta(delta: number): string {

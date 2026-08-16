@@ -3,6 +3,8 @@ import type { TableColumn, DropdownMenuItem } from '@nuxt/ui'
 import { sortableHeader } from '~/utils/sortableHeader'
 import { useSeniorityLists, type SeniorityListSummary } from '~/composables/seniority'
 import { createLogger } from '~/utils/logger'
+import { formatDate } from '~/utils/date'
+import { formatInstantLocal, parsePlainDate } from '~/utils/temporal'
 
 const log = createLogger('lists-page')
 
@@ -35,7 +37,7 @@ const columns: TableColumn<SeniorityList>[] = [
   {
     accessorKey: 'createdAt',
     header: sortableHeader<SeniorityList>('Uploaded'),
-    cell: ({ row }) => new Date(row.original.createdAt).toLocaleDateString(),
+    cell: ({ row }) => formatInstantLocal(row.original.createdAt),
   },
   { id: 'actions', header: '' },
 ]
@@ -52,7 +54,7 @@ function useListManagement() {
   function openEdit(list: SeniorityList) {
     editListId.value = list.id ?? null
     editState.title = list.title ?? ''
-    editState.effectiveDate = list.effectiveDate
+    editState.effectiveDate = formatDate(list.effectiveDate)
     editOpen.value = true
   }
 
@@ -60,7 +62,7 @@ function useListManagement() {
     if (!editListId.value) return
     saving.value = true
     try {
-      await storeUpdateList(editListId.value, { ...(editState.title && { title: editState.title }), effectiveDate: editState.effectiveDate })
+      await storeUpdateList(editListId.value, { ...(editState.title && { title: editState.title }), effectiveDate: parsePlainDate(editState.effectiveDate) })
       toast.add({ title: 'List updated', color: 'success' })
       editOpen.value = false
     }
@@ -127,7 +129,7 @@ const filteredLists = computed(() => {
   const q = globalFilter.value.trim().toLowerCase()
   if (!q) return lists.value
   return lists.value.filter(l =>
-    (l.title ?? '').toLowerCase().includes(q) || l.effectiveDate.toLowerCase().includes(q),
+    (l.title ?? '').toLowerCase().includes(q) || formatDate(l.effectiveDate).toLowerCase().includes(q),
   )
 })
 
@@ -162,8 +164,8 @@ onMounted(async () => {
         <div class="sm:hidden divide-y divide-(--ui-border) border border-(--ui-border) rounded-lg">
           <div v-for="list in filteredLists" :key="list.id" class="flex items-center gap-3 px-4 py-3">
             <div class="flex-1 min-w-0">
-              <p class="font-medium truncate">{{ list.title || list.effectiveDate }}</p>
-              <p class="text-sm text-muted">{{ list.effectiveDate }}</p>
+              <p class="font-medium truncate">{{ list.title || formatDate(list.effectiveDate) }}</p>
+              <p class="text-sm text-muted">{{ formatDate(list.effectiveDate) }}</p>
             </div>
             <UDropdownMenu :items="getDropdownItems(list)">
               <UButton icon="i-lucide-ellipsis" variant="ghost" size="sm" />
@@ -250,7 +252,7 @@ onMounted(async () => {
           <template #body>
             <p class="text-sm text-muted mb-4">
               Are you sure you want to delete the list
-              <strong>{{ deleteTarget?.effectiveDate }}</strong>?
+              <strong>{{ deleteTarget ? formatDate(deleteTarget.effectiveDate) : '' }}</strong>?
               All entries in this list will be permanently removed.
             </p>
             <div class="flex justify-end gap-2">

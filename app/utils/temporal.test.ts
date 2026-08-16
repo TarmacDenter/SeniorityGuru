@@ -23,4 +23,10 @@ describe('Temporal boundary', () => {
     const result = addLocalCalendarDays(start, 7)
     expect(result.epochMilliseconds).not.toBe(start.epochMilliseconds)
   })
+
+  it('preserves local calendar time across a daylight-saving transition', () => {
+    const start = parseInstant('2026-03-07T17:00:00Z')
+    const result = addLocalCalendarDays(start, 1, 'America/New_York')
+    expect(result.toString()).toBe('2026-03-08T16:00:00Z')
+  })
 })

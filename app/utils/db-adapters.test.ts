@@ -26,8 +26,8 @@ describe('localEntryToSeniorityEntry', () => {
     expect(entry.seat).toBe('CA')
     expect(entry.base).toBe('LAX')
     expect(entry.fleet).toBe('B737')
-    expect(entry.hire_date).toBe('2010-06-15')
-    expect(entry.retire_date).toBe('2040-06-15')
+    expect(entry.hire_date.toString()).toBe('2010-06-15')
+    expect(entry.retire_date?.toString()).toBe('2040-06-15')
   })
 
   it('handles null name', () => {

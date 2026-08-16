@@ -4,6 +4,7 @@ import { isRetiredBy } from '~/utils/date'
 import { computePercentile } from './percentile'
 import type { QualSpec } from './qual-spec'
 import { qualSpecToFilter } from './qual-spec'
+import { Temporal, type PlainDate } from '~/utils/temporal'
 
 export type QualViewerStatus = 'active' | 'retired' | 'inserted'
 
@@ -15,8 +16,8 @@ export interface QualViewerRow {
   base: string
   fleet: string
   seat: string
-  hireDate: string
-  retireDate: string
+  hireDate: PlainDate
+  retireDate: PlainDate | null
   status: QualViewerStatus
   isUser: boolean
   isMarker: boolean
@@ -42,11 +43,12 @@ export interface QualViewerOptions {
   qual?: QualSpec
   employeeNumber?: string | null
   insertSelf?: boolean
-  asOfDate: string
+  asOfDate: PlainDate | string
 }
 
 export function projectQualViewer(options: QualViewerOptions): QualViewerResult {
-  const { entries, employeeNumber, asOfDate } = options
+  const { entries, employeeNumber } = options
+  const asOfDate = typeof options.asOfDate === 'string' ? Temporal.PlainDate.from(options.asOfDate) : options.asOfDate
   const qual = options.qual ?? {}
   const userEmployeeKey = employeeNumber ? normalizeEmployeeNumber(employeeNumber) : null
   const ordered = [...entries].sort((a, b) => a.seniority_number - b.seniority_number)
@@ -57,9 +59,9 @@ export function projectQualViewer(options: QualViewerOptions): QualViewerResult 
   const matches = ordered.filter(qualSpecToFilter(qual))
   const anchorInQual = !!anchor && matches.some(e => normalizeEmployeeNumber(e.employee_number) === userEmployeeKey)
   const markerEnabled = !!options.insertSelf && canInsert && !anchorInQual && !!(qual.base && qual.seat && qual.fleet)
-  const markerRetired = !!anchor && isRetiredBy(anchor.retire_date, asOfDate)
+  const markerRetired = !!anchor?.retire_date && isRetiredBy(anchor.retire_date, asOfDate)
 
-  const activeEntries = ordered.filter(e => !isRetiredBy(e.retire_date, asOfDate))
+  const activeEntries = ordered.filter(e => !e.retire_date || !isRetiredBy(e.retire_date, asOfDate))
   const activeCompanyRank = new Map<string, number>()
   activeEntries.forEach((e, index) => activeCompanyRank.set(normalizeEmployeeNumber(e.employee_number), index + 1))
   const activeCompanyTotal = activeEntries.length
@@ -70,12 +72,12 @@ export function projectQualViewer(options: QualViewerOptions): QualViewerResult 
     percentile: computePercentile(entry.seniority_number, selectedListTotal),
   })
 
-  const activeQualEntries = matches.filter(e => !isRetiredBy(e.retire_date, asOfDate))
+  const activeQualEntries = matches.filter(e => !e.retire_date || !isRetiredBy(e.retire_date, asOfDate))
   const qualRankByEmployee = new Map<string, number>()
   activeQualEntries.forEach((e, index) => qualRankByEmployee.set(normalizeEmployeeNumber(e.employee_number), index + 1))
 
   const rows = matches.map((entry): QualViewerRow => {
-    const retired = isRetiredBy(entry.retire_date, asOfDate)
+    const retired = !!entry.retire_date && isRetiredBy(entry.retire_date, asOfDate)
     const selected = selectedListMetrics(entry)
     const employeeKey = normalizeEmployeeNumber(entry.employee_number)
     const companySeniority = retired ? null : activeCompanyRank.get(employeeKey) ?? null
@@ -88,7 +90,7 @@ export function projectQualViewer(options: QualViewerOptions): QualViewerResult 
       fleet: entry.fleet,
       seat: entry.seat,
       hireDate: entry.hire_date,
-      retireDate: entry.retire_date,
+      retireDate: entry.retire_date ?? null,
       status: retired ? 'retired' : 'active',
       isUser: !!userEmployeeKey && normalizeEmployeeNumber(entry.employee_number) === userEmployeeKey,
       isMarker: false,
@@ -112,7 +114,7 @@ export function projectQualViewer(options: QualViewerOptions): QualViewerResult 
       fleet: qual.fleet!,
       seat: qual.seat!,
       hireDate: anchor.hire_date,
-      retireDate: anchor.retire_date,
+      retireDate: anchor.retire_date ?? null,
       status: markerRetired ? 'retired' : 'inserted',
       isUser: true,
       isMarker: true,

@@ -4,6 +4,7 @@ import { useSeniorityCore, useStanding, useSeniorityLists } from '~/composables/
 import { useDashboardTabs } from '~/composables/useDashboardTabs'
 import { useDemoBanner } from '~/composables/useDemoBanner'
 import { DEFAULT_TAB } from '~/utils/dashboard-tabs'
+import { formatDate } from '~/utils/date'
 
 definePageMeta({ layout: 'dashboard' })
 
@@ -16,7 +17,7 @@ function useDashboardListSelection(activeTab: Ref<string>) {
   const selectedListId = ref<number | undefined>(route.query.list ? Number(route.query.list) : undefined)
   const listOptions = computed(() => lists.value.map((list, index) => ({
     id: list.id,
-    label: list.title ? `${list.title} (${list.effectiveDate})` : list.effectiveDate,
+    label: list.title ? `${list.title} (${formatDate(list.effectiveDate)})` : formatDate(list.effectiveDate),
     isLatest: index === 0,
   })))
   const isHistorical = computed(() => {

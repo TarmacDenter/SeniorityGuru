@@ -4,6 +4,7 @@ import type { DateValue } from '@internationalized/date'
 import { useSeniorityUpload } from '~/composables/seniority'
 import { useImportAttempts } from '~/composables/useImportAttempts'
 import { createLogger } from '~/utils/logger'
+import { dateValueToPlainDate, plainDateToDateValue } from '~/utils/date'
 
 const log = createLogger('upload-page')
 
@@ -81,9 +82,9 @@ watch(files, async (next) => {
 })
 
 const effectiveDateModel = computed({
-  get: () => (upload.confirm.effectiveDate.value ?? undefined) as DateValue | undefined,
+  get: () => plainDateToDateValue(upload.confirm.effectiveDate.value),
   set: (value: DateValue | undefined) => {
-    upload.confirm.effectiveDate.value = value ?? null
+    upload.confirm.effectiveDate.value = dateValueToPlainDate(value)
   },
 })
 

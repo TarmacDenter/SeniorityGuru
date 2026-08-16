@@ -1,4 +1,4 @@
-import type { SeniorityEntry } from '~/utils/schemas/seniority-list'
+import type { SeniorityEntry, SeniorityEntryInput } from '~/utils/schemas/seniority-list'
 import { normalizeEmployeeNumber } from '~/utils/schemas/seniority-list'
 import type { SenioritySnapshot, Qual } from './types'
 import { cellKey } from './cell-key'
@@ -12,7 +12,9 @@ export interface SnapshotValidationIssue {
   message: string
 }
 
-function collectDuplicateIssues(entries: readonly Partial<SeniorityEntry>[]): SnapshotValidationIssue[] {
+type EntryIdentity = Pick<SeniorityEntryInput, 'seniority_number' | 'employee_number'>
+
+function collectDuplicateIssues(entries: readonly Partial<EntryIdentity>[]): SnapshotValidationIssue[] {
   const issues: SnapshotValidationIssue[] = []
 
   const senNumToIndices = new Map<number, number[]>()
@@ -80,11 +82,11 @@ function issuesToErrorMap(issues: SnapshotValidationIssue[]): Map<number, string
  * and employee numbers) but collects every violation instead of failing on the first.
  * Used by computeStructuralErrors as the authoritative source for these rules.
  */
-export function validateSnapshotEntries(entries: Partial<SeniorityEntry>[]): Map<number, string[]> {
+export function validateSnapshotEntries(entries: Partial<EntryIdentity>[]): Map<number, string[]> {
   return issuesToErrorMap(collectDuplicateIssues(entries))
 }
 
-export function validateSnapshotEntryIssues(entries: readonly Partial<SeniorityEntry>[]): SnapshotValidationIssue[] {
+export function validateSnapshotEntryIssues(entries: readonly Partial<EntryIdentity>[]): SnapshotValidationIssue[] {
   return collectDuplicateIssues(entries)
 }
 

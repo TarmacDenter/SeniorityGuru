@@ -1,6 +1,5 @@
-import { parseDate } from '@internationalized/date'
-import type { SeniorityEntry } from '~/utils/schemas/seniority-list'
-import { todayISO } from '~/utils/date'
+import type { SeniorityEntryInput } from '~/utils/schemas/seniority-list'
+import { nowInstant, parsePlainDate, serializeInstant, todayPlainDate } from '~/utils/temporal'
 import type { ImportIssue, PreparedSheet, ReviewEditPatch } from '~/utils/import-pipeline/types'
 import type { SeniorityUpload, UploadColumnMap, UploadSession } from './types'
 import { _useProgressTracker } from './_useProgressTracker'
@@ -37,7 +36,7 @@ export function useSeniorityUpload(): SeniorityUpload {
   const preparationIssues = ref<ImportIssue[]>([])
   const columnMap = ref<UploadColumnMap>({ ...DEFAULT_COLUMN_MAP })
   const mappingOptions = ref({ ...DEFAULT_MAPPING_OPTIONS })
-  const entries = ref<Partial<SeniorityEntry>[]>([])
+  const entries = ref<Partial<SeniorityEntryInput>[]>([])
   const rowErrors = shallowRef<Map<number, string[]>>(new Map())
   const pipelineIssues = shallowRef<Map<number, ImportIssue[]>>(new Map())
   const sourceValues = ref<Map<number, Record<string, unknown>>>(new Map())
@@ -92,7 +91,7 @@ export function useSeniorityUpload(): SeniorityUpload {
     onReviewChanged(action, changedEntries) {
       const id = importAttemptId.value
       if (!id) return
-      const at = new Date().toISOString()
+      const at = serializeInstant(nowInstant())
       void importAttemptsStore.updateTrace(id, trace => ({
           ...trace,
           review: {
@@ -114,12 +113,12 @@ export function useSeniorityUpload(): SeniorityUpload {
           ...trace,
           validation: { rowErrors: validationErrors },
           stage: 'review',
-          updatedAt: new Date().toISOString(),
+          updatedAt: serializeInstant(nowInstant()),
         }))
       }
     },
     onMetadataReady(date, title) {
-      confirm.effectiveDate.value = parseDate(date ?? todayISO())
+      confirm.effectiveDate.value = date ? parsePlainDate(date) : todayPlainDate()
       if (title && !confirm.title.value) {
         confirm.title.value = title
       }

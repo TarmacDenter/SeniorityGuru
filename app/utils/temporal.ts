@@ -14,8 +14,7 @@ export function serializePlainDate(value: PlainDate): string {
 }
 
 export function todayPlainDate(): PlainDate {
-  const now = new Date(Date.now())
-  return Temporal.PlainDate.from({ year: now.getFullYear(), month: now.getMonth() + 1, day: now.getDate() })
+  return Temporal.Now.plainDateISO()
 }
 
 export function parseInstant(value: string): Instant {
@@ -36,7 +35,7 @@ export function formatInstantLocal(value: Instant): string {
 }
 
 /** Add local calendar days, preserving the intended local deadline. */
-export function addLocalCalendarDays(value: Instant, days: number): Instant {
-  const zone = Temporal.Now.timeZoneId()
+export function addLocalCalendarDays(value: Instant, days: number, timeZone = Temporal.Now.timeZoneId()): Instant {
+  const zone = timeZone
   return value.toZonedDateTimeISO(zone).add({ days }).toInstant()
 }

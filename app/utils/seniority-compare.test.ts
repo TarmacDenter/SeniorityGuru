@@ -1,10 +1,10 @@
 // @vitest-environment node
 import { describe, it, expect } from 'vitest'
 import { computeComparison } from './seniority-compare'
-import type { SeniorityEntry } from '~/utils/schemas/seniority-list'
+import type { SeniorityEntry, SeniorityEntryInput } from '~/utils/schemas/seniority-list'
 import { makeDomainEntry } from '~/test-utils/factories'
 
-function makeEntry(overrides: Partial<SeniorityEntry> & { employee_number: string; seniority_number: number }): SeniorityEntry {
+function makeEntry(overrides: Partial<SeniorityEntryInput> & { employee_number: string; seniority_number: number }): SeniorityEntry {
   return makeDomainEntry({
     hire_date: '2010-01-01',
     retire_date: '2055-01-01',

@@ -1,18 +1,19 @@
 import type { SeniorityEntry } from '~/utils/schemas/seniority-list'
 import type { QualSpec } from './qual-spec'
+import type { PlainDate } from '~/utils/temporal'
 
 export type { QualSpec }
 
 export type FilterFn = (entry: SeniorityEntry) => boolean
 
 export interface TrajectoryPoint {
-  date: string
+  date: PlainDate
   rank: number
   percentile: number
 }
 
 export interface TrajectoryDelta {
-  date: string
+  date: PlainDate
   percentile: number
   delta: number
   isPeak: boolean
@@ -29,7 +30,7 @@ export interface MostJuniorCARow {
   seat: string
   base: string
   seniorityNumber: number
-  hireDate: string
+  hireDate: PlainDate
   yos: number
 }
 
@@ -131,18 +132,18 @@ export interface GrowthConfig {
 
 export interface PilotAnchor {
   readonly seniorityNumber: number
-  readonly retireDate: string | null
+  readonly retireDate: PlainDate | null
   readonly employeeNumber: string
 }
 
 export interface ScenarioOptions {
-  projectionDate?: string
+  projectionDate: PlainDate
   growthConfig?: GrowthConfig
   scopeFilter?: QualSpec
 }
 
 export interface Scenario {
-  readonly projectionDate: string
+  readonly projectionDate: PlainDate
   readonly growthConfig: GrowthConfig
   readonly scopeFilter: QualSpec
 }
@@ -231,7 +232,7 @@ export interface UpcomingRetirementRow {
   base: string
   seat: string
   fleet: string
-  retireDate: string
+  retireDate: PlainDate
   /** Positive = user is N positions junior to this pilot; null when no anchor. */
   rankRelativeToMe: number | null
 }

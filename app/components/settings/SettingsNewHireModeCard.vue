@@ -1,7 +1,13 @@
 <script setup lang="ts">
 import { useSeniorityCore } from '~/composables/seniority'
+import { formatDate } from '~/utils/date'
+import { parsePlainDate } from '~/utils/temporal'
 const { newHire: newHireMode } = useSeniorityCore()
 const toast = useToast()
+const birthDateModel = computed({
+  get: () => newHireMode.birthDate.value ? formatDate(newHireMode.birthDate.value) : undefined,
+  set: (value: string | undefined) => { newHireMode.birthDate.value = value ? parsePlainDate(value) : null },
+})
 
 function onToggle(value: boolean) {
   newHireMode.enabled.value = value
@@ -84,12 +90,11 @@ defineExpose({ onToggle, onReset })
           />
         </UFormField>
 
-        <UFormField label="Birth Date" name="birthDate" :hint="newHireMode.retireDate.value ? `Retires ${newHireMode.retireDate.value}` : undefined">
+        <UFormField label="Birth Date" name="birthDate" :hint="newHireMode.retireDate.value ? `Retires ${formatDate(newHireMode.retireDate.value)}` : undefined">
           <UInput
-            :model-value="newHireMode.birthDate.value ?? undefined"
+            v-model="birthDateModel"
             type="date"
             class="w-full"
-            @update:model-value="newHireMode.birthDate.value = $event || null"
           />
         </UFormField>
       </div>

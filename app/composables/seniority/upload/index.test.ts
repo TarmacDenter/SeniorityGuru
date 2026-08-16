@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { useSeniorityUpload } from './index'
-import { makePartialEntry, makeDomainEntry } from '~/test-utils/factories'
+import { makePartialEntry } from '~/test-utils/factories'
 
 const mockStore = vi.hoisted(() => ({
   addList: vi.fn(),
@@ -114,7 +114,7 @@ describe('useSeniorityUpload (orchestrator)', () => {
       upload.confirm.title.value = 'Test'
 
       upload.review.entries.value = [
-        makeDomainEntry({ seniority_number: 1, employee_number: 'E001', seat: 'CA', base: 'LAX', fleet: 'B737', hire_date: '2010-01-01', retire_date: '2040-01-01' }),
+        makePartialEntry({ seniority_number: 1, employee_number: 'E001', seat: 'CA', base: 'LAX', fleet: 'B737', hire_date: '2010-01-01', retire_date: '2040-01-01' }),
       ]
 
       const count = await upload.confirm.save(upload.review.toValidatedEntries())

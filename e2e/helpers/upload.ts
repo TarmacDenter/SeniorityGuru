@@ -7,11 +7,13 @@ const FIXTURE = path.join(import.meta.dirname, '../fixtures/sample-seniority-lis
 export async function uploadTestList(page: Page) {
   await page.goto('/seniority/upload')
 
-  await page.getByText('Generic / Other Airline', { exact: true }).click()
+  await page.getByText('Generic spreadsheet', { exact: true }).click()
   await page.locator('input[type="file"]').setInputFiles(FIXTURE)
   await expect(page.getByText('Loaded: sample-seniority-list.csv')).toBeVisible()
 
-  // The fixture headers auto-map, so the wizard proceeds directly to review.
+  // The fixture headers auto-map after the mapping step runs.
+  await page.getByRole('button', { name: 'Next' }).click()
+  await expect(page.getByRole('button', { name: 'Next' })).toBeVisible()
   await page.getByRole('button', { name: 'Next' }).click()
   await expect(page.getByText('15 rows', { exact: true })).toBeVisible()
   await page.getByRole('button', { name: 'Continue to Save' }).click()

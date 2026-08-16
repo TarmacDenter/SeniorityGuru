@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useSeniorityCore } from '~/composables/seniority'
-import { addYearsISO, diffYears, todayISO } from '~/utils/date'
+import { addYearsDate, diffDateYears } from '~/utils/date'
+import { todayPlainDate } from '~/utils/temporal'
 import { DEFAULT_GROWTH_CONFIG, createScenario, type GrowthConfig } from '~/utils/seniority-engine'
 
 defineProps<{ loading?: boolean }>()
@@ -13,7 +14,7 @@ const growthConfig = ref<GrowthConfig>({ ...DEFAULT_GROWTH_CONFIG })
 const usePositionProjection = ref(false)
 const positionYearsInput = ref(1)
 const projectionYears = ref(0)
-const projectionDate = computed(() => addYearsISO(todayISO(), projectionYears.value))
+const projectionDate = computed(() => addYearsDate(todayPlainDate(), projectionYears.value))
 const positionScenario = computed(() => createScenario({
   projectionDate: projectionDate.value,
   growthConfig: growthConfig.value,
@@ -30,7 +31,7 @@ let positionDebounceTimer: ReturnType<typeof setTimeout> | null = null
 const positionSliderMax = computed(() => {
   const retireDate = userEntry.value?.retire_date
   if (!retireDate) return 30
-  const years = Math.ceil(diffYears(todayISO(), retireDate))
+  const years = Math.ceil(diffDateYears(todayPlainDate(), retireDate))
   return Math.max(1, years)
 })
 
