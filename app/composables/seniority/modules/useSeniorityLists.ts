@@ -1,10 +1,12 @@
 import type { LocalSeniorityList } from '~/utils/db'
 import { useSeniorityStore } from '~/stores/seniority'
 
+export type SeniorityListSummary = Pick<LocalSeniorityList, 'id' | 'title' | 'effectiveDate' | 'createdAt' | 'isDemo'>
+
 export function useSeniorityLists() {
   const store = useSeniorityStore()
 
-  const lists = computed(() => store.lists)
+  const lists = computed<SeniorityListSummary[]>(() => store.lists)
   const listsLoading = computed(() => store.listsLoading)
   const listsError = computed(() => store.listsError)
   const entriesLoading = computed(() => store.entriesLoading)

@@ -1,5 +1,6 @@
 export { useSeniorityCore } from './modules/useSeniorityCore'
 export { useSeniorityLists } from './modules/useSeniorityLists'
+export type { SeniorityListSummary } from './modules/useSeniorityLists'
 export type { NewHireControls } from './modules/useSeniorityCore'
 export { useSeniorityUpload } from './upload'
 export type { SeniorityUpload, ProcessingPhase } from './upload'
