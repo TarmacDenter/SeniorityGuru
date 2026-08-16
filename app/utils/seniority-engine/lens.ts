@@ -42,13 +42,22 @@ import {
   computeQualComposition,
   findMostJuniorCA,
 } from '~/utils/qual-analytics'
-import { todayISO, isRetiredBy, retiresWithinNextYear, addYearsISO } from '~/utils/date'
+import { isRetiredBy, retiresWithinNextYear, addYearsISO, todayISO } from '~/utils/date'
+import { Temporal } from '~/utils/temporal'
 
 export function createLens(
   snapshot: SenioritySnapshot,
   anchor?: PilotAnchor,
+  asOfDate?: Temporal.PlainDate | string,
 ): SeniorityLens {
   const resolvedAnchor = anchor ?? null
+  // Resolve once so every calculation in this lens observes the same date.
+  let referenceISO = typeof asOfDate === 'string'
+    ? Temporal.PlainDate.from(asOfDate).toString()
+    : asOfDate?.toString()
+  // Capture the implicit application date on first use. Explicit dates are
+  // captured immediately, and both paths remain immutable for this lens.
+  const referenceDateISO = () => referenceISO ??= todayISO()
   const entries = snapshot.entries
 
   const anchorEntry = resolvedAnchor
@@ -56,14 +65,13 @@ export function createLens(
     : null
 
   function retirementsThisYear(): number {
-    const today = todayISO()
-    return entries.filter(e => !!e.retire_date && retiresWithinNextYear(e.retire_date, today)).length
+    return entries.filter(e => !!e.retire_date && retiresWithinNextYear(e.retire_date, referenceDateISO())).length
   }
 
   function standing(): StandingResult | null {
     if (!resolvedAnchor) return null
     const { seniorityNumber } = resolvedAnchor
-    const todayStr = todayISO()
+    const todayStr = referenceDateISO()
     const total = entries.length
 
     const rank = computeRank(entries, seniorityNumber)
@@ -126,7 +134,7 @@ export function createLens(
   function trajectory(scenario?: Scenario): TrajectoryResult | null {
     if (!resolvedAnchor) return null
     const s = scenario ?? createScenario()
-    const { today, endDate } = getProjectionEndDate(resolvedAnchor.retireDate)
+    const { today, endDate } = getProjectionEndDate(resolvedAnchor.retireDate, referenceDateISO())
     const timePoints = generateTimePoints(today, endDate)
     const points = buildTrajectory(
       entries, resolvedAnchor.seniorityNumber, timePoints,
@@ -161,7 +169,7 @@ export function createLens(
   ): ThresholdResult | null {
     if (!resolvedAnchor) return null
     const s = scenario ?? createScenario()
-    const { today, endDate } = getProjectionEndDate(resolvedAnchor.retireDate)
+    const { today, endDate } = getProjectionEndDate(resolvedAnchor.retireDate, referenceDateISO())
     const timePoints = generateTimePoints(today, endDate)
     const gc = s.growthConfig
 
@@ -226,7 +234,7 @@ export function createLens(
   }
 
   function upcomingRetirements(filter: UpcomingRetirementFilter): UpcomingRetirementRow[] {
-    const todayStr = todayISO()
+    const todayStr = referenceDateISO()
     const cutoff = addYearsISO(todayStr, filter.yearsHorizon)
 
     return entries

@@ -1,14 +1,12 @@
 /**
  * # Date Module — `~/utils/date`
  *
- * Unified, timezone-naive date handling for SeniorityGuru. This is the **sole
- * owner of dayjs** in the codebase — no other file should import dayjs directly.
+ * Unified, timezone-naive date handling for SeniorityGuru.
  *
  * ## Core principle
  *
- * All dates at module boundaries are **`YYYY-MM-DD` strings**. No `Date` objects,
- * no `Dayjs` objects leak out. Internally, dayjs.utc handles all parsing and math
- * so that calendar dates are never shifted by local timezone.
+ * Import and persistence boundaries use **`YYYY-MM-DD` strings**. Domain seams
+ * can use `Temporal.PlainDate` without exposing time-zone behavior.
  *
  * ## Module structure
  *

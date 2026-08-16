@@ -73,8 +73,8 @@ export function computeRank(entries: readonly SeniorityEntry[], userSenNum: numb
   return entries.filter((e) => e.seniority_number < userSenNum).length + 1;
 }
 
-export function getProjectionEndDate(retireDate: string | null): { today: string; endDate: string; } {
-  const today = todayISO();
+export function getProjectionEndDate(retireDate: string | null, asOfDate = todayISO()): { today: string; endDate: string; } {
+  const today = asOfDate;
   const endDate = retireDate ?? addYearsISO(today, 30);
   return { today, endDate };
 }
