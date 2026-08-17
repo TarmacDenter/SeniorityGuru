@@ -1,4 +1,4 @@
-import type { LocalSeniorityList } from '~/utils/db'
+import type { SeniorityList } from '~/utils/db'
 import { useSeniorityStore } from '~/stores/seniority'
 import type { SeniorityEntry } from '~/utils/schemas/seniority-list'
 import { computeComparison, type CompareResult } from '~/utils/seniority-compare'
@@ -12,8 +12,8 @@ export function useSeniorityCompare(listIdA: Ref<number | null | undefined>, lis
 
   const entriesA = ref<SeniorityEntry[]>([])
   const entriesB = ref<SeniorityEntry[]>([])
-  const listMetaA = ref<LocalSeniorityList | null>(null)
-  const listMetaB = ref<LocalSeniorityList | null>(null)
+  const listMetaA = ref<SeniorityList | null>(null)
+  const listMetaB = ref<SeniorityList | null>(null)
 
   async function fetchListData(listId: number) {
     const [entries, meta] = await Promise.all([
@@ -31,7 +31,7 @@ export function useSeniorityCompare(listIdA: Ref<number | null | undefined>, lis
     return computeComparison(
       entriesA.value,
       entriesB.value,
-      listMetaB.value.effectiveDate,
+      listMetaB.value.effectiveDate.toString(),
     )
   })
 

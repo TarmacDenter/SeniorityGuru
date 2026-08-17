@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { describe, it, expect, vi } from 'vitest'
 import { stableStringify, memoizeLast } from './memoize'
+import { Temporal } from '~/utils/temporal'
 
 describe('stableStringify', () => {
   it('produces identical output regardless of key insertion order', () => {
@@ -38,6 +39,12 @@ describe('stableStringify', () => {
     const a = { projectionDate: new Date('2026-01-01'), name: 'x' }
     const b = { projectionDate: new Date('2030-01-01'), name: 'x' }
     expect(stableStringify(a)).not.toBe(stableStringify(b))
+  })
+
+  it('distinguishes PlainDate and Instant values with the same ISO text', () => {
+    const date = Temporal.PlainDate.from('2026-01-01')
+    const instant = Temporal.Instant.from('2026-01-01T00:00:00Z')
+    expect(stableStringify(date)).not.toBe(stableStringify(instant))
   })
 })
 

@@ -30,7 +30,7 @@ ChartJS.register(
 
 const props = defineProps<{
   waveBuckets: { year: number; count: number; isWave: boolean }[]
-  trajectoryPoints: { date: string; rank: number; percentile: number }[]
+  trajectoryPoints: { date: import('~/utils/temporal').PlainDate; rank: number; percentile: number }[]
   selectedQual: string
 }>()
 
@@ -79,7 +79,7 @@ const waveChartOptions = computed<ChartOptions<'bar'>>(() => ({
 } as ChartOptions<'bar'>))
 
 const trajectoryChartData = computed(() => ({
-  labels: props.trajectoryPoints.map((p) => p.date),
+  labels: props.trajectoryPoints.map((p) => p.date.toString()),
   datasets: [
     {
       label: 'Your Percentile',

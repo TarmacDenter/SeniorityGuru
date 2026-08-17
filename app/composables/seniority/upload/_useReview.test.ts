@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { _useReview } from './_useReview'
-import { _useProgressTracker } from './_useProgressTracker'
+import { createUploadSession } from './test-utils'
 import { makePartialEntry } from '~/test-utils/factories'
 
 function createReview() {
@@ -8,17 +8,14 @@ function createReview() {
   const rowErrors = shallowRef<Map<number, string[]>>(new Map())
   const syntheticNote = ref<string | null>(null)
   const syntheticIndices = ref<Set<number>>(new Set())
-  const progress = _useProgressTracker()
-
-  const review = _useReview({
+  const review = _useReview(createUploadSession({
     entries,
     rowErrors,
     pipelineIssues: shallowRef(new Map()),
     sourceValues: ref(new Map()),
     syntheticNote,
     syntheticIndices,
-    progress,
-  })
+  }))
   return { review, entries, rowErrors, syntheticNote, syntheticIndices }
 }
 

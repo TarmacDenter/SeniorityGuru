@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { SeniorityEntry } from '~/utils/schemas/seniority-list'
+import { makeDomainEntry } from '~/test-utils/factories'
 
 // ── Store mocks ────────────────────────────────────────────────────────────
 
@@ -72,8 +73,8 @@ describe('useUser', () => {
     it('returns the matching seniority entry by employee number', async () => {
       mockUserStore.employeeNumber = 'EMP001'
       mockSeniorityEntries.push(
-        { employee_number: 'EMP001', seniority_number: 1, seat: 'CA', base: 'JFK', fleet: '737', hire_date: '2010-01-01', retire_date: '2040-01-01' },
-        { employee_number: 'EMP002', seniority_number: 2, seat: 'FO', base: 'LAX', fleet: '777', hire_date: '2012-01-01', retire_date: '2045-01-01' },
+        makeDomainEntry({ employee_number: 'EMP001', seniority_number: 1, seat: 'CA', base: 'JFK', fleet: '737', hire_date: '2010-01-01', retire_date: '2040-01-01' }),
+        makeDomainEntry({ employee_number: 'EMP002', seniority_number: 2, seat: 'FO', base: 'LAX', fleet: '777', hire_date: '2012-01-01', retire_date: '2045-01-01' }),
       )
       const { useUser } = await import('./useUser')
       const user = useUser()
@@ -82,7 +83,7 @@ describe('useUser', () => {
 
     it('matches employee numbers after normalization', async () => {
       mockUserStore.employeeNumber = '123'
-      mockSeniorityEntries.push({ employee_number: '00123', seniority_number: 1, seat: 'CA', base: 'JFK', fleet: '737', hire_date: '2010-01-01', retire_date: '2040-01-01' })
+      mockSeniorityEntries.push(makeDomainEntry({ employee_number: '00123', seniority_number: 1, seat: 'CA', base: 'JFK', fleet: '737', hire_date: '2010-01-01', retire_date: '2040-01-01' }))
       const { useUser } = await import('./useUser')
       const user = useUser()
       expect(user.entry.value?.employee_number).toBe('00123')
@@ -90,7 +91,7 @@ describe('useUser', () => {
 
     it('returns undefined when employee number has no match in entries', async () => {
       mockUserStore.employeeNumber = 'EMP001'
-      mockSeniorityEntries.push({ employee_number: 'EMP999', seniority_number: 1, seat: 'CA', base: 'JFK', fleet: '737', hire_date: '2010-01-01', retire_date: '2040-01-01' })
+      mockSeniorityEntries.push(makeDomainEntry({ employee_number: 'EMP999', seniority_number: 1, seat: 'CA', base: 'JFK', fleet: '737', hire_date: '2010-01-01', retire_date: '2040-01-01' }))
       const { useUser } = await import('./useUser')
       const user = useUser()
       expect(user.entry.value).toBeUndefined()

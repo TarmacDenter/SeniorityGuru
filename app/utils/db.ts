@@ -1,4 +1,13 @@
 import Dexie from 'dexie'
+import type { Instant, PlainDate } from './temporal'
+
+export interface SeniorityList {
+  id?: number
+  title: string | null
+  effectiveDate: PlainDate
+  createdAt: Instant
+  isDemo?: boolean
+}
 
 export interface LocalSeniorityList {
   id?: number

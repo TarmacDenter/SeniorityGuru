@@ -2,6 +2,7 @@
 import type { TableColumn } from '@nuxt/ui'
 import { useSeniorityCore } from '~/composables/seniority'
 import type { UpcomingRetirementRow } from '~/utils/seniority-engine'
+import { Temporal } from '~/utils/temporal'
 
 const { lens, hasData, entries } = useSeniorityCore()
 const { employeeNumber } = useUser()
@@ -70,7 +71,7 @@ const rows = computed((): UpcomingRetirementRow[] => {
 
   return [...raw].sort((a, b) => {
     let cmp = 0
-    if (sortKey.value === 'retireDate') cmp = a.retireDate.localeCompare(b.retireDate)
+    if (sortKey.value === 'retireDate') cmp = Temporal.PlainDate.compare(a.retireDate, b.retireDate)
     else if (sortKey.value === 'seniorityNumber') cmp = a.seniorityNumber - b.seniorityNumber
     else if (sortKey.value === 'rankRelativeToMe') cmp = ((a.rankRelativeToMe ?? 0) - (b.rankRelativeToMe ?? 0))
     return sortDir.value === 'asc' ? cmp : -cmp

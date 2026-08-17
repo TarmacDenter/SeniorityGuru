@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useImportAttempts } from '~/composables/useImportAttempts'
+import { formatInstantLocal } from '~/utils/temporal'
 
 const attempts = useImportAttempts()
 onMounted(() => attempts.load())
@@ -24,7 +25,7 @@ function download(attempt: { id: string, pluginId: string }) {
       <p v-if="attempts.attempts.value.length === 0" class="text-sm text-muted">No import diagnostics are stored.</p>
       <div v-for="attempt in attempts.attempts.value" :key="attempt.id" class="flex items-center justify-between gap-3">
         <span class="text-sm">
-          {{ attempt.pluginId }} · {{ attempt.sheetName ?? 'Unknown sheet' }} · {{ new Date(attempt.createdAt).toLocaleString() }}
+          {{ attempt.pluginId }} · {{ attempt.sheetName ?? 'Unknown sheet' }} · {{ formatInstantLocal(attempt.createdAt) }}
           <span class="text-muted">· {{ attempt.outcome }}</span>
           <span v-if="attempt.listId" class="text-muted">· saved list #{{ attempt.listId }}</span>
         </span>

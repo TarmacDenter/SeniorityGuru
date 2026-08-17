@@ -1,3 +1,5 @@
+import { nowInstant, serializeInstant } from './temporal'
+
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error'
 
 export interface LogEntry {
@@ -56,7 +58,7 @@ export function createLogger(scope: string): Logger {
       scope,
       message,
       data,
-      timestamp: new Date().toISOString(),
+      timestamp: serializeInstant(nowInstant()),
     })
   }
 

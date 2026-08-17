@@ -2,12 +2,13 @@ import { deferredInstallPrompt, sharedShowIosModal } from '~/utils/pwa-prompt'
 import { isStandaloneMode } from '~/utils/pwa-standalone'
 import { useUserStore } from '~/stores/user'
 import { createLogger } from '~/utils/logger'
+import { addLocalCalendarDays, nowInstant, parseInstant, serializeInstant, Temporal, type Instant } from '~/utils/temporal'
 
 export function usePwaInstall() {
   const log = createLogger('pwa-install')
   const userStore = useUserStore()
   const dismissed = ref(false)
-  const snoozedUntil = ref<Date | null>(null)
+  const snoozedUntil = shallowRef<Instant | null>(null)
 
   const isIos = import.meta.client
     ? /iphone|ipad|ipod/i.test(navigator.userAgent)
@@ -18,7 +19,7 @@ export function usePwaInstall() {
   const showBanner = computed(() => {
     if (standalone) return false
     if (dismissed.value) return false
-    if (snoozedUntil.value && new Date() < snoozedUntil.value) return false
+    if (snoozedUntil.value && Temporal.Instant.compare(nowInstant(), snoozedUntil.value) < 0) return false
     if (import.meta.dev) return true
     return !!deferredInstallPrompt.value || isIos
   })
@@ -30,7 +31,7 @@ export function usePwaInstall() {
     ])
 
     dismissed.value = dismissedVal ?? false
-    snoozedUntil.value = snoozeVal ? new Date(snoozeVal) : null
+    snoozedUntil.value = snoozeVal ? parseInstant(snoozeVal) : null
   })
 
   async function install() {
@@ -52,11 +53,10 @@ export function usePwaInstall() {
   }
 
   async function snooze() {
-    const until = new Date()
-    until.setDate(until.getDate() + 7)
-    await userStore.savePreference('pwa-snoozed-until', until.toISOString())
+    const until = addLocalCalendarDays(nowInstant(), 7)
+    await userStore.savePreference('pwa-snoozed-until', serializeInstant(until))
     snoozedUntil.value = until
-    log.info('PWA banner snoozed', { until: until.toISOString() })
+    log.info('PWA banner snoozed', { until: serializeInstant(until) })
   }
 
   async function dismiss() {

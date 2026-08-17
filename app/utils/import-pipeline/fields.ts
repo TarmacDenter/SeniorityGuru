@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { normalizeDate, normalizeDateFuture } from '../date'
 import { normalizeEmployeeNumber, SeniorityEntrySchema } from '../schemas/seniority-list'
-import type { SeniorityEntry } from '../schemas/seniority-list'
+import type { SeniorityEntryInput } from '../schemas/seniority-list'
 
 /** Canonical fields accepted by every import plugin and the seniority boundary. */
 export const IMPORT_FIELDS = [
@@ -76,7 +76,7 @@ export function hasRequiredColumnMappings(
 }
 
 /** Converts and normalizes every persisted field at the shared pipeline boundary. */
-export function normalizeMappedEntry(values: Readonly<Record<ImportField, string | undefined>>): Partial<SeniorityEntry> {
+export function normalizeMappedEntry(values: Readonly<Record<ImportField, string | undefined>>): Partial<SeniorityEntryInput> {
   return {
     seniority_number: values.seniority_number === undefined ? undefined : Number.parseInt(values.seniority_number, 10),
     employee_number: values.employee_number === undefined ? undefined : normalizeEmployeeNumber(values.employee_number),
@@ -90,6 +90,6 @@ export function normalizeMappedEntry(values: Readonly<Record<ImportField, string
 }
 
 /** Validates a normalized draft using the domain schema owned by this registry. */
-export function validateImportEntry(entry: Partial<SeniorityEntry>) {
+export function validateImportEntry(entry: Partial<SeniorityEntryInput>) {
   return SeniorityEntrySchema.safeParse(entry)
 }

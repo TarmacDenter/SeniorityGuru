@@ -1,5 +1,5 @@
 import type { ComputedRef } from 'vue'
-import { formatNumber, type TrajectoryPoint } from '~/utils/seniority-engine'
+import { formatNumber } from '~/utils/seniority-engine'
 import { useSeniorityStore } from '~/stores/seniority'
 import { useSeniorityCore } from './useSeniorityCore'
 
@@ -35,8 +35,8 @@ export interface StatCard {
 }
 
 export interface RetirementSnapshotData {
-  atRetirement: TrajectoryPoint
-  fullTrajectory: TrajectoryPoint[]
+  atRetirement: { date: string; rank: number; percentile: number }
+  fullTrajectory: { date: string; rank: number; percentile: number }[]
   retireDate: string
 }
 
@@ -72,7 +72,7 @@ export function useStanding(): {
       base: entry.base ?? '--',
       seat: entry.seat ?? '--',
       fleet: entry.fleet ?? '--',
-      hireDate: entry.hire_date,
+      hireDate: entry.hire_date.toString(),
     }
   })
 
@@ -146,9 +146,9 @@ export function useStanding(): {
     const traj = trajectoryResult.value
     if (!entry?.retire_date || !traj || traj.points.length === 0) return null
     return {
-      atRetirement: traj.points[traj.points.length - 1]!,
-      fullTrajectory: traj.points,
-      retireDate: entry.retire_date,
+      atRetirement: { ...traj.points[traj.points.length - 1]!, date: traj.points[traj.points.length - 1]!.date.toString() },
+      fullTrajectory: traj.points.map(point => ({ ...point, date: point.date.toString() })),
+      retireDate: entry.retire_date.toString(),
     }
   })
 

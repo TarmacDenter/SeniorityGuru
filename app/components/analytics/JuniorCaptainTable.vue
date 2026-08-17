@@ -1,18 +1,20 @@
 <script setup lang="ts">
 import { h } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
+import { formatDate } from '~/utils/date'
+import type { PlainDate } from '~/utils/temporal'
 
 interface TableRow {
   qualKey: string
   base: string | null
   seniorityNumber: number
-  hireDate: string
+  hireDate: PlainDate
   yos: number
   isHoldable: boolean
 }
 
 const props = defineProps<{
-  rows: { qualKey: string; fleet: string; seat: string; base: string | null; seniorityNumber: number; hireDate: string; yos: number }[]
+  rows: { qualKey: string; fleet: string; seat: string; base: string | null; seniorityNumber: number; hireDate: PlainDate; yos: number }[]
   userSeniorityNumber: number | undefined
 }>()
 
@@ -41,7 +43,7 @@ const columns: TableColumn<TableRow>[] = [
       ]),
   },
   { accessorKey: 'seniorityNumber', header: 'Sen #' },
-  { accessorKey: 'hireDate', header: 'Hire Date' },
+  { accessorKey: 'hireDate', header: 'Hire Date', cell: ({ row }) => formatDate(row.original.hireDate) },
   {
     accessorKey: 'yos',
     header: 'YOS',

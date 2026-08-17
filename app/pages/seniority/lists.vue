@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import type { TableColumn, DropdownMenuItem } from '@nuxt/ui'
-import type { LocalSeniorityList } from '~/utils/db'
 import { sortableHeader } from '~/utils/sortableHeader'
-import { useSeniorityLists } from '~/composables/seniority'
+import { useSeniorityLists, type SeniorityListSummary } from '~/composables/seniority'
 import { createLogger } from '~/utils/logger'
+import { formatDate } from '~/utils/date'
+import { formatInstantLocal, parsePlainDate } from '~/utils/temporal'
 
 const log = createLogger('lists-page')
 
@@ -11,7 +12,7 @@ definePageMeta({
   layout: 'dashboard',
 })
 
-type SeniorityList = LocalSeniorityList
+type SeniorityList = SeniorityListSummary
 
 const { lists, listsLoading, listsError, fetchLists, deleteList: storeDeleteList, updateList: storeUpdateList } = useSeniorityLists()
 const toast = useToast()
@@ -36,75 +37,70 @@ const columns: TableColumn<SeniorityList>[] = [
   {
     accessorKey: 'createdAt',
     header: sortableHeader<SeniorityList>('Uploaded'),
-    cell: ({ row }) => new Date(row.original.createdAt).toLocaleDateString(),
+    cell: ({ row }) => formatInstantLocal(row.original.createdAt),
   },
   { id: 'actions', header: '' },
 ]
 
-// --- Edit ---
-const editOpen = ref(false)
-const saving = ref(false)
-const editListId = ref<number | null>(null)
-const editState = reactive({
-  title: '',
-  effectiveDate: '',
-})
+function useListManagement() {
+  const editOpen = ref(false)
+  const saving = ref(false)
+  const editListId = ref<number | null>(null)
+  const editState = reactive({ title: '', effectiveDate: '' })
+  const deleteOpen = ref(false)
+  const deleting = ref<number | null>(null)
+  const deleteTarget = ref<SeniorityList | null>(null)
 
-function openEdit(list: SeniorityList) {
-  editListId.value = list.id ?? null
-  editState.title = list.title ?? ''
-  editState.effectiveDate = list.effectiveDate
-  editOpen.value = true
+  function openEdit(list: SeniorityList) {
+    editListId.value = list.id ?? null
+    editState.title = list.title ?? ''
+    editState.effectiveDate = formatDate(list.effectiveDate)
+    editOpen.value = true
+  }
+
+  async function saveEdit() {
+    if (!editListId.value) return
+    saving.value = true
+    try {
+      await storeUpdateList(editListId.value, { ...(editState.title && { title: editState.title }), effectiveDate: parsePlainDate(editState.effectiveDate) })
+      toast.add({ title: 'List updated', color: 'success' })
+      editOpen.value = false
+    }
+    catch (error: unknown) {
+      log.error('Failed to update list', { listId: editListId.value, error: String(error) })
+      toast.add({ title: 'Failed to update list', color: 'error' })
+    }
+    finally {
+      saving.value = false
+    }
+  }
+
+  function confirmDelete(list: SeniorityList) {
+    deleteTarget.value = list
+    deleteOpen.value = true
+  }
+
+  async function doDelete() {
+    if (!deleteTarget.value?.id) return
+    deleting.value = deleteTarget.value.id
+    try {
+      await storeDeleteList(deleteTarget.value.id)
+      toast.add({ title: 'List deleted', color: 'success' })
+      deleteOpen.value = false
+    }
+    catch (error: unknown) {
+      log.error('Failed to delete list', { listId: deleteTarget.value?.id, error: String(error) })
+      toast.add({ title: 'Failed to delete list', color: 'error' })
+    }
+    finally {
+      deleting.value = null
+    }
+  }
+
+  return { editOpen, saving, editState, deleteOpen, deleting, deleteTarget, openEdit, saveEdit, confirmDelete, doDelete }
 }
 
-async function saveEdit() {
-  if (!editListId.value) return
-
-  saving.value = true
-  try {
-    await storeUpdateList(editListId.value, {
-      ...(editState.title && { title: editState.title }),
-      effectiveDate: editState.effectiveDate,
-    })
-    toast.add({ title: 'List updated', color: 'success' })
-    editOpen.value = false
-  }
-  catch (e: unknown) {
-    log.error('Failed to update list', { listId: editListId.value, error: String(e) })
-    toast.add({ title: 'Failed to update list', color: 'error' })
-  }
-  finally {
-    saving.value = false
-  }
-}
-
-// --- Delete ---
-const deleteOpen = ref(false)
-const deleting = ref<number | null>(null)
-const deleteTarget = ref<SeniorityList | null>(null)
-
-function confirmDelete(list: SeniorityList) {
-  deleteTarget.value = list
-  deleteOpen.value = true
-}
-
-async function doDelete() {
-  if (!deleteTarget.value?.id) return
-
-  deleting.value = deleteTarget.value.id
-  try {
-    await storeDeleteList(deleteTarget.value.id)
-    toast.add({ title: 'List deleted', color: 'success' })
-    deleteOpen.value = false
-  }
-  catch (e: unknown) {
-    log.error('Failed to delete list', { listId: deleteTarget.value?.id, error: String(e) })
-    toast.add({ title: 'Failed to delete list', color: 'error' })
-  }
-  finally {
-    deleting.value = null
-  }
-}
+const { editOpen, saving, editState, deleteOpen, deleting, deleteTarget, openEdit, saveEdit, confirmDelete, doDelete } = useListManagement()
 
 // --- Dropdown ---
 function getDropdownItems(list: SeniorityList): DropdownMenuItem[][] {
@@ -133,7 +129,7 @@ const filteredLists = computed(() => {
   const q = globalFilter.value.trim().toLowerCase()
   if (!q) return lists.value
   return lists.value.filter(l =>
-    (l.title ?? '').toLowerCase().includes(q) || l.effectiveDate.toLowerCase().includes(q),
+    (l.title ?? '').toLowerCase().includes(q) || formatDate(l.effectiveDate).toLowerCase().includes(q),
   )
 })
 
@@ -168,8 +164,8 @@ onMounted(async () => {
         <div class="sm:hidden divide-y divide-(--ui-border) border border-(--ui-border) rounded-lg">
           <div v-for="list in filteredLists" :key="list.id" class="flex items-center gap-3 px-4 py-3">
             <div class="flex-1 min-w-0">
-              <p class="font-medium truncate">{{ list.title || list.effectiveDate }}</p>
-              <p class="text-sm text-muted">{{ list.effectiveDate }}</p>
+              <p class="font-medium truncate">{{ list.title || formatDate(list.effectiveDate) }}</p>
+              <p class="text-sm text-muted">{{ formatDate(list.effectiveDate) }}</p>
             </div>
             <UDropdownMenu :items="getDropdownItems(list)">
               <UButton icon="i-lucide-ellipsis" variant="ghost" size="sm" />
@@ -256,7 +252,7 @@ onMounted(async () => {
           <template #body>
             <p class="text-sm text-muted mb-4">
               Are you sure you want to delete the list
-              <strong>{{ deleteTarget?.effectiveDate }}</strong>?
+              <strong>{{ deleteTarget ? formatDate(deleteTarget.effectiveDate) : '' }}</strong>?
               All entries in this list will be permanently removed.
             </p>
             <div class="flex justify-end gap-2">

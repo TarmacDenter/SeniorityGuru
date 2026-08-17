@@ -1,6 +1,9 @@
 // @vitest-environment node
 import { describe, it, expect } from 'vitest'
 import { diffYears, deriveAge, computeYOS, computeRetireDate, isRetiredBy, extractYear, addYearsISO, retiresInYear, currentYear } from '.'
+import { parsePlainDate } from '~/utils/temporal'
+
+const AS_OF = parsePlainDate('2026-06-15')
 
 describe('diffYears', () => {
   it('computes fractional years between two ISO dates', () => {
@@ -19,20 +22,14 @@ describe('diffYears', () => {
 
 describe('deriveAge', () => {
   it('back-calculates age from retirement date', () => {
-    const tenYearsFromNow = new Date()
-    tenYearsFromNow.setFullYear(tenYearsFromNow.getFullYear() + 10)
-    const retireDate = tenYearsFromNow.toISOString().slice(0, 10)
-    const age = deriveAge(retireDate, 65)
+    const age = deriveAge('2036-06-15', 65, AS_OF)
     expect(age).toBeCloseTo(55, 0)
   })
 })
 
 describe('computeYOS', () => {
   it('computes years of service', () => {
-    const fiveYearsAgo = new Date()
-    fiveYearsAgo.setFullYear(fiveYearsAgo.getFullYear() - 5)
-    const hireDate = fiveYearsAgo.toISOString().slice(0, 10)
-    const yos = computeYOS(hireDate)
+    const yos = computeYOS('2021-06-15', AS_OF)
     expect(yos).toBeCloseTo(5, 0)
   })
 })
@@ -90,8 +87,6 @@ describe('retiresInYear', () => {
 
 describe('currentYear', () => {
   it('returns the current four-digit year', () => {
-    const year = currentYear()
-    expect(year).toBeGreaterThanOrEqual(2026)
-    expect(year).toBeLessThan(2100)
+    expect(currentYear(AS_OF)).toBe(2026)
   })
 })

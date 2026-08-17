@@ -1,4 +1,4 @@
-import type { SeniorityEntry } from '~/utils/schemas/seniority-list'
+import { toDomainSeniorityEntry, type SeniorityEntry, type SeniorityEntryInput } from '~/utils/schemas/seniority-list'
 import type { LocalSeniorityList } from '~/utils/db'
 
 // Auto-increments so that multiple makeEntry() calls in the same test produce
@@ -6,9 +6,9 @@ import type { LocalSeniorityList } from '~/utils/db'
 // think about it. Resets naturally per test file (each file is its own module).
 let _seq = 0
 
-export function makeEntry(overrides: Partial<SeniorityEntry> = {}): SeniorityEntry {
+export function makeEntry(overrides: Partial<SeniorityEntryInput> = {}): SeniorityEntry {
   const seq = ++_seq
-  return {
+  return toDomainSeniorityEntry({
     seniority_number: seq,
     employee_number: String(seq * 1000),
     name: 'Test Pilot',
@@ -18,12 +18,12 @@ export function makeEntry(overrides: Partial<SeniorityEntry> = {}): SeniorityEnt
     fleet: '737',
     retire_date: '2035-06-15',
     ...overrides,
-  }
+  })
 }
 
 /** Domain-level entry factory with fixed defaults — use when seniority_number/employee_number are always explicitly overridden. */
-export function makeDomainEntry(overrides: Partial<SeniorityEntry> = {}): SeniorityEntry {
-  return {
+export function makeDomainEntry(overrides: Partial<SeniorityEntryInput> = {}): SeniorityEntry {
+  return toDomainSeniorityEntry({
     seniority_number: 1,
     employee_number: '100',
     name: 'Test Pilot',
@@ -33,7 +33,7 @@ export function makeDomainEntry(overrides: Partial<SeniorityEntry> = {}): Senior
     fleet: '737',
     retire_date: '2035-06-15',
     ...overrides,
-  }
+  })
 }
 
 export function makeList(overrides: Partial<LocalSeniorityList> = {}): LocalSeniorityList {
@@ -46,7 +46,7 @@ export function makeList(overrides: Partial<LocalSeniorityList> = {}): LocalSeni
   }
 }
 
-export function makePartialEntry(overrides: Partial<SeniorityEntry> = {}): Partial<SeniorityEntry> {
+export function makePartialEntry(overrides: Partial<SeniorityEntryInput> = {}): Partial<SeniorityEntryInput> {
   return {
     seniority_number: 1,
     employee_number: '100',

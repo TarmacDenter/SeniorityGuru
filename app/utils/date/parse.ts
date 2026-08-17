@@ -1,18 +1,14 @@
-import dayjs from 'dayjs'
-import utc from 'dayjs/plugin/utc'
-import customParseFormat from 'dayjs/plugin/customParseFormat'
-import { ISO_DATE_REGEX, EXCEL_EPOCH_MS, NAMED_MONTH_FORMATS } from './constants'
+import { Temporal } from '~/utils/temporal'
+import { ISO_DATE_REGEX, NAMED_MONTH_FORMATS } from './constants'
 import { isValidCalendarDate } from './validate'
-
-dayjs.extend(utc)
-dayjs.extend(customParseFormat)
 
 /** Parse an Excel serial number (e.g. 40193) into YYYY-MM-DD. */
 export function parseExcelSerial(serial: number): string | null {
-  const ms = EXCEL_EPOCH_MS + serial * 86400000
-  const d = dayjs.utc(ms)
-  if (!d.isValid()) return null
-  return d.format('YYYY-MM-DD')
+  try {
+    return Temporal.PlainDate.from('1899-12-30').add({ days: serial }).toString()
+  } catch {
+    return null
+  }
 }
 
 /** Assumes US date order (month/day/year) for ambiguous inputs. */
@@ -91,9 +87,9 @@ function _normalizeDate(s: string, slashParser: (s: string) => string | null): s
   const compactMatch = s.match(/^(\d{1,2})([A-Za-z]{3})(\d{4})$/)
   if (compactMatch) {
     const titleCase = `${compactMatch[1]}${compactMatch[2]![0]!.toUpperCase()}${compactMatch[2]!.slice(1).toLowerCase()}${compactMatch[3]}`
-    const fmt = compactMatch[1]!.length === 2 ? 'DDMMMYYYY' : 'DMMMYYYY'
-    const d = dayjs.utc(titleCase, fmt, true)
-    if (d.isValid()) return d.format('YYYY-MM-DD')
+    const [, day, month, year] = titleCase.match(/^(\d{1,2})([A-Z][a-z]{2})(\d{4})$/) ?? []
+    const parsed = parseNamedMonth(day, month, year)
+    if (parsed) return parsed
   }
 
   // Named months ("15 Jan 2010", "Jan 15, 2010", etc.)
@@ -102,12 +98,37 @@ function _normalizeDate(s: string, slashParser: (s: string) => string | null): s
       w.charAt(0).toUpperCase() + w.slice(1).toLowerCase(),
     )
     for (const fmt of NAMED_MONTH_FORMATS) {
-      const d = dayjs.utc(normalized, fmt, true)
-      if (d.isValid()) return d.format('YYYY-MM-DD')
+      const parsed = parseNamedMonthText(normalized, fmt)
+      if (parsed) return parsed
     }
   }
 
   return s
+}
+
+const MONTHS = new Map(['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].map((month, index) => [month, index + 1]))
+
+function parseNamedMonth(day: string | undefined, month: string | undefined, year: string | undefined): string | null {
+  if (!day || !month || !year) return null
+  const monthNumber = MONTHS.get(month)
+  const dayNumber = Number(day)
+  const yearNumber = Number(year)
+  if (!monthNumber || !isValidCalendarDate(yearNumber, monthNumber, dayNumber)) return null
+  return `${year}-${String(monthNumber).padStart(2, '0')}-${String(dayNumber).padStart(2, '0')}`
+}
+
+function parseNamedMonthText(value: string, format: string): string | null {
+  const match = format === 'D MMM YYYY' ? value.match(/^(\d{1,2}) ([A-Z][a-z]{2}) (\d{4})$/)
+    : format === 'MMM D, YYYY' || format === 'MMMM D, YYYY'
+      ? value.match(/^([A-Z][a-z]+) (\d{1,2}), (\d{4})$/)
+      : value.match(/^(\d{1,2}) ([A-Z][a-z]+) (\d{4})$/)
+  if (!match) return null
+  const [, first, second, third] = match
+  const month = MONTHS.get(first!) ?? MONTHS.get(first!.slice(0, 3))
+  const monthName = month ? first!.slice(0, 3) : second
+  const day = month ? second : first
+  const year = third
+  return parseNamedMonth(day, monthName, year)
 }
 
 /**
@@ -178,16 +199,14 @@ const DATE_PARSERS: DateParser[] = [
       const m = s.match(/^(\d{1,2})([A-Za-z]{3})(\d{4})$/)
       if (!m) return null
       const titleCase = `${m[1]}${m[2]![0]!.toUpperCase()}${m[2]!.slice(1).toLowerCase()}${m[3]}`
-      const fmt = m[1]!.length === 2 ? 'DDMMMYYYY' : 'DMMMYYYY'
-      const d = dayjs.utc(titleCase, fmt, true)
-      return d.isValid() ? d.format('YYYY-MM-DD') : null
+      const [, day, month, year] = titleCase.match(/^(\d{1,2})([A-Z][a-z]{2})(\d{4})$/) ?? []
+      return parseNamedMonth(day, month, year)
     },
   },
   ...NAMED_MONTH_FORMATS.map(fmt => ({
     name: `named month (${fmt})`,
     parse: (s: string) => {
-      const d = dayjs.utc(s, fmt, true)
-      return d.isValid() ? d.format('YYYY-MM-DD') : null
+      return parseNamedMonthText(s, fmt)
     },
   })),
 ]

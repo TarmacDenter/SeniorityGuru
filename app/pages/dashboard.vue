@@ -1,106 +1,79 @@
 <script setup lang="ts">
-import { useSeniorityCore, useStanding, useSeniorityLists } from '~/composables/seniority';
-import { useDashboardTabs } from '~/composables/useDashboardTabs';
-import { useDemoBanner } from '~/composables/useDemoBanner';
-import { DEFAULT_TAB } from '~/utils/dashboard-tabs';
+import type { Ref } from 'vue'
+import { useSeniorityCore, useStanding, useSeniorityLists } from '~/composables/seniority'
+import { useDashboardTabs } from '~/composables/useDashboardTabs'
+import { useDemoBanner } from '~/composables/useDemoBanner'
+import { DEFAULT_TAB } from '~/utils/dashboard-tabs'
+import { formatDate } from '~/utils/date'
 
-definePageMeta({
-  layout: 'dashboard',
-});
+definePageMeta({ layout: 'dashboard' })
 
-const route = useRoute();
+function useDashboardListSelection(activeTab: Ref<string>) {
+  const route = useRoute()
+  const { lists, fetchLists, fetchEntries } = useSeniorityLists()
+  const { loadPreferences } = useUser()
+  const loading = ref(true)
+  const initializing = ref(true)
+  const selectedListId = ref<number | undefined>(route.query.list ? Number(route.query.list) : undefined)
+  const listOptions = computed(() => lists.value.map((list, index) => ({
+    id: list.id,
+    label: list.title ? `${list.title} (${formatDate(list.effectiveDate)})` : formatDate(list.effectiveDate),
+    isLatest: index === 0,
+  })))
+  const isHistorical = computed(() => {
+    if (!selectedListId.value || listOptions.value.length === 0) return false
+    return selectedListId.value !== listOptions.value[0]?.id
+  })
+  const selectedList = computed(() => lists.value.find(list => list.id === selectedListId.value))
+  const navbarDescription = computed(() => {
+    const list = selectedList.value
+    return list ? `${list.title || 'Seniority List'} · effective ${list.effectiveDate}` : undefined
+  })
 
-const { activeTab, tabs } = useDashboardTabs();
+  async function syncRoute() {
+    const query: Record<string, string> = {}
+    if (activeTab.value !== DEFAULT_TAB) query.tab = activeTab.value
+    if (selectedListId.value) query.list = String(selectedListId.value)
+    await navigateTo({ path: '/dashboard', query }, { replace: true })
+  }
 
-watch(activeTab, (tab) => {
-  const query: Record<string, string> = {};
-  if (tab !== DEFAULT_TAB) query.tab = tab;
-  if (selectedListId.value) query.list = String(selectedListId.value);
-  navigateTo({ path: '/dashboard', query }, { replace: true });
-});
+  watch(activeTab, () => { void syncRoute() })
+  watch(selectedListId, async (id, previousId) => {
+    if (initializing.value || !id || !previousId) return
+    loading.value = true
+    await fetchEntries(id)
+    await syncRoute()
+    loading.value = false
+  })
 
-const { lists, fetchLists, fetchEntries } = useSeniorityLists();
-const { employeeNumber, loadPreferences } = useUser();
-const loading = ref(true);
-const initializing = ref(true);
+  onMounted(async () => {
+    await loadPreferences()
+    await fetchLists()
+    if (!selectedListId.value || !lists.value.some(list => list.id === selectedListId.value)) {
+      selectedListId.value = lists.value[0]?.id ?? undefined
+    }
+    if (selectedListId.value) await fetchEntries(selectedListId.value)
+    initializing.value = false
+    loading.value = false
+  })
 
-// Initialize synchronously from the URL so the watcher never sees this as a
-// "change" — the watcher is lazy by default and won't fire on the initial value.
-const selectedListId = ref<number | undefined>(
-  route.query.list ? Number(route.query.list) : undefined,
-);
+  return { lists, selectedListId, listOptions, isHistorical, selectedList, navbarDescription, loading }
+}
 
-const listOptions = computed(() =>
-  lists.value.map((l, i) => ({
-    id: l.id,
-    label: l.title ? `${l.title} (${l.effectiveDate})` : l.effectiveDate,
-    isLatest: i === 0,
-  })),
-);
-
-const isHistorical = computed(() => {
-  if (!selectedListId.value || listOptions.value.length === 0) return false;
-  return selectedListId.value !== listOptions.value[0]?.id;
-});
-
-const selectedList = computed(() =>
-  lists.value.find(l => l.id === selectedListId.value),
-);
-
-const navbarDescription = computed(() => {
-  const list = selectedList.value;
-  if (!list) return undefined;
-  const base = list.title ? `${list.title}` : 'Seniority List';
-  return `${base} · effective ${list.effectiveDate}`;
-});
-
-const { showBadge: showDemoBadge } = useDemoBanner();
-const { hasData, hasAnchor: userFound, isNewHireMode, newHire, lens } = useSeniorityCore();
-const hasEmployeeNumber = computed(() => !!employeeNumber.value || !!newHire.syntheticEntry.value);
-const { rankCard, statCards: stats, retirementSnapshot, baseStatus: baseStatusData } = useStanding();
-const trajectoryResult = computed(() => lens.value?.trajectory() ?? null);
-const trajectoryChartData = computed(() =>
-  trajectoryResult.value?.chartData ?? { labels: [] as string[], data: [] as number[] },
-);
-const trajectoryDeltas = computed(() => trajectoryResult.value?.deltas ?? []);
-
-// Full-bleed tabs manage their own padding (toolbars/growth bars go edge-to-edge)
-const fullBleedTabs = new Set(['position', 'trajectory', 'seniority']);
+const { activeTab, tabs } = useDashboardTabs()
+const { lists, selectedListId, listOptions, isHistorical, selectedList, navbarDescription, loading } = useDashboardListSelection(activeTab)
+const { employeeNumber } = useUser()
+const { showBadge: showDemoBadge } = useDemoBanner()
+const { hasData, hasAnchor: userFound, isNewHireMode, newHire, lens } = useSeniorityCore()
+const hasEmployeeNumber = computed(() => !!employeeNumber.value || !!newHire.syntheticEntry.value)
+const { rankCard, statCards: stats, retirementSnapshot, baseStatus: baseStatusData } = useStanding()
+const trajectoryResult = computed(() => lens.value?.trajectory() ?? null)
+const trajectoryChartData = computed(() => trajectoryResult.value?.chartData ?? { labels: [] as string[], data: [] as number[] })
+const trajectoryDeltas = computed(() => trajectoryResult.value?.deltas ?? [])
+const fullBleedTabs = new Set(['position', 'trajectory', 'seniority'])
 const panelUi = computed(() => ({
-  body: fullBleedTabs.has(activeTab.value)
-    ? 'flex flex-col flex-1 sm:overflow-y-auto p-0'
-    : undefined,
-}));
-
-// Watcher fires ONLY for user-initiated dropdown changes after mount.
-// initializing guard prevents spurious fetches during the mount stale-ID fallback.
-watch(selectedListId, async (id, oldId) => {
-  if (initializing.value || !id || !oldId) return;
-  loading.value = true;
-  await fetchEntries(id);
-  const query: Record<string, string> = { list: String(id) };
-  if (activeTab.value !== DEFAULT_TAB) query.tab = activeTab.value;
-  await navigateTo({ path: '/dashboard', query }, { replace: true });
-  loading.value = false;
-});
-
-onMounted(async () => {
-  await loadPreferences();
-  await fetchLists();
-
-  // Route query may contain a stale list id (deleted or from old session).
-  // Fall back to the newest available list in that case.
-  if (!selectedListId.value || !lists.value.some(l => l.id === selectedListId.value)) {
-    selectedListId.value = lists.value[0]?.id ?? undefined;
-  }
-
-  if (selectedListId.value) {
-    await fetchEntries(selectedListId.value);
-  }
-
-  initializing.value = false;
-  loading.value = false;
-});
+  body: fullBleedTabs.has(activeTab.value) ? 'flex flex-col flex-1 sm:overflow-y-auto p-0' : undefined,
+}))
 </script>
 
 <template>

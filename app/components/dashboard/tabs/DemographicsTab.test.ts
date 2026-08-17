@@ -30,7 +30,7 @@ mockNuxtImport('useSeniorityCore', () => () => ({
   isNewHireMode: { value: false },
 }))
 
-mockNuxtImport('useQualAnalytics', () => () => ({
+mockNuxtImport('useQualFilter', () => () => ({
   selectedFleet: { value: null },
   selectedSeat: { value: null },
   selectedBase: { value: null },
@@ -39,22 +39,10 @@ mockNuxtImport('useQualAnalytics', () => () => ({
   availableBases: { value: [] },
   qualSpec: { value: {} },
   qualLabel: { value: '' },
-  isBannerDismissed: { value: false },
-  mostJuniorCAs: { value: [] },
-  qualComposition: { value: [] },
-  ageDistribution: { value: { buckets: [], nullCount: 0 } },
-  yosDistribution: { value: { mean: 0, median: 0, p25: 0, p75: 0 } },
-  yosHistogram: { value: [] },
-  userEntry: { value: undefined },
-  dismissBanner: vi.fn(),
-  thresholdResult: { value: null },
-  targetPercentile: { value: 50 },
-  retirementWave: { value: [] },
-  waveTrajectory: { value: [] },
-  trajectoryDeltas: { value: [] },
-  qualScales: { value: [] },
-  projectionYears: { value: 0 },
+  clear: vi.fn(),
 }))
+
+mockNuxtImport('useUser', () => () => ({ retirementAge: { value: 65 } }))
 
 describe('DemographicsTab', () => {
   it('shows empty state when no seniority data', async () => {

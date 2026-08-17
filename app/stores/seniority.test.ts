@@ -1,6 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { isReactive } from 'vue'
 import type { LocalSeniorityList } from '~/utils/db'
 import type { SeniorityEntry } from '~/utils/schemas/seniority-list'
+import { parsePlainDate } from '~/utils/temporal'
 
 // ---------------------------------------------------------------------------
 // Mock db module
@@ -70,8 +72,8 @@ const expectedAdaptedEntry: SeniorityEntry = {
   seat: 'CA',
   base: 'JFK',
   fleet: '737',
-  hire_date: '2010-01-15',
-  retire_date: '2035-06-15',
+  hire_date: parsePlainDate('2010-01-15'),
+  retire_date: parsePlainDate('2035-06-15'),
 }
 
 // ---------------------------------------------------------------------------
@@ -168,6 +170,7 @@ describe('seniority store (Dexie)', () => {
       expect(mockDb.seniorityEntries.equals).toHaveBeenCalledWith(1)
       expect(store.entries).toHaveLength(1)
       expect(store.entries[0]).toEqual(expectedAdaptedEntry)
+      expect(isReactive(store.entries[0]!.hire_date)).toBe(false)
       expect(store.currentListId).toBe(1)
     })
 
@@ -390,7 +393,7 @@ describe('seniority store (Dexie)', () => {
 
       // Newly uploaded list has the latest createdAt — must be at index 0
       expect(store.lists[0]!.id).toBe(99)
-      expect(store.lists[0]!.effectiveDate).toBe('2026-04-01')
+      expect(store.lists[0]!.effectiveDate.toString()).toBe('2026-04-01')
     })
   })
 
@@ -535,7 +538,8 @@ describe('seniority store (Dexie)', () => {
       const result = await store.getList(1)
 
       expect(mockDb.seniorityLists.get).toHaveBeenCalledWith(1)
-      expect(result).toEqual(mockList1)
+      expect(result?.effectiveDate.toString()).toBe(mockList1.effectiveDate)
+      expect(result?.createdAt.toString()).toBe(mockList1.createdAt)
     })
 
     it('returns undefined when list not found', async () => {

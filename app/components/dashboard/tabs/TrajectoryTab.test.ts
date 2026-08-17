@@ -6,7 +6,7 @@ const { mockHasData } = vi.hoisted(() => {
   return { mockHasData: vRef(false) }
 })
 
-const mockQualAnalytics = {
+const mockQualFilter = {
   selectedFleet: { value: null },
   selectedSeat: { value: null },
   selectedBase: { value: null },
@@ -15,21 +15,7 @@ const mockQualAnalytics = {
   availableBases: { value: [] },
   qualSpec: { value: {} },
   qualLabel: { value: '' },
-  isBannerDismissed: { value: false },
-  mostJuniorCAs: { value: [] },
-  qualComposition: { value: [] },
-  ageDistribution: { value: { buckets: [], nullCount: 0 } },
-  yosDistribution: { value: { mean: 0, median: 0, p25: 0, p75: 0 } },
-  yosHistogram: { value: [] },
-  userEntry: { value: undefined },
-  dismissBanner: vi.fn(),
-  thresholdResult: { value: null },
-  targetPercentile: { value: 50 },
-  retirementWave: { value: [] },
-  waveTrajectory: { value: [] },
-  trajectoryDeltas: { value: [] },
-  qualScales: { value: [] },
-  projectionYears: { value: 0 },
+  clear: vi.fn(),
 }
 
 mockNuxtImport('useSeniorityCore', () => () => ({
@@ -70,7 +56,7 @@ mockNuxtImport('useTrajectory', () => () => ({
   computeRetirementProjection: vi.fn(),
 }))
 
-mockNuxtImport('useQualAnalytics', () => () => mockQualAnalytics)
+mockNuxtImport('useQualFilter', () => () => mockQualFilter)
 
 describe('TrajectoryTab', () => {
   it('shows empty state when no seniority data', async () => {

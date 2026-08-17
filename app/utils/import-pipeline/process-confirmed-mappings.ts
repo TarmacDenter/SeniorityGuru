@@ -1,4 +1,4 @@
-import type { SeniorityEntry } from '../schemas/seniority-list'
+import type { SeniorityEntryInput } from '../schemas/seniority-list'
 import { SeniorityEntrySchema } from '../schemas/seniority-list'
 import { computeRetireDate, normalizeDate } from '../date'
 import { z } from 'zod'
@@ -69,7 +69,7 @@ function mapField(field: ImportField, row: PreparedRow, mappings: ConfirmedMappi
   return undefined
 }
 
-function mapEntry(row: PreparedRow, mappings: ConfirmedMappings): Partial<SeniorityEntry> {
+function mapEntry(row: PreparedRow, mappings: ConfirmedMappings): Partial<SeniorityEntryInput> {
   return normalizeMappedEntry({
     seniority_number: mapField('seniority_number', row, mappings),
     employee_number: mapField('employee_number', row, mappings),
@@ -82,7 +82,7 @@ function mapEntry(row: PreparedRow, mappings: ConfirmedMappings): Partial<Senior
   })
 }
 
-function validationIssues(entry: Partial<SeniorityEntry>): ImportIssue[] {
+function validationIssues(entry: Partial<SeniorityEntryInput>): ImportIssue[] {
   const result = validateImportEntry(entry)
   if (result.success) return []
   return result.error.issues.map(issue => ({

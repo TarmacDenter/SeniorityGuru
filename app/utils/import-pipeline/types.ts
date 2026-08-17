@@ -1,5 +1,5 @@
 import type { ImportField, MappingSelection } from './fields'
-import type { SeniorityEntry } from '../schemas/seniority-list'
+import type { SeniorityEntryInput } from '../schemas/seniority-list'
 
 /** A decoded spreadsheet value retained by the import pipeline. */
 export type SourceCellValue = string | number | boolean | null
@@ -127,7 +127,7 @@ export type ConfirmedMappings = Readonly<Partial<Record<ImportField, MappingSele
 export interface DraftSeniorityEntry {
   readonly id: string
   readonly sourceRowId: string
-  readonly entry: Readonly<Partial<SeniorityEntry>>
+  readonly entry: Readonly<Partial<SeniorityEntryInput>>
   readonly issues: readonly ImportIssue[]
 }
 
@@ -139,7 +139,7 @@ export interface MappedEntryTransformationInput {
 
 /** The only changes a plugin may make to a mapped entry. */
 export interface EntryPatch {
-  readonly entry?: Readonly<Partial<SeniorityEntry>>
+  readonly entry?: Readonly<Partial<SeniorityEntryInput>>
   readonly issues?: readonly ImportIssue[]
 }
 

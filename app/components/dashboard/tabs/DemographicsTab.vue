@@ -1,23 +1,34 @@
 <script setup lang="ts">
-import { useSeniorityCore, useQualAnalytics } from '~/composables/seniority'
+import { useSeniorityCore, useQualFilter } from '~/composables/seniority'
 import { computeYOS } from '~/utils/date'
+import { createLens, createScenario } from '~/utils/seniority-engine'
+import { todayPlainDate } from '~/utils/temporal'
 
 defineProps<{ loading?: boolean }>()
 
-const { hasData, newHire } = useSeniorityCore()
-const demographics = useQualAnalytics()
+const { hasData, newHire, snapshot, lens, userEntry } = useSeniorityCore()
+const { retirementAge } = useUser()
+const qualFilter = useQualFilter()
+const demographicScenario = computed(() => createScenario({ projectionDate: todayPlainDate(), scopeFilter: qualFilter.qualSpec.value }))
+const demographicsResult = computed(() => {
+  if (!snapshot.value) return null
+  return (lens.value ?? createLens(snapshot.value, undefined, todayPlainDate())).demographics(retirementAge.value, demographicScenario.value)
+})
+const ageDistribution = computed(() => demographicsResult.value?.ageDistribution ?? { buckets: [], nullCount: 0 })
+const mostJuniorCAs = computed(() => demographicsResult.value?.mostJuniorCAs ?? [])
+const qualComposition = computed(() => demographicsResult.value?.qualComposition ?? [])
+const yosDistribution = computed(() => demographicsResult.value?.yosDistribution ?? { entryFloor: 0, p10: 0, p25: 0, median: 0, p75: 0, p90: 0, max: 0 })
+const yosHistogram = computed(() => demographicsResult.value?.yosHistogram ?? [])
 
 const userYos = computed(() => {
   const synthetic = newHire.syntheticEntry.value
-  if (synthetic) return computeYOS(synthetic.hire_date)
-  const entry = demographics.userEntry.value
-  if (entry) return computeYOS(entry.hire_date)
+  if (synthetic) return computeYOS(synthetic.hire_date, todayPlainDate())
+  if (userEntry.value) return computeYOS(userEntry.value.hire_date, todayPlainDate())
   return undefined
 })
 
 const userSeniorityNumber = computed(() =>
-  newHire.syntheticEntry.value?.seniority_number
-  ?? demographics.userEntry.value?.seniority_number,
+  newHire.syntheticEntry.value?.seniority_number ?? userEntry.value?.seniority_number,
 )
 
 const ready = useDeferredReady()
@@ -44,33 +55,43 @@ const ready = useDeferredReady()
     />
 
     <template v-else>
-    <AnalyticsQualFilterBar :demographics="demographics" />
+    <AnalyticsQualFilterBar
+      :fleet="qualFilter.selectedFleet.value"
+      :seat="qualFilter.selectedSeat.value"
+      :base="qualFilter.selectedBase.value"
+      :fleets="qualFilter.availableFleets.value"
+      :seats="qualFilter.availableSeats.value"
+      :bases="qualFilter.availableBases.value"
+      @update:fleet="qualFilter.selectedFleet.value = $event"
+      @update:seat="qualFilter.selectedSeat.value = $event"
+      @update:base="qualFilter.selectedBase.value = $event"
+    />
 
     <!-- Most Junior Captain by Qual — full width, own row -->
-    <USkeleton v-if="!ready || !demographics.mostJuniorCAs.value.length" class="h-48 rounded-lg" />
+    <USkeleton v-if="!ready || !mostJuniorCAs.length" class="h-48 rounded-lg" />
     <UCard v-else>
       <template #header>
         <h3 class="font-semibold">Most Junior Captain by Qual</h3>
       </template>
       <AnalyticsJuniorCaptainTable
-        :rows="demographics.mostJuniorCAs.value"
+        :rows="mostJuniorCAs"
         :user-seniority-number="userSeniorityNumber"
       />
     </UCard>
 
     <!-- Base / Fleet / Seat Sizes — own row -->
-    <USkeleton v-if="!ready || !demographics.qualComposition.value.length" class="h-32 rounded-lg" />
-    <AnalyticsQualSizesCard v-else :composition="demographics.qualComposition.value" />
+    <USkeleton v-if="!ready || !qualComposition.length" class="h-32 rounded-lg" />
+    <AnalyticsQualSizesCard v-else :composition="qualComposition" />
 
     <!-- Qual Composition list — full width, own row -->
-    <USkeleton v-if="!ready || !demographics.qualComposition.value.length" class="h-64 rounded-lg" />
+    <USkeleton v-if="!ready || !qualComposition.length" class="h-64 rounded-lg" />
     <UCard v-else>
       <template #header>
         <h3 class="font-semibold">Qual Composition</h3>
       </template>
       <div class="space-y-2">
         <AnalyticsQualCompositionCard
-          v-for="row in demographics.qualComposition.value"
+          v-for="row in qualComposition"
           :key="row.qualKey"
           :row="row"
         />
@@ -78,26 +99,26 @@ const ready = useDeferredReady()
     </UCard>
 
     <!-- Age distribution -->
-    <USkeleton v-if="!ready || !demographics.ageDistribution.value.buckets.length" class="h-64 rounded-lg" />
+    <USkeleton v-if="!ready || !ageDistribution.buckets.length" class="h-64 rounded-lg" />
     <UCard v-else>
       <template #header>
-        <h3 class="font-semibold">Age Distribution{{ demographics.qualLabel.value ? ` — ${demographics.qualLabel.value}` : '' }}</h3>
+        <h3 class="font-semibold">Age Distribution{{ qualFilter.qualLabel.value ? ` — ${qualFilter.qualLabel.value}` : '' }}</h3>
       </template>
       <AnalyticsAgeDistributionChart
-        :buckets="demographics.ageDistribution.value.buckets"
-        :null-count="demographics.ageDistribution.value.nullCount"
+        :buckets="ageDistribution.buckets"
+        :null-count="ageDistribution.nullCount"
       />
     </UCard>
 
     <!-- YOS breakdown -->
-    <USkeleton v-if="!ready || !demographics.yosHistogram.value.length" class="h-48 rounded-lg" />
+    <USkeleton v-if="!ready || !yosHistogram.length" class="h-48 rounded-lg" />
     <UCard v-else>
       <template #header>
-        <h3 class="font-semibold">Years of Service{{ demographics.qualLabel.value ? ` — ${demographics.qualLabel.value}` : '' }}</h3>
+        <h3 class="font-semibold">Years of Service{{ qualFilter.qualLabel.value ? ` — ${qualFilter.qualLabel.value}` : '' }}</h3>
       </template>
       <AnalyticsYearsOfServiceBreakdown
-        :distribution="demographics.yosDistribution.value"
-        :histogram="demographics.yosHistogram.value"
+        :distribution="yosDistribution"
+        :histogram="yosHistogram"
         :user-yos="userYos"
       />
     </UCard>

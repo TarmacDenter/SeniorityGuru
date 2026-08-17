@@ -4,6 +4,10 @@ import { countRetiredAbove, generateTimePoints, buildTrajectory, computeRank, ge
 import { makeDomainEntry as makeEntry } from '~/test-utils/factories'
 import type { GrowthConfig } from '~/utils/seniority-engine'
 import { todayISO, extractYear } from '~/utils/date'
+import { parsePlainDate, Temporal } from '~/utils/temporal'
+
+const AS_OF = parsePlainDate('2026-01-01')
+const d = (value: string) => parsePlainDate(value)
 
 describe('countRetiredAbove', () => {
   it('returns 0 when no entries have retired', () => {
@@ -11,7 +15,7 @@ describe('countRetiredAbove', () => {
       makeEntry({ seniority_number: 1, retire_date: '2040-01-01' }),
       makeEntry({ seniority_number: 2, retire_date: '2041-01-01' }),
     ]
-    const result = countRetiredAbove(entries, 3, '2026-06-01')
+    const result = countRetiredAbove(entries, 3, d('2026-06-01'))
     expect(result).toBe(0)
   })
 
@@ -23,7 +27,7 @@ describe('countRetiredAbove', () => {
       makeEntry({ seniority_number: 4, retire_date: '2024-01-01' }),
       makeEntry({ seniority_number: 1, retire_date: '2030-01-01' }),
     ]
-    const result = countRetiredAbove(entries, 3, '2026-01-01')
+    const result = countRetiredAbove(entries, 3, AS_OF)
     expect(result).toBe(2)
   })
 
@@ -32,7 +36,7 @@ describe('countRetiredAbove', () => {
       makeEntry({ seniority_number: 1, retire_date: '2025-01-01', base: 'JFK' }),
       makeEntry({ seniority_number: 2, retire_date: '2025-01-01', base: 'LAX' }),
     ]
-    const result = countRetiredAbove(entries, 5, '2026-01-01', (e) => e.base === 'JFK')
+    const result = countRetiredAbove(entries, 5, AS_OF, (e) => e.base === 'JFK')
     expect(result).toBe(1)
   })
 
@@ -41,40 +45,40 @@ describe('countRetiredAbove', () => {
       makeEntry({ seniority_number: 1, retire_date: undefined }),
       makeEntry({ seniority_number: 2, retire_date: undefined }),
     ]
-    const result = countRetiredAbove(entries, 5, '2026-01-01')
+    const result = countRetiredAbove(entries, 5, AS_OF)
     expect(result).toBe(0)
   })
 })
 
 describe('generateTimePoints', () => {
   it('generates yearly points as ISO strings', () => {
-    const points = generateTimePoints('2026-01-01', '2031-01-01')
+    const points = generateTimePoints(AS_OF, d('2031-01-01'))
     expect(points.length).toBe(6)
-    expect(points[0]).toBe('2026-01-01')
-    expect(points[1]).toBe('2027-01-01')
+    expect(points[0]!.toString()).toBe('2026-01-01')
+    expect(points[1]!.toString()).toBe('2027-01-01')
     for (const p of points) {
-      expect(p <= '2031-01-01').toBe(true)
+      expect(Temporal.PlainDate.compare(p, d('2031-01-01')) <= 0).toBe(true)
     }
   })
 
   it('generates correct number of points for long range', () => {
-    const points = generateTimePoints('2026-01-01', '2040-01-01')
+    const points = generateTimePoints(AS_OF, d('2040-01-01'))
     expect(points.length).toBe(15)
-    expect(points[points.length - 1]).toBe('2040-01-01')
+    expect(points[points.length - 1]!.toString()).toBe('2040-01-01')
   })
 
   it('stops at or before endDate', () => {
-    const points = generateTimePoints('2026-01-01', '2038-06-15')
+    const points = generateTimePoints(AS_OF, d('2038-06-15'))
     for (const p of points) {
-      expect(p <= '2038-06-15').toBe(true)
+      expect(Temporal.PlainDate.compare(p, d('2038-06-15')) <= 0).toBe(true)
     }
   })
 
   it('handles short range', () => {
-    const points = generateTimePoints('2026-01-01', '2027-06-01')
+    const points = generateTimePoints(AS_OF, d('2027-06-01'))
     expect(points.length).toBe(2)
     for (const p of points) {
-      expect(p <= '2027-06-01').toBe(true)
+      expect(Temporal.PlainDate.compare(p, d('2027-06-01')) <= 0).toBe(true)
     }
   })
 })
@@ -87,13 +91,13 @@ describe('buildTrajectory', () => {
       makeEntry({ seniority_number: 3, retire_date: '2028-06-01' }),
       makeEntry({ seniority_number: 5, employee_number: '500', retire_date: '2040-01-01' }),
     ]
-    const timePoints = ['2026-01-01', '2026-12-01', '2027-12-01', '2028-12-01']
+    const timePoints = ['2026-01-01', '2026-12-01', '2027-12-01', '2028-12-01'].map(d)
     const trajectory = buildTrajectory(entries, 5, timePoints)
     expect(trajectory).toEqual([
-      { date: '2026-01-01', rank: 4, percentile: 25 },
-      { date: '2026-12-01', rank: 3, percentile: 50 },
-      { date: '2027-12-01', rank: 2, percentile: 75 },
-      { date: '2028-12-01', rank: 1, percentile: 100 },
+      { date: d('2026-01-01'), rank: 4, percentile: 25 },
+      { date: d('2026-12-01'), rank: 3, percentile: 50 },
+      { date: d('2027-12-01'), rank: 2, percentile: 75 },
+      { date: d('2028-12-01'), rank: 1, percentile: 100 },
     ])
   })
 
@@ -109,11 +113,11 @@ describe('buildTrajectory', () => {
       makeEntry({ seniority_number: 2, retire_date: undefined }),
       makeEntry({ seniority_number: 5, employee_number: '500', retire_date: '2040-01-01' }),
     ]
-    const timePoints = ['2030-01-01', '2035-01-01']
+    const timePoints = ['2030-01-01', '2035-01-01'].map(d)
     const trajectory = buildTrajectory(entries, 5, timePoints)
     expect(trajectory).toEqual([
-      { date: '2030-01-01', rank: 3, percentile: 33.3 },
-      { date: '2035-01-01', rank: 3, percentile: 33.3 },
+      { date: d('2030-01-01'), rank: 3, percentile: 33.3 },
+      { date: d('2035-01-01'), rank: 3, percentile: 33.3 },
     ])
   })
 })
@@ -130,7 +134,7 @@ describe('buildTrajectory with growthConfig', () => {
     }))
     entries.push(makeEntry({ seniority_number: 10, employee_number: '500', retire_date: '2050-01-01' }))
 
-    const timePoints = ['2026-01-01', '2031-01-01']
+    const timePoints = ['2026-01-01', '2031-01-01'].map(d)
     const withoutGrowth = buildTrajectory(entries, 10, timePoints)
     const withGrowth = buildTrajectory(entries, 10, timePoints, undefined, growthEnabled)
 
@@ -143,7 +147,7 @@ describe('buildTrajectory with growthConfig', () => {
       makeEntry({ seniority_number: 1, retire_date: '2028-06-01' }),
       makeEntry({ seniority_number: 5, employee_number: '500', retire_date: '2040-01-01' }),
     ]
-    const timePoints = ['2026-01-01', '2031-01-01']
+    const timePoints = ['2026-01-01', '2031-01-01'].map(d)
     const noConfig = buildTrajectory(entries, 5, timePoints)
     const disabled = buildTrajectory(entries, 5, timePoints, undefined, growthDisabled)
     expect(disabled).toEqual(noConfig)
@@ -156,7 +160,7 @@ describe('buildTrajectory with growthConfig', () => {
       makeEntry({ seniority_number: 3, retire_date: '2040-06-01' }),
       makeEntry({ seniority_number: 5, employee_number: '500', retire_date: '2045-01-01' }),
     ]
-    const timePoints = ['2026-01-01', '2031-01-01']
+    const timePoints = ['2026-01-01', '2031-01-01'].map(d)
     const result = buildTrajectory(entries, 5, timePoints, undefined, growthEnabled)
     expect(result[0]!.percentile).toBe(25)
     expect(result[1]!.percentile).toBe(60)
@@ -167,7 +171,7 @@ describe('buildTrajectory with growthConfig', () => {
       makeEntry({ seniority_number: 1, retire_date: '2028-06-01' }),
       makeEntry({ seniority_number: 5, employee_number: '500', retire_date: '2040-01-01' }),
     ]
-    const timePoints = ['2026-01-01', '2031-01-01']
+    const timePoints = ['2026-01-01', '2031-01-01'].map(d)
     const withGrowth = buildTrajectory(entries, 5, timePoints, undefined, growthEnabled)
     const withoutGrowth = buildTrajectory(entries, 5, timePoints)
     expect(withGrowth[0]!.rank).toBe(withoutGrowth[0]!.rank)
@@ -196,12 +200,12 @@ describe('computeRank', () => {
 
 describe('getProjectionEndDate', () => {
   it('returns retire date when provided', () => {
-    const { endDate } = getProjectionEndDate('2040-06-15')
+    const { endDate } = getProjectionEndDate(d('2040-06-15'), AS_OF)
     expect(endDate).toBe('2040-06-15')
   })
 
   it('defaults to 30 years from now when null', () => {
-    const { today, endDate } = getProjectionEndDate(null)
+    const { today, endDate } = getProjectionEndDate(null, AS_OF)
     expect(extractYear(endDate)).toBe(extractYear(today) + 30)
   })
 })
@@ -221,7 +225,7 @@ describe('projectRetirements', () => {
       makeEntry({ seniority_number: 3, retire_date: `${thisYear + 2}-06-01` }),
       makeEntry({ seniority_number: 5, retire_date: `${thisYear + 4}-01-01` }),
     ]
-    const result = projectRetirements(entries, `${thisYear + 5}-01-01`)
+    const result = projectRetirements(entries, d(`${thisYear + 5}-01-01`), AS_OF)
     expect(result.labels.length).toBeGreaterThan(0)
     expect(result.data.length).toBe(result.labels.length)
     expect(result.filteredTotal).toBe(4)
@@ -230,7 +234,7 @@ describe('projectRetirements', () => {
   })
 
   it('uses 30-year fallback when retireDate is null', () => {
-    const result = projectRetirements([], null)
+    const result = projectRetirements([], null, AS_OF)
     expect(result.labels.length).toBeGreaterThan(0)
     expect(result.filteredTotal).toBe(0)
   })
@@ -241,8 +245,8 @@ describe('projectRetirements', () => {
       makeEntry({ seniority_number: 1, base: 'JFK', retire_date: `${thisYear + 1}-06-01` }),
       makeEntry({ seniority_number: 2, base: 'LAX', retire_date: `${thisYear + 1}-06-01` }),
     ]
-    const all = projectRetirements(entries, `${thisYear + 5}-01-01`)
-    const jfk = projectRetirements(entries, `${thisYear + 5}-01-01`, (e) => e.base === 'JFK')
+    const all = projectRetirements(entries, d(`${thisYear + 5}-01-01`), AS_OF)
+    const jfk = projectRetirements(entries, d(`${thisYear + 5}-01-01`), AS_OF, (e) => e.base === 'JFK')
     expect(all.filteredTotal).toBe(2)
     expect(jfk.filteredTotal).toBe(1)
     expect(jfk.data.reduce((s, n) => s + n, 0)).toBeLessThanOrEqual(all.data.reduce((s, n) => s + n, 0))
@@ -259,7 +263,7 @@ describe('projectComparativeTrajectory', () => {
       makeEntry({ seniority_number: 5, seat: 'CA', base: 'JFK', fleet: '737', retire_date: `${thisYear + 10}-01-01` }),
     ]
     const result = projectComparativeTrajectory(
-      entries, 5, `${thisYear + 10}-01-01`,
+      entries, 5, d(`${thisYear + 10}-01-01`), AS_OF,
       (e) => e.seat === 'CA' && e.base === 'JFK',
       (e) => e.seat === 'FO' && e.base === 'LAX',
     )
@@ -275,33 +279,33 @@ describe('projectComparativeTrajectory', () => {
 describe('computeTrajectoryDeltas', () => {
   it('returns empty for trajectory with < 2 points', () => {
     expect(computeTrajectoryDeltas([])).toEqual([])
-    expect(computeTrajectoryDeltas([{ date: '2026-01-01', rank: 5, percentile: 50 }])).toEqual([])
+    expect(computeTrajectoryDeltas([{ date: d('2026-01-01'), rank: 5, percentile: 50 }])).toEqual([])
   })
 
   it('computes correct YoY deltas', () => {
     const trajectory = [
-      { date: '2026-01-01', rank: 10, percentile: 20 },
-      { date: '2027-01-01', rank: 8, percentile: 25 },
-      { date: '2028-01-01', rank: 5, percentile: 35 },
-      { date: '2029-01-01', rank: 3, percentile: 40 },
+      { date: d('2026-01-01'), rank: 10, percentile: 20 },
+      { date: d('2027-01-01'), rank: 8, percentile: 25 },
+      { date: d('2028-01-01'), rank: 5, percentile: 35 },
+      { date: d('2029-01-01'), rank: 3, percentile: 40 },
     ]
     const deltas = computeTrajectoryDeltas(trajectory)
     expect(deltas).toHaveLength(3)
-    expect(deltas[0]!.date).toBe('2027-01-01')
+    expect(deltas[0]!.date.toString()).toBe('2027-01-01')
     expect(deltas[0]!.delta).toBe(5)
-    expect(deltas[1]!.date).toBe('2028-01-01')
+    expect(deltas[1]!.date.toString()).toBe('2028-01-01')
     expect(deltas[1]!.delta).toBe(10)
-    expect(deltas[2]!.date).toBe('2029-01-01')
+    expect(deltas[2]!.date.toString()).toBe('2029-01-01')
     expect(deltas[2]!.delta).toBe(5)
   })
 
   it('marks peak years correctly', () => {
     const trajectory = [
-      { date: '2026-01-01', rank: 10, percentile: 20 },
-      { date: '2027-01-01', rank: 8, percentile: 23 },
-      { date: '2028-01-01', rank: 5, percentile: 35 },
-      { date: '2029-01-01', rank: 3, percentile: 40 },
-      { date: '2030-01-01', rank: 2, percentile: 42 },
+      { date: d('2026-01-01'), rank: 10, percentile: 20 },
+      { date: d('2027-01-01'), rank: 8, percentile: 23 },
+      { date: d('2028-01-01'), rank: 5, percentile: 35 },
+      { date: d('2029-01-01'), rank: 3, percentile: 40 },
+      { date: d('2030-01-01'), rank: 2, percentile: 42 },
     ]
     const deltas = computeTrajectoryDeltas(trajectory)
     expect(deltas[0]!.isPeak).toBe(false)
@@ -312,9 +316,9 @@ describe('computeTrajectoryDeltas', () => {
 
   it('handles flat trajectory (all deltas 0)', () => {
     const trajectory = [
-      { date: '2026-01-01', rank: 5, percentile: 50 },
-      { date: '2027-01-01', rank: 5, percentile: 50 },
-      { date: '2028-01-01', rank: 5, percentile: 50 },
+      { date: d('2026-01-01'), rank: 5, percentile: 50 },
+      { date: d('2027-01-01'), rank: 5, percentile: 50 },
+      { date: d('2028-01-01'), rank: 5, percentile: 50 },
     ]
     const deltas = computeTrajectoryDeltas(trajectory)
     expect(deltas).toHaveLength(2)

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computeYOS } from '~/utils/date'
+import { todayPlainDate } from '~/utils/temporal'
 
 const props = defineProps<{
   rank: {
@@ -17,7 +18,7 @@ const animatedPercentile = ref(0)
 
 const yearsOfService = computed(() => {
   if (!props.rank.hireDate) return null
-  const years = Math.floor(computeYOS(props.rank.hireDate))
+  const years = Math.floor(computeYOS(props.rank.hireDate, todayPlainDate()))
   return years >= 0 ? years : null
 })
 

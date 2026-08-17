@@ -1,3 +1,5 @@
+import { Temporal } from '~/utils/temporal'
+
 /**
  * Stable JSON serialization that sorts object keys for deterministic output.
  * Handles nested objects, arrays, and primitives.
@@ -7,6 +9,8 @@ export function stableStringify(value: unknown): string {
   if (typeof value !== 'object') return JSON.stringify(value)
 
   if (value instanceof Date) return JSON.stringify(value.toISOString())
+  if (value instanceof Temporal.PlainDate) return JSON.stringify(`PlainDate:${value.toString()}`)
+  if (value instanceof Temporal.Instant) return JSON.stringify(`Instant:${value.toString()}`)
 
   if (Array.isArray(value)) {
     return '[' + value.map(stableStringify).join(',') + ']'

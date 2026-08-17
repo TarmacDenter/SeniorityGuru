@@ -1,4 +1,4 @@
-import type { SeniorityEntry } from '~/utils/schemas/seniority-list'
+import type { SeniorityEntryInput } from '~/utils/schemas/seniority-list'
 import { SeniorityEntrySchema } from '~/utils/schemas/seniority-list'
 import { validateSnapshotEntryIssues } from '~/utils/seniority-engine/snapshot'
 
@@ -34,7 +34,7 @@ function issuesToErrorMap(issues: Map<number, ValidationIssue[]>): Map<number, s
  * plus the upload-specific contiguity requirement (1..N sequence).
  * Does not run Zod schema validation. Pure function — no side effects.
  */
-export function computeStructuralIssues(entries: Partial<SeniorityEntry>[]): Map<number, ValidationIssue[]> {
+export function computeStructuralIssues(entries: Partial<SeniorityEntryInput>[]): Map<number, ValidationIssue[]> {
   const issues = new Map<number, ValidationIssue[]>()
   for (const snapshotIssue of validateSnapshotEntryIssues(entries)) {
     pushIssue(issues, {
@@ -80,7 +80,7 @@ export function computeStructuralIssues(entries: Partial<SeniorityEntry>[]): Map
   return issues
 }
 
-export function computeStructuralErrors(entries: Partial<SeniorityEntry>[]): Map<number, string[]> {
+export function computeStructuralErrors(entries: Partial<SeniorityEntryInput>[]): Map<number, string[]> {
   return issuesToErrorMap(computeStructuralIssues(entries))
 }
 
@@ -88,7 +88,7 @@ export function computeStructuralErrors(entries: Partial<SeniorityEntry>[]): Map
  * Full validation: Zod schema + structural checks.
  * Pure function — no side effects, no reactive state.
  */
-export function validateEntries(entries: Partial<SeniorityEntry>[]): Map<number, string[]> {
+export function validateEntries(entries: Partial<SeniorityEntryInput>[]): Map<number, string[]> {
   const issues = new Map<number, ValidationIssue[]>()
 
   entries.forEach((entry, i) => {

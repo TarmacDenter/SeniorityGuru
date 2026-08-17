@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mountSuspended, mockNuxtImport } from '@nuxt/test-utils/runtime'
 import type { UpcomingRetirementRow } from '~/utils/seniority-engine'
+import { parsePlainDate } from '~/utils/temporal'
 
 const mockUpcomingRetirements = vi.fn()
 
@@ -25,8 +26,8 @@ mockNuxtImport('useUser', () => () => ({
 }))
 
 const sampleRows: UpcomingRetirementRow[] = [
-  { seniorityNumber: 2, employeeNumber: 'E2', base: 'JFK', seat: 'CA', fleet: '737', retireDate: '2027-06-01', rankRelativeToMe: 48 },
-  { seniorityNumber: 5, employeeNumber: 'E5', base: 'ATL', seat: 'FO', fleet: '320', retireDate: '2028-03-15', rankRelativeToMe: 45 },
+  { seniorityNumber: 2, employeeNumber: 'E2', base: 'JFK', seat: 'CA', fleet: '737', retireDate: parsePlainDate('2027-06-01'), rankRelativeToMe: 48 },
+  { seniorityNumber: 5, employeeNumber: 'E5', base: 'ATL', seat: 'FO', fleet: '320', retireDate: parsePlainDate('2028-03-15'), rankRelativeToMe: 45 },
 ]
 
 describe('RetirementsTab', () => {

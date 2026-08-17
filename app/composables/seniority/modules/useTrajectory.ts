@@ -1,6 +1,7 @@
 import type { ComputedRef, Ref } from 'vue'
 import { DEFAULT_GROWTH_CONFIG, createScenario } from '~/utils/seniority-engine'
 import type { GrowthConfig, QualSpec, TrajectoryDelta, TrajectoryPoint, RetirementProjectionResult, ComparativeTrajectoryResult } from '~/utils/seniority-engine'
+import { todayPlainDate } from '~/utils/temporal'
 import { useSeniorityCore } from './useSeniorityCore'
 
 export function useTrajectory(growthConfig?: Ref<GrowthConfig>): {
@@ -13,7 +14,7 @@ export function useTrajectory(growthConfig?: Ref<GrowthConfig>): {
   const { lens } = useSeniorityCore()
   const effectiveConfig = growthConfig ?? ref<GrowthConfig>({ ...DEFAULT_GROWTH_CONFIG })
 
-  const scenario = computed(() => createScenario({ growthConfig: effectiveConfig.value }))
+  const scenario = computed(() => createScenario({ projectionDate: todayPlainDate(), growthConfig: effectiveConfig.value }))
 
   const chartData = computed(() => {
     const result = lens.value?.trajectory(scenario.value)
@@ -31,14 +32,14 @@ export function useTrajectory(growthConfig?: Ref<GrowthConfig>): {
 
   function computeRetirementProjection(spec: QualSpec = {}): RetirementProjectionResult {
     if (!lens.value) return { labels: [] as string[], data: [] as number[], filteredTotal: 0 }
-    return lens.value.retirementProjection(createScenario({ scopeFilter: spec }))
+    return lens.value.retirementProjection(createScenario({ projectionDate: todayPlainDate(), scopeFilter: spec }))
   }
 
   function computeComparativeTrajectory(specA: QualSpec, specB: QualSpec): ComparativeTrajectoryResult {
     if (!lens.value) return { labels: [] as string[], currentData: [] as number[], compareData: [] as number[] }
     return lens.value.compareTrajectories(
-      createScenario({ scopeFilter: specA, growthConfig: effectiveConfig.value }),
-      createScenario({ scopeFilter: specB, growthConfig: effectiveConfig.value }),
+      createScenario({ projectionDate: todayPlainDate(), scopeFilter: specA, growthConfig: effectiveConfig.value }),
+      createScenario({ projectionDate: todayPlainDate(), scopeFilter: specB, growthConfig: effectiveConfig.value }),
     ) ?? { labels: [] as string[], currentData: [] as number[], compareData: [] as number[] }
   }
 

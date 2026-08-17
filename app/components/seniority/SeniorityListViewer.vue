@@ -6,7 +6,8 @@ import type { Row, Table } from '@tanstack/vue-table'
 import type { TableColumn } from '@nuxt/ui'
 import type { QualSpec, QualViewerRow } from '~/utils/seniority-engine'
 import { projectQualViewer } from '~/utils/seniority-engine'
-import { diffYears, todayISO } from '~/utils/date'
+import { diffYears } from '~/utils/date'
+import { todayPlainDate } from '~/utils/temporal'
 import { normalizeEmployeeNumber } from '~/utils/schemas/seniority-list'
 import { useSeniorityCore, useSeniorityLists } from '~/composables/seniority'
 
@@ -89,12 +90,12 @@ const projected = computed(() => projectQualViewer({
   qual: selectedQual.value,
   employeeNumber: employeeNumber.value,
   insertSelf: insertSelf.value && canInsert.value,
-  asOfDate: todayISO(),
+  asOfDate: todayPlainDate(),
 }))
 
 const tableData = computed<SeniorityRow[]>(() => projected.value.rows.map(row => ({
   ...row,
-  _retirementTimeline: retirementTimeline(todayISO(), row.retireDate),
+  _retirementTimeline: retirementTimeline(todayPlainDate().toString(), row.retireDate?.toString() ?? todayPlainDate().toString()),
 })))
 
 const columnVisibility = computed(() => ({

@@ -20,7 +20,8 @@ import type {
 import { computeAdditionalPilots } from '~/utils/growth-config'
 import { computePercentile } from '~/utils/seniority-engine/percentile'
 import { cellKey } from '~/utils/seniority-engine/cell-key'
-import { deriveAge, computeYOS, isRetiredBy, extractYear, todayISO } from '~/utils/date'
+import { computeYOSDate, isRetiredBy, extractYear } from '~/utils/date'
+import type { PlainDate } from '~/utils/temporal'
 
 export type {
   AgeBucket,
@@ -58,7 +59,8 @@ const AGE_BUCKETS: { label: string; min: number; max: number }[] = [
 export function computeAgeDistribution(
   entries: readonly SeniorityEntry[],
   mandatoryAge: number,
-  filterFn?: FilterFn,
+  filterFn: FilterFn | undefined,
+  asOfDate: PlainDate,
 ): { buckets: AgeBucket[]; nullCount: number } {
   const filtered = filterFn ? entries.filter(filterFn) : entries
   const counts = new Array<number>(AGE_BUCKETS.length).fill(0)
@@ -66,7 +68,7 @@ export function computeAgeDistribution(
 
   for (const e of filtered) {
     if (!e.retire_date) { nullCount++; continue }
-    const age = deriveAge(e.retire_date, mandatoryAge)
+    const age = Math.floor(computeYOSDate(e.retire_date.subtract({ years: mandatoryAge }), asOfDate))
     const idx = AGE_BUCKETS.findIndex((b) => age >= b.min && age <= b.max)
     if (idx >= 0) counts[idx]!++
   }
@@ -77,7 +79,7 @@ export function computeAgeDistribution(
   }
 }
 
-export function findMostJuniorCA(entries: readonly SeniorityEntry[]): MostJuniorCARow[] {
+export function findMostJuniorCA(entries: readonly SeniorityEntry[], asOfDate: PlainDate): MostJuniorCARow[] {
   const byQual = new Map<string, SeniorityEntry>()
   for (const e of entries) {
     if (e.seat !== 'CA') continue
@@ -95,18 +97,19 @@ export function findMostJuniorCA(entries: readonly SeniorityEntry[]): MostJunior
       base: e.base,
       seniorityNumber: e.seniority_number,
       hireDate: e.hire_date,
-      yos: computeYOS(e.hire_date),
+      yos: computeYOSDate(e.hire_date, asOfDate),
     }))
     .sort((a, b) => a.qualKey.localeCompare(b.qualKey))
 }
 
 export function computeYosHistogram(
   entries: readonly SeniorityEntry[],
-  filterFn?: FilterFn,
+  filterFn: FilterFn | undefined,
+  asOfDate: PlainDate,
 ): YosHistogramBucket[] {
   const filtered = filterFn ? entries.filter(filterFn) : entries
   if (filtered.length === 0) return []
-  const yosValues = filtered.map((e) => computeYOS(e.hire_date))
+  const yosValues = filtered.map((e) => computeYOSDate(e.hire_date, asOfDate))
   const maxYos = Math.ceil(Math.max(...yosValues))
   const bucketCount = Math.max(maxYos + 1, 1)
   const counts = new Array<number>(bucketCount).fill(0)
@@ -129,19 +132,20 @@ function percentileOf(sorted: number[], p: number): number {
 
 export function computeYosDistribution(
   entries: readonly SeniorityEntry[],
-  filterFn?: FilterFn,
+  filterFn: FilterFn | undefined,
+  asOfDate: PlainDate,
 ): YosDistribution {
   const filtered = filterFn ? entries.filter(filterFn) : entries
   if (filtered.length === 0) return { entryFloor: 0, p10: 0, p25: 0, median: 0, p75: 0, p90: 0, max: 0 }
 
   const sorted = filtered
-    .map((e) => computeYOS(e.hire_date))
+    .map((e) => computeYOSDate(e.hire_date, asOfDate))
     .sort((a, b) => a - b)
 
   const mostJunior = filtered.reduce((a, b) =>
     a.seniority_number > b.seniority_number ? a : b,
   )
-  const entryFloor = computeYOS(mostJunior.hire_date)
+  const entryFloor = computeYOSDate(mostJunior.hire_date, asOfDate)
 
   return {
     entryFloor,
@@ -217,7 +221,7 @@ export function computeRetirementWave(
 
 export const SEAT_ORDER: Record<string, number> = { CA: 0, FO: 1 }
 
-function isActiveAt(e: SeniorityEntry, projectionDate: string): boolean {
+function isActiveAt(e: SeniorityEntry, projectionDate: PlainDate): boolean {
   if (!e.retire_date) return true
   return !isRetiredBy(e.retire_date, projectionDate)
 }
@@ -246,14 +250,15 @@ function companyPercentile(senNum: number, sortedNums: number[], total: number):
 export function computePowerIndexCells(
   entries: readonly SeniorityEntry[],
   userSenNum: number,
-  projectionDate: string,
-  growthConfig?: GrowthConfig,
+  projectionDate: PlainDate,
+  growthConfig: GrowthConfig | undefined,
+  asOfDate: PlainDate,
 ): PowerIndexCell[] {
   const activeCompany = entries.filter((e) => isActiveAt(e, projectionDate))
   const activeSorted = sortedSenNums(activeCompany)
   const totalCompany = activeCompany.length
   const additional = growthConfig?.enabled
-    ? computeAdditionalPilots(entries.length, growthConfig.annualRate, todayISO(), projectionDate)
+    ? computeAdditionalPilots(entries.length, growthConfig.annualRate, asOfDate, projectionDate)
     : 0
   const projectedTotalCompany = totalCompany + additional
   const userPctl = companyPercentile(userSenNum, activeSorted, projectedTotalCompany)
@@ -313,9 +318,8 @@ export function computePowerIndexCells(
   })
 }
 
-export function computeQualSnapshots(entries: readonly SeniorityEntry[]): QualDemographicSnapshot[] {
-  const todayStr = todayISO()
-  const todayActive = entries.filter((e) => isActiveAt(e, todayStr))
+export function computeQualSnapshots(entries: readonly SeniorityEntry[], asOfDate: PlainDate): QualDemographicSnapshot[] {
+  const todayActive = entries.filter((e) => isActiveAt(e, asOfDate))
   if (todayActive.length === 0) return []
 
   const activeSorted = sortedSenNums(todayActive)
@@ -368,22 +372,22 @@ export function applyProjectionToSnapshots(
   snapshots: QualDemographicSnapshot[],
   entries: readonly SeniorityEntry[],
   userSenNum: number,
-  projectionDate: string,
-  growthConfig?: GrowthConfig,
+  projectionDate: PlainDate,
+  growthConfig: GrowthConfig | undefined,
+  asOfDate: PlainDate,
 ): QualDemographicScale[] {
-  const todayStr = todayISO()
   const totalPilots = entries.length
   const aheadOfUser = entries.filter(e => e.seniority_number < userSenNum)
   const initialRank = aheadOfUser.length + 1
 
-  const retiredAheadToday = aheadOfUser.filter(e => e.retire_date && isRetiredBy(e.retire_date, todayStr)).length
+  const retiredAheadToday = aheadOfUser.filter(e => e.retire_date && isRetiredBy(e.retire_date, asOfDate)).length
   const currentRank = initialRank - retiredAheadToday
   const currentPctl = computePercentile(currentRank, totalPilots)
 
   const retiredAheadProjected = aheadOfUser.filter(e => e.retire_date && isRetiredBy(e.retire_date, projectionDate)).length
   const projectedRank = initialRank - retiredAheadProjected
   const additional = growthConfig?.enabled
-    ? computeAdditionalPilots(totalPilots, growthConfig.annualRate, todayStr, projectionDate)
+    ? computeAdditionalPilots(totalPilots, growthConfig.annualRate, asOfDate, projectionDate)
     : 0
   const projectedTotal = totalPilots + additional
   const userPctl = computePercentile(projectedRank, projectedTotal)
@@ -397,12 +401,16 @@ export function applyProjectionToSnapshots(
 }
 
 export function findThresholdYear(
-  baseTrajectory: TrajectoryPoint[],
+  baseTrajectory: (TrajectoryPoint | { date: string; rank: number; percentile: number })[],
   targetPercentile: number,
 ): ThresholdResult | null {
-  const year = baseTrajectory.find((pt) => pt.percentile >= targetPercentile)?.date.substring(0, 4) ?? null
-  if (!year) return null
-  return { year }
+  const year = baseTrajectory.find((pt) => pt.percentile >= targetPercentile)
+  const yearValue = year?.date
+  const yearString = typeof yearValue === 'string'
+    ? yearValue.slice(0, 4)
+    : yearValue?.year.toString()
+  if (!yearString) return null
+  return { year: yearString }
 }
 
 export function detectUpgradeTransitions(

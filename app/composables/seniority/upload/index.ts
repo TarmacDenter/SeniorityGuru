@@ -1,8 +1,7 @@
-import { parseDate } from '@internationalized/date'
-import type { SeniorityEntry } from '~/utils/schemas/seniority-list'
-import { todayISO } from '~/utils/date'
+import type { SeniorityEntryInput } from '~/utils/schemas/seniority-list'
+import { nowInstant, parsePlainDate, serializeInstant, todayPlainDate } from '~/utils/temporal'
 import type { ImportIssue, PreparedSheet, ReviewEditPatch } from '~/utils/import-pipeline/types'
-import type { SeniorityUpload, UploadColumnMap } from './types'
+import type { SeniorityUpload, UploadColumnMap, UploadSession } from './types'
 import { _useProgressTracker } from './_useProgressTracker'
 import { _useFileIO } from './_useFileIO'
 import { _useColumnMapping } from './_useColumnMapping'
@@ -37,7 +36,7 @@ export function useSeniorityUpload(): SeniorityUpload {
   const preparationIssues = ref<ImportIssue[]>([])
   const columnMap = ref<UploadColumnMap>({ ...DEFAULT_COLUMN_MAP })
   const mappingOptions = ref({ ...DEFAULT_MAPPING_OPTIONS })
-  const entries = ref<Partial<SeniorityEntry>[]>([])
+  const entries = ref<Partial<SeniorityEntryInput>[]>([])
   const rowErrors = shallowRef<Map<number, string[]>>(new Map())
   const pipelineIssues = shallowRef<Map<number, ImportIssue[]>>(new Map())
   const sourceValues = ref<Map<number, Record<string, unknown>>>(new Map())
@@ -66,20 +65,33 @@ export function useSeniorityUpload(): SeniorityUpload {
 
   const progress = _useProgressTracker()
 
-  // ── Phase construction (order matters: downstream before upstream) ──────
+  // ── Private workflow construction ───────────────────────────────────────
 
-  const review = _useReview({
+  const session: UploadSession = {
+    selectedUploadTypeId,
+    rawHeaders,
+    rawRows,
+    extractedEffectiveDate,
+    extractedTitle,
+    syntheticNote,
+    syntheticIndices,
+    columnMap,
+    mappingOptions,
+    autoDetectSucceeded,
+    preparedSheet,
+    preparationIssues,
     entries,
     rowErrors,
     pipelineIssues,
     sourceValues,
-    syntheticNote,
-    syntheticIndices,
+    importAttemptId,
+    error,
     progress,
+    onSheetChange: resetDownstream,
     onReviewChanged(action, changedEntries) {
       const id = importAttemptId.value
       if (!id) return
-      const at = new Date().toISOString()
+      const at = serializeInstant(nowInstant())
       void importAttemptsStore.updateTrace(id, trace => ({
           ...trace,
           review: {
@@ -89,9 +101,32 @@ export function useSeniorityUpload(): SeniorityUpload {
           updatedAt: at,
         }))
     },
-  })
+    async onMapped(mapped, issues, mappedSourceValues) {
+      entries.value = mapped
+      pipelineIssues.value = issues
+      sourceValues.value = mappedSourceValues
+      await review.validate()
+      const id = importAttemptId.value
+      if (id) {
+        const validationErrors = Object.fromEntries([...rowErrors.value].map(([index, issues]) => [String(index), issues]))
+        await importAttemptsStore.updateTrace(id, trace => ({
+          ...trace,
+          validation: { rowErrors: validationErrors },
+          stage: 'review',
+          updatedAt: serializeInstant(nowInstant()),
+        }))
+      }
+    },
+    onMetadataReady(date, title) {
+      confirm.effectiveDate.value = date ? parsePlainDate(date) : todayPlainDate()
+      if (title && !confirm.title.value) {
+        confirm.title.value = title
+      }
+    },
+  }
 
-  const confirm = _useConfirm({ error, importAttemptId })
+  const review = _useReview(session)
+  const confirm = _useConfirm(session)
 
   function resetDownstream() {
     rawHeaders.value = []
@@ -111,62 +146,9 @@ export function useSeniorityUpload(): SeniorityUpload {
     mapping._reset()
   }
 
-  const mapping = _useColumnMapping({
-    rawRows,
-    rawHeaders,
-    columnMap,
-    mappingOptions,
-    progress,
-    extractedEffectiveDate,
-    extractedTitle,
-    selectedUploadTypeId,
-    preparedSheet,
-    preparationIssues,
-    importAttemptId,
-    async onMapped(mapped: Partial<SeniorityEntry>[], issues: Map<number, ImportIssue[]>, mappedSourceValues: Map<number, Record<string, unknown>>) {
-      entries.value = mapped
-      pipelineIssues.value = issues
-      sourceValues.value = mappedSourceValues
-      await review.validate()
-      const id = importAttemptId.value
-      if (id) {
-        const validationErrors = Object.fromEntries([...rowErrors.value].map(([index, issues]) => [String(index), issues]))
-        await importAttemptsStore.updateTrace(id, trace => ({
-          ...trace,
-          validation: { rowErrors: validationErrors },
-          stage: 'review',
-          updatedAt: new Date().toISOString(),
-        }))
-      }
-    },
-    onMetadataReady(date, title) {
-      if (date) {
-        confirm.effectiveDate.value = parseDate(date)
-      } else {
-        confirm.effectiveDate.value = parseDate(todayISO())
-      }
-      if (title && !confirm.title.value) {
-        confirm.title.value = title
-      }
-    },
-  })
+  const mapping = _useColumnMapping(session)
 
-  const file = _useFileIO({
-    selectedUploadTypeId,
-    rawHeaders,
-    rawRows,
-    extractedEffectiveDate,
-    extractedTitle,
-    syntheticNote,
-    syntheticIndices,
-    columnMap,
-    mappingOptions,
-    autoDetectSucceeded,
-    preparedSheet,
-    preparationIssues,
-    progress,
-    onSheetChange: resetDownstream,
-  })
+  const file = _useFileIO(session)
 
   // ── Reset ───────────────────────────────────────────────────────────────
 

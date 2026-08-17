@@ -2,7 +2,8 @@ import type { SeniorityEntry } from '~/utils/schemas/seniority-list'
 import type { SenioritySnapshot, SeniorityLens, PilotAnchor } from '~/utils/seniority-engine'
 import type { ComputedRef, Ref } from 'vue'
 import { createSnapshot, createLens, uniqueEntryValues } from '~/utils/seniority-engine'
-import { computeRetireDate, todayISO } from '~/utils/date'
+import { computeRetireDateValue } from '~/utils/date'
+import { parsePlainDate, serializePlainDate, todayPlainDate, type PlainDate } from '~/utils/temporal'
 import { normalizeEmployeeNumber } from '~/utils/schemas/seniority-list'
 import { useSeniorityStore } from '~/stores/seniority'
 import { useUserStore } from '~/stores/user'
@@ -15,13 +16,13 @@ export interface NewHireControls {
   selectedBase: Ref<string | null>
   selectedSeat: Ref<string | null>
   selectedFleet: Ref<string | null>
-  birthDate: Ref<string | null>
+  birthDate: Ref<PlainDate | null>
   availableBases: ComputedRef<string[]>
   availableSeats: ComputedRef<string[]>
   availableFleets: ComputedRef<string[]>
   realUserFound: ComputedRef<boolean>
   isConfigured: ComputedRef<boolean>
-  retireDate: ComputedRef<string | null>
+  retireDate: ComputedRef<PlainDate | null>
   syntheticEntry: ComputedRef<SeniorityEntry | null>
   reset(): void
 }
@@ -34,7 +35,7 @@ const enabled = ref(false)
 const selectedBase = ref<string | null>(null)
 const selectedSeat = ref<string | null>(null)
 const selectedFleet = ref<string | null>(null)
-const birthDate = ref<string | null>(null)
+const birthDate = shallowRef<PlainDate | null>(null)
 
 let _dbInitialized = false
 
@@ -78,7 +79,7 @@ export function useSeniorityCore() {
     ]).then(([enabledVal, configVal]) => {
       if (enabledVal) enabled.value = enabledVal
       if (configVal) {
-        if (configVal.birthDate) birthDate.value = configVal.birthDate
+        if (configVal.birthDate) birthDate.value = parsePlainDate(configVal.birthDate)
         if (configVal.selectedBase) selectedBase.value = configVal.selectedBase
         if (configVal.selectedSeat) selectedSeat.value = configVal.selectedSeat
         if (configVal.selectedFleet) selectedFleet.value = configVal.selectedFleet
@@ -103,7 +104,7 @@ export function useSeniorityCore() {
 
     watch([birthDate, selectedBase, selectedSeat, selectedFleet], () => {
       userStore.savePreference(PREF_KEY_CONFIG, {
-        birthDate: birthDate.value,
+        birthDate: birthDate.value ? serializePlainDate(birthDate.value) : null,
         selectedBase: selectedBase.value,
         selectedSeat: selectedSeat.value,
         selectedFleet: selectedFleet.value,
@@ -127,7 +128,8 @@ export function useSeniorityCore() {
 
   const retireDate = computed(() => {
     if (!birthDate.value) return null
-    return computeRetireDate(birthDate.value, userStore.retirementAge)
+    const dob = typeof birthDate.value === 'string' ? parsePlainDate(birthDate.value) : birthDate.value
+    return dob ? computeRetireDateValue(dob, userStore.retirementAge) : null
   })
 
   const isConfigured = computed(() =>
@@ -151,7 +153,7 @@ export function useSeniorityCore() {
       seat: selectedSeat.value!,
       base: selectedBase.value!,
       fleet: selectedFleet.value!,
-      hire_date: todayISO(),
+      hire_date: todayPlainDate(),
       retire_date: retireDate.value!,
     }
   })
@@ -214,10 +216,10 @@ export function useSeniorityCore() {
       if (!entry) return null
       const anchor: PilotAnchor = {
         seniorityNumber: entry.seniority_number,
-        retireDate: entry.retire_date,
+        retireDate: entry.retire_date ?? null,
         employeeNumber: entry.employee_number,
       }
-      return createLens(_baseSnapshot!.value, anchor)
+      return createLens(_baseSnapshot!.value, anchor, todayPlainDate())
     })
   }
 
@@ -227,10 +229,10 @@ export function useSeniorityCore() {
       if (!_snapshot!.value || !synthetic) return _baseLens!.value
       const anchor: PilotAnchor = {
         seniorityNumber: synthetic.seniority_number,
-        retireDate: synthetic.retire_date,
+        retireDate: synthetic.retire_date ?? null,
         employeeNumber: synthetic.employee_number,
       }
-      return createLens(_snapshot!.value, anchor)
+      return createLens(_snapshot!.value, anchor, todayPlainDate())
     })
   }
 

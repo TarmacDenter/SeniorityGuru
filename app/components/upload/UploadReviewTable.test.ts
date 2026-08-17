@@ -3,14 +3,14 @@ import { mountSuspended } from '@nuxt/test-utils/runtime'
 import { defineComponent, h } from 'vue'
 import { TooltipProvider } from 'reka-ui'
 import UploadReviewTable from './UploadReviewTable.vue'
-import type { SeniorityEntry } from '~/utils/schemas/seniority-list'
+import type { SeniorityEntryInput } from '~/utils/schemas/seniority-list'
 import { makePartialEntry } from '~/test-utils/factories'
 
 /**
  * Mount UploadReviewTable wrapped in TooltipProvider (required by UTooltip).
  */
 async function mountTable(props: {
-  entries: Partial<SeniorityEntry>[]
+  entries: Partial<SeniorityEntryInput>[]
   rowErrors: Map<number, string[]>
   showErrorsOnly?: boolean
 }) {
@@ -32,7 +32,7 @@ async function mountTable(props: {
 
 describe('UploadReviewTable', () => {
   // 5 entries, errors at indices 2 and 4.
-  const entries: Partial<SeniorityEntry>[] = [
+  const entries: Partial<SeniorityEntryInput>[] = [
     makePartialEntry({ seniority_number: 1, employee_number: '100', name: 'Alice' }),
     makePartialEntry({ seniority_number: 2, employee_number: '200', name: 'Bob' }),
     makePartialEntry({ seniority_number: 3, employee_number: '300', name: 'Charlie' }),

@@ -1,9 +1,11 @@
 import { defineStore } from 'pinia'
 import type { LocalImportAttempt } from '~/utils/db'
+import { localImportAttemptToDomain, type ImportAttemptDomain } from '~/utils/db-adapters'
 import { db } from '~/utils/db'
 import { createLogger } from '~/utils/logger'
 import type { ImportDiagnosticTrace } from '~/utils/import-pipeline/types'
 import { ImportDiagnosticTraceSchema } from '~/utils/import-pipeline/diagnostic-schema'
+import { nowInstant, serializeInstant, Temporal } from '~/utils/temporal'
 
 const MAX_ATTEMPTS = 5
 const MAX_BYTES = 50 * 1024 * 1024
@@ -17,20 +19,20 @@ export interface ImportAttemptInput {
   readonly sheetName?: string
 }
 
-function newestFirst(attempts: LocalImportAttempt[]) {
-  return attempts.sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+function newestFirst(attempts: ImportAttemptDomain[]) {
+  return attempts.sort((a, b) => Temporal.Instant.compare(b.createdAt, a.createdAt))
 }
 
 /** Owns local diagnostic retention. A storage failure never becomes an import failure. */
 export const useImportAttemptsStore = defineStore('import-attempts', () => {
-  const attempts = ref<LocalImportAttempt[]>([])
+  const attempts = shallowRef<ImportAttemptDomain[]>([])
 
   async function load() {
-    attempts.value = newestFirst(await db.importAttempts.toArray())
+    attempts.value = newestFirst((await db.importAttempts.toArray()).map(localImportAttemptToDomain))
   }
 
   async function retain() {
-    const ordered = newestFirst(await db.importAttempts.toArray())
+    const ordered = newestFirst((await db.importAttempts.toArray()).map(localImportAttemptToDomain))
     let size = 0
     const remove: string[] = []
     for (const attempt of ordered) {
@@ -44,7 +46,7 @@ export const useImportAttemptsStore = defineStore('import-attempts', () => {
   async function record(input: ImportAttemptInput): Promise<string | null> {
     try {
       const data = JSON.stringify(input.data)
-      const now = new Date().toISOString()
+      const now = serializeInstant(nowInstant())
       await db.importAttempts.put({
         id: input.id,
         pluginId: input.pluginId,
@@ -72,7 +74,7 @@ export const useImportAttemptsStore = defineStore('import-attempts', () => {
         ...existing,
         data,
         size: new Blob([data]).size,
-        updatedAt: new Date().toISOString(),
+        updatedAt: serializeInstant(nowInstant()),
         ...(patch.outcome ? { outcome: patch.outcome } : {}),
         ...(patch.listId !== undefined ? { listId: patch.listId } : {}),
       })
@@ -111,7 +113,7 @@ export const useImportAttemptsStore = defineStore('import-attempts', () => {
         log.warn('Could not complete an invalid import diagnostic trace', { id })
         return
       }
-      const completedAt = new Date().toISOString()
+      const completedAt = serializeInstant(nowInstant())
       const trace = ImportDiagnosticTraceSchema.parse({
         ...parsed.data,
         outcome: input.outcome,

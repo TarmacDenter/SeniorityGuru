@@ -1,45 +1,30 @@
 <script setup lang="ts">
-import type { useQualAnalytics } from '~/composables/seniority'
-
 defineProps<{
-  demographics: ReturnType<typeof useQualAnalytics>
+  fleets: string[]
+  seats: string[]
+  bases: string[]
 }>()
+
+const fleet = defineModel<string | null>('fleet', { default: null })
+const seat = defineModel<string | null>('seat', { default: null })
+const base = defineModel<string | null>('base', { default: null })
+
+function clear() {
+  fleet.value = null
+  seat.value = null
+  base.value = null
+}
+
+function selection(value: unknown): string | null {
+  return typeof value === 'string' ? value : null
+}
 </script>
 
 <template>
-  <!-- eslint-disable vue/no-mutating-props -->
   <div class="flex gap-3 flex-wrap items-center">
-    <USelect
-      :model-value="demographics.selectedFleet.value ?? undefined"
-      :items="demographics.availableFleets.value"
-      placeholder="All Fleets"
-      class="w-full sm:w-40"
-      @update:model-value="demographics.selectedFleet.value = $event ?? null"
-    />
-    <USelect
-      :model-value="demographics.selectedSeat.value ?? undefined"
-      :items="demographics.availableSeats.value"
-      placeholder="All Seats"
-      class="w-full sm:w-40"
-      @update:model-value="demographics.selectedSeat.value = $event ?? null"
-    />
-    <USelect
-      :model-value="demographics.selectedBase.value ?? undefined"
-      :items="demographics.availableBases.value"
-      placeholder="All Bases"
-      class="w-full sm:w-40"
-      @update:model-value="demographics.selectedBase.value = $event ?? null"
-    />
-    <UButton
-      v-if="demographics.selectedFleet.value || demographics.selectedSeat.value || demographics.selectedBase.value"
-      size="sm"
-      color="neutral"
-      variant="ghost"
-      icon="i-lucide-x"
-      @click="demographics.clearFilter()"
-    >
-      Clear filter
-    </UButton>
+    <USelect :model-value="fleet ?? undefined" :items="fleets" placeholder="All Fleets" class="w-full sm:w-40" @update:model-value="fleet = selection($event)" />
+    <USelect :model-value="seat ?? undefined" :items="seats" placeholder="All Seats" class="w-full sm:w-40" @update:model-value="seat = selection($event)" />
+    <USelect :model-value="base ?? undefined" :items="bases" placeholder="All Bases" class="w-full sm:w-40" @update:model-value="base = selection($event)" />
+    <UButton v-if="fleet || seat || base" size="sm" color="neutral" variant="ghost" icon="i-lucide-x" @click="clear">Clear filter</UButton>
   </div>
-  <!-- eslint-enable vue/no-mutating-props -->
 </template>

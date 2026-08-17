@@ -1,4 +1,5 @@
 import type { SeniorityEntry } from '~/utils/schemas/seniority-list'
+import { Temporal } from '~/utils/temporal'
 
 type Entry = SeniorityEntry
 
@@ -89,27 +90,27 @@ export function computeComparison(
 
   for (const [empNum, old] of olderMap) {
     if (!newerMap.has(empNum)) {
-      if (old.retire_date && old.retire_date <= newerEffectiveDate) {
+      if (old.retire_date && Temporal.PlainDate.compare(old.retire_date, Temporal.PlainDate.from(newerEffectiveDate)) <= 0) {
         retired.push({
           employee_number: empNum,
           name: old.name,
           seniority_number: old.seniority_number,
-          retire_date: old.retire_date,
+          retire_date: old.retire_date.toString(),
           seat: old.seat,
           fleet: old.fleet,
           base: old.base,
-          hire_date: old.hire_date,
+          hire_date: old.hire_date.toString(),
         })
       } else {
         departed.push({
           employee_number: empNum,
           name: old.name,
           seniority_number: old.seniority_number,
-          retire_date: old.retire_date,
+          retire_date: old.retire_date?.toString(),
           seat: old.seat,
           fleet: old.fleet,
           base: old.base,
-          hire_date: old.hire_date,
+          hire_date: old.hire_date.toString(),
         })
       }
     }
@@ -130,8 +131,8 @@ export function computeComparison(
         new_fleet: newer.fleet,
         old_base: older.base,
         new_base: newer.base,
-        hire_date: newer.hire_date,
-        retire_date: newer.retire_date,
+        hire_date: newer.hire_date.toString(),
+        retire_date: newer.retire_date?.toString() ?? '',
       })
     }
 
@@ -145,8 +146,8 @@ export function computeComparison(
         seat: newer.seat,
         fleet: newer.fleet,
         base: newer.base,
-        hire_date: newer.hire_date,
-        retire_date: newer.retire_date,
+        hire_date: newer.hire_date.toString(),
+        retire_date: newer.retire_date?.toString() ?? '',
       })
     }
   }
@@ -157,11 +158,11 @@ export function computeComparison(
         employee_number: empNum,
         name: entry.name,
         seniority_number: entry.seniority_number,
-        hire_date: entry.hire_date,
+        hire_date: entry.hire_date.toString(),
         seat: entry.seat,
         fleet: entry.fleet,
         base: entry.base,
-        retire_date: entry.retire_date,
+        retire_date: entry.retire_date?.toString() ?? '',
       })
     }
   }

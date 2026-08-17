@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { useSeniorityCore, _resetCoreSingletons } from './useSeniorityCore'
 import { resetMockStores } from '~/test-utils/seniority-mocks'
+import { parsePlainDate } from '~/utils/temporal'
 
 const mockStore = vi.hoisted(() => ({ entries: [] as any[], lists: [] as any[] }))
 const mockUserStore = vi.hoisted(() => ({
@@ -49,7 +50,7 @@ describe('useSeniorityCore', () => {
     expect(lens.value).not.toBeNull()
     expect(lens.value!.anchor).toEqual({
       seniorityNumber: 1,
-      retireDate: '2045-01-01',
+      retireDate: parsePlainDate('2045-01-01'),
       employeeNumber: 'E1',
     })
   })
@@ -123,7 +124,7 @@ describe('useSeniorityCore', () => {
     newHire.selectedBase.value = 'JFK'
     newHire.selectedSeat.value = 'FO'
     newHire.selectedFleet.value = '737'
-    newHire.birthDate.value = '1990-06-15'
+    newHire.birthDate.value = parsePlainDate('1990-06-15')
     expect(newHire.syntheticEntry.value).not.toBeNull()
     expect(newHire.syntheticEntry.value!.seniority_number).toBe(11)
     expect(newHire.syntheticEntry.value!.employee_number).toBe('_new_hire')
@@ -141,7 +142,7 @@ describe('useSeniorityCore', () => {
     newHire.selectedBase.value = 'JFK'
     newHire.selectedSeat.value = 'FO'
     newHire.selectedFleet.value = '737'
-    newHire.birthDate.value = '1990-06-15'
+    newHire.birthDate.value = parsePlainDate('1990-06-15')
     expect(snapshot.value).not.toBeNull()
     expect(snapshot.value!.entries).toHaveLength(2)
     expect(snapshot.value!.byEmployeeNumber.has('_new_hire')).toBe(true)
@@ -163,7 +164,7 @@ describe('useSeniorityCore', () => {
     newHire.selectedBase.value = 'JFK'
     newHire.selectedSeat.value = 'FO'
     newHire.selectedFleet.value = '737'
-    newHire.birthDate.value = '1990-06-15'
+    newHire.birthDate.value = parsePlainDate('1990-06-15')
 
     // Now: lens re-anchored to synthetic entry
     expect(lens.value).not.toBeNull()
