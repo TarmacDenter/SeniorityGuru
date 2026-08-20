@@ -5,7 +5,7 @@ import { Temporal } from '~/utils/temporal'
 import { AnchorNotFoundError, createLens } from './lens'
 import { createScenario } from './scenario'
 import { createSnapshot } from './snapshot'
-import type { SeniorityLens } from './types'
+import type { AnchoredSeniorityLens, SeniorityLens } from './types'
 
 beforeAll(() => {
   vi.useFakeTimers()
@@ -31,7 +31,13 @@ function assertBaseLensCapabilities(lens: SeniorityLens) {
   lens.trajectory()
 }
 
+function assertAnchoredLensCapabilities(lens: AnchoredSeniorityLens) {
+  // @ts-expect-error qualification scales replace the removed holdability capability.
+  lens.holdability()
+}
+
 void assertBaseLensCapabilities
+void assertAnchoredLensCapabilities
 
 describe('SeniorityLens capabilities', () => {
   it('exposes only organization methods until an anchor is derived', () => {
@@ -123,8 +129,12 @@ describe('pilot-relative analysis', () => {
   it('supports the remaining pilot-relative analysis methods', () => {
     const scenario = createScenario({ projectionDate: asOfDate })
     expect(anchored.compareTrajectories(scenario, scenario).labels.length).toBeGreaterThan(0)
-    expect(anchored.holdability().length).toBeGreaterThan(0)
-    expect(anchored.qualScales().length).toBeGreaterThan(0)
+    expect(anchored.qualScales()).toContainEqual(expect.objectContaining({
+      fleet: '737',
+      seat: 'CA',
+      plugSenNum: 4,
+      isHoldable: true,
+    }))
     expect(anchored.percentileCrossing(50, scenario)).toSatisfy(value => value === null || /^\d{4}$/.test(value.year))
   })
 })

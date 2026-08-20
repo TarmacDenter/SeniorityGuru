@@ -68,23 +68,6 @@ export interface RetirementWaveBucket {
   isWave: boolean
 }
 
-export type PowerIndexCellState = 'green' | 'amber' | 'red'
-
-export interface PowerIndexCell {
-  fleet: string
-  seat: string
-  base: string
-  state: PowerIndexCellState
-  retiredCount: number
-  totalInCell: number
-  pilotsAhead: number
-  isLowestSeniority: boolean
-  cellPercentile: number
-  numbersJuniorToPlug: number
-  plugPercentile: number
-  userPercentile: number
-}
-
 export interface DensityBucket {
   start: number
   count: number
@@ -317,8 +300,6 @@ export interface AnchoredSeniorityLens extends CommonSeniorityLens {
   compareTrajectories(scenarioA: Scenario, scenarioB: Scenario): ComparativeTrajectoryResult
   /** Finds the first year the anchor reaches a target percentile, if any. */
   percentileCrossing(targetPercentile: number, scenario?: Scenario): ThresholdResult | null
-  /** Computes projected holdability for each qualification cell. */
-  holdability(scenario?: Scenario): PowerIndexCell[]
   /** Computes projected qualification demographic scales for the anchor. */
   qualScales(scenario?: Scenario): QualDemographicScale[]
   /** Lists future retirements with anchor-relative rank and senior-only filtering. */

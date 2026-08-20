@@ -20,7 +20,7 @@
  * [AnchoredSeniorityLens] ------------------> pilot-relative analysis
  *                                             - standing and trajectory
  *                                             - comparisons and thresholds
- *                                             - holdability and qual scales
+ *                                             - qualification scales with holdability state
  *                                             - relative retirements
  *
  * Optional calculation inputs
@@ -76,7 +76,6 @@ export {
   computeQualComposition,
   findMostJuniorCA,
   computeRetirementWave,
-  computePowerIndexCells,
   computeQualSnapshots,
   applyProjectionToSnapshots,
   findThresholdYear,
@@ -117,8 +116,6 @@ export type {
   DensityBucket,
   GrowthConfig,
   MostJuniorCARow,
-  PowerIndexCell,
-  PowerIndexCellState,
   QualCompositionRow,
   QualDemographicScale,
   QualDemographicSnapshot,

@@ -10,7 +10,6 @@ import {
   computeYosHistogram,
   computeQualComposition,
   computeRetirementWave,
-  computePowerIndexCells,
   applyProjectionToSnapshots,
   computeQualSnapshots,
   findThresholdYear,
@@ -282,122 +281,6 @@ describe('computeRetirementWave', () => {
     expect(result.map((b) => b.year)).toEqual([2029, 2030, 2031])
   })
 
-})
-
-// ─── computePowerIndexCells ───────────────────────────────────────────────────
-describe('computePowerIndexCells', () => {
-  const TODAY = AS_OF
-  const FUTURE = parsePlainDate('2029-01-01')
-
-  it('green when user can hold today (more senior than most junior active)', () => {
-    // User seniority_number=50. Cell has pilots with sen_nums 100,200,300 — all more junior.
-    const entries = [
-      makeEntry({ fleet: '737', seat: 'CA', base: 'JFK', seniority_number: 100, retire_date: undefined }),
-      makeEntry({ fleet: '737', seat: 'CA', base: 'JFK', seniority_number: 200, retire_date: undefined }),
-      makeEntry({ fleet: '737', seat: 'CA', base: 'JFK', seniority_number: 300, retire_date: undefined }),
-    ]
-    const cells = computePowerIndexCells(entries, 50, TODAY, undefined, AS_OF)
-    expect(cells[0]?.state).toBe('green')
-    expect(cells[0]?.pilotsAhead).toBe(0)
-    expect(cells[0]?.isLowestSeniority).toBe(false) // user is NOT the most junior (300 is)
-    expect(cells[0]?.numbersJuniorToPlug).toBe(0) // holdable → always 0
-  })
-
-  it('isLowestSeniority is true when user is the most junior in the cell', () => {
-    const entries = [
-      makeEntry({ fleet: '737', seat: 'CA', base: 'JFK', seniority_number: 50, retire_date: undefined }),
-      makeEntry({ fleet: '737', seat: 'CA', base: 'JFK', seniority_number: 100, retire_date: undefined }),
-    ]
-    // User at 100 — they ARE the most junior CA in the cell → amber (unlikely to hold)
-    const cells = computePowerIndexCells(entries, 100, TODAY, undefined, AS_OF)
-    expect(cells[0]?.state).toBe('amber')
-    expect(cells[0]?.isLowestSeniority).toBe(true)
-    expect(cells[0]?.numbersJuniorToPlug).toBe(0) // holdable (lowest seniority but still holdable) → 0
-  })
-
-  it('green after retirements clear the blocking pilots', () => {
-    // User seniority_number=150. Cell has sen_nums 100 (retiring) and 200 (staying).
-    // After retirement of 100: most junior active = 200, user 150 <= 200 → green
-    const entries = [
-      makeEntry({ fleet: '737', seat: 'CA', base: 'JFK', seniority_number: 100, retire_date: '2028-01-01' }),
-      makeEntry({ fleet: '737', seat: 'CA', base: 'JFK', seniority_number: 200, retire_date: undefined }),
-    ]
-    const cells = computePowerIndexCells(entries, 150, FUTURE, undefined, AS_OF)
-    expect(cells[0]?.state).toBe('green')
-    expect(cells[0]?.numbersJuniorToPlug).toBe(0) // holdable → 0
-  })
-
-  it('not holdable when user senNum > plug — shows plug distance', () => {
-    // 20-pilot CA cell, 19 retired, 1 active (#50). User at #100 (not in list).
-    // userSenNum 100 > plug 50 → not holdable. numbersJuniorToPlug = 50.
-    // 50 > 10% of 20 (2) → red.
-    const entries: SeniorityEntry[] = []
-    for (let i = 1; i <= 19; i++) {
-      entries.push(makeEntry({ fleet: '737', seat: 'CA', base: 'JFK', seniority_number: i, retire_date: '2025-01-01' }))
-    }
-    entries.push(makeEntry({ fleet: '737', seat: 'CA', base: 'JFK', seniority_number: 50, retire_date: undefined }))
-    const cells = computePowerIndexCells(entries, 100, TODAY, undefined, AS_OF)
-    expect(cells[0]?.state).toBe('red')
-    expect(cells[0]?.numbersJuniorToPlug).toBe(50)
-  })
-
-  it('red when many pilots still blocking', () => {
-    const entries = [
-      makeEntry({ fleet: '737', seat: 'CA', base: 'JFK', seniority_number: 1, retire_date: undefined }),
-      makeEntry({ fleet: '737', seat: 'CA', base: 'JFK', seniority_number: 2, retire_date: undefined }),
-      makeEntry({ fleet: '737', seat: 'CA', base: 'JFK', seniority_number: 3, retire_date: undefined }),
-    ]
-    const cells = computePowerIndexCells(entries, 9999, TODAY, undefined, AS_OF)
-    expect(cells[0]?.state).toBe('red')
-    // user=9999, mostJuniorActive=3, numbersJuniorToPlug = 9999-3 = 9996
-    expect(cells[0]?.numbersJuniorToPlug).toBe(9996)
-  })
-
-  it('holdable when userSenNum <= plug — shows cell percentile', () => {
-    // 10-pilot cell: 5 retired + 5 active (#6-#10), user at #7
-    // userSenNum 7 <= plug 10 → holdable (green)
-    // cellPercentile = (10-1)/10 = 90%
-    const entries: SeniorityEntry[] = []
-    for (let i = 1; i <= 5; i++) {
-      entries.push(makeEntry({ fleet: '737', seat: 'CA', base: 'JFK', seniority_number: i, retire_date: '2025-01-01' }))
-    }
-    for (let i = 6; i <= 10; i++) {
-      entries.push(makeEntry({ fleet: '737', seat: 'CA', base: 'JFK', seniority_number: i, retire_date: undefined }))
-    }
-    const cells = computePowerIndexCells(entries, 7, TODAY, undefined, AS_OF)
-    expect(cells[0]?.state).toBe('green')
-    expect(cells[0]?.cellPercentile).toBe(90)
-    expect(cells[0]?.numbersJuniorToPlug).toBe(0)
-  })
-})
-
-// ─── computePowerIndexCells with growth ──────────────────────────────────────
-describe('computePowerIndexCells with growthConfig', () => {
-  const FUTURE = parsePlainDate('2029-01-01')
-  const growthEnabled: GrowthConfig = { enabled: true, annualRate: 0.05 }
-
-  it('growth increases userPercentile compared to no growth', () => {
-    const entries = Array.from({ length: 20 }, (_, i) => makeEntry({
-      seniority_number: i + 1,
-      employee_number: `EMP${String(i + 1).padStart(4, '0')}`,
-      fleet: '737', seat: 'CA', base: 'JFK',
-      retire_date: i < 5 ? '2028-01-01' : '2045-01-01',
-    }))
-    const cellsNoGrowth = computePowerIndexCells(entries, 10, FUTURE, undefined, AS_OF)
-    const cellsWithGrowth = computePowerIndexCells(entries, 10, FUTURE, growthEnabled, AS_OF)
-    expect(cellsWithGrowth[0]!.userPercentile).toBeGreaterThan(cellsNoGrowth[0]!.userPercentile)
-  })
-
-  it('disabled growth matches no-growth behavior', () => {
-    const entries = [
-      makeEntry({ fleet: '737', seat: 'CA', base: 'JFK', seniority_number: 1, retire_date: undefined }),
-      makeEntry({ fleet: '737', seat: 'CA', base: 'JFK', seniority_number: 2, retire_date: undefined }),
-    ]
-    const disabled: GrowthConfig = { enabled: false, annualRate: 0.05 }
-    const cellsNone = computePowerIndexCells(entries, 1, FUTURE, undefined, AS_OF)
-    const cellsDisabled = computePowerIndexCells(entries, 1, FUTURE, disabled, AS_OF)
-    expect(cellsDisabled[0]!.userPercentile).toBe(cellsNone[0]!.userPercentile)
-  })
 })
 
 // ─── applyProjectionToSnapshots with growth ─────────────────────────────────

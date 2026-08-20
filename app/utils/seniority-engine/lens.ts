@@ -3,7 +3,6 @@ import type {
   CellBreakdownRow,
   ComparativeTrajectoryResult,
   DemographicsResult,
-  PowerIndexCell,
   QualDemographicScale,
   RetirementProjectionOptions,
   RetirementProjectionResult,
@@ -37,7 +36,6 @@ import { computePercentile } from './percentile'
 import {
   applyProjectionToSnapshots,
   computeAgeDistribution,
-  computePowerIndexCells,
   computeQualComposition,
   computeQualSnapshots,
   computeRetirementWave,
@@ -195,7 +193,6 @@ class AnchoredSeniorityLensImpl implements AnchoredSeniorityLens {
   readonly trajectory: (scenario?: Scenario) => TrajectoryResult
   readonly compareTrajectories: (scenarioA: Scenario, scenarioB: Scenario) => ComparativeTrajectoryResult
   readonly percentileCrossing: (targetPercentile: number, scenario?: Scenario) => ThresholdResult | null
-  readonly holdability: (scenario?: Scenario) => PowerIndexCell[]
   readonly qualScales: (scenario?: Scenario) => QualDemographicScale[]
   readonly upcomingRetirementsRelativeToAnchor: (filter: UpcomingRetirementRelativeFilter) => UpcomingRetirementRelativeRow[]
 
@@ -257,11 +254,6 @@ class AnchoredSeniorityLensImpl implements AnchoredSeniorityLens {
       const { today, endDate } = getProjectionEndDateValue(anchor.retire_date ?? null, currentDate())
       const points = buildTrajectory(entries, seniorityNumber, generateTimePoints(today, endDate), qualSpecToFilter(scenarioValue.scopeFilter), scenarioValue.growthConfig)
       return findThresholdYear(points, targetPercentile)
-    })
-
-    this.holdability = memoizeLast((scenario?: Scenario) => {
-      const scenarioValue = scenario ?? createScenario({ projectionDate: currentDate() })
-      return computePowerIndexCells(entries, seniorityNumber, scenarioValue.projectionDate, scenarioValue.growthConfig, currentDate())
     })
 
     this.qualScales = memoizeLast((scenario?: Scenario) => {

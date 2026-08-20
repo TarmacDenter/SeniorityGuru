@@ -82,6 +82,7 @@ function isProjecting(scale: QualDemographicScale) {
         <!-- Current position ghost (only shown when projecting forward) -->
         <template v-if="isProjecting(scale)">
           <div
+            data-testid="qualification-scale-current-position"
             class="absolute bottom-0 w-0.5 z-5 bg-[var(--ui-text-muted)] opacity-30"
             :style="{ left: `${clamp(scale.currentUserPercentile)}%`, height: '100%', transform: 'translateX(-50%)' }"
           />
@@ -93,6 +94,7 @@ function isProjecting(scale: QualDemographicScale) {
 
         <!-- Projected (or current) user position -->
         <div
+          data-testid="qualification-scale-projected-position"
           class="absolute bottom-0 w-0.5 z-10"
           :class="scale.isHoldable ? 'bg-[var(--ui-color-success-500)]' : 'bg-[var(--ui-color-primary-500)]'"
           :style="{ left: `${clamp(scale.userPercentile)}%`, height: '100%', transform: 'translateX(-50%)' }"

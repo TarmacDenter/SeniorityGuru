@@ -37,4 +37,22 @@ describe('QualSeniorityScale', () => {
     const rendered = wrapper.text()
     expect(rendered.indexOf('320 CA')).toBeLessThan(rendered.indexOf('737 FO'))
   })
+
+  it('renders projected position markers with holdability state and current-position ghosts', async () => {
+    const Scale = await import('./QualSeniorityScale.vue')
+    const wrapper = await mountSuspended(Scale.default, {
+      props: {
+        scales: [
+          scale({ seat: 'CA', isHoldable: true, userPercentile: 70, currentUserPercentile: 60 }),
+          scale({ seat: 'FO', isHoldable: false, userPercentile: 50, currentUserPercentile: 40 }),
+        ],
+      },
+    })
+
+    const projectedMarkers = wrapper.findAll('[data-testid="qualification-scale-projected-position"]')
+    expect(projectedMarkers).toHaveLength(2)
+    expect(projectedMarkers[0]!.classes()).toContain('bg-[var(--ui-color-success-500)]')
+    expect(projectedMarkers[1]!.classes()).toContain('bg-[var(--ui-color-primary-500)]')
+    expect(wrapper.findAll('[data-testid="qualification-scale-current-position"]')).toHaveLength(2)
+  })
 })
