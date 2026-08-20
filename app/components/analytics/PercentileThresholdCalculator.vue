@@ -1,5 +1,5 @@
 <script setup lang="ts">
-defineProps<{
+const props = defineProps<{
   result: { year: string } | null
   targetPercentile: number
   minPercentile: number
@@ -11,9 +11,25 @@ const emit = defineEmits<{
   percentileChange: [number]
 }>()
 
+const sliderValue = ref(props.targetPercentile)
+let debounceTimer: ReturnType<typeof setTimeout> | null = null
+
+watch(() => props.targetPercentile, (value) => {
+  sliderValue.value = value
+})
+
 function handlePercentileChange(value: number | undefined) {
-  if (value !== undefined) emit('percentileChange', value)
+  if (value === undefined) return
+  sliderValue.value = value
+  if (debounceTimer) clearTimeout(debounceTimer)
+  debounceTimer = setTimeout(() => {
+    emit('percentileChange', value)
+  }, 500)
 }
+
+onUnmounted(() => {
+  if (debounceTimer) clearTimeout(debounceTimer)
+})
 </script>
 
 <template>
@@ -34,11 +50,11 @@ function handlePercentileChange(value: number | undefined) {
         <div class="flex items-center justify-between gap-3">
           <span class="text-sm text-[var(--ui-text-muted)]">Target percentile:</span>
           <UBadge color="primary" variant="subtle" size="sm" class="font-mono">
-            {{ targetPercentile }}%
+            {{ sliderValue }}%
           </UBadge>
         </div>
         <USlider
-          :model-value="targetPercentile"
+          :model-value="sliderValue"
           :min="minPercentile"
           :max="maxPercentile"
           :step="0.5"
