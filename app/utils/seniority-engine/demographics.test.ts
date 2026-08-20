@@ -38,7 +38,7 @@ describe('computeAgeDistribution', () => {
     const entries = [
       makeEntry({ fleet: '737', retire_date: '2030-01-01' }),
       makeEntry({ fleet: '787', retire_date: '2040-01-01' }),
-      makeEntry({ fleet: '737', retire_date: null }),
+      makeEntry({ fleet: '737', retire_date: undefined }),
     ]
     const result = computeAgeDistribution(entries, 65, entry => entry.fleet === '737', asOfDate)
     expect(result.buckets.find(bucket => bucket.label === '60–64')?.count).toBe(1)

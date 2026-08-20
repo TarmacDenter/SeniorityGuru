@@ -15,7 +15,7 @@ describe('computeRetirementWave', () => {
   })
 
   it('returns an empty result when no retirement date is available', () => {
-    expect(computeRetirementWave([makeDomainEntry({ retire_date: null })])).toEqual([])
+    expect(computeRetirementWave([makeDomainEntry({ retire_date: undefined })])).toEqual([])
   })
 
   it('restricts waves with the supplied qualification filter', () => {
