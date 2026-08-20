@@ -101,6 +101,17 @@ describe('organization analysis', () => {
     expect(anchored.demographics(65, scenario)).toBe(lens.demographics(65, scenario))
     expect(anchored.retirementWave(scenario)).toBe(lens.retirementWave(scenario))
   })
+
+  it('returns scoped organization demographics and retirement waves at the lens date', () => {
+    const lens = makeLens()
+    const captainScenario = createScenario({ projectionDate: asOfDate, scopeFilter: { seat: 'CA' } })
+    expect(lens.demographics(65, captainScenario).qualComposition).toEqual([
+      expect.objectContaining({ fleet: '737', seat: 'CA', total: 3 }),
+    ])
+    expect(lens.retirementWave(captainScenario)).toEqual([
+      { year: 2025, count: 1, isWave: false }, { year: 2026, count: 1, isWave: false }, { year: 2045, count: 1, isWave: false },
+    ])
+  })
 })
 
 describe('pilot-relative analysis', () => {
@@ -136,5 +147,12 @@ describe('pilot-relative analysis', () => {
       isHoldable: true,
     }))
     expect(anchored.percentileCrossing(50, scenario)).toSatisfy(value => value === null || /^\d{4}$/.test(value.year))
+  })
+
+  it('applies qualification scope to percentile crossings', () => {
+    const captainScenario = createScenario({ projectionDate: asOfDate, scopeFilter: { seat: 'CA' } })
+    const allPilotsScenario = createScenario({ projectionDate: asOfDate })
+    expect(anchored.percentileCrossing(90, captainScenario)).toEqual({ year: '2027' })
+    expect(anchored.percentileCrossing(90, allPilotsScenario)).toEqual({ year: '2040' })
   })
 })

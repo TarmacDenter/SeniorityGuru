@@ -8,6 +8,7 @@ import type {
   YosHistogramBucket,
 } from './types'
 import { cellKey } from './cell-key'
+import { percentileValue } from './percentile-value'
 import { computeYOSDate } from '~/utils/date'
 import type { PlainDate } from '~/utils/temporal'
 
@@ -62,17 +63,12 @@ export function computeYosHistogram(entries: readonly SeniorityEntry[], filterFn
   return counts.map((count, index) => ({ label: String(index), minYos: index, count }))
 }
 
-function percentileOf(sorted: number[], percentile: number): number {
-  if (sorted.length === 0) return 0
-  return sorted[Math.floor((percentile / 100) * (sorted.length - 1))]!
-}
-
 export function computeYosDistribution(entries: readonly SeniorityEntry[], filterFn: FilterFn | undefined, asOfDate: PlainDate): YosDistribution {
   const filtered = filterFn ? entries.filter(filterFn) : entries
   if (filtered.length === 0) return { entryFloor: 0, p10: 0, p25: 0, median: 0, p75: 0, p90: 0, max: 0 }
   const sorted = filtered.map(entry => computeYOSDate(entry.hire_date, asOfDate)).sort((a, b) => a - b)
   const mostJunior = filtered.reduce((first, entry) => first.seniority_number > entry.seniority_number ? first : entry)
-  return { entryFloor: computeYOSDate(mostJunior.hire_date, asOfDate), p10: percentileOf(sorted, 10), p25: percentileOf(sorted, 25), median: percentileOf(sorted, 50), p75: percentileOf(sorted, 75), p90: percentileOf(sorted, 90), max: sorted[sorted.length - 1]! }
+  return { entryFloor: computeYOSDate(mostJunior.hire_date, asOfDate), p10: percentileValue(sorted, 10), p25: percentileValue(sorted, 25), median: percentileValue(sorted, 50), p75: percentileValue(sorted, 75), p90: percentileValue(sorted, 90), max: sorted[sorted.length - 1]! }
 }
 
 export function computeQualComposition(entries: readonly SeniorityEntry[]): QualCompositionRow[] {

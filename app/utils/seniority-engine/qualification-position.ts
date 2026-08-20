@@ -3,12 +3,9 @@ import type { DensityBucket, GrowthConfig, QualDemographicScale, QualDemographic
 import { computeAdditionalPilots } from '~/utils/growth-config'
 import { computePercentile } from './percentile'
 import { cellKey } from './cell-key'
+import { percentileValue } from './percentile-value'
 import { isRetiredBy } from '~/utils/date'
 import type { PlainDate } from '~/utils/temporal'
-
-function percentileOf(sorted: number[], percentile: number): number {
-  return sorted.length === 0 ? 0 : sorted[Math.floor((percentile / 100) * (sorted.length - 1))]!
-}
 
 function isActiveAt(entry: SeniorityEntry, date: PlainDate): boolean {
   return !entry.retire_date || !isRetiredBy(entry.retire_date, date)
@@ -43,7 +40,7 @@ export function computeQualSnapshots(entries: readonly SeniorityEntry[], asOfDat
     const bucketCounts = new Array<number>(20).fill(0)
     for (const percentile of percentiles) bucketCounts[Math.min(Math.floor(percentile / 5), bucketCounts.length - 1)]!++
     const density: DensityBucket[] = bucketCounts.map((count, index) => ({ start: index * 5, count }))
-    return { fleet, seat, base, activeCount: cellEntries.length, plugPercentile: percentiles[0] ?? 0, plugSenNum: Math.max(...cellEntries.map(entry => entry.seniority_number)), p25: percentileOf(percentiles, 25), median: percentileOf(percentiles, 50), p75: percentileOf(percentiles, 75), max: percentiles[percentiles.length - 1] ?? 0, density }
+    return { fleet, seat, base, activeCount: cellEntries.length, plugPercentile: percentiles[0] ?? 0, plugSenNum: Math.max(...cellEntries.map(entry => entry.seniority_number)), p25: percentileValue(percentiles, 25), median: percentileValue(percentiles, 50), p75: percentileValue(percentiles, 75), max: percentiles[percentiles.length - 1] ?? 0, density }
   })
 }
 
