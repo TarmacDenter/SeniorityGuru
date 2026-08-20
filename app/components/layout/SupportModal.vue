@@ -19,8 +19,7 @@ defineExpose({ bmcUrl, mailtoHref })
       variant="ghost"
       :label="collapsed ? undefined : 'Support'"
       :aria-label="collapsed ? 'Support & Feedback' : undefined"
-      class="w-full"
-      :class="collapsed ? 'justify-center' : ''"
+      :class="collapsed ? 'size-8 shrink-0 justify-center' : 'w-full'"
     />
 
     <template #body>

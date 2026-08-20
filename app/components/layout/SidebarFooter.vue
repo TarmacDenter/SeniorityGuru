@@ -6,20 +6,18 @@ defineProps<{
 </script>
 
 <template>
-  <div class="flex flex-col gap-2 p-2 overflow-hidden">
+  <div
+    class="flex flex-col gap-2 overflow-hidden"
+    :class="collapsed ? 'items-center' : undefined"
+  >
+    <ShareButton v-if="!collapsed" color="neutral">Share SeniorityGuru!</ShareButton>
+    <ShareButton v-else color="neutral" class="size-8 shrink-0 justify-center" />
     <SupportModal :collapsed="collapsed" />
-    <UButton
-      v-if="!standalone"
-      icon="i-lucide-download"
-      :label="collapsed ? undefined : 'Install App'"
-      variant="ghost"
-      color="neutral"
-      size="sm"
-      :block="!collapsed"
-      :class="collapsed ? 'justify-center' : ''"
-      @click="install"
-    />
-    <div class="flex items-center" :class="collapsed ? 'justify-center' : 'justify-end'">
+    <UButton v-if="!standalone" icon="i-lucide-download" :label="collapsed ? undefined : 'Install App'" variant="ghost"
+      color="neutral" size="sm" :block="!collapsed"
+      :class="collapsed ? 'size-8 shrink-0 justify-center' : 'justify-start'"
+      @click="install" />
+    <div class="flex items-start">
       <UDashboardSidebarCollapse />
     </div>
   </div>

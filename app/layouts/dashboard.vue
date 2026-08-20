@@ -12,8 +12,11 @@ const sidebarOpen = useState<boolean>('dashboardSidebarOpen', () => false); // s
         </template>
 
         <template #default="{ collapsed }">
-          <UNavigationMenu orientation="vertical" :items="navItems" highlight color="primary"
-            :ui="{ link: collapsed ? 'justify-center' : undefined }" class="p-2 flex-1" />
+          <UNavigationMenu orientation="vertical" :items="navItems" highlight color="primary" :ui="{
+            link: collapsed ? 'justify-center' : undefined,
+            linkLeadingIcon: 'size-5 shrink-0',
+            childLinkIcon: 'size-5 shrink-0'
+          }" class="flex-1" />
         </template>
 
         <template #footer="{ collapsed }">
@@ -22,7 +25,8 @@ const sidebarOpen = useState<boolean>('dashboardSidebarOpen', () => false); // s
       </UDashboardSidebar>
     </div>
 
-    <div class="flex flex-col flex-1 min-w-0 overflow-y-auto sm:overflow-hidden pb-[calc(4rem+env(safe-area-inset-bottom))] sm:pb-0">
+    <div
+      class="flex flex-col flex-1 min-w-0 overflow-y-auto sm:overflow-hidden pb-[calc(4rem+env(safe-area-inset-bottom))] sm:pb-0">
       <slot />
     </div>
 
