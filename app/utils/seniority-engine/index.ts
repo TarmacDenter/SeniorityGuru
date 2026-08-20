@@ -71,8 +71,8 @@ export {
 export {
   computeQualSnapshots,
   applyProjectionToSnapshots,
-  findThresholdYear,
-} from '~/utils/qual-analytics'
+} from './qualification-position'
+export { findThresholdYear } from './trajectory-analysis'
 export {
   qualKey,
   computeAgeDistribution,

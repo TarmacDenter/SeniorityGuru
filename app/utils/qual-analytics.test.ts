@@ -5,8 +5,8 @@ import { deriveAge, computeYOS } from '~/utils/date'
 import {
   applyProjectionToSnapshots,
   computeQualSnapshots,
-  findThresholdYear,
-} from './qual-analytics'
+} from './seniority-engine/qualification-position'
+import { findThresholdYear } from './seniority-engine/trajectory-analysis'
 import {
   qualKey,
   computeAgeDistribution,
