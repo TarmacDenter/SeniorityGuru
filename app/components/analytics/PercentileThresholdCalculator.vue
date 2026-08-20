@@ -1,16 +1,35 @@
 <script setup lang="ts">
-defineProps<{
+const props = defineProps<{
   result: { year: string } | null
   targetPercentile: number
-  selectedQual: string
+  minPercentile: number
+  maxPercentile: number
   hasEmployeeNumber: boolean
 }>()
 
-defineEmits<{
+const emit = defineEmits<{
   percentileChange: [number]
 }>()
 
-const percentileOptions = [50, 75, 90] as const
+const sliderValue = ref(props.targetPercentile)
+let debounceTimer: ReturnType<typeof setTimeout> | null = null
+
+watch(() => props.targetPercentile, (value) => {
+  sliderValue.value = value
+})
+
+function handlePercentileChange(value: number | undefined) {
+  if (value === undefined) return
+  sliderValue.value = value
+  if (debounceTimer) clearTimeout(debounceTimer)
+  debounceTimer = setTimeout(() => {
+    emit('percentileChange', value)
+  }, 500)
+}
+
+onUnmounted(() => {
+  if (debounceTimer) clearTimeout(debounceTimer)
+})
 </script>
 
 <template>
@@ -27,20 +46,25 @@ const percentileOptions = [50, 75, 90] as const
 
     <template v-else>
       <!-- Percentile selector -->
-      <div class="flex items-center gap-3">
-        <span class="text-sm text-[var(--ui-text-muted)] shrink-0">Target percentile:</span>
-        <UFieldGroup>
-          <UButton
-            v-for="p in percentileOptions"
-            :key="p"
-            size="sm"
-            :color="targetPercentile === p ? 'primary' : 'neutral'"
-            :variant="targetPercentile === p ? 'solid' : 'outline'"
-            @click="$emit('percentileChange', p)"
-          >
-            {{ p }}th percentile
-          </UButton>
-        </UFieldGroup>
+      <div class="space-y-2">
+        <div class="flex items-center justify-between gap-3">
+          <span class="text-sm text-[var(--ui-text-muted)]">Target percentile:</span>
+          <UBadge color="primary" variant="subtle" size="sm" class="font-mono">
+            {{ sliderValue }}%
+          </UBadge>
+        </div>
+        <USlider
+          :model-value="sliderValue"
+          :min="minPercentile"
+          :max="maxPercentile"
+          :step="0.5"
+          aria-label="Target percentile"
+          @update:model-value="handlePercentileChange"
+        />
+        <div class="flex justify-between text-xs text-[var(--ui-text-muted)]">
+          <span>Today: {{ minPercentile }}%</span>
+          <span>Retirement: {{ maxPercentile }}%</span>
+        </div>
       </div>
 
       <!-- Result card -->
@@ -48,9 +72,7 @@ const percentileOptions = [50, 75, 90] as const
         <div class="flex items-center gap-2">
           <UIcon name="i-lucide-calendar-check" class="size-4 text-primary" />
           <p class="text-sm">
-            At current attrition, you could hold
-            <strong>{{ selectedQual || 'this qual' }}</strong>
-            at the
+            At current attrition, you could reach the
             <strong>{{ targetPercentile }}th percentile</strong>
             by
             <strong class="font-mono">{{ result.year }}</strong>.
