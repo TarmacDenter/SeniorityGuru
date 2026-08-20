@@ -2,14 +2,17 @@ import type { SeniorityEntry } from '~/utils/schemas/seniority-list'
 import type { FilterFn } from './types'
 import { cellKey } from './cell-key'
 
+/** Selects entries by any combination of fleet, seat, and base. */
 export interface QualSpec {
   readonly fleet?: string
   readonly seat?: string
   readonly base?: string
 }
 
+/** A qualification scope that includes every entry. */
 export const COMPANY_WIDE: QualSpec = {}
 
+/** Converts a qualification scope into a predicate for validated entries. */
 export function qualSpecToFilter(spec: QualSpec): FilterFn {
   const { fleet, seat, base } = spec
   if (!fleet && !seat && !base) return () => true
@@ -21,6 +24,7 @@ export function qualSpecToFilter(spec: QualSpec): FilterFn {
   }
 }
 
+/** Returns a stable, user-facing label for a qualification scope. */
 export function qualSpecLabel(spec: QualSpec): string {
   const parts: string[] = []
   if (spec.base) parts.push(spec.base)
@@ -29,12 +33,14 @@ export function qualSpecLabel(spec: QualSpec): string {
   return parts.length === 0 ? 'Company-wide' : parts.join(' ')
 }
 
+/** Compares scopes after treating omitted dimensions as equivalent. */
 export function qualSpecEquals(a: QualSpec, b: QualSpec): boolean {
   return (a.fleet ?? undefined) === (b.fleet ?? undefined)
     && (a.seat ?? undefined) === (b.seat ?? undefined)
     && (a.base ?? undefined) === (b.base ?? undefined)
 }
 
+/** Enumerates each populated scope, ordered from company-wide to specific. */
 export function enumerateQualSpecs(entries: readonly SeniorityEntry[]): QualSpec[] {
   if (entries.length === 0) return [{}]
 

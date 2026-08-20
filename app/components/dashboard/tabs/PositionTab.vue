@@ -6,7 +6,7 @@ import { DEFAULT_GROWTH_CONFIG, createScenario, type GrowthConfig } from '~/util
 
 defineProps<{ loading?: boolean }>()
 
-const { hasData, newHire, lens, userEntry } = useSeniorityCore()
+const { hasData, newHire, anchoredLens, userEntry } = useSeniorityCore()
 const { employeeNumber } = useUser()
 const hasEmployeeNumber = computed(() => !!employeeNumber.value || !!newHire.syntheticEntry.value)
 
@@ -19,7 +19,7 @@ const positionScenario = computed(() => createScenario({
   projectionDate: projectionDate.value,
   growthConfig: growthConfig.value,
 }))
-const qualScales = computed(() => lens.value?.qualScales(positionScenario.value) ?? [])
+const qualScales = computed(() => anchoredLens.value?.qualScales(positionScenario.value) ?? [])
 
 const hasProjection = computed(() =>
   qualScales.value.some(

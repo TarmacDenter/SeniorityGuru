@@ -46,10 +46,10 @@ export function useStanding(): {
   statCards: ComputedRef<StatCard[]>
   retirementSnapshot: ComputedRef<RetirementSnapshotData | null>
 } {
-  const { lens, userEntry } = useSeniorityCore()
+  const { lens, anchoredLens, userEntry } = useSeniorityCore()
   const seniorityStore = useSeniorityStore()
 
-  const standingResult = computed(() => lens.value?.standing() ?? null)
+  const standingResult = computed(() => anchoredLens.value?.standing() ?? null)
 
   const rankCard = computed<RankCardData>(() => {
     const entry = userEntry.value
@@ -139,7 +139,7 @@ export function useStanding(): {
     ]
   })
 
-  const trajectoryResult = computed(() => lens.value?.trajectory() ?? null)
+  const trajectoryResult = computed(() => anchoredLens.value?.trajectory() ?? null)
 
   const retirementSnapshot = computed<RetirementSnapshotData | null>(() => {
     const entry = userEntry.value

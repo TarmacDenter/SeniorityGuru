@@ -1,5 +1,5 @@
 import type { SeniorityEntry } from '~/utils/schemas/seniority-list'
-import type { SenioritySnapshot, SeniorityLens, PilotAnchor } from '~/utils/seniority-engine'
+import type { AnchoredSeniorityLens, SeniorityLens, SenioritySnapshot } from '~/utils/seniority-engine'
 import type { ComputedRef, Ref } from 'vue'
 import { createSnapshot, createLens, uniqueEntryValues } from '~/utils/seniority-engine'
 import { computeRetireDateValue } from '~/utils/date'
@@ -44,16 +44,16 @@ let _dbInitialized = false
 let _userEntry: ComputedRef<SeniorityEntry | undefined> | null = null
 let _baseSnapshot: ComputedRef<SenioritySnapshot | null> | null = null
 let _snapshot: ComputedRef<SenioritySnapshot | null> | null = null
-let _baseLens: ComputedRef<SeniorityLens | null> | null = null
 let _lens: ComputedRef<SeniorityLens | null> | null = null
+let _anchoredLens: ComputedRef<AnchoredSeniorityLens | null> | null = null
 
 /** Reset singleton computeds. Called by tests that create fresh Pinia instances. */
 export function _resetCoreSingletons() {
   _userEntry = null
   _baseSnapshot = null
   _snapshot = null
-  _baseLens = null
   _lens = null
+  _anchoredLens = null
   _dbInitialized = false
 }
 
@@ -209,42 +209,34 @@ export function useSeniorityCore() {
     })
   }
 
-  if (!_baseLens) {
-    _baseLens = computed<SeniorityLens | null>(() => {
-      if (!_baseSnapshot!.value) return null
-      const entry = _userEntry!.value
-      if (!entry) return null
-      const anchor: PilotAnchor = {
-        seniorityNumber: entry.seniority_number,
-        retireDate: entry.retire_date ?? null,
-        employeeNumber: entry.employee_number,
-      }
-      return createLens(_baseSnapshot!.value, anchor, todayPlainDate())
+  if (!_lens) {
+    _lens = computed<SeniorityLens | null>(() => {
+      if (!_snapshot!.value) return null
+      return createLens(_snapshot!.value, { asOfDate: todayPlainDate() })
     })
   }
 
-  if (!_lens) {
-    _lens = computed<SeniorityLens | null>(() => {
+  if (!_anchoredLens) {
+    _anchoredLens = computed<AnchoredSeniorityLens | null>(() => {
+      const currentLens = _lens!.value
+      if (!currentLens) return null
       const synthetic = syntheticEntry.value
-      if (!_snapshot!.value || !synthetic) return _baseLens!.value
-      const anchor: PilotAnchor = {
-        seniorityNumber: synthetic.seniority_number,
-        retireDate: synthetic.retire_date ?? null,
-        employeeNumber: synthetic.employee_number,
-      }
-      return createLens(_snapshot!.value, anchor, todayPlainDate())
+      const entry = synthetic ?? _userEntry!.value
+      if (!entry) return null
+      return currentLens.withAnchor(entry.employee_number)
     })
   }
 
   const userEntry = _userEntry
   const snapshot = _snapshot
   const lens = _lens
+  const anchoredLens = _anchoredLens
 
-  const hasData = computed(() => snapshot.value !== null)
-  const hasAnchor = computed(() => lens.value !== null)
+  const hasData = computed(() => lens.value !== null)
+  const hasAnchor = computed(() => anchoredLens.value !== null)
   const isNewHireMode = computed(() => enabled.value)
 
   const entries = computed(() => seniorityStore.entries)
 
-  return { snapshot, lens, userEntry, entries, hasData, hasAnchor, isNewHireMode, newHire }
+  return { snapshot, lens, anchoredLens, userEntry, entries, hasData, hasAnchor, isNewHireMode, newHire }
 }

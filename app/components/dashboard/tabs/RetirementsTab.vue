@@ -1,13 +1,10 @@
 <script setup lang="ts">
 import type { TableColumn } from '@nuxt/ui'
 import { useSeniorityCore } from '~/composables/seniority'
-import type { UpcomingRetirementRow } from '~/utils/seniority-engine'
+import type { UpcomingRetirementRelativeRow, UpcomingRetirementRow } from '~/utils/seniority-engine'
 import { Temporal } from '~/utils/temporal'
 
-const { lens, hasData, entries } = useSeniorityCore()
-const { employeeNumber } = useUser()
-
-const hasEmployeeNumber = computed(() => !!employeeNumber.value)
+const { lens, anchoredLens, hasData, hasAnchor, entries } = useSeniorityCore()
 
 // ── Filter state ────────────────────────────────────────────────────────────
 const yearsHorizon = ref<1 | 2 | 3 | 5 | number>(2)
@@ -58,28 +55,36 @@ const fleetItems = computed<SelectItem[]>(() => [
 ])
 
 // ── Rows ─────────────────────────────────────────────────────────────────────
-const rows = computed((): UpcomingRetirementRow[] => {
+type RetirementRow = UpcomingRetirementRow | UpcomingRetirementRelativeRow
+
+const rows = computed((): RetirementRow[] => {
   if (!hasData.value || !lens.value) return []
 
-  const raw = lens.value.upcomingRetirements({
+  const filter = {
     yearsHorizon: yearsHorizon.value,
-    seniorOnly: seniorOnly.value && hasEmployeeNumber.value,
     base: filterBase.value || null,
     seat: filterSeat.value || null,
     fleet: filterFleet.value || null,
-  })
+  }
+  const raw = anchoredLens.value
+    ? anchoredLens.value.upcomingRetirementsRelativeToAnchor({ ...filter, seniorOnly: seniorOnly.value })
+    : lens.value.upcomingRetirements(filter)
 
   return [...raw].sort((a, b) => {
     let cmp = 0
     if (sortKey.value === 'retireDate') cmp = Temporal.PlainDate.compare(a.retireDate, b.retireDate)
     else if (sortKey.value === 'seniorityNumber') cmp = a.seniorityNumber - b.seniorityNumber
-    else if (sortKey.value === 'rankRelativeToMe') cmp = ((a.rankRelativeToMe ?? 0) - (b.rankRelativeToMe ?? 0))
+    else if (sortKey.value === 'rankRelativeToMe') cmp = (relativeRank(a) - relativeRank(b))
     return sortDir.value === 'asc' ? cmp : -cmp
   })
 })
 
-const columns = computed((): TableColumn<UpcomingRetirementRow>[] => {
-  const base: TableColumn<UpcomingRetirementRow>[] = [
+function relativeRank(row: RetirementRow): number {
+  return 'rankRelativeToAnchor' in row ? row.rankRelativeToAnchor : 0
+}
+
+const columns = computed((): TableColumn<RetirementRow>[] => {
+  const base: TableColumn<RetirementRow>[] = [
     { accessorKey: 'seniorityNumber', header: 'Seniority #' },
     {
       accessorKey: 'qual',
@@ -88,13 +93,12 @@ const columns = computed((): TableColumn<UpcomingRetirementRow>[] => {
     },
     { accessorKey: 'retireDate', header: 'Est. Retire Date' },
   ]
-  if (hasEmployeeNumber.value) {
+  if (hasAnchor.value) {
     base.splice(1, 0, {
       accessorKey: 'rankRelativeToMe',
       header: 'Rank Relative to Me',
       cell: ({ row }) => {
-        const v = row.original.rankRelativeToMe
-        if (v == null) return '—'
+        const v = 'rankRelativeToAnchor' in row.original ? row.original.rankRelativeToAnchor : 0
         return v > 0 ? `+${v}` : String(v)
       },
     })
@@ -136,8 +140,8 @@ const horizonOptions = [
 
         <!-- Senior only toggle -->
         <div class="flex items-center gap-2">
-          <USwitch v-model="seniorOnly" :disabled="!hasEmployeeNumber" size="sm" />
-          <span class="text-sm" :class="!hasEmployeeNumber ? 'text-muted' : ''">
+          <USwitch v-model="seniorOnly" :disabled="!hasAnchor" size="sm" />
+          <span class="text-sm" :class="!hasAnchor ? 'text-muted' : ''">
             Senior to me only
           </span>
         </div>
@@ -176,12 +180,12 @@ const horizonOptions = [
 
       <!-- Employee number prompt -->
       <div
-        v-if="!hasEmployeeNumber"
+        v-if="!hasAnchor"
         class="flex items-center gap-3 rounded-lg border border-[var(--ui-border)] bg-[var(--ui-bg-muted)] px-4 py-3 text-sm"
       >
         <UIcon name="i-lucide-user-x" class="size-4 shrink-0 text-muted" />
         <span class="text-muted">
-          Set your employee number in
+          Set an employee number that appears in this list in
           <NuxtLink to="/settings" class="underline text-primary">Settings</NuxtLink>
           to see rank relative to you and filter by seniority.
         </span>

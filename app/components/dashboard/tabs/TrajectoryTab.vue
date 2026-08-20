@@ -5,7 +5,7 @@ import { todayPlainDate } from '~/utils/temporal'
 
 defineProps<{ loading?: boolean }>()
 
-const { hasData, hasAnchor, entries, lens } = useSeniorityCore()
+const { hasData, hasAnchor, entries, lens, anchoredLens } = useSeniorityCore()
 
 const growthConfig = ref<GrowthConfig>({ ...DEFAULT_GROWTH_CONFIG })
 
@@ -24,7 +24,7 @@ const scopedScenario = computed(() => createScenario({
   scopeFilter: qualFilter.qualSpec.value,
 }))
 const retirementWave = computed(() => lens.value?.retirementWave(scopedScenario.value) ?? [])
-const waveTrajectoryResult = computed(() => lens.value?.trajectory(scopedScenario.value) ?? null)
+const waveTrajectoryResult = computed(() => anchoredLens.value?.trajectory(scopedScenario.value) ?? null)
 const waveTrajectory = computed(() => waveTrajectoryResult.value?.points ?? [])
 const qualTrajectoryDeltas = computed(() => waveTrajectoryResult.value?.deltas ?? [])
 const targetPercentile = ref(50)
@@ -39,7 +39,7 @@ watch([targetPercentileMin, targetPercentileMax], ([min, max]) => {
   targetPercentile.value = Math.min(Math.max(targetPercentile.value, min), max)
 }, { immediate: true })
 
-const thresholdResult = computed(() => lens.value?.percentileCrossing(targetPercentile.value, scopedScenario.value) ?? null)
+const thresholdResult = computed(() => anchoredLens.value?.percentileCrossing(targetPercentile.value, scopedScenario.value) ?? null)
 const bannerKey = 'qual-projections-banner-dismissed'
 const isBannerDismissed = ref(typeof localStorage !== 'undefined' && localStorage.getItem(bannerKey) === 'true')
 

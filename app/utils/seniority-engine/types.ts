@@ -4,6 +4,7 @@ import type { PlainDate } from '~/utils/temporal'
 
 export type { QualSpec }
 
+/** Predicate used to restrict an analysis to a subset of validated entries. */
 export type FilterFn = (entry: SeniorityEntry) => boolean
 
 export interface TrajectoryPoint {
@@ -124,30 +125,28 @@ export interface UpgradeTransition {
   newFleet: string
 }
 
+/** Assumptions for projected hiring growth. */
 export interface GrowthConfig {
   enabled: boolean
   annualRate: number
   qualOverrides?: { spec: QualSpec; rate: number }[]
 }
 
-export interface PilotAnchor {
-  readonly seniorityNumber: number
-  readonly retireDate: PlainDate | null
-  readonly employeeNumber: string
-}
-
+/** Optional scope and growth assumptions for one calculation. */
 export interface ScenarioOptions {
   projectionDate: PlainDate
   growthConfig?: GrowthConfig
   scopeFilter?: QualSpec
 }
 
+/** Normalized scenario with explicit defaults. Create it with `createScenario`. */
 export interface Scenario {
   readonly projectionDate: PlainDate
   readonly growthConfig: GrowthConfig
   readonly scopeFilter: QualSpec
 }
 
+/** One populated base, seat, and fleet combination in a snapshot. */
 export interface Qual {
   readonly seat: string
   readonly fleet: string
@@ -155,6 +154,12 @@ export interface Qual {
   readonly label: string
 }
 
+/**
+ * Immutable entry collection plus indexes for pure seniority analysis.
+ *
+ * Create snapshots with `createSnapshot`. Callers must not mutate its entries
+ * or lookup collections after construction.
+ */
 export interface SenioritySnapshot {
   readonly entries: readonly SeniorityEntry[]
   readonly sortedEntries: SeniorityEntry[]
@@ -166,6 +171,7 @@ export interface SenioritySnapshot {
   readonly quals: Qual[]
 }
 
+/** Pilot-relative organization and qualification standing at the lens date. */
 export interface StandingResult {
   rank: number
   adjustedRank: number
@@ -192,24 +198,28 @@ export interface CellBreakdownRow {
   isAnchorCurrent: boolean
 }
 
+/** Projected seniority points with chart-ready data and annual deltas. */
 export interface TrajectoryResult {
   points: TrajectoryPoint[]
   chartData: { labels: string[]; data: number[] }
   deltas: TrajectoryDelta[]
 }
 
+/** Parallel projected percentile series for two qualification scopes. */
 export interface ComparativeTrajectoryResult {
   labels: string[]
   currentData: number[]
   compareData: number[]
 }
 
+/** Retirement counts grouped into projection time buckets. */
 export interface RetirementProjectionResult {
   labels: string[]
   data: number[]
   filteredTotal: number
 }
 
+/** Organization demographics and qualification composition at the lens date. */
 export interface DemographicsResult {
   ageDistribution: { buckets: AgeBucket[]; nullCount: number }
   yosDistribution: YosDistribution
@@ -218,14 +228,23 @@ export interface DemographicsResult {
   mostJuniorCAs: MostJuniorCARow[]
 }
 
+/** Configures a retirement projection from an organization or anchored lens. */
+export interface RetirementProjectionOptions {
+  /** Optional growth and qualification assumptions. */
+  scenario?: Scenario
+  /** Projection end date. The default is the lens date plus 30 years. */
+  through?: PlainDate | null
+}
+
+/** Filters organization retirement rows by horizon and qualification. */
 export interface UpcomingRetirementFilter {
   yearsHorizon: number
-  seniorOnly: boolean
   base?: string | null
   seat?: string | null
   fleet?: string | null
 }
 
+/** A future retirement row with organization-level data only. */
 export interface UpcomingRetirementRow {
   seniorityNumber: number
   employeeNumber: string
@@ -233,22 +252,75 @@ export interface UpcomingRetirementRow {
   seat: string
   fleet: string
   retireDate: PlainDate
-  /** Positive = user is N positions junior to this pilot; null when no anchor. */
-  rankRelativeToMe: number | null
 }
 
-export interface SeniorityLens {
+/** Adds an anchor-relative restriction to an organization retirement filter. */
+export interface UpcomingRetirementRelativeFilter extends UpcomingRetirementFilter {
+  seniorOnly: boolean
+}
+
+/** A future retirement row expressed relative to an anchored pilot. */
+export interface UpcomingRetirementRelativeRow extends UpcomingRetirementRow {
+  /** Positive means the anchor is this many positions junior to the pilot. */
+  rankRelativeToAnchor: number
+}
+
+/**
+ * Organization-level analysis over one immutable snapshot.
+ *
+ * These methods never depend on a pilot anchor, so their results remain stable
+ * for every derived anchored lens that shares this snapshot and reference date.
+ */
+export interface CommonSeniorityLens {
+  /** Counts retirements in the 12 months after the lens date. */
   retirementsThisYear(): number
-  standing(): StandingResult | null
-  trajectory(scenario?: Scenario): TrajectoryResult | null
-  compareTrajectories(scenarioA: Scenario, scenarioB: Scenario): ComparativeTrajectoryResult | null
-  percentileCrossing(targetPercentile: number, scenario?: Scenario): ThresholdResult | null
-  holdability(scenario?: Scenario): PowerIndexCell[]
-  qualScales(scenario?: Scenario): QualDemographicScale[]
+  /** Groups retirement counts by year for an optional qualification scope. */
   retirementWave(scenario?: Scenario): RetirementWaveBucket[]
-  retirementProjection(scenario?: Scenario): RetirementProjectionResult
+  /** Projects retirement counts through an optional end date. */
+  retirementProjection(options?: RetirementProjectionOptions): RetirementProjectionResult
+  /** Computes organization demographics for a mandatory retirement age. */
   demographics(mandatoryAge: number, scenario?: Scenario): DemographicsResult
+  /** Lists future organization retirements without pilot-relative fields. */
   upcomingRetirements(filter: UpcomingRetirementFilter): UpcomingRetirementRow[]
+  /** The immutable snapshot shared by this lens and its derived lenses. */
   readonly snapshot: SenioritySnapshot
-  readonly anchor: PilotAnchor | null
+}
+
+/**
+ * An unanchored organization lens. It owns shared organization memoization and
+ * can derive immutable pilot-relative lenses without rebuilding its snapshot.
+ */
+export interface SeniorityLens extends CommonSeniorityLens {
+  /**
+   * Derives pilot-relative analysis for a canonical entry in this snapshot.
+   *
+   * @throws {AnchorNotFoundError} When the employee number is absent.
+   */
+  withAnchor(employeeNumber: string): AnchoredSeniorityLens
+}
+
+/**
+ * A pilot-relative view derived from an immutable organization lens.
+ *
+ * `anchor` is the canonical readonly entry held by `snapshot`, never a copied
+ * or caller-provided anchor shape. Each derived lens keeps its own relative
+ * memoization while sharing organization memoization and the same snapshot.
+ */
+export interface AnchoredSeniorityLens extends CommonSeniorityLens {
+  /** Canonical readonly entry from the shared snapshot. */
+  readonly anchor: Readonly<SeniorityEntry>
+  /** Computes organization and qualification standing for the anchor. */
+  standing(): StandingResult
+  /** Projects the anchor's seniority through its retirement date. */
+  trajectory(scenario?: Scenario): TrajectoryResult
+  /** Compares the anchor's projected percentile in two qualification scopes. */
+  compareTrajectories(scenarioA: Scenario, scenarioB: Scenario): ComparativeTrajectoryResult
+  /** Finds the first year the anchor reaches a target percentile, if any. */
+  percentileCrossing(targetPercentile: number, scenario?: Scenario): ThresholdResult | null
+  /** Computes projected holdability for each qualification cell. */
+  holdability(scenario?: Scenario): PowerIndexCell[]
+  /** Computes projected qualification demographic scales for the anchor. */
+  qualScales(scenario?: Scenario): QualDemographicScale[]
+  /** Lists future retirements with anchor-relative rank and senior-only filtering. */
+  upcomingRetirementsRelativeToAnchor(filter: UpcomingRetirementRelativeFilter): UpcomingRetirementRelativeRow[]
 }

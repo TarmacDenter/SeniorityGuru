@@ -25,6 +25,7 @@ mockNuxtImport('useSeniorityCore', () => () => ({
   },
   snapshot: { value: null },
   lens: { value: null },
+  anchoredLens: { value: null },
   userEntry: { value: undefined },
   hasAnchor: { value: false },
   isNewHireMode: { value: false },
