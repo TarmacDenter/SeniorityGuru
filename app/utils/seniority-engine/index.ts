@@ -69,7 +69,6 @@ export {
 
 // Analytics (re-exported from qual-analytics until fully absorbed)
 export {
-  SEAT_ORDER,
   qualKey,
   computeAgeDistribution,
   computeYosDistribution,

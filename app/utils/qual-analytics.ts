@@ -219,8 +219,6 @@ export function computeRetirementWave(
     .map(([year, count]) => ({ year, count, isWave: count >= waveThreshold }))
 }
 
-export const SEAT_ORDER: Record<string, number> = { CA: 0, FO: 1 }
-
 function isActiveAt(e: SeniorityEntry, projectionDate: PlainDate): boolean {
   if (!e.retire_date) return true
   return !isRetiredBy(e.retire_date, projectionDate)
