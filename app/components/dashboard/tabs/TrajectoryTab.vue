@@ -5,8 +5,7 @@ import { todayPlainDate } from '~/utils/temporal'
 
 defineProps<{ loading?: boolean }>()
 
-const { hasData, hasAnchor, newHire, entries, lens } = useSeniorityCore()
-const hasEmployeeNumber = computed(() => hasAnchor.value || !!newHire.syntheticEntry.value)
+const { hasData, hasAnchor, entries, lens } = useSeniorityCore()
 
 const growthConfig = ref<GrowthConfig>({ ...DEFAULT_GROWTH_CONFIG })
 
@@ -29,6 +28,17 @@ const waveTrajectoryResult = computed(() => lens.value?.trajectory(scopedScenari
 const waveTrajectory = computed(() => waveTrajectoryResult.value?.points ?? [])
 const qualTrajectoryDeltas = computed(() => waveTrajectoryResult.value?.deltas ?? [])
 const targetPercentile = ref(50)
+const targetPercentileMin = computed(() => waveTrajectory.value[0]?.percentile ?? 0)
+const targetPercentileMax = computed(() => {
+  const startingPercentile = targetPercentileMin.value
+  const retirementPercentile = waveTrajectory.value.at(-1)?.percentile ?? startingPercentile
+  return Math.max(startingPercentile, retirementPercentile)
+})
+
+watch([targetPercentileMin, targetPercentileMax], ([min, max]) => {
+  targetPercentile.value = Math.min(Math.max(targetPercentile.value, min), max)
+}, { immediate: true })
+
 const thresholdResult = computed(() => lens.value?.percentileCrossing(targetPercentile.value, scopedScenario.value) ?? null)
 const bannerKey = 'qual-projections-banner-dismissed'
 const isBannerDismissed = ref(typeof localStorage !== 'undefined' && localStorage.getItem(bannerKey) === 'true')
@@ -155,8 +165,9 @@ const ready = useDeferredReady()
             <AnalyticsPercentileThresholdCalculator
               :result="thresholdResult"
               :target-percentile="targetPercentile"
-              :selected-qual="qualFilter.qualLabel.value"
-              :has-employee-number="hasEmployeeNumber"
+              :min-percentile="targetPercentileMin"
+              :max-percentile="targetPercentileMax"
+              :has-employee-number="hasAnchor"
               @percentile-change="targetPercentile = $event"
             />
           </UCard>
