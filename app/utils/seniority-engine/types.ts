@@ -97,17 +97,6 @@ export interface ThresholdResult {
   year: string
 }
 
-export interface UpgradeTransition {
-  employeeNumber: string
-  name: string | undefined
-  seniorityNumber: number
-  type: 'upgrade' | 'fleet-change' | 'downgrade' | 'other'
-  oldSeat: string
-  newSeat: string
-  oldFleet: string
-  newFleet: string
-}
-
 /** Assumptions for projected hiring growth. */
 export interface GrowthConfig {
   enabled: boolean

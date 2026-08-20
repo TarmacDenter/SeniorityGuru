@@ -11,7 +11,6 @@ import type {
   RetirementWaveBucket,
   ThresholdResult,
   TrajectoryPoint,
-  UpgradeTransition,
   YosDistribution,
   YosHistogramBucket,
 } from '~/utils/seniority-engine/types'
@@ -31,7 +30,6 @@ export type {
   RetirementWaveBucket,
   ThresholdResult,
   TrajectoryPoint,
-  UpgradeTransition,
   YosDistribution,
   YosHistogramBucket,
 }
@@ -334,45 +332,4 @@ export function findThresholdYear(
     : yearValue?.year.toString()
   if (!yearString) return null
   return { year: yearString }
-}
-
-export function detectUpgradeTransitions(
-  olderEntries: readonly SeniorityEntry[],
-  newerEntries: readonly SeniorityEntry[],
-): UpgradeTransition[] {
-  const olderByEmpNum = new Map(olderEntries.map((e) => [e.employee_number, e]))
-  const transitions: UpgradeTransition[] = []
-
-  for (const newer of newerEntries) {
-    const older = olderByEmpNum.get(newer.employee_number)
-    if (!older) continue
-
-    const fleetChanged = older.fleet !== newer.fleet
-    const seatChanged = older.seat !== newer.seat
-    if (!fleetChanged && !seatChanged) continue
-
-    let type: UpgradeTransition['type']
-    if (fleetChanged) {
-      type = 'fleet-change'
-    } else if (older.seat === 'FO' && newer.seat === 'CA') {
-      type = 'upgrade'
-    } else if (older.seat === 'CA' && newer.seat === 'FO') {
-      type = 'downgrade'
-    } else {
-      type = 'other'
-    }
-
-    transitions.push({
-      employeeNumber: newer.employee_number,
-      name: newer.name,
-      seniorityNumber: newer.seniority_number,
-      type,
-      oldSeat: older.seat,
-      newSeat: newer.seat,
-      oldFleet: older.fleet,
-      newFleet: newer.fleet,
-    })
-  }
-
-  return transitions
 }

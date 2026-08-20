@@ -79,7 +79,6 @@ export {
   computeQualSnapshots,
   applyProjectionToSnapshots,
   findThresholdYear,
-  detectUpgradeTransitions,
 } from '~/utils/qual-analytics'
 
 // Growth config (re-exported from growth-config until fully absorbed)
@@ -121,7 +120,6 @@ export type {
   QualDemographicSnapshot,
   RetirementWaveBucket,
   ThresholdResult,
-  UpgradeTransition,
   YosDistribution,
   YosHistogramBucket,
 } from './types'

@@ -13,7 +13,6 @@ import {
   applyProjectionToSnapshots,
   computeQualSnapshots,
   findThresholdYear,
-  detectUpgradeTransitions,
 } from './qual-analytics'
 import type { GrowthConfig } from '~/utils/seniority-engine'
 import { makeEntry as _makeEntry } from '~/test-utils/factories'
@@ -330,42 +329,5 @@ describe('findThresholdYear', () => {
     expect(result?.year).toBe('2027')
     expect(result).not.toHaveProperty('optimistic')
     expect(result).not.toHaveProperty('pessimistic')
-  })
-})
-
-// ─── detectUpgradeTransitions ─────────────────────────────────────────────────
-describe('detectUpgradeTransitions', () => {
-  it('detects FO→CA upgrade on same fleet', () => {
-    const older = [makeEntry({ employee_number: 'EMP001', fleet: '737', seat: 'FO', seniority_number: 100 })]
-    const newer = [makeEntry({ employee_number: 'EMP001', fleet: '737', seat: 'CA', seniority_number: 100 })]
-    const result = detectUpgradeTransitions(older, newer)
-    expect(result).toHaveLength(1)
-    expect(result[0]?.type).toBe('upgrade')
-  })
-
-  it('detects CA→FO downgrade', () => {
-    const older = [makeEntry({ employee_number: 'EMP001', fleet: '737', seat: 'CA', seniority_number: 10 })]
-    const newer = [makeEntry({ employee_number: 'EMP001', fleet: '737', seat: 'FO', seniority_number: 10 })]
-    const result = detectUpgradeTransitions(older, newer)
-    expect(result[0]?.type).toBe('downgrade')
-  })
-
-  it('detects fleet change', () => {
-    const older = [makeEntry({ employee_number: 'EMP001', fleet: '737', seat: 'CA', seniority_number: 10 })]
-    const newer = [makeEntry({ employee_number: 'EMP001', fleet: '787', seat: 'CA', seniority_number: 10 })]
-    const result = detectUpgradeTransitions(older, newer)
-    expect(result[0]?.type).toBe('fleet-change')
-  })
-
-  it('ignores pilots with no change', () => {
-    const older = [makeEntry({ employee_number: 'EMP001', fleet: '737', seat: 'CA' })]
-    const newer = [makeEntry({ employee_number: 'EMP001', fleet: '737', seat: 'CA' })]
-    expect(detectUpgradeTransitions(older, newer)).toHaveLength(0)
-  })
-
-  it('ignores pilots not in older list (new hires)', () => {
-    const older: SeniorityEntry[] = []
-    const newer = [makeEntry({ employee_number: 'NEWHIRE', fleet: '737', seat: 'FO' })]
-    expect(detectUpgradeTransitions(older, newer)).toHaveLength(0)
   })
 })
