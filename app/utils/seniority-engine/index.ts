@@ -32,8 +32,8 @@
  * ```
  *
  * Start with a lens for seniority analysis. Use an anchored lens only after an
- * employee is present in the snapshot. The math and analytics exports below
- * are transitional seams. New application code should not need them directly.
+ * employee is present in the snapshot. Lens methods own the snapshot,
+ * reference-date, scope, and memoization rules for their results.
  */
 
 // Core engine
@@ -42,8 +42,6 @@ export { createScenario } from './scenario'
 export { AnchorNotFoundError, createLens } from './lens'
 export { projectQualViewer } from './qual-viewer'
 export type { QualViewerRow, QualViewerResult, QualViewerOptions, QualViewerStatus } from './qual-viewer'
-export { computePercentile } from './percentile'
-export { cellKey } from './cell-key'
 export {
   COMPANY_WIDE,
   qualSpecToFilter,
@@ -67,22 +65,6 @@ export {
   formatNumber,
 } from '~/utils/seniority-math'
 
-// Analytics (re-exported until the lens-first interface is contracted)
-export {
-  computeQualSnapshots,
-  applyProjectionToSnapshots,
-} from './qualification-position'
-export { findThresholdYear } from './trajectory-analysis'
-export {
-  qualKey,
-  computeAgeDistribution,
-  computeYosDistribution,
-  computeYosHistogram,
-  computeQualComposition,
-  findMostJuniorCA,
-} from './demographics'
-export { computeRetirementWave } from './retirement-analysis'
-
 // Growth config (re-exported from growth-config until fully absorbed)
 export {
   DEFAULT_GROWTH_CONFIG,
@@ -91,7 +73,6 @@ export {
 
 // Types
 export type {
-  FilterFn,
   SenioritySnapshot,
   Scenario,
   ScenarioOptions,
@@ -119,7 +100,6 @@ export type {
   MostJuniorCARow,
   QualCompositionRow,
   QualDemographicScale,
-  QualDemographicSnapshot,
   RetirementWaveBucket,
   ThresholdResult,
   YosDistribution,
