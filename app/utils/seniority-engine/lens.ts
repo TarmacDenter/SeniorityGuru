@@ -33,17 +33,9 @@ import { createScenario } from './scenario'
 import { memoizeLast } from './memoize'
 import { qualSpecToFilter } from './qual-spec'
 import { computePercentile } from './percentile'
-import {
-  applyProjectionToSnapshots,
-  computeAgeDistribution,
-  computeQualComposition,
-  computeQualSnapshots,
-  computeRetirementWave,
-  computeYosDistribution,
-  computeYosHistogram,
-  findMostJuniorCA,
-  findThresholdYear,
-} from '~/utils/qual-analytics'
+import { applyProjectionToSnapshots, computeQualSnapshots, findThresholdYear } from '~/utils/qual-analytics'
+import { computeAgeDistribution, computeQualComposition, computeYosDistribution, computeYosHistogram, findMostJuniorCA } from './demographics'
+import { computeRetirementWave } from './retirement-analysis'
 import { addYearsDate, isRetiredBy, retiresWithinNextYear } from '~/utils/date'
 import { Temporal } from '~/utils/temporal'
 

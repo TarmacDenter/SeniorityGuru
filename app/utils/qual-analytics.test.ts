@@ -3,17 +3,19 @@ import { describe, it, expect } from 'vitest'
 import type { SeniorityEntry, SeniorityEntryInput } from '~/utils/schemas/seniority-list'
 import { deriveAge, computeYOS } from '~/utils/date'
 import {
+  applyProjectionToSnapshots,
+  computeQualSnapshots,
+  findThresholdYear,
+} from './qual-analytics'
+import {
   qualKey,
   computeAgeDistribution,
   findMostJuniorCA,
   computeYosDistribution,
   computeYosHistogram,
   computeQualComposition,
-  computeRetirementWave,
-  applyProjectionToSnapshots,
-  computeQualSnapshots,
-  findThresholdYear,
-} from './qual-analytics'
+} from './seniority-engine/demographics'
+import { computeRetirementWave } from './seniority-engine/retirement-analysis'
 import type { GrowthConfig } from '~/utils/seniority-engine'
 import { makeEntry as _makeEntry } from '~/test-utils/factories'
 import { parsePlainDate } from '~/utils/temporal'

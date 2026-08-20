@@ -1,335 +1,76 @@
 import type { SeniorityEntry } from '~/utils/schemas/seniority-list'
-import type {
-  AgeBucket,
-  DensityBucket,
-  FilterFn,
-  GrowthConfig,
-  MostJuniorCARow,
-  QualCompositionRow,
-  QualDemographicScale,
-  QualDemographicSnapshot,
-  RetirementWaveBucket,
-  ThresholdResult,
-  TrajectoryPoint,
-  YosDistribution,
-  YosHistogramBucket,
-} from '~/utils/seniority-engine/types'
+import type { DensityBucket, GrowthConfig, QualDemographicScale, QualDemographicSnapshot, ThresholdResult, TrajectoryPoint } from '~/utils/seniority-engine/types'
 import { computeAdditionalPilots } from '~/utils/growth-config'
 import { computePercentile } from '~/utils/seniority-engine/percentile'
 import { cellKey } from '~/utils/seniority-engine/cell-key'
-import { computeYOSDate, isRetiredBy, extractYear } from '~/utils/date'
+import { isRetiredBy } from '~/utils/date'
 import type { PlainDate } from '~/utils/temporal'
 
-export type {
-  AgeBucket,
-  DensityBucket,
-  MostJuniorCARow,
-  QualCompositionRow,
-  QualDemographicScale,
-  QualDemographicSnapshot,
-  RetirementWaveBucket,
-  ThresholdResult,
-  TrajectoryPoint,
-  YosDistribution,
-  YosHistogramBucket,
-}
+export type { DensityBucket, QualDemographicScale, QualDemographicSnapshot, ThresholdResult, TrajectoryPoint }
 
-export function qualKey(entry: SeniorityEntry): string {
-  return `${entry.fleet} ${entry.seat}`
-}
-
-const AGE_BUCKETS: { label: string; min: number; max: number }[] = [
-  { label: '< 30', min: 0, max: 29 },
-  { label: '30–34', min: 30, max: 34 },
-  { label: '35–39', min: 35, max: 39 },
-  { label: '40–44', min: 40, max: 44 },
-  { label: '45–49', min: 45, max: 49 },
-  { label: '50–54', min: 50, max: 54 },
-  { label: '55–59', min: 55, max: 59 },
-  { label: '60–64', min: 60, max: 64 },
-  { label: '65+', min: 65, max: Infinity },
-]
-
-export function computeAgeDistribution(
-  entries: readonly SeniorityEntry[],
-  mandatoryAge: number,
-  filterFn: FilterFn | undefined,
-  asOfDate: PlainDate,
-): { buckets: AgeBucket[]; nullCount: number } {
-  const filtered = filterFn ? entries.filter(filterFn) : entries
-  const counts = new Array<number>(AGE_BUCKETS.length).fill(0)
-  let nullCount = 0
-
-  for (const e of filtered) {
-    if (!e.retire_date) { nullCount++; continue }
-    const age = Math.floor(computeYOSDate(e.retire_date.subtract({ years: mandatoryAge }), asOfDate))
-    const idx = AGE_BUCKETS.findIndex((b) => age >= b.min && age <= b.max)
-    if (idx >= 0) counts[idx]!++
-  }
-
-  return {
-    buckets: AGE_BUCKETS.map((b, i) => ({ label: b.label, count: counts[i]! })),
-    nullCount,
-  }
-}
-
-export function findMostJuniorCA(entries: readonly SeniorityEntry[], asOfDate: PlainDate): MostJuniorCARow[] {
-  const byQual = new Map<string, SeniorityEntry>()
-  for (const e of entries) {
-    if (e.seat !== 'CA') continue
-    const key = cellKey(e)
-    const existing = byQual.get(key)
-    if (!existing || e.seniority_number > existing.seniority_number) {
-      byQual.set(key, e)
-    }
-  }
-  return Array.from(byQual.values())
-    .map((e) => ({
-      qualKey: `${e.fleet} ${e.seat} ${e.base}`,
-      fleet: e.fleet,
-      seat: e.seat,
-      base: e.base,
-      seniorityNumber: e.seniority_number,
-      hireDate: e.hire_date,
-      yos: computeYOSDate(e.hire_date, asOfDate),
-    }))
-    .sort((a, b) => a.qualKey.localeCompare(b.qualKey))
-}
-
-export function computeYosHistogram(
-  entries: readonly SeniorityEntry[],
-  filterFn: FilterFn | undefined,
-  asOfDate: PlainDate,
-): YosHistogramBucket[] {
-  const filtered = filterFn ? entries.filter(filterFn) : entries
-  if (filtered.length === 0) return []
-  const yosValues = filtered.map((e) => computeYOSDate(e.hire_date, asOfDate))
-  const maxYos = Math.ceil(Math.max(...yosValues))
-  const bucketCount = Math.max(maxYos + 1, 1)
-  const counts = new Array<number>(bucketCount).fill(0)
-  for (const yos of yosValues) {
-    const idx = Math.min(Math.floor(yos), bucketCount - 1)
-    counts[idx]!++
-  }
-  return counts.map((count, i) => ({
-    label: String(i),
-    minYos: i,
-    count,
-  }))
-}
-
-function percentileOf(sorted: number[], p: number): number {
+function percentileOf(sorted: number[], percentile: number): number {
   if (sorted.length === 0) return 0
-  const idx = Math.floor((p / 100) * (sorted.length - 1))
-  return sorted[idx]!
+  return sorted[Math.floor((percentile / 100) * (sorted.length - 1))]!
 }
 
-export function computeYosDistribution(
-  entries: readonly SeniorityEntry[],
-  filterFn: FilterFn | undefined,
-  asOfDate: PlainDate,
-): YosDistribution {
-  const filtered = filterFn ? entries.filter(filterFn) : entries
-  if (filtered.length === 0) return { entryFloor: 0, p10: 0, p25: 0, median: 0, p75: 0, p90: 0, max: 0 }
-
-  const sorted = filtered
-    .map((e) => computeYOSDate(e.hire_date, asOfDate))
-    .sort((a, b) => a - b)
-
-  const mostJunior = filtered.reduce((a, b) =>
-    a.seniority_number > b.seniority_number ? a : b,
-  )
-  const entryFloor = computeYOSDate(mostJunior.hire_date, asOfDate)
-
-  return {
-    entryFloor,
-    p10: percentileOf(sorted, 10),
-    p25: percentileOf(sorted, 25),
-    median: percentileOf(sorted, 50),
-    p75: percentileOf(sorted, 75),
-    p90: percentileOf(sorted, 90),
-    max: sorted[sorted.length - 1]!,
-  }
-}
-
-export function computeQualComposition(entries: readonly SeniorityEntry[]): QualCompositionRow[] {
-  const byQual = new Map<string, SeniorityEntry[]>()
-  for (const e of entries) {
-    const key = qualKey(e)
-    if (!key) continue
-    let group = byQual.get(key)
-    if (!group) { group = []; byQual.set(key, group) }
-    group.push(e)
-  }
-
-  return Array.from(byQual.entries()).map(([key, group]) => {
-    const { fleet, seat } = group[0]!
-    const total = group.length
-    const caCount = group.filter((e) => e.seat === 'CA').length
-    const foCount = group.filter((e) => e.seat === 'FO').length
-
-    const baseCounts = new Map<string, number>()
-    for (const e of group) {
-      baseCounts.set(e.base, (baseCounts.get(e.base) ?? 0) + 1)
-    }
-    const byBase = Array.from(baseCounts.entries())
-      .map(([base, count]) => ({ base, count, pct: Math.round((count / total) * 1000) / 10 }))
-      .sort((a, b) => b.count - a.count)
-
-    return {
-      qualKey: key,
-      fleet,
-      seat,
-      total,
-      caCount,
-      foCount,
-      caFoRatio: Math.round((caCount / Math.max(foCount, 1)) * 100) / 100,
-      byBase,
-    }
-  })
-}
-
-export function computeRetirementWave(
-  entries: readonly SeniorityEntry[],
-  filterFn?: FilterFn,
-): RetirementWaveBucket[] {
-  const filtered = filterFn ? entries.filter(filterFn) : entries
-  const withDates = filtered.filter((e) => !!e.retire_date)
-
-  const countByYear = new Map<number, number>()
-  for (const e of withDates) {
-    const year = extractYear(e.retire_date!)
-    countByYear.set(year, (countByYear.get(year) ?? 0) + 1)
-  }
-
-  if (countByYear.size === 0) return []
-
-  const counts = Array.from(countByYear.values())
-  const mean = counts.reduce((sum, n) => sum + n, 0) / counts.length
-  const waveThreshold = mean * 1.5
-
-  return Array.from(countByYear.entries())
-    .sort(([a], [b]) => a - b)
-    .map(([year, count]) => ({ year, count, isWave: count >= waveThreshold }))
-}
-
-function isActiveAt(e: SeniorityEntry, projectionDate: PlainDate): boolean {
-  if (!e.retire_date) return true
-  return !isRetiredBy(e.retire_date, projectionDate)
+function isActiveAt(entry: SeniorityEntry, projectionDate: PlainDate): boolean {
+  return !entry.retire_date || !isRetiredBy(entry.retire_date, projectionDate)
 }
 
 function lowerBound(sorted: number[], target: number): number {
-  let lo = 0
-  let hi = sorted.length
-  while (lo < hi) {
-    const mid = (lo + hi) >>> 1
-    if (sorted[mid]! < target) lo = mid + 1
-    else hi = mid
+  let low = 0
+  let high = sorted.length
+  while (low < high) {
+    const middle = (low + high) >>> 1
+    if (sorted[middle]! < target) low = middle + 1
+    else high = middle
   }
-  return lo
+  return low
 }
 
 function sortedSenNums(entries: readonly SeniorityEntry[]): number[] {
-  return entries.map((e) => e.seniority_number).sort((a, b) => a - b)
+  return entries.map(entry => entry.seniority_number).sort((a, b) => a - b)
 }
 
-function companyPercentile(senNum: number, sortedNums: number[], total: number): number {
-  if (total === 0) return 0
-  const rank = lowerBound(sortedNums, senNum) + 1
-  return computePercentile(rank, total)
+function companyPercentile(seniorityNumber: number, sortedNumbers: number[], total: number): number {
+  return total === 0 ? 0 : computePercentile(lowerBound(sortedNumbers, seniorityNumber) + 1, total)
 }
 
 export function computeQualSnapshots(entries: readonly SeniorityEntry[], asOfDate: PlainDate): QualDemographicSnapshot[] {
-  const todayActive = entries.filter((e) => isActiveAt(e, asOfDate))
-  if (todayActive.length === 0) return []
-
-  const activeSorted = sortedSenNums(todayActive)
-  const totalActive = todayActive.length
-
-  const byCellMap = new Map<string, SeniorityEntry[]>()
-  for (const e of todayActive) {
-    const key = cellKey(e)
-    let group = byCellMap.get(key)
-    if (!group) { group = []; byCellMap.set(key, group) }
-    group.push(e)
+  const activeEntries = entries.filter(entry => isActiveAt(entry, asOfDate))
+  if (activeEntries.length === 0) return []
+  const activeSorted = sortedSenNums(activeEntries)
+  const byCell = new Map<string, SeniorityEntry[]>()
+  for (const entry of activeEntries) {
+    const key = cellKey(entry)
+    const group = byCell.get(key) ?? []
+    group.push(entry)
+    byCell.set(key, group)
   }
-
-  return Array.from(byCellMap.values()).map((cellEntries) => {
+  return Array.from(byCell.values()).map(cellEntries => {
     const { fleet, seat, base } = cellEntries[0]!
-    const pctls = cellEntries
-      .map((e) => companyPercentile(e.seniority_number, activeSorted, totalActive))
-      .sort((a, b) => a - b)
-
-    const plugSenNum = Math.max(...cellEntries.map((e) => e.seniority_number))
-
-    const BUCKET_SIZE = 5
-    const bucketCounts = new Array<number>(Math.ceil(100 / BUCKET_SIZE)).fill(0)
-    for (const p of pctls) {
-      const idx = Math.min(Math.floor(p / BUCKET_SIZE), bucketCounts.length - 1)
-      bucketCounts[idx]!++
-    }
-    const density: DensityBucket[] = bucketCounts.map((count, i) => ({
-      start: i * BUCKET_SIZE,
-      count,
-    }))
-
-    return {
-      fleet,
-      seat,
-      base,
-      activeCount: cellEntries.length,
-      plugPercentile: pctls[0] ?? 0,
-      plugSenNum,
-      p25: percentileOf(pctls, 25),
-      median: percentileOf(pctls, 50),
-      p75: percentileOf(pctls, 75),
-      max: pctls[pctls.length - 1] ?? 0,
-      density,
-    }
+    const percentiles = cellEntries.map(entry => companyPercentile(entry.seniority_number, activeSorted, activeEntries.length)).sort((a, b) => a - b)
+    const bucketSize = 5
+    const bucketCounts = new Array<number>(Math.ceil(100 / bucketSize)).fill(0)
+    for (const percentile of percentiles) bucketCounts[Math.min(Math.floor(percentile / bucketSize), bucketCounts.length - 1)]!++
+    const density: DensityBucket[] = bucketCounts.map((count, index) => ({ start: index * bucketSize, count }))
+    return { fleet, seat, base, activeCount: cellEntries.length, plugPercentile: percentiles[0] ?? 0, plugSenNum: Math.max(...cellEntries.map(entry => entry.seniority_number)), p25: percentileOf(percentiles, 25), median: percentileOf(percentiles, 50), p75: percentileOf(percentiles, 75), max: percentiles[percentiles.length - 1] ?? 0, density }
   })
 }
 
-export function applyProjectionToSnapshots(
-  snapshots: QualDemographicSnapshot[],
-  entries: readonly SeniorityEntry[],
-  userSenNum: number,
-  projectionDate: PlainDate,
-  growthConfig: GrowthConfig | undefined,
-  asOfDate: PlainDate,
-): QualDemographicScale[] {
-  const totalPilots = entries.length
-  const aheadOfUser = entries.filter(e => e.seniority_number < userSenNum)
+export function applyProjectionToSnapshots(snapshots: QualDemographicSnapshot[], entries: readonly SeniorityEntry[], userSenNum: number, projectionDate: PlainDate, growthConfig: GrowthConfig | undefined, asOfDate: PlainDate): QualDemographicScale[] {
+  const aheadOfUser = entries.filter(entry => entry.seniority_number < userSenNum)
   const initialRank = aheadOfUser.length + 1
-
-  const retiredAheadToday = aheadOfUser.filter(e => e.retire_date && isRetiredBy(e.retire_date, asOfDate)).length
-  const currentRank = initialRank - retiredAheadToday
-  const currentPctl = computePercentile(currentRank, totalPilots)
-
-  const retiredAheadProjected = aheadOfUser.filter(e => e.retire_date && isRetiredBy(e.retire_date, projectionDate)).length
-  const projectedRank = initialRank - retiredAheadProjected
-  const additional = growthConfig?.enabled
-    ? computeAdditionalPilots(totalPilots, growthConfig.annualRate, asOfDate, projectionDate)
-    : 0
-  const projectedTotal = totalPilots + additional
-  const userPctl = computePercentile(projectedRank, projectedTotal)
-
-  return snapshots.map((snap) => ({
-    ...snap,
-    userPercentile: userPctl,
-    currentUserPercentile: currentPctl,
-    isHoldable: userPctl >= snap.plugPercentile,
-  }))
+  const currentRank = initialRank - aheadOfUser.filter(entry => entry.retire_date && isRetiredBy(entry.retire_date, asOfDate)).length
+  const projectedRank = initialRank - aheadOfUser.filter(entry => entry.retire_date && isRetiredBy(entry.retire_date, projectionDate)).length
+  const additionalPilots = growthConfig?.enabled ? computeAdditionalPilots(entries.length, growthConfig.annualRate, asOfDate, projectionDate) : 0
+  const currentUserPercentile = computePercentile(currentRank, entries.length)
+  const userPercentile = computePercentile(projectedRank, entries.length + additionalPilots)
+  return snapshots.map(snapshot => ({ ...snapshot, userPercentile, currentUserPercentile, isHoldable: userPercentile >= snapshot.plugPercentile }))
 }
 
-export function findThresholdYear(
-  baseTrajectory: (TrajectoryPoint | { date: string; rank: number; percentile: number })[],
-  targetPercentile: number,
-): ThresholdResult | null {
-  const year = baseTrajectory.find((pt) => pt.percentile >= targetPercentile)
-  const yearValue = year?.date
-  const yearString = typeof yearValue === 'string'
-    ? yearValue.slice(0, 4)
-    : yearValue?.year.toString()
-  if (!yearString) return null
-  return { year: yearString }
+export function findThresholdYear(baseTrajectory: (TrajectoryPoint | { date: string; rank: number; percentile: number })[], targetPercentile: number): ThresholdResult | null {
+  const date = baseTrajectory.find(point => point.percentile >= targetPercentile)?.date
+  const year = typeof date === 'string' ? date.slice(0, 4) : date?.year.toString()
+  return year ? { year } : null
 }

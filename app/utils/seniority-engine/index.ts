@@ -67,7 +67,12 @@ export {
   formatNumber,
 } from '~/utils/seniority-math'
 
-// Analytics (re-exported from qual-analytics until fully absorbed)
+// Analytics (re-exported until the lens-first interface is contracted)
+export {
+  computeQualSnapshots,
+  applyProjectionToSnapshots,
+  findThresholdYear,
+} from '~/utils/qual-analytics'
 export {
   qualKey,
   computeAgeDistribution,
@@ -75,11 +80,8 @@ export {
   computeYosHistogram,
   computeQualComposition,
   findMostJuniorCA,
-  computeRetirementWave,
-  computeQualSnapshots,
-  applyProjectionToSnapshots,
-  findThresholdYear,
-} from '~/utils/qual-analytics'
+} from './demographics'
+export { computeRetirementWave } from './retirement-analysis'
 
 // Growth config (re-exported from growth-config until fully absorbed)
 export {
