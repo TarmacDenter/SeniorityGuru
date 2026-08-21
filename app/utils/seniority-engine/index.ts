@@ -56,8 +56,6 @@ export {
   countRetiredAbove,
   buildTrajectory,
   generateTimePoints,
-  getProjectionEndDate,
-  getProjectionEndDateValue,
   projectRetirements,
   projectComparativeTrajectory,
   computeTrajectoryDeltas,

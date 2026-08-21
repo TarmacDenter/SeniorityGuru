@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
 import { mountSuspended, mockNuxtImport } from '@nuxt/test-utils/runtime'
+import { parsePlainDate } from '~/utils/temporal'
 
 vi.mock('~/components/dashboard/GrowthBar.vue', () => ({
   default: { template: '<div />' },
@@ -36,6 +37,7 @@ mockNuxtImport('useSeniorityCore', () => () => ({
   userEntry: { value: undefined },
   hasAnchor: { value: false },
   isNewHireMode: { value: false },
+  projectionEndDate: { value: parsePlainDate('2040-06-15') },
 }))
 
 mockNuxtImport('useUser', () => () => ({ employeeNumber: { value: null } }))

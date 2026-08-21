@@ -46,7 +46,7 @@ export function useStanding(): {
   statCards: ComputedRef<StatCard[]>
   retirementSnapshot: ComputedRef<RetirementSnapshotData | null>
 } {
-  const { lens, anchoredLens, userEntry } = useSeniorityCore()
+  const { lens, anchoredLens, userEntry, projectionEndDate } = useSeniorityCore()
   const seniorityStore = useSeniorityStore()
 
   const standingResult = computed(() => anchoredLens.value?.standing() ?? null)
@@ -139,7 +139,7 @@ export function useStanding(): {
     ]
   })
 
-  const trajectoryResult = computed(() => anchoredLens.value?.trajectory() ?? null)
+  const trajectoryResult = computed(() => projectionEndDate.value && anchoredLens.value?.trajectory(projectionEndDate.value) || null)
 
   const retirementSnapshot = computed<RetirementSnapshotData | null>(() => {
     const entry = userEntry.value

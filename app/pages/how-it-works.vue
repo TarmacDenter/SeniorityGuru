@@ -149,7 +149,7 @@ const sections = [
               <li>Corrections to source-list data after upload.</li>
             </ul>
             <UAlert color="neutral" variant="subtle" icon="i-lucide-clock" title="Projection Window"
-              description="The trajectory ends at your retirement date when one is available. Without one, it uses a 30-year horizon. Results are directional estimates." />
+              description="The trajectory ends at your retirement date. If no user retirement date is available, it uses the latest retirement date in the loaded seniority data. Results are directional estimates." />
           </div>
         </section>
 
@@ -167,7 +167,7 @@ const sections = [
               It follows the same retirement-only trajectory used by the chart.
             </p>
             <UAlert color="neutral" variant="subtle" icon="i-lucide-info" title="Projection horizon"
-              description="If the threshold is not reached within the trajectory horizon, the calculator reports that it is not projected. The horizon is up to 30 years, or your retirement date when one is available." />
+              description="If the threshold is not reached by the projection end date, the calculator reports that it is not projected. The end date comes from the user retirement date or the latest retirement date in the loaded seniority data." />
           </div>
         </section>
         <!-- Data Compatibility -->

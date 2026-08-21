@@ -22,6 +22,7 @@ const entries = [
 ]
 const snapshot = createSnapshot(entries)
 const asOfDate = Temporal.PlainDate.from('2026-06-15')
+const projectionEndDate = Temporal.PlainDate.from('2060-06-15')
 const makeLens = () => createLens(snapshot, { asOfDate })
 
 function assertBaseLensCapabilities(lens: SeniorityLens) {
@@ -66,23 +67,23 @@ describe('SeniorityLens capabilities', () => {
     const e4 = lens.withAnchor('E4')
     const scenario = createScenario({ projectionDate: asOfDate })
     expect(e3.standing()).not.toEqual(e4.standing())
-    expect(e3.trajectory(scenario)).not.toBe(e4.trajectory(scenario))
+    expect(e3.trajectory(projectionEndDate, scenario)).not.toBe(e4.trajectory(projectionEndDate, scenario))
     expect(e3.retirementWave(scenario)).toBe(e4.retirementWave(scenario))
     expect(lens.retirementWave(scenario)).toBe(e3.retirementWave(scenario))
   })
 })
 
 describe('organization analysis', () => {
-  it('keeps retirement projections anchored to the default 30-year horizon', () => {
+  it('requires an explicit retirement projection end date', () => {
     const lens = makeLens()
     const anchored = lens.withAnchor('E4')
-    expect(anchored.retirementProjection()).toBe(lens.retirementProjection())
-    expect(anchored.retirementProjection({ through: anchored.anchor.retire_date ?? undefined }))
-      .not.toEqual(lens.retirementProjection())
+    const result = anchored.retirementProjection({ through: projectionEndDate })
+    expect(result.labels.at(-1)).toBe('Jun 2060')
   })
 
   it('applies retirement projection scenarios', () => {
     const result = makeLens().retirementProjection({
+      through: projectionEndDate,
       scenario: createScenario({ projectionDate: asOfDate, scopeFilter: { seat: 'CA' } }),
     })
     expect(result.filteredTotal).toBe(3)
@@ -120,12 +121,12 @@ describe('pilot-relative analysis', () => {
   it('computes standing and trajectory from the canonical anchor', () => {
     expect(anchored.standing().rank).toBe(4)
     expect(anchored.standing().adjustedRank).toBe(3)
-    expect(anchored.trajectory().points[0]?.date.toString()).toBe('2026-06-15')
+    expect(anchored.trajectory(projectionEndDate).points[0]?.date.toString()).toBe('2026-06-15')
   })
 
   it('memoizes pilot-relative methods per derived lens', () => {
     const scenario = createScenario({ projectionDate: asOfDate })
-    expect(anchored.trajectory(scenario)).toBe(anchored.trajectory(scenario))
+    expect(anchored.trajectory(projectionEndDate, scenario)).toBe(anchored.trajectory(projectionEndDate, scenario))
     expect(anchored.standing()).toBe(anchored.standing())
   })
 
@@ -139,20 +140,20 @@ describe('pilot-relative analysis', () => {
 
   it('supports the remaining pilot-relative analysis methods', () => {
     const scenario = createScenario({ projectionDate: asOfDate })
-    expect(anchored.compareTrajectories(scenario, scenario).labels.length).toBeGreaterThan(0)
+    expect(anchored.compareTrajectories(scenario, scenario, projectionEndDate).labels.length).toBeGreaterThan(0)
     expect(anchored.qualScales()).toContainEqual(expect.objectContaining({
       fleet: '737',
       seat: 'CA',
       plugSenNum: 4,
       isHoldable: true,
     }))
-    expect(anchored.percentileCrossing(50, scenario)).toSatisfy(value => value === null || /^\d{4}$/.test(value.year))
+    expect(anchored.percentileCrossing(50, projectionEndDate, scenario)).toSatisfy(value => value === null || /^\d{4}$/.test(value.year))
   })
 
   it('applies qualification scope to percentile crossings', () => {
     const captainScenario = createScenario({ projectionDate: asOfDate, scopeFilter: { seat: 'CA' } })
     const allPilotsScenario = createScenario({ projectionDate: asOfDate })
-    expect(anchored.percentileCrossing(90, captainScenario)).toEqual({ year: '2027' })
-    expect(anchored.percentileCrossing(90, allPilotsScenario)).toEqual({ year: '2040' })
+    expect(anchored.percentileCrossing(90, projectionEndDate, captainScenario)).toEqual({ year: '2027' })
+    expect(anchored.percentileCrossing(90, projectionEndDate, allPilotsScenario)).toEqual({ year: '2040' })
   })
 })

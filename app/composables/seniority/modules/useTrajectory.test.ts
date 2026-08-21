@@ -24,7 +24,7 @@ describe('useTrajectory', () => {
     expect(chartData.value).toEqual({ labels: [], data: [] })
   })
 
-  it('computes chartData from lens.trajectory() with default growth config', () => {
+  it('computes chartData through the resolved projection end date', () => {
     mockStore.entries = [
       makeEntry({ seniority_number: 1, employee_number: 'E1', base: 'JFK', seat: 'CA', fleet: '737', retire_date: '2035-06-15' }),
       makeEntry({ seniority_number: 2, employee_number: 'E2', base: 'JFK', seat: 'CA', fleet: '737', retire_date: '2040-06-15' }),

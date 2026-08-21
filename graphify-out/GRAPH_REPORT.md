@@ -1,74 +1,74 @@
 # Graph Report - local  (2026-08-20)
 
 ## Corpus Check
-- 304 files · ~98,253 words
+- 304 files · ~98,381 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 1634 nodes · 3275 edges · 164 communities (116 shown, 48 thin omitted)
+- 1633 nodes · 3270 edges · 172 communities (122 shown, 50 thin omitted)
 - Extraction: 97% EXTRACTED · 3% INFERRED · 0% AMBIGUOUS · INFERRED: 91 edges (avg confidence: 0.85)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `3f213fa9`
+- Built from commit: `68cfe83b`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
 ## Community Hubs (Navigation)
 - dependencies
 - seniority-engine/index.ts
-- AnchoredSeniorityLensImpl
+- Scenario
 - upload.vue
 - pages/dashboard.vue
 - RetirementsTab.vue
 - upload/index.ts
 - _useFileIO
 - useSeniorityCore.ts
-- logger.ts
+- utils/temporal.ts
 - SeniorityListViewer.vue
-- snapshot.ts
-- createLogger
-- PositionTab.vue
+- _useReview
+- _useConfirm.ts
+- jetblue.ts
 - parse.ts
 - lens.test.ts
-- lens.ts
+- seniority-math.ts
+- utils/hooks.ts
 - pages/index.vue
-- QualSeniorityScale.vue
 - seniority-engine/types.ts
 - date/index.ts
-- jetblue.ts
+- delta.ts
 - TrajectoryTab.vue
 - useSeniorityStore
 - compare.vue
 - fuzz-data.ts
-- parsePlainDate
+- SettingsNewHireModeCard.vue
 - formatYear
 - UploadReviewTable.vue
 - lists.vue
 - SeniorityGuru
-- user.ts
-- parse-spreadsheet.ts
+- useUserStore
+- _useFileIO.ts
 - import-pipeline/types.ts
 - process-confirmed-mappings.ts
-- todayPlainDate
-- utils/temporal.ts
+- PositionTab.vue
+- seniority.ts
 - generate-demo-v2.ts
 - RetirementSnapshot.vue
-- factories.ts
+- seniority-list.ts
 - fields.ts
 - devDependencies
 - scripts
 - ComparisonDiffTab.vue
 - DemographicsTab.vue
-- useUserStore
+- parsePlainDate
 - GrowthBar.vue
 - ComparisonTab.vue
 - BaseStatusTable.vue
 - TrajectoryDemo.vue
 - useImportAttemptsStore
-- seniority-list.ts
+- ReviewPhase
 - EmployeeNumberBanner.vue
-- useSeniorityCore.test.ts
+- PlainDate
 - FilePhase
 - scripts/tsconfig.json
 - RetirementComparison.vue
@@ -83,7 +83,7 @@
 - post-commit
 - ComparisonDiffTab.test.ts
 - seniority/index.ts
-- ImportPlugin
+- registry.ts
 - theme.vue
 - Domain Docs
 - QualSizesCard.vue
@@ -98,13 +98,13 @@
 - ShareButton.vue
 - changelog.md
 - useChangelog.ts
-- useClearAllData.test.ts
+- _useFileIO.test.ts
 - package.json
 - AgeDistributionChart.vue
 - PercentileThresholdCalculator.vue
 - YearsOfServiceBreakdown.vue
 - SeniorityRankCard.vue
-- formatDate
+- TrajectoryChart.vue
 - SupportModal.vue
 - Import Plugin
 - upload.ts
@@ -113,7 +113,7 @@
 - 0001-code-based-import-plugin-lifecycle.md
 - AppButtonToggle.vue
 - 0002-explicit-import-plugin-selection.md
-- memoizeLast
+- lens.ts
 - 0003-separate-import-domain-from-ui.md
 - useTableFeatures.ts
 - compare.test.ts
@@ -122,7 +122,7 @@
 - 0004-immutable-import-pipeline.md
 - InfoIcon.vue
 - layouts/dashboard.vue
-- trajectory-analysis.ts
+- snapshot.ts
 - robots.txt
 - SeniorityGuru Agent Guide
 - Local-first Architecture
@@ -143,7 +143,7 @@
 - happy-dom
 - @iconify-json/lucide
 - 0005-defer-full-temporal-migration.md
-- @playwright/test
+- validate-entries.ts
 - typescript
 - vitest
 - @vue/test-utils
@@ -156,13 +156,21 @@
 - domain-glossary.md
 - post-checkout
 - @nuxt/eslint
+- build-diff-rows.test.ts
+- seniority.test.ts
+- useUser.test.ts
+- decodeWorkbook
+- useSeniorityCompare
+- ProgressTracker
+- SeniorityUpload
+- @commitlint/cli
 
 ## God Nodes (most connected - your core abstractions)
-1. `parsePlainDate()` - 36 edges
+1. `parsePlainDate()` - 37 edges
 2. `useSeniorityStore` - 35 edges
-3. `useSeniorityCore()` - 31 edges
-4. `SeniorityEntry` - 31 edges
-5. `PlainDate` - 29 edges
+3. `PlainDate` - 32 edges
+4. `useSeniorityCore()` - 31 edges
+5. `SeniorityEntry` - 31 edges
 6. `useUserStore` - 25 edges
 7. `SeniorityEntryInput` - 25 edges
 8. `todayPlainDate()` - 22 edges
@@ -172,8 +180,8 @@
 ## Surprising Connections (you probably didn't know these)
 - `TableRow` --references--> `PlainDate`  [EXTRACTED]
   app/components/analytics/JuniorCaptainTable.vue → app/utils/temporal.ts
-- `positionScenario` --calls--> `createScenario()`  [EXTRACTED]
-  app/components/dashboard/tabs/PositionTab.vue → app/utils/seniority-engine/scenario.ts
+- `bestYear` --calls--> `extractYear()`  [EXTRACTED]
+  app/components/dashboard/TrajectoryDeltaSparkline.vue → app/utils/date/math.ts
 - `RetirementTimeline` --calls--> `diffYears()`  [EXTRACTED]
   app/components/seniority/SeniorityListViewer.vue → app/utils/date/math.ts
 - `useSeniorityStore` --indirect_call--> `clearAll()`  [INFERRED]
@@ -188,19 +196,19 @@
 - **Wayfinding Ticket Flow** — docs_agents_issue_tracker_wayfinder_map, docs_agents_issue_tracker_child_ticket, docs_agents_issue_tracker_native_issue_dependencies, docs_agents_issue_tracker_frontier_query, docs_agents_issue_tracker_claim, docs_agents_issue_tracker_resolve [EXTRACTED 1.00]
 - **Canonical Triage Role Mappings** — docs_agents_triage_labels_skills_needs_triage, docs_agents_triage_labels_tracker_needs_triage, docs_agents_triage_labels_skills_needs_info, docs_agents_triage_labels_tracker_needs_info, docs_agents_triage_labels_skills_ready_for_agent, docs_agents_triage_labels_tracker_ready_for_agent, docs_agents_triage_labels_skills_ready_for_human, docs_agents_triage_labels_tracker_ready_for_human, docs_agents_triage_labels_skills_wontfix, docs_agents_triage_labels_tracker_wontfix [EXTRACTED 1.00]
 
-## Communities (164 total, 48 thin omitted)
+## Communities (172 total, 50 thin omitted)
 
 ### Community 0 - "dependencies"
 Cohesion: 0.05
 Nodes (43): better-sqlite3, chart.js, dexie, @fontsource/jetbrains-mono, @fontsource-variable/dm-sans, @internationalized/date, nuxt, @nuxt/content (+35 more)
 
 ### Community 1 - "seniority-engine/index.ts"
-Cohesion: 0.14
-Nodes (24): NewHireControls, useGrowthConfig(), useScopeFilter(), DEFAULT_GROWTH_CONFIG, GrowthConfig, SeniorityEntry, COMPANY_WIDE, enumerateQualSpecs() (+16 more)
+Cohesion: 0.15
+Nodes (18): useGrowthConfig(), useScopeFilter(), DEFAULT_GROWTH_CONFIG, GrowthConfig, COMPANY_WIDE, enumerateQualSpecs(), QualSpec, qualSpecEquals() (+10 more)
 
-### Community 2 - "AnchoredSeniorityLensImpl"
-Cohesion: 0.14
-Nodes (11): AnchoredSeniorityLensImpl, LensContext, SeniorityLensImpl, DemographicsResult, RetirementProjectionOptions, RetirementProjectionResult, RetirementWaveBucket, Scenario (+3 more)
+### Community 2 - "Scenario"
+Cohesion: 0.16
+Nodes (8): LensContext, SeniorityLensImpl, DemographicsResult, RetirementProjectionOptions, RetirementProjectionResult, RetirementWaveBucket, Scenario, SenioritySnapshot
 
 ### Community 3 - "upload.vue"
 Cohesion: 0.07
@@ -208,75 +216,75 @@ Nodes (24): activeFilterLabel, activeRowFilter, canAdvance, changeFormat(), clea
 
 ### Community 4 - "pages/dashboard.vue"
 Cohesion: 0.09
-Nodes (22): DASHBOARD_TABS, useDashboardTabs(), useSeniorityNav(), { activeTab, tabs }, { employeeNumber }, fullBleedTabs, { hasData, hasAnchor: userFound, isNewHireMode, newHire, anchoredLens }, hasEmployeeNumber (+14 more)
+Nodes (22): DASHBOARD_TABS, useDashboardTabs(), useSeniorityNav(), { activeTab, tabs }, { employeeNumber }, fullBleedTabs, { hasData, hasAnchor: userFound, isNewHireMode, newHire, anchoredLens, projectionEndDate }, hasEmployeeNumber (+14 more)
 
 ### Community 5 - "RetirementsTab.vue"
 Cohesion: 0.07
 Nodes (24): availableBases, availableFleets, availableSeats, baseItems, columns, filterBase, filterFleet, filterSeat (+16 more)
 
 ### Community 6 - "upload/index.ts"
-Cohesion: 0.11
-Nodes (24): columnMap, mappingOptions, DEFAULT_COLUMN_MAP, DEFAULT_MAPPING_OPTIONS, createUploadSession(), MappingPhase, ProcessingPhase, ProgressTracker (+16 more)
+Cohesion: 0.20
+Nodes (15): DEFAULT_COLUMN_MAP, DEFAULT_MAPPING_OPTIONS, ConfirmPhase, MappingPhase, ProcessingPhase, UploadColumnMap, UploadMappingOptions, UploadSession (+7 more)
 
 ### Community 7 - "_useFileIO"
 Cohesion: 0.18
 Nodes (18): useSeniorityUpload(), clearUploadType(), reset(), resetDownstream(), selectUploadType(), toConfirmedMappings(), _useColumnMapping(), apply() (+10 more)
 
 ### Community 8 - "useSeniorityCore.ts"
-Cohesion: 0.19
-Nodes (12): mockStore, mockUserStore, useQualFilter(), birthDate, enabled, log, selectedBase, selectedFleet (+4 more)
+Cohesion: 0.13
+Nodes (20): mockStore, mockUserStore, useQualFilter(), birthDate, enabled, log, _resetCoreSingletons(), selectedBase (+12 more)
 
-### Community 9 - "logger.ts"
-Cohesion: 0.21
-Nodes (14): downloadLog(), entryCount, clearLogBuffer(), log(), emit(), exportLogAsText(), getLogBuffer(), LOG_LEVELS (+6 more)
+### Community 9 - "utils/temporal.ts"
+Cohesion: 0.19
+Nodes (17): downloadLog(), entryCount, snooze(), clearLogBuffer(), log(), emit(), exportLogAsText(), getLogBuffer() (+9 more)
 
 ### Community 10 - "SeniorityListViewer.vue"
 Cohesion: 0.07
 Nodes (29): canInsert, columns, columnVisibility, currentPage, { employeeNumber }, { entries, isNewHireMode }, expanded, focusUserPage() (+21 more)
 
-### Community 11 - "snapshot.ts"
-Cohesion: 0.10
-Nodes (31): formatIssueMessage(), formatPipelineIssue(), formatSchemaIssues(), isStructuralMessage(), reportReviewChange(), _useReview(), acknowledgePipelineIssues(), deleteErrorRows() (+23 more)
+### Community 11 - "_useReview"
+Cohesion: 0.18
+Nodes (18): formatIssueMessage(), formatPipelineIssue(), formatSchemaIssues(), isStructuralMessage(), reportReviewChange(), createReview(), _useReview(), acknowledgePipelineIssues() (+10 more)
 
-### Community 12 - "createLogger"
-Cohesion: 0.19
-Nodes (12): clearAll(), { clearAllData }, confirm, loading, toast, useSeniorityCompare(), fetchListData(), loadComparison() (+4 more)
-
-### Community 13 - "PositionTab.vue"
+### Community 12 - "_useConfirm.ts"
 Cohesion: 0.15
-Nodes (11): { employeeNumber }, growthConfig, { hasData, newHire, anchoredLens, userEntry }, hasEmployeeNumber, hasProjection, positionScenario, positionYearsInput, projectionYears (+3 more)
+Nodes (12): clearAll(), { clearAllData }, confirm, loading, toast, log, mockImportAttemptsStore, mockSeniorityStore (+4 more)
+
+### Community 13 - "jetblue.ts"
+Cohesion: 0.18
+Nodes (16): genericImportPlugin, aliases, createJetBlueImportPlugin(), hasJetBlueEuMarker(), headerIndex(), jetblueImportPlugin, JetBlueImportPluginOptions, normalize() (+8 more)
 
 ### Community 14 - "parse.ts"
-Cohesion: 0.18
-Nodes (18): EXCEL_EPOCH_MS, ISO_DATE_REGEX, NAMED_MONTH_FORMATS, DATE_PARSERS, DateParser, detectDateFormat(), _detectFormat(), detectFutureDateFormat() (+10 more)
+Cohesion: 0.16
+Nodes (20): EXCEL_EPOCH_MS, ISO_DATE_REGEX, NAMED_MONTH_FORMATS, DATE_PARSERS, DateParser, detectDateFormat(), _detectFormat(), detectFutureDateFormat() (+12 more)
 
 ### Community 15 - "lens.test.ts"
-Cohesion: 0.09
-Nodes (10): AnchorNotFoundError, createLens(), asOfDate, assertBaseLensCapabilities(), entries, makeLens(), snapshot, AnchoredSeniorityLens (+2 more)
+Cohesion: 0.12
+Nodes (9): AnchorNotFoundError, createLens(), asOfDate, entries, makeLens(), projectionEndDate, snapshot, CommonSeniorityLens (+1 more)
 
-### Community 16 - "lens.ts"
+### Community 16 - "seniority-math.ts"
 Cohesion: 0.17
-Nodes (26): addYearsDate(), isRetiredBy(), computeAdditionalPilots(), cellKey(), CreateLensOptions, referenceDate(), computePercentile(), percentileValue() (+18 more)
+Nodes (21): isRetiredBy(), computeAdditionalPilots(), cellKey(), computePercentile(), percentileValue(), projectQualViewer(), entries, applyProjectionToSnapshots() (+13 more)
 
-### Community 17 - "pages/index.vue"
-Cohesion: 0.05
-Nodes (34): Handler, mockNavigateTo, mockSeniorityStore, mockUserStore, runtimeHandlers, Handler, mockNavigateTo, mockSeniorityStore (+26 more)
+### Community 17 - "utils/hooks.ts"
+Cohesion: 0.10
+Nodes (19): Handler, mockNavigateTo, mockSeniorityStore, mockUserStore, runtimeHandlers, registerDemoExitHook(), Handler, mockNavigateTo (+11 more)
 
-### Community 18 - "QualSeniorityScale.vue"
-Cohesion: 0.16
-Nodes (8): props, rowMaxCounts, sortedScales, SEAT_ORDER, sortQualificationScales(), DensityBucket, QualDemographicScale, QualDemographicSnapshot
+### Community 18 - "pages/index.vue"
+Cohesion: 0.07
+Nodes (24): props, rowMaxCounts, sortedScales, BASE_QUAL_SCALES, config, dataOwnershipItems, demoAgeBuckets, demoAgeData (+16 more)
 
 ### Community 19 - "seniority-engine/types.ts"
-Cohesion: 0.16
-Nodes (20): computeYOSDate(), AGE_BUCKETS, computeAgeDistribution(), computeQualComposition(), computeYosDistribution(), computeYosHistogram(), findMostJuniorCA(), qualKey() (+12 more)
+Cohesion: 0.14
+Nodes (17): AGE_BUCKETS, AnchoredSeniorityLensImpl, findThresholdYear(), AgeBucket, FilterFn, MostJuniorCARow, QualCompositionRow, StandingResult (+9 more)
 
 ### Community 20 - "date/index.ts"
-Cohesion: 0.26
-Nodes (16): addYearsISO(), computeRetireDate(), computeRetireDateValue(), computeYOS(), currentYear(), deriveAge(), diffDateYears(), diffYears() (+8 more)
+Cohesion: 0.25
+Nodes (18): addYearsDate(), addYearsISO(), computeRetireDate(), computeRetireDateValue(), computeYOS(), currentYear(), deriveAge(), diffDateYears() (+10 more)
 
-### Community 21 - "jetblue.ts"
-Cohesion: 0.10
-Nodes (38): ImportField, importFieldLabel(), matchingColumns(), normalizeHeader(), preparedColumn(), preparedColumnId(), sourceSheet, decomposeDeltaCategory() (+30 more)
+### Community 21 - "delta.ts"
+Cohesion: 0.22
+Nodes (17): importFieldLabel(), matchingColumns(), normalizeHeader(), preparedColumn(), preparedColumnId(), decomposeDeltaCategory(), deltaImportPlugin, headerFields (+9 more)
 
 ### Community 22 - "TrajectoryTab.vue"
 Cohesion: 0.10
@@ -284,83 +292,83 @@ Nodes (17): {
   chartData: trajectoryChartData,
   computeComparativeTrajectory,
   computeRetirementProjection,
-}, growthConfig, { hasData, hasAnchor, entries, lens, anchoredLens }, isBannerDismissed, qualFilter, qualTrajectoryDeltas, { rankCard }, ready (+9 more)
+}, growthConfig, { hasData, hasAnchor, entries, lens, anchoredLens, projectionEndDate }, isBannerDismissed, qualFilter, qualTrajectoryDeltas, { rankCard }, ready (+9 more)
 
 ### Community 23 - "useSeniorityStore"
-Cohesion: 0.11
-Nodes (17): { showBanner, dismiss, exit }, mockStore, useSeniorityLists(), clearStore(), fetchEntries(), fetchLists(), updateList(), mockEmitHook (+9 more)
+Cohesion: 0.12
+Nodes (17): { showBanner, dismiss, exit }, useSeniorityLists(), clearStore(), fetchEntries(), fetchLists(), updateList(), mockEmitHook, mockGetPreference (+9 more)
 
 ### Community 24 - "compare.vue"
-Cohesion: 0.14
-Nodes (18): activeCompareTab, compareTabs, diffRows, { employeeNumber }, listIdA, listIdB, { lists, listOptions, fetchLists }, { loading, error, comparison } (+10 more)
+Cohesion: 0.15
+Nodes (16): activeCompareTab, compareTabs, { employeeNumber }, listIdA, listIdB, { lists, listOptions, fetchLists }, { loading, error, comparison }, route (+8 more)
 
 ### Community 25 - "fuzz-data.ts"
 Cohesion: 0.21
 Nodes (19): assignSeat(), baseSamples, baseSampleSizing, buildHireDatePool(), buildSeatCurve(), fakeName(), fuzzRow(), makeEmployeeIdPool() (+11 more)
 
-### Community 26 - "parsePlainDate"
-Cohesion: 0.12
-Nodes (13): birthDateModel, { newHire: newHireMode }, { mockEnabled, mockReset, mockToastAdd }, toast, log, createConfirm(), mockStore, _useConfirm() (+5 more)
+### Community 26 - "SettingsNewHireModeCard.vue"
+Cohesion: 0.25
+Nodes (4): birthDateModel, { newHire: newHireMode }, { mockEnabled, mockReset, mockToastAdd }, toast
 
 ### Community 27 - "formatYear"
 Cohesion: 0.12
-Nodes (17): { defaults, colors }, props, trajectoryChartData, trajectoryChartOptions, waveChartData, waveChartOptions, chartData, chartOptions (+9 more)
+Nodes (16): { defaults, colors }, props, trajectoryChartData, trajectoryChartOptions, waveChartData, waveChartOptions, chartData, chartOptions (+8 more)
 
 ### Community 28 - "UploadReviewTable.vue"
 Cohesion: 0.12
 Nodes (13): columns, currentPage, displayEntries, editableFields, editingCell, emit, IndexedEntry, pageCount (+5 more)
 
 ### Community 29 - "lists.vue"
-Cohesion: 0.12
-Nodes (15): SeniorityListSummary, columns, { editOpen, saving, editState, deleteOpen, deleting, deleteTarget, openEdit, saveEdit, confirmDelete, doDelete }, filteredLists, getDropdownItems(), { lists, listsLoading, listsError, fetchLists, deleteList: storeDeleteList, updateList: storeUpdateList }, log, SeniorityList (+7 more)
+Cohesion: 0.11
+Nodes (19): birthDateModel, { employeeNumber }, { newHire: newHireMode }, SeniorityListSummary, columns, { editOpen, saving, editState, deleteOpen, deleting, deleteTarget, openEdit, saveEdit, confirmDelete, doDelete }, filteredLists, getDropdownItems() (+11 more)
 
 ### Community 30 - "SeniorityGuru"
 Cohesion: 0.10
 Nodes (19): Contributing to SeniorityGuru, Contribution checklist, Import plugins, Commands, Contributing, Git workflow, License, SeniorityGuru (+11 more)
 
-### Community 31 - "user.ts"
-Cohesion: 0.20
-Nodes (10): log, mockDb, ImportMappingPreference, ImportMappingPreferenceSchema, ImportMappingsSchema, NewHireConfig, NewHireConfigSchema, PREFERENCE_DESERIALIZERS (+2 more)
+### Community 31 - "useUserStore"
+Cohesion: 0.16
+Nodes (15): useUser(), clearPreferences(), loadPreferences(), savePreference(), log, mockDb, useUserStore, ImportMappingPreference (+7 more)
 
-### Community 32 - "parse-spreadsheet.ts"
-Cohesion: 0.36
-Nodes (7): applyColumnMap(), autoDetectColumnMap(), ColumnMap, isColumnMapComplete(), MappingOptions, mapSingleRow(), parseSpreadsheetData()
+### Community 32 - "_useFileIO.ts"
+Cohesion: 0.26
+Nodes (9): log, DecodedWorkbook, applyColumnMap(), autoDetectColumnMap(), ColumnMap, isColumnMapComplete(), MappingOptions, mapSingleRow() (+1 more)
 
 ### Community 33 - "import-pipeline/types.ts"
-Cohesion: 0.17
-Nodes (11): DecodedWorkbook, DecodeError, DecodeWorkbookResult, MappedEntryTransformationInput, SourceCellValue, SourceColumn, SourceRow, decodeSheet() (+3 more)
+Cohesion: 0.18
+Nodes (13): ImportField, ConfirmedMappings, DecodeError, DecodeWorkbookResult, EntryPatch, MappedEntryTransformationInput, PreparationPatch, PrepareImportResult (+5 more)
 
 ### Community 34 - "process-confirmed-mappings.ts"
 Cohesion: 0.18
-Nodes (16): normalizeMappedEntry(), validateImportEntry(), cloneAndFreeze(), columnValue(), entryPatchSchema, importIssueSchema, mapEntry(), mapField() (+8 more)
+Nodes (15): validateImportEntry(), cloneAndFreeze(), columnValue(), entryPatchSchema, importIssueSchema, mapEntry(), mapField(), nextBatch() (+7 more)
 
-### Community 35 - "todayPlainDate"
-Cohesion: 0.22
-Nodes (11): demographicScenario, userYos, positionSliderMax, projectionDate, scopedScenario, projected, tableData, useTrajectory() (+3 more)
+### Community 35 - "PositionTab.vue"
+Cohesion: 0.13
+Nodes (22): demographicScenario, userYos, { employeeNumber }, growthConfig, { hasData, newHire, anchoredLens, projectionEndDate }, hasEmployeeNumber, hasProjection, positionScenario (+14 more)
 
-### Community 36 - "utils/temporal.ts"
-Cohesion: 0.11
-Nodes (30): snooze(), ImportAttemptInput, log, newestFirst(), records, compareListsByRecency(), log, expectedAdaptedEntry (+22 more)
+### Community 36 - "seniority.ts"
+Cohesion: 0.15
+Nodes (19): mockStore, ImportAttemptInput, log, records, log, ImportAttemptDomain, localImportAttemptToDomain(), localListToSeniorityList() (+11 more)
 
 ### Community 37 - "generate-demo-v2.ts"
 Cohesion: 0.21
 Nodes (15): applyNewHires(), applyRetirements(), applyTransfers(), applyUpgrades(), BASE_ROTATION, __dirname, isoToMdy(), logger (+7 more)
 
 ### Community 38 - "RetirementSnapshot.vue"
-Cohesion: 0.22
-Nodes (8): columns, maxYears, props, tableData, TableRow, TrajectoryPoint, yearsToShow, formatRankDelta()
+Cohesion: 0.16
+Nodes (11): columns, formatDate(), maxYears, props, tableData, TableRow, TrajectoryPoint, yearsToShow (+3 more)
 
-### Community 39 - "factories.ts"
-Cohesion: 0.15
-Nodes (13): state, stubs, mockLoadPreferences, mockSavePreference, mockSeniorityEntries, mockUserStore, makeDomainEntry(), makeEntry() (+5 more)
+### Community 39 - "seniority-list.ts"
+Cohesion: 0.19
+Nodes (10): state, stubs, mockStore, makeDomainEntry(), makeEntry(), makeList(), makePartialEntry(), isCalendarDate() (+2 more)
 
 ### Community 40 - "fields.ts"
-Cohesion: 0.11
-Nodes (20): draftSchema, ImportDiagnosticTraceSchema, importIssueSchema, mappingSelectionSchema, preparationPatchSchema, preparedColumnSchema, preparedSheetSchema, reviewEditPatchSchema (+12 more)
+Cohesion: 0.10
+Nodes (21): draftSchema, ImportDiagnosticTraceSchema, importIssueSchema, mappingSelectionSchema, preparationPatchSchema, preparedColumnSchema, preparedSheetSchema, reviewEditPatchSchema (+13 more)
 
 ### Community 41 - "devDependencies"
 Cohesion: 0.13
-Nodes (15): @commitlint/cli, eslint, fake-indexeddb, @faker-js/faker, @nuxt/test-utils, devDependencies, @commitlint/cli, eslint (+7 more)
+Nodes (15): eslint, fake-indexeddb, @faker-js/faker, @nuxt/test-utils, devDependencies, eslint, fake-indexeddb, @faker-js/faker (+7 more)
 
 ### Community 42 - "scripts"
 Cohesion: 0.13
@@ -374,9 +382,9 @@ Nodes (10): badgeLabel(), filteredRows, isEmpty, page, PAGE_SIZE_OPTIONS, pageSi
 Cohesion: 0.13
 Nodes (13): ageDistribution, demographicsResult, { hasData, newHire, lens, userEntry }, mostJuniorCAs, qualComposition, qualFilter, ready, { retirementAge } (+5 more)
 
-### Community 45 - "useUserStore"
+### Community 45 - "parsePlainDate"
 Cohesion: 0.21
-Nodes (12): useUser(), clearPreferences(), loadPreferences(), savePreference(), registerDemoEnterHook(), registerDemoExitHook(), useUserStore, localEntryToSeniorityEntry() (+4 more)
+Nodes (9): { mockAnchoredLens, mockHasData }, save(), registerDemoEnterHook(), localEntryToSeniorityEntry(), DEMO_EMPLOYEE_NUMBER, mdyToISO(), parseDemoCSV(), date() (+1 more)
 
 ### Community 46 - "GrowthBar.vue"
 Cohesion: 0.40
@@ -395,20 +403,16 @@ Cohesion: 0.17
 Nodes (12): activePreset, chartData, chartOptions, container, generateTrajectory(), growthRate, legendItems, QualKey (+4 more)
 
 ### Community 50 - "useImportAttemptsStore"
-Cohesion: 0.26
-Nodes (8): attempts, useImportAttempts(), exportAttempt(), load(), remove(), update(), useImportAttemptsStore, formatInstantLocal()
-
-### Community 51 - "seniority-list.ts"
-Cohesion: 0.11
-Nodes (10): mockStore, ConfirmPhase, ReviewPhase, log, makePartialEntry(), DraftSeniorityEntry, EntryPatch, SeniorityEntryInput (+2 more)
+Cohesion: 0.23
+Nodes (9): attempts, useImportAttempts(), exportAttempt(), load(), remove(), update(), newestFirst(), useImportAttemptsStore (+1 more)
 
 ### Community 52 - "EmployeeNumberBanner.vue"
 Cohesion: 0.18
 Nodes (10): accentVariant, emit, employeeNumber, loading, onSave(), { savePreference }, BannerVm, { mockSavePreference, mockToastAdd } (+2 more)
 
-### Community 53 - "useSeniorityCore.test.ts"
-Cohesion: 0.24
-Nodes (8): _resetCoreSingletons(), mockStore, mockUserStore, mockStore, mockUserStore, mockStore, mockUserStore, resetMockStores()
+### Community 53 - "PlainDate"
+Cohesion: 0.22
+Nodes (7): NewHireControls, SeniorityEntry, assertBaseLensCapabilities(), QualViewerOptions, QualViewerRow, AnchoredSeniorityLens, PlainDate
 
 ### Community 55 - "scripts/tsconfig.json"
 Cohesion: 0.17
@@ -443,8 +447,8 @@ Cohesion: 0.14
 Nodes (9): { showBanner, isIos, showIosModal, install, snooze, dismiss }, mockUserStore, mountComposable(), usePwaInstall(), { mockNavigateTo, mockIsStandalone }, BeforeInstallPromptEvent, deferredInstallPrompt, sharedShowIosModal (+1 more)
 
 ### Community 63 - "seniority-compare.ts"
-Cohesion: 0.18
-Nodes (9): DELETED_KINDS, emptyResult, CompareResult, DepartedPilot, Entry, NewHire, QualMove, RankChange (+1 more)
+Cohesion: 0.33
+Nodes (8): DELETED_KINDS, CompareResult, DepartedPilot, Entry, NewHire, QualMove, RankChange, RetiredPilot
 
 ### Community 64 - "Review rules"
 Cohesion: 0.22
@@ -459,12 +463,12 @@ Cohesion: 0.17
 Nodes (6): DepartedRow, QualMoveRow, RankChangeRow, RetiredRow, DiffRow, DEMO_DIFF_ROWS
 
 ### Community 67 - "seniority/index.ts"
-Cohesion: 0.57
-Nodes (5): BaseStatusRow, RankCardData, RetirementSnapshotData, StatCard, useStanding()
+Cohesion: 0.50
+Nodes (6): BaseStatusRow, RankCardData, RetirementSnapshotData, StatCard, useStanding(), formatNumber()
 
-### Community 68 - "ImportPlugin"
+### Community 68 - "registry.ts"
 Cohesion: 0.15
-Nodes (8): config, emit, feedbackEmail, infoUploadType, props, showInfoModal, SeniorityUpload, ImportPlugin
+Nodes (9): config, emit, feedbackEmail, infoUploadType, props, showInfoModal, sourceSheet, importPlugins (+1 more)
 
 ### Community 69 - "theme.vue"
 Cohesion: 0.25
@@ -495,8 +499,8 @@ Cohesion: 0.38
 Nodes (6): commitGotoPage(), emit, gotoPageInput, handleGotoKeydown(), isMobile, props
 
 ### Community 76 - "UploadColumnMapper.vue"
-Cohesion: 0.33
-Nodes (5): columnOptions, emit, props, requiredFields, updateOption()
+Cohesion: 0.22
+Nodes (7): columnOptions, emit, props, requiredFields, columnMap, mappingOptions, updateOption()
 
 ### Community 77 - "QualFilterBar.vue"
 Cohesion: 0.33
@@ -522,9 +526,9 @@ Nodes (5): April 26, 2026, August 12, 2026, March 25, 2026, March 26, 2026, Marc
 Cohesion: 0.40
 Nodes (3): lastSeenDate, mountComposable(), useChangelog()
 
-### Community 83 - "useClearAllData.test.ts"
-Cohesion: 0.50
-Nodes (3): mockImportAttemptsStore, mockSeniorityStore, mockUserStore
+### Community 83 - "_useFileIO.test.ts"
+Cohesion: 0.19
+Nodes (10): createUploadSession(), createMapping(), { mockProcessConfirmedMappings }, createConfirm(), mockStore, _useConfirm(), createFileIO(), mockDecodeWorkbook (+2 more)
 
 ### Community 84 - "package.json"
 Cohesion: 0.33
@@ -546,9 +550,9 @@ Nodes (4): chartData, chartOptions, { defaults, colors }, props
 Cohesion: 0.40
 Nodes (4): accentVariant, animatedPercentile, props, yearsOfService
 
-### Community 89 - "formatDate"
-Cohesion: 0.16
-Nodes (11): birthDateModel, { employeeNumber }, { newHire: newHireMode }, formatDate(), chartData, chartOptions, { colors }, props (+3 more)
+### Community 89 - "TrajectoryChart.vue"
+Cohesion: 0.40
+Nodes (4): chartData, chartOptions, { colors }, props
 
 ### Community 90 - "SupportModal.vue"
 Cohesion: 0.40
@@ -562,29 +566,57 @@ Nodes (5): Entry Patch, Import Pipeline, Import Plugin, Preparation Patch, Impor
 Cohesion: 0.40
 Nodes (4): ./.nuxt/tsconfig.json, scripts, exclude, extends
 
+### Community 98 - "lens.ts"
+Cohesion: 0.24
+Nodes (14): computeYOSDate(), computeAgeDistribution(), computeQualComposition(), computeYosDistribution(), computeYosHistogram(), findMostJuniorCA(), qualKey(), asOfDate (+6 more)
+
+### Community 107 - "snapshot.ts"
+Cohesion: 0.29
+Nodes (7): collectDuplicateIssues(), EntryIdentity, InvalidSnapshotDataError, issuesToErrorMap(), SnapshotIssueCode, SnapshotValidationIssue, validateSnapshotEntries()
+
+### Community 131 - "validate-entries.ts"
+Cohesion: 0.40
+Nodes (8): validateSnapshotEntryIssues(), computeStructuralErrors(), computeStructuralIssues(), issuesToErrorMap(), pushIssue(), validateEntries(), ValidationIssue, ValidationIssueCode
+
 ### Community 162 - "post-checkout"
 Cohesion: 0.50
 Nodes (3): post-checkout script, GRAPHIFY_REBUILD_LOG, PYTHONHASHSEED
 
+### Community 164 - "build-diff-rows.test.ts"
+Cohesion: 0.22
+Nodes (3): diffRows, buildDiffRows(), emptyResult
+
+### Community 165 - "seniority.test.ts"
+Cohesion: 0.25
+Nodes (7): expectedAdaptedEntry, mockDb, mockEmitHook, mockList1, mockList2, mockLocalEntry, LocalSeniorityList
+
+### Community 166 - "useUser.test.ts"
+Cohesion: 0.40
+Nodes (4): mockLoadPreferences, mockSavePreference, mockSeniorityEntries, mockUserStore
+
+### Community 168 - "useSeniorityCompare"
+Cohesion: 0.67
+Nodes (4): useSeniorityCompare(), fetchListData(), loadComparison(), computeComparison()
+
 ## Knowledge Gaps
-- **641 isolated node(s):** `props`, `{ defaults, colors }`, `chartData`, `chartOptions`, `props` (+636 more)
+- **642 isolated node(s):** `props`, `{ defaults, colors }`, `chartData`, `chartOptions`, `props` (+637 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **48 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **50 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `CommonSeniorityLens` connect `lens.test.ts` to `seniority-engine/index.ts`, `seniority-engine/types.ts`?**
-  _High betweenness centrality (0.017) - this node is a cross-community bridge._
-- **Why does `createLogger()` connect `createLogger` to `upload.vue`, `utils/temporal.ts`, `generate-demo-v2.ts`, `upload/index.ts`, `useSeniorityCore.ts`, `logger.ts`, `seniority-list.ts`, `parsePlainDate`, `lists.vue`, `usePwaInstall.ts`, `user.ts`?**
+- **Why does `createLogger()` connect `_useConfirm.ts` to `_useFileIO.ts`, `upload.vue`, `seniority.ts`, `generate-demo-v2.ts`, `upload/index.ts`, `useSeniorityCompare`, `useSeniorityCore.ts`, `utils/temporal.ts`, `lists.vue`, `usePwaInstall.ts`, `useUserStore`?**
   _High betweenness centrality (0.016) - this node is a cross-community bridge._
-- **Why does `useUserStore` connect `useUserStore` to `upload/index.ts`, `_useFileIO`, `useSeniorityCore.ts`, `createLogger`, `useSeniorityStore`, `usePwaInstall.ts`, `user.ts`?**
+- **Why does `SeniorityEntry` connect `PlainDate` to `seniority-engine/index.ts`, `lens.ts`, `Scenario`, `seniority.ts`, `seniority.test.ts`, `useUser.test.ts`, `seniority-list.ts`, `useSeniorityCore.ts`, `snapshot.ts`, `_useConfirm.ts`, `seniority-math.ts`, `seniority-engine/types.ts`, `RetirementComparison.vue`, `SeniorityComparison.vue`, `seniority-compare.ts`?**
+  _High betweenness centrality (0.015) - this node is a cross-community bridge._
+- **Why does `useUserStore` connect `useUserStore` to `_useFileIO.ts`, `upload/index.ts`, `_useFileIO`, `useSeniorityCore.ts`, `_useConfirm.ts`, `parsePlainDate`, `utils/hooks.ts`, `useSeniorityStore`, `usePwaInstall.ts`?**
   _High betweenness centrality (0.014) - this node is a cross-community bridge._
 - **Are the 9 inferred relationships involving `useSeniorityStore` (e.g. with `clearAll()` and `clearStore()`) actually correct?**
   _`useSeniorityStore` has 9 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `props`, `{ defaults, colors }`, `chartData` to the rest of the system?**
-  _641 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _642 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `dependencies` be split into smaller, more focused modules?**
   _Cohesion score 0.046511627906976744 - nodes in this community are weakly interconnected._
 - **Should `seniority-engine/index.ts` be split into smaller, more focused modules?**
-  _Cohesion score 0.13513513513513514 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.14838709677419354 - nodes in this community are weakly interconnected._

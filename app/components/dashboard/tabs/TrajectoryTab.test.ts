@@ -67,6 +67,7 @@ mockNuxtImport('useSeniorityCore', () => () => ({
   userEntry: { value: undefined },
   hasAnchor: { value: false },
   isNewHireMode: { value: false },
+  projectionEndDate: { value: null },
 }))
 
 mockNuxtImport('useStanding', () => () => ({

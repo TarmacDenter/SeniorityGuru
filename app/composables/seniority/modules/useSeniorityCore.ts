@@ -3,7 +3,7 @@ import type { AnchoredSeniorityLens, SeniorityLens, SenioritySnapshot } from '~/
 import type { ComputedRef, Ref } from 'vue'
 import { createSnapshot, createLens, uniqueEntryValues } from '~/utils/seniority-engine'
 import { computeRetireDateValue } from '~/utils/date'
-import { parsePlainDate, serializePlainDate, todayPlainDate, type PlainDate } from '~/utils/temporal'
+import { parsePlainDate, serializePlainDate, todayPlainDate, Temporal, type PlainDate } from '~/utils/temporal'
 import { normalizeEmployeeNumber } from '~/utils/schemas/seniority-list'
 import { useSeniorityStore } from '~/stores/seniority'
 import { useUserStore } from '~/stores/user'
@@ -237,6 +237,16 @@ export function useSeniorityCore() {
   const isNewHireMode = computed(() => enabled.value)
 
   const entries = computed(() => seniorityStore.entries)
+  const projectionEndDate = computed<PlainDate | null>(() => {
+    const userRetireDate = syntheticEntry.value?.retire_date ?? _userEntry!.value?.retire_date
+    if (userRetireDate) return userRetireDate
 
-  return { snapshot, lens, anchoredLens, userEntry, entries, hasData, hasAnchor, isNewHireMode, newHire }
+    return seniorityStore.entries.reduce<PlainDate | null>((latest, entry) => {
+      if (!entry.retire_date) return latest
+      if (!latest || Temporal.PlainDate.compare(entry.retire_date, latest) > 0) return entry.retire_date
+      return latest
+    }, null)
+  })
+
+  return { snapshot, lens, anchoredLens, userEntry, entries, projectionEndDate, hasData, hasAnchor, isNewHireMode, newHire }
 }

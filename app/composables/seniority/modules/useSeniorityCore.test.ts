@@ -59,6 +59,33 @@ describe('useSeniorityCore', () => {
     expect(userEntry.value?.employee_number).toBe('00123')
   })
 
+  it('uses the user retirement date as the projection end date', () => {
+    mockStore.entries = [
+      makeEntry({ employee_number: 'E1', retire_date: '2040-01-01' }),
+      makeEntry({ employee_number: 'E2', retire_date: '2050-01-01' }),
+    ]
+    mockUserStore.employeeNumber = 'E1'
+    const { projectionEndDate } = useSeniorityCore()
+    expect(projectionEndDate.value?.toString()).toBe('2040-01-01')
+  })
+
+  it('uses the latest company retirement date without a matched user', () => {
+    mockStore.entries = [
+      makeEntry({ employee_number: 'E1', retire_date: '2040-01-01' }),
+      makeEntry({ employee_number: 'E2', retire_date: '2050-01-01' }),
+      makeEntry({ employee_number: 'E3', retire_date: undefined }),
+    ]
+    mockUserStore.employeeNumber = 'UNKNOWN'
+    const { projectionEndDate } = useSeniorityCore()
+    expect(projectionEndDate.value?.toString()).toBe('2050-01-01')
+  })
+
+  it('returns no projection end date when the data has no retirements', () => {
+    mockStore.entries = [makeEntry({ employee_number: 'E1', retire_date: undefined })]
+    const { projectionEndDate } = useSeniorityCore()
+    expect(projectionEndDate.value).toBeNull()
+  })
+
   it('keeps the organization lens when the user has no matching entry', () => {
     mockStore.entries = [makeEntry()]
     mockUserStore.employeeNumber = 'UNKNOWN'

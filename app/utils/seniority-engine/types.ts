@@ -202,10 +202,10 @@ export interface DemographicsResult {
 
 /** Configures a retirement projection from an organization or anchored lens. */
 export interface RetirementProjectionOptions {
+  /** Explicit projection end date selected by the application. */
+  through: PlainDate
   /** Optional growth and qualification assumptions. */
   scenario?: Scenario
-  /** Projection end date. The default is the lens date plus 30 years. */
-  through?: PlainDate | null
 }
 
 /** Filters organization retirement rows by horizon and qualification. */
@@ -248,8 +248,8 @@ export interface CommonSeniorityLens {
   retirementsThisYear(): number
   /** Groups retirement counts by year for an optional qualification scope. */
   retirementWave(scenario?: Scenario): RetirementWaveBucket[]
-  /** Projects retirement counts through an optional end date. */
-  retirementProjection(options?: RetirementProjectionOptions): RetirementProjectionResult
+  /** Projects retirement counts through an explicit end date. */
+  retirementProjection(options: RetirementProjectionOptions): RetirementProjectionResult
   /** Computes organization demographics for a mandatory retirement age. */
   demographics(mandatoryAge: number, scenario?: Scenario): DemographicsResult
   /** Lists future organization retirements without pilot-relative fields. */
@@ -283,12 +283,12 @@ export interface AnchoredSeniorityLens extends CommonSeniorityLens {
   readonly anchor: Readonly<SeniorityEntry>
   /** Computes organization and qualification standing for the anchor. */
   standing(): StandingResult
-  /** Projects the anchor's seniority through its retirement date. */
-  trajectory(scenario?: Scenario): TrajectoryResult
+  /** Projects the anchor's seniority through an explicit end date. */
+  trajectory(through: PlainDate, scenario?: Scenario): TrajectoryResult
   /** Compares the anchor's projected percentile in two qualification scopes. */
-  compareTrajectories(scenarioA: Scenario, scenarioB: Scenario): ComparativeTrajectoryResult
+  compareTrajectories(scenarioA: Scenario, scenarioB: Scenario, through: PlainDate): ComparativeTrajectoryResult
   /** Finds the first year the anchor reaches a target percentile, if any. */
-  percentileCrossing(targetPercentile: number, scenario?: Scenario): ThresholdResult | null
+  percentileCrossing(targetPercentile: number, through: PlainDate, scenario?: Scenario): ThresholdResult | null
   /** Computes projected qualification demographic scales for the anchor. */
   qualScales(scenario?: Scenario): QualDemographicScale[]
   /** Lists future retirements with anchor-relative rank and senior-only filtering. */

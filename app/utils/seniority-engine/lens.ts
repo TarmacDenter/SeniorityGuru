@@ -25,7 +25,6 @@ import {
   computeTrajectoryDeltas,
   countRetiredAbove,
   generateTimePoints,
-  getProjectionEndDateValue,
   projectComparativeTrajectory,
   projectRetirements,
 } from '~/utils/seniority-math'
@@ -66,7 +65,7 @@ interface LensContext {
   readonly referenceISO: string
   readonly retirementsThisYear: () => number
   readonly retirementWave: (scenario?: Scenario) => RetirementWaveBucket[]
-  readonly retirementProjection: (options?: RetirementProjectionOptions) => RetirementProjectionResult
+  readonly retirementProjection: (options: RetirementProjectionOptions) => RetirementProjectionResult
   readonly demographics: (mandatoryAge: number, scenario?: Scenario) => DemographicsResult
   readonly upcomingRetirements: (filter: UpcomingRetirementFilter) => UpcomingRetirementRow[]
 }
@@ -86,9 +85,9 @@ function createContext(snapshot: SenioritySnapshot, asOfDate: Temporal.PlainDate
     const scenarioValue = scenario ?? createScenario({ projectionDate: referenceDate(referenceISO) })
     return computeRetirementWave(entries, qualSpecToFilter(scenarioValue.scopeFilter))
   }
-  const retirementProjection = (options?: RetirementProjectionOptions) => {
-    const scenarioValue = options?.scenario ?? createScenario({ projectionDate: referenceDate(referenceISO) })
-    return projectRetirements(entries, options?.through ?? null, referenceDate(referenceISO), qualSpecToFilter(scenarioValue.scopeFilter))
+  const retirementProjection = (options: RetirementProjectionOptions) => {
+    const scenarioValue = options.scenario ?? createScenario({ projectionDate: referenceDate(referenceISO) })
+    return projectRetirements(entries, options.through, referenceDate(referenceISO), qualSpecToFilter(scenarioValue.scopeFilter))
   }
   const demographics = (mandatoryAge: number, scenario?: Scenario) => {
     const scenarioValue = scenario ?? createScenario({ projectionDate: referenceDate(referenceISO) })
@@ -157,7 +156,7 @@ class SeniorityLensImpl implements SeniorityLens {
     return this.context.retirementWave(scenario)
   }
 
-  retirementProjection(options?: RetirementProjectionOptions): RetirementProjectionResult {
+  retirementProjection(options: RetirementProjectionOptions): RetirementProjectionResult {
     return this.context.retirementProjection(options)
   }
 
@@ -183,9 +182,9 @@ class SeniorityLensImpl implements SeniorityLens {
  */
 class AnchoredSeniorityLensImpl implements AnchoredSeniorityLens {
   readonly standing: () => StandingResult
-  readonly trajectory: (scenario?: Scenario) => TrajectoryResult
-  readonly compareTrajectories: (scenarioA: Scenario, scenarioB: Scenario) => ComparativeTrajectoryResult
-  readonly percentileCrossing: (targetPercentile: number, scenario?: Scenario) => ThresholdResult | null
+  readonly trajectory: (through: Temporal.PlainDate, scenario?: Scenario) => TrajectoryResult
+  readonly compareTrajectories: (scenarioA: Scenario, scenarioB: Scenario, through: Temporal.PlainDate) => ComparativeTrajectoryResult
+  readonly percentileCrossing: (targetPercentile: number, through: Temporal.PlainDate, scenario?: Scenario) => ThresholdResult | null
   readonly qualScales: (scenario?: Scenario) => QualDemographicScale[]
   readonly upcomingRetirementsRelativeToAnchor: (filter: UpcomingRetirementRelativeFilter) => UpcomingRetirementRelativeRow[]
 
@@ -230,22 +229,20 @@ class AnchoredSeniorityLensImpl implements AnchoredSeniorityLens {
       }
     }, () => 'standing')
 
-    this.trajectory = memoizeLast((scenario?: Scenario) => {
+    this.trajectory = memoizeLast((through: Temporal.PlainDate, scenario?: Scenario) => {
       const scenarioValue = scenario ?? createScenario({ projectionDate: currentDate() })
-      const { today, endDate } = getProjectionEndDateValue(anchor.retire_date ?? null, currentDate())
-      const points = buildTrajectory(entries, seniorityNumber, generateTimePoints(today, endDate), qualSpecToFilter(scenarioValue.scopeFilter), scenarioValue.growthConfig)
+      const points = buildTrajectory(entries, seniorityNumber, generateTimePoints(currentDate(), through), qualSpecToFilter(scenarioValue.scopeFilter), scenarioValue.growthConfig)
       return { points, chartData: { labels: points.map(point => point.date.toString()), data: points.map(point => point.percentile) }, deltas: computeTrajectoryDeltas(points) }
     })
 
-    this.compareTrajectories = memoizeLast((scenarioA: Scenario, scenarioB: Scenario) => projectComparativeTrajectory(
-      entries, seniorityNumber, anchor.retire_date ?? null, currentDate(),
+    this.compareTrajectories = memoizeLast((scenarioA: Scenario, scenarioB: Scenario, through: Temporal.PlainDate) => projectComparativeTrajectory(
+      entries, seniorityNumber, through, currentDate(),
       qualSpecToFilter(scenarioA.scopeFilter), qualSpecToFilter(scenarioB.scopeFilter), scenarioA.growthConfig,
     ))
 
-    this.percentileCrossing = memoizeLast((targetPercentile: number, scenario?: Scenario) => {
+    this.percentileCrossing = memoizeLast((targetPercentile: number, through: Temporal.PlainDate, scenario?: Scenario) => {
       const scenarioValue = scenario ?? createScenario({ projectionDate: currentDate() })
-      const { today, endDate } = getProjectionEndDateValue(anchor.retire_date ?? null, currentDate())
-      const points = buildTrajectory(entries, seniorityNumber, generateTimePoints(today, endDate), qualSpecToFilter(scenarioValue.scopeFilter), scenarioValue.growthConfig)
+      const points = buildTrajectory(entries, seniorityNumber, generateTimePoints(currentDate(), through), qualSpecToFilter(scenarioValue.scopeFilter), scenarioValue.growthConfig)
       return findThresholdYear(points, targetPercentile)
     })
 
@@ -272,7 +269,7 @@ class AnchoredSeniorityLensImpl implements AnchoredSeniorityLens {
     return this.context.retirementWave(scenario)
   }
 
-  retirementProjection(options?: RetirementProjectionOptions): RetirementProjectionResult {
+  retirementProjection(options: RetirementProjectionOptions): RetirementProjectionResult {
     return this.context.retirementProjection(options)
   }
 
