@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect } from 'vitest'
-import { countRetiredAbove, generateTimePoints, buildTrajectory, computeRank, getProjectionEndDate, formatNumber, projectRetirements, projectComparativeTrajectory, computeTrajectoryDeltas } from './seniority-math'
+import { countRetiredAbove, generateTimePoints, buildTrajectory, computeRank, formatNumber, projectRetirements, projectComparativeTrajectory, computeTrajectoryDeltas } from './seniority-math'
 import { makeDomainEntry as makeEntry } from '~/test-utils/factories'
 import type { GrowthConfig } from '~/utils/seniority-engine'
 import { todayISO, extractYear } from '~/utils/date'
@@ -198,18 +198,6 @@ describe('computeRank', () => {
   })
 })
 
-describe('getProjectionEndDate', () => {
-  it('returns retire date when provided', () => {
-    const { endDate } = getProjectionEndDate(d('2040-06-15'), AS_OF)
-    expect(endDate).toBe('2040-06-15')
-  })
-
-  it('defaults to 30 years from now when null', () => {
-    const { today, endDate } = getProjectionEndDate(null, AS_OF)
-    expect(extractYear(endDate)).toBe(extractYear(today) + 30)
-  })
-})
-
 describe('formatNumber', () => {
   it('formats numbers with locale separators', () => {
     expect(typeof formatNumber(1000)).toBe('string')
@@ -233,8 +221,8 @@ describe('projectRetirements', () => {
     expect(totalRetirements).toBeGreaterThanOrEqual(3)
   })
 
-  it('uses 30-year fallback when retireDate is null', () => {
-    const result = projectRetirements([], null, AS_OF)
+  it('accepts an explicit projection end date beyond 30 years', () => {
+    const result = projectRetirements([], d('2060-06-15'), AS_OF)
     expect(result.labels.length).toBeGreaterThan(0)
     expect(result.filteredTotal).toBe(0)
   })

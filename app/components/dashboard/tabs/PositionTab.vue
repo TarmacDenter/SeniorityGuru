@@ -6,7 +6,7 @@ import { DEFAULT_GROWTH_CONFIG, createScenario, type GrowthConfig } from '~/util
 
 defineProps<{ loading?: boolean }>()
 
-const { hasData, newHire, lens, userEntry } = useSeniorityCore()
+const { hasData, newHire, anchoredLens, projectionEndDate } = useSeniorityCore()
 const { employeeNumber } = useUser()
 const hasEmployeeNumber = computed(() => !!employeeNumber.value || !!newHire.syntheticEntry.value)
 
@@ -19,7 +19,7 @@ const positionScenario = computed(() => createScenario({
   projectionDate: projectionDate.value,
   growthConfig: growthConfig.value,
 }))
-const qualScales = computed(() => lens.value?.qualScales(positionScenario.value) ?? [])
+const qualScales = computed(() => anchoredLens.value?.qualScales(positionScenario.value) ?? [])
 
 const hasProjection = computed(() =>
   qualScales.value.some(
@@ -29,9 +29,8 @@ const hasProjection = computed(() =>
 let positionDebounceTimer: ReturnType<typeof setTimeout> | null = null
 
 const positionSliderMax = computed(() => {
-  const retireDate = userEntry.value?.retire_date
-  if (!retireDate) return 30
-  const years = Math.ceil(diffDateYears(todayPlainDate(), retireDate))
+  if (!projectionEndDate.value) return 0
+  const years = Math.ceil(diffDateYears(todayPlainDate(), projectionEndDate.value))
   return Math.max(1, years)
 })
 
@@ -77,7 +76,7 @@ onUnmounted(() => {
     <!-- Projection controls — pinned toolbar -->
     <div class="shrink-0 bg-[var(--ui-bg)] border-b border-[var(--ui-border)] px-3 sm:px-6 py-3 flex items-center gap-4 flex-wrap">
       <div class="flex items-center gap-2">
-        <USwitch v-model="usePositionProjection" />
+        <USwitch v-model="usePositionProjection" :disabled="positionSliderMax === 0" />
         <span class="text-sm text-[var(--ui-text-muted)]">Project forward</span>
       </div>
       <template v-if="usePositionProjection">
@@ -92,6 +91,7 @@ onUnmounted(() => {
           +{{ positionYearsInput }}yr{{ positionYearsInput === 1 ? '' : 's' }}
         </UBadge>
       </template>
+      <span v-if="positionSliderMax === 0" class="text-sm text-[var(--ui-text-muted)]">Add a retirement date to project forward.</span>
       <UBadge v-else color="neutral" variant="subtle" size="sm">As of today</UBadge>
     </div>
 

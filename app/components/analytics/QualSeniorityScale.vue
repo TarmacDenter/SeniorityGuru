@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { QualDemographicScale, DensityBucket } from '~/utils/seniority-engine'
-import { SEAT_ORDER } from '~/utils/seniority-engine'
+import { sortQualificationScales } from '~/utils/qualification-order'
 
 const BUCKET_WIDTH_PCT = 5
 
@@ -8,15 +8,7 @@ const props = defineProps<{
   scales: QualDemographicScale[]
 }>()
 
-const sortedScales = computed(() =>
-  [...props.scales].sort((a, b) => {
-    const seatDiff = (SEAT_ORDER[a.seat] ?? 99) - (SEAT_ORDER[b.seat] ?? 99)
-    if (seatDiff !== 0) return seatDiff
-    const fleetDiff = a.fleet.localeCompare(b.fleet)
-    if (fleetDiff !== 0) return fleetDiff
-    return a.plugPercentile - b.plugPercentile
-  }),
-)
+const sortedScales = computed(() => sortQualificationScales(props.scales))
 
 const rowMaxCounts = computed(() => {
   const map = new Map<string, number>()
@@ -90,6 +82,7 @@ function isProjecting(scale: QualDemographicScale) {
         <!-- Current position ghost (only shown when projecting forward) -->
         <template v-if="isProjecting(scale)">
           <div
+            data-testid="qualification-scale-current-position"
             class="absolute bottom-0 w-0.5 z-5 bg-[var(--ui-text-muted)] opacity-30"
             :style="{ left: `${clamp(scale.currentUserPercentile)}%`, height: '100%', transform: 'translateX(-50%)' }"
           />
@@ -101,6 +94,7 @@ function isProjecting(scale: QualDemographicScale) {
 
         <!-- Projected (or current) user position -->
         <div
+          data-testid="qualification-scale-projected-position"
           class="absolute bottom-0 w-0.5 z-10"
           :class="scale.isHoldable ? 'bg-[var(--ui-color-success-500)]' : 'bg-[var(--ui-color-primary-500)]'"
           :style="{ left: `${clamp(scale.userPercentile)}%`, height: '100%', transform: 'translateX(-50%)' }"

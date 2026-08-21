@@ -1,459 +1,159 @@
 // @vitest-environment node
-import { describe, it, expect, vi, beforeAll, afterAll } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { makeDomainEntry as makeEntry } from '~/test-utils/factories'
-import { createSnapshot } from './snapshot'
-import { createLens as createDomainLens } from './lens'
-import { createScenario } from './scenario'
 import { Temporal } from '~/utils/temporal'
-import type { SenioritySnapshot, PilotAnchor } from './types'
+import { AnchorNotFoundError, createLens } from './lens'
+import { createScenario } from './scenario'
+import { createSnapshot } from './snapshot'
+import type { AnchoredSeniorityLens, SeniorityLens } from './types'
 
-// Fix "today" for deterministic retirement calculations
 beforeAll(() => {
   vi.useFakeTimers()
   vi.setSystemTime(new Date('2026-06-15T12:00:00'))
 })
-afterAll(() => {
-  vi.useRealTimers()
-})
+afterAll(() => vi.useRealTimers())
 
 const entries = [
-  makeEntry({ seniority_number: 1, employee_number: 'E1', base: 'JFK', seat: 'CA', fleet: '737', hire_date: '2000-01-01', retire_date: '2025-06-01' }), // already retired
-  makeEntry({ seniority_number: 2, employee_number: 'E2', base: 'JFK', seat: 'CA', fleet: '737', hire_date: '2005-01-01', retire_date: '2026-12-01' }), // retires this year, senior to user
+  makeEntry({ seniority_number: 1, employee_number: 'E1', base: 'JFK', seat: 'CA', fleet: '737', hire_date: '2000-01-01', retire_date: '2025-06-01' }),
+  makeEntry({ seniority_number: 2, employee_number: 'E2', base: 'JFK', seat: 'CA', fleet: '737', hire_date: '2005-01-01', retire_date: '2026-12-01' }),
   makeEntry({ seniority_number: 3, employee_number: 'E3', base: 'ATL', seat: 'FO', fleet: '320', hire_date: '2010-01-01', retire_date: '2040-01-01' }),
-  makeEntry({ seniority_number: 4, employee_number: 'E4', base: 'JFK', seat: 'CA', fleet: '737', hire_date: '2015-01-01', retire_date: '2045-01-01' }), // the user
+  makeEntry({ seniority_number: 4, employee_number: 'E4', base: 'JFK', seat: 'CA', fleet: '737', hire_date: '2015-01-01', retire_date: '2045-01-01' }),
   makeEntry({ seniority_number: 5, employee_number: 'E5', base: 'ATL', seat: 'FO', fleet: '320', hire_date: '2020-01-01', retire_date: '2050-01-01' }),
 ]
-
 const snapshot = createSnapshot(entries)
-const anchor: PilotAnchor = { seniorityNumber: 4, retireDate: Temporal.PlainDate.from('2045-01-01'), employeeNumber: 'E4' }
-const referenceDate = Temporal.PlainDate.from('2026-06-15')
-const createLens = (value: SenioritySnapshot, valueAnchor?: PilotAnchor) => createDomainLens(value, valueAnchor, referenceDate)
+const asOfDate = Temporal.PlainDate.from('2026-06-15')
+const projectionEndDate = Temporal.PlainDate.from('2060-06-15')
+const makeLens = () => createLens(snapshot, { asOfDate })
 
-describe('createLens', () => {
-  it('exposes snapshot and anchor', () => {
-    const lens = createLens(snapshot, anchor)
+function assertBaseLensCapabilities(lens: SeniorityLens) {
+  // @ts-expect-error pilot-relative methods require AnchoredSeniorityLens.
+  lens.standing()
+  // @ts-expect-error pilot-relative methods require AnchoredSeniorityLens.
+  lens.trajectory()
+}
+
+function assertAnchoredLensCapabilities(lens: AnchoredSeniorityLens) {
+  // @ts-expect-error qualification scales replace the removed holdability capability.
+  lens.holdability()
+}
+
+void assertBaseLensCapabilities
+void assertAnchoredLensCapabilities
+
+describe('SeniorityLens capabilities', () => {
+  it('exposes only organization methods until an anchor is derived', () => {
+    const lens = makeLens()
     expect(lens.snapshot).toBe(snapshot)
-    expect(lens.anchor?.seniorityNumber).toBe(anchor.seniorityNumber)
-    expect(lens.anchor?.employeeNumber).toBe(anchor.employeeNumber)
-    expect(lens.anchor?.retireDate?.toString()).toBe(anchor.retireDate?.toString())
-  })
-
-  it('works without anchor', () => {
-    const lens = createLens(snapshot)
-    expect(lens.anchor).toBeNull()
-  })
-
-  it('uses the supplied reference date for every calculation', () => {
-    const early = createDomainLens(snapshot, anchor, Temporal.PlainDate.from('2026-06-15'))
-    const later = createDomainLens(snapshot, anchor, Temporal.PlainDate.from('2027-06-15'))
-    expect(early.standing()!.retiredAbove).toBe(1)
-    expect(later.standing()!.retiredAbove).toBe(2)
-  })
-})
-
-describe('retirementsThisYear()', () => {
-  it('counts retirements in the next 12 months without requiring an anchor', () => {
-    const noAnchor = createLens(snapshot)
-    // Today = 2026-06-15; E2 retires 2026-12-01 → within next 12 months
-    expect(noAnchor.retirementsThisYear()).toBe(1)
-  })
-
-  it('counts retirements in the next 12 months with anchor (same result)', () => {
-    const lens = createLens(snapshot, anchor)
     expect(lens.retirementsThisYear()).toBe(1)
   })
-})
 
-describe('standing()', () => {
-  const lens = createLens(snapshot, anchor)
-
-  it('returns null when no anchor', () => {
-    const noAnchor = createLens(snapshot)
-    expect(noAnchor.standing()).toBeNull()
+  it('uses the canonical snapshot entry as its anchor', () => {
+    const lens = makeLens()
+    const anchored = lens.withAnchor('E4')
+    expect(anchored.anchor).toBe(snapshot.byEmployeeNumber.get('E4'))
+    expect(anchored.snapshot).toBe(lens.snapshot)
+    expect(lens).not.toHaveProperty('anchor')
   })
 
-  it('computes company-wide rank', () => {
-    const result = lens.standing()!
-    // User is seniority_number 4 → 3 entries ahead (1, 2, 3) → rank 4
-    expect(result.rank).toBe(4)
-    expect(result.total).toBe(5)
+  it('throws a clear error for absent anchors and leaves the base lens unchanged', () => {
+    const lens = makeLens()
+    expect(() => lens.withAnchor('missing')).toThrow(AnchorNotFoundError)
+    expect(lens.upcomingRetirements({ yearsHorizon: 30 })).toHaveLength(4)
   })
 
-  it('adjusts rank by subtracting retired pilots above', () => {
-    const result = lens.standing()!
-    // E1 (sen#1, retired 2025-06-01) is retired and senior → retiredAbove = 1
-    expect(result.retiredAbove).toBe(1)
-    expect(result.adjustedRank).toBe(3) // rank 4 - 1 retired above
-  })
-
-  it('counts retirements this year', () => {
-    const result = lens.standing()!
-    // E2 retires 2026-12-01 → retires this year
-    expect(result.retirementsThisYear).toBe(1)
-  })
-
-  it('counts retirements this year senior to anchor', () => {
-    const result = lens.standing()!
-    // E2 (sen#2) retires this year and is senior to user (sen#4)
-    expect(result.retirementsThisYearSeniorToAnchor).toBe(1)
-  })
-
-  it('computes cell breakdown with per-cell ranks', () => {
-    const result = lens.standing()!
-    const jfkCA737 = result.cellBreakdown.find(
-      c => c.base === 'JFK' && c.seat === 'CA' && c.fleet === '737',
-    )!
-    // JFK/CA/737 has E1 (retired), E2, E4 → total 3
-    expect(jfkCA737.total).toBe(3)
-    // User (E4, sen#4) is rank 3 of 3 in this cell
-    expect(jfkCA737.rank).toBe(3)
-    // E1 is retired and senior to user in this cell → adjustedRank = 2
-    expect(jfkCA737.adjustedRank).toBe(2)
-    expect(jfkCA737.isAnchorCurrent).toBe(true) // user's current cell
-  })
-
-  it('marks non-user cells as isAnchorCurrent=false', () => {
-    const result = lens.standing()!
-    const atlFO320 = result.cellBreakdown.find(
-      c => c.base === 'ATL' && c.seat === 'FO' && c.fleet === '320',
-    )!
-    expect(atlFO320.isAnchorCurrent).toBe(false)
+  it('creates independent derived lenses with a shared immutable context', () => {
+    const lens = makeLens()
+    const e3 = lens.withAnchor('E3')
+    const e4 = lens.withAnchor('E4')
+    const scenario = createScenario({ projectionDate: asOfDate })
+    expect(e3.standing()).not.toEqual(e4.standing())
+    expect(e3.trajectory(projectionEndDate, scenario)).not.toBe(e4.trajectory(projectionEndDate, scenario))
+    expect(e3.retirementWave(scenario)).toBe(e4.retirementWave(scenario))
+    expect(lens.retirementWave(scenario)).toBe(e3.retirementWave(scenario))
   })
 })
 
-describe('trajectory()', () => {
-  const lens = createLens(snapshot, anchor)
-
-  it('returns null when no anchor', () => {
-    expect(createLens(snapshot).trajectory()).toBeNull()
+describe('organization analysis', () => {
+  it('requires an explicit retirement projection end date', () => {
+    const lens = makeLens()
+    const anchored = lens.withAnchor('E4')
+    const result = anchored.retirementProjection({ through: projectionEndDate })
+    expect(result.labels.at(-1)).toBe('Jun 2060')
   })
 
-  it('produces trajectory points from today to retirement', () => {
-    const result = lens.trajectory()!
-    expect(result.points.length).toBeGreaterThan(0)
-    expect(result.points[0]!.date.toString()).toBe('2026-06-15')
-    // Last point should be at or near retirement date
-    const lastDate = result.points[result.points.length - 1]!.date
-    expect(lastDate.toString().startsWith('204')).toBe(true) // 2040s
+  it('applies retirement projection scenarios', () => {
+    const result = makeLens().retirementProjection({
+      through: projectionEndDate,
+      scenario: createScenario({ projectionDate: asOfDate, scopeFilter: { seat: 'CA' } }),
+    })
+    expect(result.filteredTotal).toBe(3)
   })
 
-  it('includes chart data parallel to points', () => {
-    const result = lens.trajectory()!
-    expect(result.chartData.labels).toHaveLength(result.points.length)
-    expect(result.chartData.data).toHaveLength(result.points.length)
-    expect(result.chartData.labels[0]).toBe(result.points[0]!.date.toString())
-    expect(result.chartData.data[0]).toBe(result.points[0]!.percentile)
+  it('returns organization retirement rows without relative rank', () => {
+    const rows = makeLens().upcomingRetirements({ yearsHorizon: 30, base: 'JFK' })
+    expect(rows.map(row => row.employeeNumber)).toEqual(['E2', 'E4'])
+    expect(rows.every(row => !('rankRelativeToAnchor' in row))).toBe(true)
   })
 
-  it('computes trajectory deltas', () => {
-    const result = lens.trajectory()!
-    // Deltas have one fewer entry than points
-    expect(result.deltas.length).toBe(result.points.length - 1)
+  it('shares organization results with anchored lenses', () => {
+    const lens = makeLens()
+    const anchored = lens.withAnchor('E4')
+    const scenario = createScenario({ projectionDate: asOfDate })
+    expect(anchored.demographics(65, scenario)).toBe(lens.demographics(65, scenario))
+    expect(anchored.retirementWave(scenario)).toBe(lens.retirementWave(scenario))
   })
 
-  it('applies scope filter from scenario', () => {
-    const scoped = createScenario({ projectionDate: referenceDate, scopeFilter: { seat: 'CA' } })
-    const result = lens.trajectory(scoped)!
-    // With only CAs, percentile should be different
-    const unscoped = lens.trajectory()!
-    expect(result.points[0]!.percentile).not.toBe(unscoped.points[0]!.percentile)
-  })
-
-  it('applies growth config from scenario', () => {
-    const withGrowth = createScenario({ projectionDate: referenceDate, growthConfig: { enabled: true, annualRate: 0.05 } })
-    const result = lens.trajectory(withGrowth)!
-    const noGrowth = lens.trajectory()!
-    // Growth adds junior pilots, improving user's relative position mid-career
-    // Find a mid-career point where the user is not yet rank 1 and has competitors ahead
-    // At ~5 years out (index 5), growth adds pilots and changes percentile
-    const midWithGrowth = result.points[5]!.percentile
-    const midNoGrowth = noGrowth.points[5]!.percentile
-    // Growth increases percentile mid-career (user is more senior relative to larger pool)
-    expect(midWithGrowth).toBeGreaterThan(midNoGrowth)
+  it('returns scoped organization demographics and retirement waves at the lens date', () => {
+    const lens = makeLens()
+    const captainScenario = createScenario({ projectionDate: asOfDate, scopeFilter: { seat: 'CA' } })
+    expect(lens.demographics(65, captainScenario).qualComposition).toEqual([
+      expect.objectContaining({ fleet: '737', seat: 'CA', total: 3 }),
+    ])
+    expect(lens.retirementWave(captainScenario)).toEqual([
+      { year: 2025, count: 1, isWave: false }, { year: 2026, count: 1, isWave: false }, { year: 2045, count: 1, isWave: false },
+    ])
   })
 })
 
-describe('retirementProjection()', () => {
-  const lens = createLens(snapshot, anchor)
+describe('pilot-relative analysis', () => {
+  const anchored = makeLens().withAnchor('E4')
 
-  it('returns yearly retirement buckets', () => {
-    const result = lens.retirementProjection()
-    expect(result.labels.length).toBeGreaterThan(0)
-    expect(result.data.length).toBe(result.labels.length)
-    expect(result.filteredTotal).toBe(5)
+  it('computes standing and trajectory from the canonical anchor', () => {
+    expect(anchored.standing().rank).toBe(4)
+    expect(anchored.standing().adjustedRank).toBe(3)
+    expect(anchored.trajectory(projectionEndDate).points[0]?.date.toString()).toBe('2026-06-15')
   })
 
-  it('applies scope filter from scenario', () => {
-    const scoped = createScenario({ projectionDate: referenceDate, scopeFilter: { seat: 'CA' } })
-    const result = lens.retirementProjection(scoped)
-    expect(result.filteredTotal).toBe(3) // E1, E2, E4 are CAs
-  })
-})
-
-describe('compareTrajectories()', () => {
-  const lens = createLens(snapshot, anchor)
-
-  it('returns null when no anchor', () => {
-    const s = createScenario({ projectionDate: referenceDate })
-    expect(createLens(snapshot).compareTrajectories(s, s)).toBeNull()
+  it('memoizes pilot-relative methods per derived lens', () => {
+    const scenario = createScenario({ projectionDate: asOfDate })
+    expect(anchored.trajectory(projectionEndDate, scenario)).toBe(anchored.trajectory(projectionEndDate, scenario))
+    expect(anchored.standing()).toBe(anchored.standing())
   })
 
-  it('returns two parallel percentile arrays', () => {
-    const caFilter = createScenario({ projectionDate: referenceDate, scopeFilter: { seat: 'CA' } })
-    const foFilter = createScenario({ projectionDate: referenceDate, scopeFilter: { seat: 'FO' } })
-    const result = lens.compareTrajectories(caFilter, foFilter)!
-    expect(result.labels.length).toBeGreaterThan(0)
-    expect(result.currentData.length).toBe(result.labels.length)
-    expect(result.compareData.length).toBe(result.labels.length)
-  })
-})
-
-describe('percentileCrossing()', () => {
-  const lens = createLens(snapshot, anchor)
-
-  it('returns null when no anchor', () => {
-    expect(createLens(snapshot).percentileCrossing(50)).toBeNull()
+  it('returns relative retirement rows and applies senior-only filtering', () => {
+    const all = anchored.upcomingRetirementsRelativeToAnchor({ yearsHorizon: 30, seniorOnly: false })
+    const senior = anchored.upcomingRetirementsRelativeToAnchor({ yearsHorizon: 30, seniorOnly: true })
+    expect(all.find(row => row.employeeNumber === 'E2')?.rankRelativeToAnchor).toBe(2)
+    expect(senior.map(row => row.employeeNumber)).toEqual(['E2', 'E3'])
+    expect(senior.every(row => row.seniorityNumber < anchored.anchor.seniority_number)).toBe(true)
   })
 
-  it('finds year when user crosses target percentile', () => {
-    // With only 5 pilots and user at sen#4, retirements will push percentile up
-    const result = lens.percentileCrossing(50)
-    // May or may not cross 50% depending on retirement timing
-    // At minimum, the function should return without error
-    if (result) {
-      expect(result.year).toMatch(/^\d{4}$/)
-    }
+  it('supports the remaining pilot-relative analysis methods', () => {
+    const scenario = createScenario({ projectionDate: asOfDate })
+    expect(anchored.compareTrajectories(scenario, scenario, projectionEndDate).labels.length).toBeGreaterThan(0)
+    expect(anchored.qualScales()).toContainEqual(expect.objectContaining({
+      fleet: '737',
+      seat: 'CA',
+      plugSenNum: 4,
+      isHoldable: true,
+    }))
+    expect(anchored.percentileCrossing(50, projectionEndDate, scenario)).toSatisfy(value => value === null || /^\d{4}$/.test(value.year))
   })
 
-  it('returns only a base year (no optimistic/pessimistic)', () => {
-    // Use a low threshold that's easily reachable
-    const result = lens.percentileCrossing(30)
-    if (result) {
-      expect(result).toHaveProperty('year')
-      expect(result).not.toHaveProperty('optimistic')
-      expect(result).not.toHaveProperty('pessimistic')
-    }
-  })
-})
-
-describe('holdability()', () => {
-  const lens = createLens(snapshot, anchor)
-
-  it('returns empty when no anchor', () => {
-    expect(createLens(snapshot).holdability()).toEqual([])
-  })
-
-  it('returns power index cells', () => {
-    const cells = lens.holdability()
-    expect(cells.length).toBeGreaterThan(0)
-    for (const cell of cells) {
-      expect(cell).toHaveProperty('fleet')
-      expect(cell).toHaveProperty('seat')
-      expect(cell).toHaveProperty('base')
-      expect(cell).toHaveProperty('state')
-      expect(['green', 'amber', 'red']).toContain(cell.state)
-    }
-  })
-
-  it('uses projection date from scenario', () => {
-    const farFuture = createScenario({ projectionDate: Temporal.PlainDate.from('2044-01-01') })
-    const cells = lens.holdability(farFuture)
-    // Far-future projection should show more retirements, different states
-    expect(cells.length).toBeGreaterThan(0)
-  })
-})
-
-describe('qualScales()', () => {
-  const lens = createLens(snapshot, anchor)
-
-  it('returns empty when no anchor', () => {
-    expect(createLens(snapshot).qualScales()).toEqual([])
-  })
-
-  it('returns qual demographic scales', () => {
-    const scales = lens.qualScales()
-    expect(scales.length).toBeGreaterThan(0)
-    for (const scale of scales) {
-      expect(scale).toHaveProperty('fleet')
-      expect(scale).toHaveProperty('seat')
-      expect(scale).toHaveProperty('base')
-      expect(scale).toHaveProperty('userPercentile')
-      expect(scale).toHaveProperty('isHoldable')
-    }
-  })
-})
-
-describe('retirementWave()', () => {
-  const lens = createLens(snapshot, anchor)
-
-  it('returns retirement wave buckets', () => {
-    const wave = lens.retirementWave()
-    expect(wave.length).toBeGreaterThan(0)
-    for (const bucket of wave) {
-      expect(bucket).toHaveProperty('year')
-      expect(bucket).toHaveProperty('count')
-      expect(bucket).toHaveProperty('isWave')
-    }
-  })
-
-  it('applies scope filter', () => {
-    const caOnly = createScenario({ projectionDate: referenceDate, scopeFilter: { seat: 'CA' } })
-    const caWave = lens.retirementWave(caOnly)
-    const allWave = lens.retirementWave()
-    const caTotal = caWave.reduce((sum, b) => sum + b.count, 0)
-    const allTotal = allWave.reduce((sum, b) => sum + b.count, 0)
-    expect(caTotal).toBeLessThanOrEqual(allTotal)
-  })
-})
-
-describe('demographics()', () => {
-  const lens = createLens(snapshot, anchor)
-
-  it('returns age distribution', () => {
-    const result = lens.demographics(65)
-    expect(result.ageDistribution.buckets.length).toBeGreaterThan(0)
-    const totalInBuckets = result.ageDistribution.buckets.reduce((s, b) => s + b.count, 0)
-    expect(totalInBuckets + result.ageDistribution.nullCount).toBe(entries.length)
-  })
-
-  it('returns YOS distribution', () => {
-    const result = lens.demographics(65)
-    expect(result.yosDistribution).toHaveProperty('median')
-    expect(result.yosDistribution).toHaveProperty('p25')
-    expect(result.yosDistribution).toHaveProperty('p75')
-  })
-
-  it('returns YOS histogram', () => {
-    const result = lens.demographics(65)
-    expect(result.yosHistogram.length).toBeGreaterThan(0)
-  })
-
-  it('returns qual composition', () => {
-    const result = lens.demographics(65)
-    expect(result.qualComposition.length).toBeGreaterThan(0)
-  })
-
-  it('returns most junior CAs', () => {
-    const result = lens.demographics(65)
-    expect(result.mostJuniorCAs.length).toBeGreaterThan(0)
-    for (const ca of result.mostJuniorCAs) {
-      expect(ca.seat).toBe('CA')
-    }
-  })
-
-  it('applies scope filter', () => {
-    const caOnly = createScenario({ projectionDate: referenceDate, scopeFilter: { seat: 'CA' } })
-    const result = lens.demographics(65, caOnly)
-    const caAgeTotal = result.ageDistribution.buckets.reduce((s, b) => s + b.count, 0)
-      + result.ageDistribution.nullCount
-    // 3 CAs in our test data
-    expect(caAgeTotal).toBe(3)
-  })
-
-  it('works without anchor', () => {
-    const noAnchor = createLens(snapshot)
-    const result = noAnchor.demographics(65)
-    expect(result.ageDistribution.buckets.length).toBeGreaterThan(0)
-  })
-})
-
-describe('memoization', () => {
-  it('trajectory() returns same reference on same scenario', () => {
-    const lens = createLens(snapshot, anchor)
-    const scenario = createScenario({ projectionDate: referenceDate })
-    const first = lens.trajectory(scenario)
-    const second = lens.trajectory(scenario)
-    expect(first).toBe(second) // referential equality — cache hit
-  })
-
-  it('trajectory() returns different reference on different scenario', () => {
-    const lens = createLens(snapshot, anchor)
-    const a = createScenario({ projectionDate: referenceDate })
-    const b = createScenario({ projectionDate: referenceDate, scopeFilter: { seat: 'CA' } })
-    const first = lens.trajectory(a)
-    const second = lens.trajectory(b)
-    expect(first).not.toBe(second)
-  })
-
-  it('two lens instances have independent caches', () => {
-    const lensA = createLens(snapshot, anchor)
-    const lensB = createLens(snapshot, anchor)
-    const scenario = createScenario({ projectionDate: referenceDate })
-    const resultA = lensA.trajectory(scenario)
-    const resultB = lensB.trajectory(scenario)
-    // Both computed fresh — not the same reference
-    expect(resultA).not.toBe(resultB)
-    // But structurally equivalent
-    expect(resultA).toEqual(resultB)
-  })
-
-  it('standing() returns same reference on repeat calls', () => {
-    const lens = createLens(snapshot, anchor)
-    const first = lens.standing()
-    const second = lens.standing()
-    expect(first).toBe(second)
-  })
-})
-
-// Test date is 2026-06-15 (from beforeAll above)
-// E2 retires 2026-12-01 (~6 months away), E3 retires 2040-01-01, E4 retires 2045-01-01 (user), E5 retires 2050-01-01
-describe('upcomingRetirements()', () => {
-  const lens = createLens(snapshot, anchor)
-  const noAnchor = createLens(snapshot)
-
-  it('returns entries retiring within the time horizon, excluding already retired', () => {
-    // 2-year horizon: cutoff 2028-06-15 — only E2 (2026-12-01) qualifies; E1 already retired
-    const result = lens.upcomingRetirements({ yearsHorizon: 2, seniorOnly: false })
-    const empNums = result.map(r => r.employeeNumber)
-    expect(empNums).toContain('E2')
-    expect(empNums).not.toContain('E1') // already retired
-    expect(empNums).not.toContain('E3') // retires 2040, outside 2-year horizon
-  })
-
-  it('applies senior-only filter', () => {
-    // 30-year horizon, senior only: E2 (sen#2 < user sen#4) qualifies; E5 (sen#5) does not
-    const result = lens.upcomingRetirements({ yearsHorizon: 30, seniorOnly: true })
-    const empNums = result.map(r => r.employeeNumber)
-    expect(empNums).toContain('E2')
-    expect(empNums).not.toContain('E5') // junior to user
-    expect(empNums).not.toContain('E4') // the user themselves
-  })
-
-  it('applies qual filter by base', () => {
-    const result = lens.upcomingRetirements({ yearsHorizon: 30, seniorOnly: false, base: 'JFK' })
-    const empNums = result.map(r => r.employeeNumber)
-    expect(empNums).toContain('E2') // JFK pilot
-    expect(empNums).not.toContain('E3') // ATL pilot
-  })
-
-  it('applies combined qual filter by seat and fleet', () => {
-    const result = lens.upcomingRetirements({ yearsHorizon: 30, seniorOnly: false, seat: 'FO', fleet: '320' })
-    const empNums = result.map(r => r.employeeNumber)
-    expect(empNums).toContain('E3')
-    expect(empNums).not.toContain('E2') // CA/737
-  })
-
-  it('sorts results by retire date ascending', () => {
-    const result = lens.upcomingRetirements({ yearsHorizon: 30, seniorOnly: false })
-    for (let i = 1; i < result.length; i++) {
-      expect(Temporal.PlainDate.compare(result[i]!.retireDate, result[i - 1]!.retireDate) >= 0).toBe(true)
-    }
-  })
-
-  it('returns empty array when no entries in horizon', () => {
-    const result = lens.upcomingRetirements({ yearsHorizon: 30, seniorOnly: false, base: 'ZZZ' })
-    expect(result).toHaveLength(0)
-  })
-
-  it('sets rankRelativeToMe to null when there is no anchor', () => {
-    const result = noAnchor.upcomingRetirements({ yearsHorizon: 30, seniorOnly: false })
-    expect(result.every(r => r.rankRelativeToMe === null)).toBe(true)
-  })
-
-  it('computes rankRelativeToMe correctly with anchor', () => {
-    // User is seniority #4. E2 is seniority #2. rankRelativeToMe = 4 - 2 = 2 (user is 2 junior)
-    const result = lens.upcomingRetirements({ yearsHorizon: 2, seniorOnly: false })
-    const e2 = result.find(r => r.employeeNumber === 'E2')!
-    expect(e2.rankRelativeToMe).toBe(2)
+  it('applies qualification scope to percentile crossings', () => {
+    const captainScenario = createScenario({ projectionDate: asOfDate, scopeFilter: { seat: 'CA' } })
+    const allPilotsScenario = createScenario({ projectionDate: asOfDate })
+    expect(anchored.percentileCrossing(90, projectionEndDate, captainScenario)).toEqual({ year: '2027' })
+    expect(anchored.percentileCrossing(90, projectionEndDate, allPilotsScenario)).toEqual({ year: '2040' })
   })
 })

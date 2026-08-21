@@ -6,8 +6,10 @@ import type { QualSpec } from './qual-spec'
 import { qualSpecToFilter } from './qual-spec'
 import { Temporal, type PlainDate } from '~/utils/temporal'
 
+/** Current display state of a qualification viewer row. */
 export type QualViewerStatus = 'active' | 'retired' | 'inserted'
 
+/** One rendered entry or inserted user marker in a qualification view. */
 export interface QualViewerRow {
   entry: SeniorityEntry | null
   seniorityNumber: number
@@ -29,6 +31,7 @@ export interface QualViewerRow {
   qualPercentile: number | null
 }
 
+/** Rows and capabilities required to render one qualification view. */
 export interface QualViewerResult {
   rows: QualViewerRow[]
   totalRows: number
@@ -38,6 +41,7 @@ export interface QualViewerResult {
   anchorFound: boolean
 }
 
+/** Input for a pure, qualification-scoped list projection. */
 export interface QualViewerOptions {
   entries: readonly SeniorityEntry[]
   qual?: QualSpec
@@ -46,6 +50,10 @@ export interface QualViewerOptions {
   asOfDate: PlainDate | string
 }
 
+/**
+ * Projects a sorted qualification list with active ranks and optional user
+ * marker insertion. It never changes the source entries.
+ */
 export function projectQualViewer(options: QualViewerOptions): QualViewerResult {
   const { entries, employeeNumber } = options
   const asOfDate = typeof options.asOfDate === 'string' ? Temporal.PlainDate.from(options.asOfDate) : options.asOfDate

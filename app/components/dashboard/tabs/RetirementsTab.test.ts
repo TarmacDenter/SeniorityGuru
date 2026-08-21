@@ -5,11 +5,13 @@ import { parsePlainDate } from '~/utils/temporal'
 
 const mockUpcomingRetirements = vi.fn()
 
-const { mockHasData, mockLens } = vi.hoisted(() => {
+const { mockHasData, mockHasAnchor, mockLens, mockAnchoredLens } = vi.hoisted(() => {
   const { ref: vRef } = require('vue')
   return {
     mockHasData: vRef(false) as { value: boolean },
+    mockHasAnchor: vRef(false) as { value: boolean },
     mockLens: vRef(null) as { value: { upcomingRetirements: ReturnType<typeof vi.fn> } | null },
+    mockAnchoredLens: vRef(null) as { value: { upcomingRetirementsRelativeToAnchor: ReturnType<typeof vi.fn> } | null },
   }
 })
 
@@ -17,7 +19,9 @@ const mockStoreState = { employeeNumber: null as string | null, entries: [] as u
 
 mockNuxtImport('useSeniorityCore', () => () => ({
   hasData: mockHasData,
+  hasAnchor: mockHasAnchor,
   lens: mockLens,
+  anchoredLens: mockAnchoredLens,
   get entries() { return { value: mockStoreState.entries } },
 }))
 
@@ -26,14 +30,16 @@ mockNuxtImport('useUser', () => () => ({
 }))
 
 const sampleRows: UpcomingRetirementRow[] = [
-  { seniorityNumber: 2, employeeNumber: 'E2', base: 'JFK', seat: 'CA', fleet: '737', retireDate: parsePlainDate('2027-06-01'), rankRelativeToMe: 48 },
-  { seniorityNumber: 5, employeeNumber: 'E5', base: 'ATL', seat: 'FO', fleet: '320', retireDate: parsePlainDate('2028-03-15'), rankRelativeToMe: 45 },
+  { seniorityNumber: 2, employeeNumber: 'E2', base: 'JFK', seat: 'CA', fleet: '737', retireDate: parsePlainDate('2027-06-01') },
+  { seniorityNumber: 5, employeeNumber: 'E5', base: 'ATL', seat: 'FO', fleet: '320', retireDate: parsePlainDate('2028-03-15') },
 ]
 
 describe('RetirementsTab', () => {
   beforeEach(() => {
     mockHasData.value = false
+    mockHasAnchor.value = false
     mockLens.value = null
+    mockAnchoredLens.value = null
     mockStoreState.employeeNumber = null
     mockStoreState.entries = []
     mockUpcomingRetirements.mockReturnValue([])
@@ -73,6 +79,6 @@ describe('RetirementsTab', () => {
     mockStoreState.employeeNumber = null
     const Comp = await import('./RetirementsTab.vue')
     const wrapper = await mountSuspended(Comp.default)
-    expect(wrapper.text()).toContain('Set your employee number')
+    expect(wrapper.text()).toContain('Set an employee number that appears in this list')
   })
 })

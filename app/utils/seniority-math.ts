@@ -75,30 +75,20 @@ export function computeRank(entries: readonly SeniorityEntry[], userSenNum: numb
   return entries.filter((e) => e.seniority_number < userSenNum).length + 1;
 }
 
-/** Legacy serialized seam retained for chart callers during migration. */
-export function getProjectionEndDate(retireDate: PlainDate | null, asOfDate: PlainDate): { today: string; endDate: string } {
-  const today = asOfDate
-  return {
-    today: today.toString(),
-    endDate: (retireDate ? Temporal.PlainDate.from(retireDate) : addYearsDate(today, 30)).toString(),
-  }
-}
-
 export function formatNumber(n: number): string {
   return n.toLocaleString();
 }
 
 export function projectRetirements(
   entries: readonly SeniorityEntry[],
-  retireDate: PlainDate | null,
+  endDate: PlainDate,
   asOfDate: PlainDate,
   filterFn?: FilterFn,
 ): { labels: string[]; data: number[]; filteredTotal: number; } {
   const filteredEntries = entries.filter(filterFn ?? (() => true));
   const filteredTotal = filteredEntries.length;
 
-  const { today, endDate } = getProjectionEndDateValue(retireDate, asOfDate)
-  const timePoints = generateTimePoints(today, endDate);
+  const timePoints = generateTimePoints(asOfDate, endDate);
   if (timePoints.length === 0) {
     return { labels: [], data: [], filteredTotal };
   }
@@ -107,7 +97,7 @@ export function projectRetirements(
   const data: number[] = [];
 
   for (let i = 0; i < timePoints.length; i++) {
-    const bucketStart = i === 0 ? today : timePoints[i - 1]!;
+    const bucketStart = i === 0 ? asOfDate : timePoints[i - 1]!;
     const bucketEnd = timePoints[i]!;
 
     const count = filteredEntries.filter((e) => {
@@ -125,14 +115,13 @@ export function projectRetirements(
 export function projectComparativeTrajectory(
   allEntries: readonly SeniorityEntry[],
   userSenNum: number,
-  retireDate: PlainDate | null,
+  endDate: PlainDate,
   asOfDate: PlainDate,
   currentFilter: FilterFn,
   compareFilter: FilterFn,
   growthConfig?: GrowthConfig,
 ): { labels: string[]; currentData: number[]; compareData: number[]; } {
-  const { today, endDate } = getProjectionEndDateValue(retireDate, asOfDate)
-  const timePoints = generateTimePoints(today, endDate);
+  const timePoints = generateTimePoints(asOfDate, endDate);
   const currentTrajectory = buildTrajectory(allEntries, userSenNum, timePoints, currentFilter, growthConfig);
   const compareTrajectory = buildTrajectory(allEntries, userSenNum, timePoints, compareFilter, growthConfig);
 
@@ -168,10 +157,6 @@ export function computeTrajectoryDeltas(
     }
   }
   return deltas
-}
-
-export function getProjectionEndDateValue(retireDate: PlainDate | null, asOfDate: PlainDate): { today: PlainDate; endDate: PlainDate } {
-  return { today: asOfDate, endDate: retireDate ?? addYearsDate(asOfDate, 30) }
 }
 
 export function formatRankDelta(delta: number): string {

@@ -77,8 +77,10 @@ vi.mock('~/composables/seniority/modules/useSeniorityCore', () => ({
     isNewHireMode: ref(false),
     newHire: { syntheticEntry: ref(null) },
     lens: ref(null),
+    anchoredLens: ref(null),
     snapshot: ref(null),
     userEntry: ref(undefined),
+    projectionEndDate: ref(null),
   }),
 }))
 

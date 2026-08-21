@@ -27,8 +27,8 @@ defineEmits<{ dismiss: [] }>()
 
         <template v-if="context === 'trajectory'">
           <p class="mt-2">
-            Projection window: up to 30 years from today, or until your retirement date — whichever
-            comes first.
+            Projection window: through your retirement date, or the latest retirement date in the
+            loaded seniority data when your date is unavailable.
           </p>
           <NuxtLink to="/how-it-works#projection-limits" class="text-primary underline text-sm">
             Learn more about projection methodology →

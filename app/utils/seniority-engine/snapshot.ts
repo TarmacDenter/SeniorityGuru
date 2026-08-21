@@ -3,8 +3,10 @@ import { normalizeEmployeeNumber } from '~/utils/schemas/seniority-list'
 import type { SenioritySnapshot, Qual } from './types'
 import { cellKey } from './cell-key'
 
+/** Cross-row rules that prevent an entry collection from becoming a snapshot. */
 export type SnapshotIssueCode = 'duplicate_seniority_number' | 'duplicate_employee_number'
 
+/** A structural validation problem associated with one input row. */
 export interface SnapshotValidationIssue {
   code: SnapshotIssueCode
   field: 'seniority_number' | 'employee_number'
@@ -86,10 +88,12 @@ export function validateSnapshotEntries(entries: Partial<EntryIdentity>[]): Map<
   return issuesToErrorMap(collectDuplicateIssues(entries))
 }
 
+/** Returns every duplicate employee-number and seniority-number violation. */
 export function validateSnapshotEntryIssues(entries: readonly Partial<EntryIdentity>[]): SnapshotValidationIssue[] {
   return collectDuplicateIssues(entries)
 }
 
+/** Returns sorted, non-empty values for one qualification dimension. */
 export function uniqueEntryValues(entries: SeniorityEntry[], field: 'fleet' | 'seat' | 'base'): string[] {
   const values = new Set<string>()
   for (const e of entries) {
@@ -99,12 +103,22 @@ export function uniqueEntryValues(entries: SeniorityEntry[], field: 'fleet' | 's
   return Array.from(values).sort()
 }
 
+/** Thrown when entries violate a snapshot invariant or lack qualification data. */
 export class InvalidSnapshotDataError extends Error {
   constructor(message: string, public invalidEntry?: SeniorityEntry) {
       super(message)
   }
 }
 
+/**
+ * Indexes validated seniority entries for repeatable organization analysis.
+ *
+ * Entries must have unique seniority and employee numbers. Every entry must
+ * also provide base, seat, and fleet values. The returned snapshot retains the
+ * original entry references and adds sorted and grouped lookup views.
+ *
+ * @throws {InvalidSnapshotDataError} When an invariant is not satisfied.
+ */
 export function createSnapshot(entries: readonly SeniorityEntry[]): SenioritySnapshot {
   const duplicateIssues = validateSnapshotEntryIssues(entries)
   if (duplicateIssues.length > 0) {

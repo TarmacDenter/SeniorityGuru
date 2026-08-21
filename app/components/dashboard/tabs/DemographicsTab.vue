@@ -1,18 +1,17 @@
 <script setup lang="ts">
 import { useSeniorityCore, useQualFilter } from '~/composables/seniority'
 import { computeYOS } from '~/utils/date'
-import { createLens, createScenario } from '~/utils/seniority-engine'
+import { createScenario } from '~/utils/seniority-engine'
 import { todayPlainDate } from '~/utils/temporal'
 
 defineProps<{ loading?: boolean }>()
 
-const { hasData, newHire, snapshot, lens, userEntry } = useSeniorityCore()
+const { hasData, newHire, lens, userEntry } = useSeniorityCore()
 const { retirementAge } = useUser()
 const qualFilter = useQualFilter()
 const demographicScenario = computed(() => createScenario({ projectionDate: todayPlainDate(), scopeFilter: qualFilter.qualSpec.value }))
 const demographicsResult = computed(() => {
-  if (!snapshot.value) return null
-  return (lens.value ?? createLens(snapshot.value, undefined, todayPlainDate())).demographics(retirementAge.value, demographicScenario.value)
+  return lens.value?.demographics(retirementAge.value, demographicScenario.value) ?? null
 })
 const ageDistribution = computed(() => demographicsResult.value?.ageDistribution ?? { buckets: [], nullCount: 0 })
 const mostJuniorCAs = computed(() => demographicsResult.value?.mostJuniorCAs ?? [])
