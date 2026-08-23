@@ -22,7 +22,10 @@ Component → composable → store → Dexie
 - `seniorityLists` stores list metadata.
 - `seniorityEntries` stores pilot rows linked by `listId`.
 - `preferences` stores user settings as key-value pairs.
-- `app/utils/seniority-engine/` contains pure analytics. It receives validated `SeniorityEntry` values and does not access stores or Dexie.
+- `app/utils/seniority-analysis/math.ts` and `growth.ts` contain deterministic calculations with explicit inputs.
+- `app/utils/seniority-engine/` owns snapshots, lenses, As-of Dates, scenarios, scope, memoization, and contextual analysis.
+- `app/utils/seniority-analysis/presentation.ts` maps completed domain results to labels and component-facing values.
+- Seniority analysis follows `math → engine → presentation`. These layers receive validated `SeniorityEntry` values and do not access stores or Dexie.
 - Zod schemas in `app/utils/schemas/` validate data at the upload boundary. Downstream code uses the validated domain types.
 
 ### Framework conventions

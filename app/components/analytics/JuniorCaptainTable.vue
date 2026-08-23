@@ -10,31 +10,21 @@ interface TableRow {
   seniorityNumber: number
   hireDate: PlainDate
   yos: number
-  isHoldable: boolean
+  modeledHoldable: boolean
 }
 
-const props = defineProps<{
-  rows: { qualificationLabel: string; fleet: string; seat: string; base: string | null; seniorityNumber: number; hireDate: PlainDate; yos: number }[]
-  userSeniorityNumber: number | undefined
+defineProps<{
+  rows: TableRow[]
 }>()
-
-const tableRows = computed<TableRow[]>(() =>
-  props.rows.map((r) => ({
-    ...r,
-    isHoldable:
-      props.userSeniorityNumber !== undefined &&
-      props.userSeniorityNumber <= r.seniorityNumber,
-  })),
-)
 
 const columns: TableColumn<TableRow>[] = [
   {
     accessorKey: 'qualificationLabel',
-    header: 'Qualification',
+    header: 'Qual',
     cell: ({ row }) =>
       h('div', { class: 'flex items-center gap-2' }, [
         h('span', row.original.qualificationLabel),
-        row.original.isHoldable
+        row.original.modeledHoldable
           ? h('span', {
               class: 'inline-block size-2 rounded-full bg-[var(--ui-color-success-500)]',
               title: 'You could hold this today',
@@ -53,5 +43,5 @@ const columns: TableColumn<TableRow>[] = [
 </script>
 
 <template>
-  <UTable :data="tableRows" :columns="columns" />
+  <UTable :data="rows" :columns="columns" />
 </template>

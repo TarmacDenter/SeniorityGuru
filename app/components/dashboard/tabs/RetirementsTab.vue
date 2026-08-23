@@ -91,7 +91,7 @@ const columns = computed((): TableColumn<RetirementRow>[] => {
     { accessorKey: 'seniorityNumber', header: 'Seniority #' },
     {
       accessorKey: 'qual',
-      header: 'Qualification',
+      header: 'Qual',
       cell: ({ row }) => `${row.original.qualification.base} · ${row.original.qualification.seat} / ${row.original.qualification.fleet}`,
     },
     { accessorKey: 'retirementDate', header: 'Est. Retire Date' },

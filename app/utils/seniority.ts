@@ -94,6 +94,8 @@ export {
 } from './seniority-analysis/presentation'
 export type {
   PresentedQualificationPosition,
+  PresentedRetirementCountProjection,
   PresentedSeniorityTrajectory,
+  PresentedSeniorityTrajectoryComparison,
   PresentedTrajectoryChange,
 } from './seniority-analysis/presentation'

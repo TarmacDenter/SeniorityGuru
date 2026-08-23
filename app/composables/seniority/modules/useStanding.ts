@@ -1,5 +1,5 @@
 import type { ComputedRef } from 'vue'
-import { formatSeniorityCount } from '~/utils/seniority'
+import { formatQualification, formatSeniorityCount } from '~/utils/seniority'
 import { useSeniorityStore } from '~/stores/seniority'
 import { useSeniorityCore } from './useSeniorityCore'
 
@@ -109,7 +109,7 @@ export function useStanding(): {
       )
       if (userQualification) {
         baseRankValue = formatSeniorityCount(userQualification.activeRank)
-        baseRankLabel = `${entry.seat}/${entry.fleet}/${entry.base}`
+        baseRankLabel = formatQualification({ base: entry.base, seat: entry.seat, fleet: entry.fleet })
       }
     }
 

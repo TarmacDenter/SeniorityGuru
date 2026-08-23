@@ -5,8 +5,12 @@ import { createSenioritySnapshot, InvalidSenioritySnapshotDataError, validateSna
 import type { SenioritySnapshot } from './types'
 
 function assertReadonlySnapshot(snapshot: SenioritySnapshot) {
+  // @ts-expect-error Snapshot collection properties cannot be replaced.
+  snapshot.entries = []
   // @ts-expect-error Snapshot entries are exposed through a readonly array.
   snapshot.entries.push(makeDomainEntry())
+  // @ts-expect-error Validated entries are exposed through readonly views.
+  snapshot.entries[0]!.base = 'LAX'
   // @ts-expect-error Seniority ordering is exposed through a readonly array.
   snapshot.entriesBySeniority.reverse()
   // @ts-expect-error Employee lookup is exposed through ReadonlyMap.
@@ -134,6 +138,13 @@ describe('validateSnapshotEntries', () => {
 
     expect([...errors.keys()]).toEqual([0, 1])
     expect(Array.from(errors.values()).flat()).toContain('employee_number: Duplicate employee number 123')
+  })
+
+  it('rejects normalized duplicate employee identity during snapshot creation', () => {
+    expect(() => createSenioritySnapshot([
+      makeDomainEntry({ seniority_number: 100, employee_number: '00123' }),
+      makeDomainEntry({ seniority_number: 105, employee_number: '123' }),
+    ])).toThrow(InvalidSenioritySnapshotDataError)
   })
 
   it('reports both duplicate seniority and employee number violations in the same pass', () => {

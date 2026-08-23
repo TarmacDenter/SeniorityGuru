@@ -1,11 +1,12 @@
-import { describe, it, expect, vi } from 'vitest'
+import { beforeEach, describe, it, expect, vi } from 'vitest'
 import { mountSuspended, mockNuxtImport } from '@nuxt/test-utils/runtime'
 import type { SeniorityDemographics } from '~/utils/seniority'
 import { parsePlainDate } from '~/utils/temporal'
 
-const { mockHasData, mockLens } = vi.hoisted(() => {
+const { mockAnchoredLens, mockHasData, mockLens } = vi.hoisted(() => {
   const { ref: vRef } = require('vue')
   return {
+    mockAnchoredLens: vRef(null) as { value: { qualificationPositions: ReturnType<typeof vi.fn> } | null },
     mockHasData: vRef(false) as { value: boolean },
     mockLens: vRef(null) as { value: { demographics: ReturnType<typeof vi.fn> } | null },
   }
@@ -30,13 +31,13 @@ mockNuxtImport('useSeniorityCore', () => () => ({
   },
   snapshot: { value: null },
   lens: mockLens,
-  anchoredLens: { value: null },
+  anchoredLens: mockAnchoredLens,
   userEntry: { value: undefined },
   hasAnchor: { value: false },
   isNewHireMode: { value: false },
 }))
 
-mockNuxtImport('useQualFilter', () => () => ({
+mockNuxtImport('useQualificationFilter', () => () => ({
   selectedFleet: { value: null },
   selectedSeat: { value: null },
   selectedBase: { value: null },
@@ -84,6 +85,12 @@ const demographicsResult: SeniorityDemographics = {
 }
 
 describe('DemographicsTab', () => {
+  beforeEach(() => {
+    mockAnchoredLens.value = null
+    mockHasData.value = false
+    mockLens.value = null
+  })
+
   it('shows empty state when no seniority data', async () => {
     mockHasData.value = false
     mockLens.value = null
@@ -114,10 +121,36 @@ describe('DemographicsTab', () => {
       mandatoryRetirementAge: 65,
       scenario: expect.objectContaining({ qualificationScope: {} }),
     })
-    expect(wrapper.text()).toContain('Most Junior Captain by Qualification')
+    expect(wrapper.text()).toContain('Most Junior Captain by Qual')
     expect(wrapper.text()).toContain('Base / Fleet / Seat Sizes')
-    expect(wrapper.text()).toContain('Qualification Composition')
+    expect(wrapper.text()).toContain('Qual Composition')
     expect(wrapper.text()).toContain('Age Distribution')
     expect(wrapper.text()).toContain('Years of Service')
+  })
+
+  it('gets modeled Holdable state from anchored engine analysis', async () => {
+    const qualificationPositions = vi.fn(() => [{
+      distribution: {
+        qualification: { fleet: '737', seat: 'CA', base: 'JFK' },
+        activePilotCount: 2,
+        thresholdPercentile: 50,
+        thresholdSeniorityNumber: 10,
+        percentile25: 25,
+        medianPercentile: 50,
+        percentile75: 75,
+        maximumPercentile: 100,
+        percentileDensity: [],
+      },
+      currentPercentile: 75,
+      projectedPercentile: 75,
+      modeledHoldable: true,
+    }])
+    mockHasData.value = true
+    mockLens.value = { demographics: vi.fn(() => demographicsResult) }
+    mockAnchoredLens.value = { qualificationPositions }
+    const Tab = await import('./DemographicsTab.vue')
+    await mountSuspended(Tab.default)
+
+    expect(qualificationPositions).toHaveBeenCalledWith({ through: expect.anything() })
   })
 })

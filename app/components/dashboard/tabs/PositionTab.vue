@@ -68,7 +68,7 @@ onUnmounted(() => {
       v-else-if="!hasData"
       icon="i-lucide-map-pin"
       title="No Seniority Data Yet"
-      description="Upload your airline's seniority list to see your position across all qualifications and see holdability projections."
+      description="Upload your airline's seniority list to see your position across all quals and see holdability projections."
       :actions="[{ label: 'Upload Seniority List', icon: 'i-lucide-upload', to: '/seniority/upload', size: 'lg' as const }]"
       class="py-24 flex-1"
     />
@@ -166,10 +166,10 @@ onUnmounted(() => {
         </template>
       </UCollapsible>
 
-      <!-- Qualification Seniority Scale -->
+      <!-- Qual Seniority Scale -->
       <UCard v-if="qualificationPositions.length > 0">
         <template #header>
-          <h3 class="font-semibold">Seniority Position by Qualification</h3>
+          <h3 class="font-semibold">Seniority Position by Qual</h3>
         </template>
         <AnalyticsQualSeniorityScale :positions="qualificationPositions" />
       </UCard>
@@ -180,7 +180,7 @@ onUnmounted(() => {
         color="warning"
         variant="subtle"
         title="Employee Number Required"
-        description="Set your employee number in Settings to see your position across qualifications."
+        description="Set your employee number in Settings to see your position across quals."
       />
     </div>
     </template>

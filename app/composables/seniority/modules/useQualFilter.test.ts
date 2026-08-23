@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { nextTick } from 'vue'
-import { useQualFilter } from './useQualFilter'
+import { useQualificationFilter } from './useQualFilter'
 import { useSeniorityCore, _resetCoreSingletons } from './useSeniorityCore'
 import { resetMockStores } from '~/test-utils/seniority-mocks'
 
@@ -22,14 +22,14 @@ beforeEach(() => {
   useSeniorityCore().newHire.reset()
 })
 
-describe('useQualFilter', () => {
+describe('useQualificationFilter', () => {
   it('derives the selected Qualification and cascades available bases', () => {
     mockStore.entries = [
       makeEntry({ fleet: '737', seat: 'CA', base: 'JFK' }),
       makeEntry({ fleet: '737', seat: 'FO', base: 'LAX' }),
       makeEntry({ fleet: '777', seat: 'CA', base: 'ORD' }),
     ]
-    const filter = useQualFilter()
+    const filter = useQualificationFilter()
 
     filter.selectedFleet.value = '737'
     filter.selectedSeat.value = 'CA'
@@ -41,7 +41,7 @@ describe('useQualFilter', () => {
 
   it('clears a selected value that disappears after the list changes', async () => {
     mockStore.entries = [makeEntry({ fleet: '737', seat: 'CA', base: 'JFK' })]
-    const filter = useQualFilter()
+    const filter = useQualificationFilter()
     filter.selectedFleet.value = '737'
 
     mockStore.entries = [makeEntry({ fleet: '777', seat: 'CA', base: 'JFK' })]
@@ -51,7 +51,7 @@ describe('useQualFilter', () => {
   })
 
   it('clears every filter selection together', () => {
-    const filter = useQualFilter()
+    const filter = useQualificationFilter()
     filter.selectedFleet.value = '737'
     filter.selectedSeat.value = 'CA'
     filter.selectedBase.value = 'JFK'

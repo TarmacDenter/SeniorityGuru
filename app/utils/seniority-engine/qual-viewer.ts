@@ -4,7 +4,7 @@ import { isRetiredBy } from '~/utils/date'
 import { calculateSeniorityPercentile } from '~/utils/seniority-analysis/math'
 import type { QualificationScope } from './qualification-scope'
 import { qualificationScopeToEntryPredicate } from './qualification-scope'
-import { Temporal, type PlainDate } from '~/utils/temporal'
+import type { PlainDate } from '~/utils/temporal'
 
 /** Current state of a Qualification viewer entry. */
 export type QualificationViewerStatus = 'active' | 'retired' | 'inserted'
@@ -47,7 +47,7 @@ export interface AnalyzeQualificationViewerOptions {
   qualificationScope?: QualificationScope
   employeeNumber?: string | null
   insertSelf?: boolean
-  asOfDate: PlainDate | string
+  asOfDate: PlainDate
 }
 
 /**
@@ -56,7 +56,7 @@ export interface AnalyzeQualificationViewerOptions {
  */
 export function analyzeSeniorityQualificationViewer(options: AnalyzeQualificationViewerOptions): QualificationViewerAnalysis {
   const { entries, employeeNumber } = options
-  const asOfDate = typeof options.asOfDate === 'string' ? Temporal.PlainDate.from(options.asOfDate) : options.asOfDate
+  const asOfDate = options.asOfDate
   const qualificationScope = options.qualificationScope ?? {}
   const userEmployeeKey = employeeNumber ? normalizeEmployeeNumber(employeeNumber) : null
   const ordered = [...entries].sort((a, b) => a.seniority_number - b.seniority_number)

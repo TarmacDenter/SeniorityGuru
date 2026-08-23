@@ -22,6 +22,18 @@ export interface PresentedSeniorityTrajectory {
   changes: PresentedTrajectoryChange[]
 }
 
+export interface PresentedSeniorityTrajectoryComparison {
+  labels: string[]
+  baselineData: number[]
+  comparisonData: number[]
+}
+
+export interface PresentedRetirementCountProjection {
+  labels: string[]
+  data: number[]
+  scopedPilotCount: number
+}
+
 export function presentSeniorityTrajectory(trajectory: SeniorityTrajectory): PresentedSeniorityTrajectory {
   const changes = trajectory.changes.map((change, index, all): PresentedTrajectoryChange => {
     const previous = index > 0 ? all[index - 1]!.percentilePointChange : -Infinity
@@ -43,7 +55,9 @@ export function presentSeniorityTrajectory(trajectory: SeniorityTrajectory): Pre
   }
 }
 
-export function presentSeniorityTrajectoryComparison(comparison: SeniorityTrajectoryComparison) {
+export function presentSeniorityTrajectoryComparison(
+  comparison: SeniorityTrajectoryComparison,
+): PresentedSeniorityTrajectoryComparison {
   return {
     labels: comparison.points.map(point => point.date.toString()),
     baselineData: comparison.points.map(point => point.baselinePercentile),
@@ -51,7 +65,9 @@ export function presentSeniorityTrajectoryComparison(comparison: SeniorityTrajec
   }
 }
 
-export function presentRetirementCountProjection(projection: RetirementCountProjection) {
+export function presentRetirementCountProjection(
+  projection: RetirementCountProjection,
+): PresentedRetirementCountProjection {
   return {
     labels: projection.buckets.map(bucket => formatMonthYear(bucket.through)),
     data: projection.buckets.map(bucket => bucket.retirementCount),

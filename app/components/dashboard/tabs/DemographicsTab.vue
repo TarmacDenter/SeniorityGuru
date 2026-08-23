@@ -1,15 +1,15 @@
 <script setup lang="ts">
-import { useSeniorityCore, useQualFilter } from '~/composables/seniority'
+import { useSeniorityCore, useQualificationFilter } from '~/composables/seniority'
 import { computeYOS } from '~/utils/date'
 import { createSeniorityScenario, presentSeniorityDemographics } from '~/utils/seniority'
 import { todayPlainDate } from '~/utils/temporal'
 
 defineProps<{ loading?: boolean }>()
 
-const { hasData, newHire, lens, userEntry } = useSeniorityCore()
+const { hasData, newHire, lens, anchoredLens, userEntry } = useSeniorityCore()
 const { retirementAge } = useUser()
-const qualFilter = useQualFilter()
-const demographicScenario = computed(() => createSeniorityScenario({ qualificationScope: qualFilter.qualificationScope.value }))
+const qualificationFilter = useQualificationFilter()
+const demographicScenario = computed(() => createSeniorityScenario({ qualificationScope: qualificationFilter.qualificationScope.value }))
 const demographicsResult = computed(() => {
   const result = lens.value?.demographics({
     mandatoryRetirementAge: retirementAge.value,
@@ -18,7 +18,19 @@ const demographicsResult = computed(() => {
   return result ? presentSeniorityDemographics(result) : null
 })
 const ageDistribution = computed(() => demographicsResult.value?.ageDistribution ?? { buckets: [], nullCount: 0 })
-const captainQualificationThresholds = computed(() => demographicsResult.value?.captainQualificationThresholds ?? [])
+const currentQualificationPositions = computed(() => anchoredLens.value?.qualificationPositions({
+  through: todayPlainDate(),
+}) ?? [])
+const captainQualificationThresholds = computed(() =>
+  (demographicsResult.value?.captainQualificationThresholds ?? []).map((threshold) => {
+    const position = currentQualificationPositions.value.find(candidate =>
+      candidate.distribution.qualification.base === threshold.base
+      && candidate.distribution.qualification.seat === threshold.seat
+      && candidate.distribution.qualification.fleet === threshold.fleet,
+    )
+    return { ...threshold, modeledHoldable: position?.modeledHoldable ?? false }
+  }),
+)
 const qualificationComposition = computed(() => demographicsResult.value?.qualificationComposition ?? [])
 const yearsOfServiceDistribution = computed(() => demographicsResult.value?.yearsOfServiceDistribution ?? { entryFloor: 0, p10: 0, p25: 0, median: 0, p75: 0, p90: 0, max: 0 })
 const yearsOfServiceBuckets = computed(() => demographicsResult.value?.yearsOfServiceBuckets ?? [])
@@ -29,10 +41,6 @@ const userYos = computed(() => {
   if (userEntry.value) return computeYOS(userEntry.value.hire_date, todayPlainDate())
   return undefined
 })
-
-const userSeniorityNumber = computed(() =>
-  newHire.syntheticEntry.value?.seniority_number ?? userEntry.value?.seniority_number,
-)
 
 const ready = useDeferredReady()
 </script>
@@ -59,26 +67,25 @@ const ready = useDeferredReady()
 
     <template v-else>
     <AnalyticsQualFilterBar
-      :fleet="qualFilter.selectedFleet.value"
-      :seat="qualFilter.selectedSeat.value"
-      :base="qualFilter.selectedBase.value"
-      :fleets="qualFilter.availableFleets.value"
-      :seats="qualFilter.availableSeats.value"
-      :bases="qualFilter.availableBases.value"
-      @update:fleet="qualFilter.selectedFleet.value = $event"
-      @update:seat="qualFilter.selectedSeat.value = $event"
-      @update:base="qualFilter.selectedBase.value = $event"
+      :fleet="qualificationFilter.selectedFleet.value"
+      :seat="qualificationFilter.selectedSeat.value"
+      :base="qualificationFilter.selectedBase.value"
+      :fleets="qualificationFilter.availableFleets.value"
+      :seats="qualificationFilter.availableSeats.value"
+      :bases="qualificationFilter.availableBases.value"
+      @update:fleet="qualificationFilter.selectedFleet.value = $event"
+      @update:seat="qualificationFilter.selectedSeat.value = $event"
+      @update:base="qualificationFilter.selectedBase.value = $event"
     />
 
-    <!-- Most Junior Captain by Qualification — full width, own row -->
+    <!-- Most Junior Captain by Qual — full width, own row -->
     <USkeleton v-if="!ready || !captainQualificationThresholds.length" class="h-48 rounded-lg" />
     <UCard v-else>
       <template #header>
-        <h3 class="font-semibold">Most Junior Captain by Qualification</h3>
+        <h3 class="font-semibold">Most Junior Captain by Qual</h3>
       </template>
       <AnalyticsJuniorCaptainTable
         :rows="captainQualificationThresholds"
-        :user-seniority-number="userSeniorityNumber"
       />
     </UCard>
 
@@ -86,11 +93,11 @@ const ready = useDeferredReady()
     <USkeleton v-if="!ready || !qualificationComposition.length" class="h-32 rounded-lg" />
     <AnalyticsQualSizesCard v-else :composition="qualificationComposition" />
 
-    <!-- Qualification Composition list — full width, own row -->
+    <!-- Qual Composition list — full width, own row -->
     <USkeleton v-if="!ready || !qualificationComposition.length" class="h-64 rounded-lg" />
     <UCard v-else>
       <template #header>
-        <h3 class="font-semibold">Qualification Composition</h3>
+        <h3 class="font-semibold">Qual Composition</h3>
       </template>
       <div class="space-y-2">
         <AnalyticsQualCompositionCard
@@ -105,7 +112,7 @@ const ready = useDeferredReady()
     <USkeleton v-if="!ready || !ageDistribution.buckets.length" class="h-64 rounded-lg" />
     <UCard v-else>
       <template #header>
-        <h3 class="font-semibold">Age Distribution{{ qualFilter.qualificationLabel.value ? ` — ${qualFilter.qualificationLabel.value}` : '' }}</h3>
+        <h3 class="font-semibold">Age Distribution{{ qualificationFilter.qualificationLabel.value ? ` — ${qualificationFilter.qualificationLabel.value}` : '' }}</h3>
       </template>
       <AnalyticsAgeDistributionChart
         :buckets="ageDistribution.buckets"
@@ -117,7 +124,7 @@ const ready = useDeferredReady()
     <USkeleton v-if="!ready || !yearsOfServiceBuckets.length" class="h-48 rounded-lg" />
     <UCard v-else>
       <template #header>
-        <h3 class="font-semibold">Years of Service{{ qualFilter.qualificationLabel.value ? ` — ${qualFilter.qualificationLabel.value}` : '' }}</h3>
+        <h3 class="font-semibold">Years of Service{{ qualificationFilter.qualificationLabel.value ? ` — ${qualificationFilter.qualificationLabel.value}` : '' }}</h3>
       </template>
       <AnalyticsYearsOfServiceBreakdown
         :distribution="yearsOfServiceDistribution"

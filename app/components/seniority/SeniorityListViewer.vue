@@ -48,15 +48,15 @@ const qualOptions = computed(() => {
     })
     .map(entry => ({
       label: `${entry.base}-${entry.fleet}-${entry.seat}`,
-      value: `${entry.base}|${entry.fleet}|${entry.seat}`,
+      value: JSON.stringify([entry.base, entry.seat, entry.fleet]),
+      qualificationScope: { base: entry.base, fleet: entry.fleet, seat: entry.seat },
     }))
-  return [{ label: 'Company-wide', value: COMPANY_WIDE_VALUE }, ...options]
+  return [{ label: 'Company-wide', value: COMPANY_WIDE_VALUE, qualificationScope: {} }, ...options]
 })
 
 const qualificationScope = computed<QualificationScope>(() => {
   if (!selectedQualKey.value || selectedQualKey.value === COMPANY_WIDE_VALUE) return {}
-  const [base, fleet, seat] = selectedQualKey.value.split('|')
-  return { base, fleet, seat }
+  return qualOptions.value.find(option => option.value === selectedQualKey.value)?.qualificationScope ?? {}
 })
 const isQualMode = computed(() => Object.keys(qualificationScope.value).length === 3)
 const anchorFound = computed(() => {

@@ -88,7 +88,7 @@ describe('SeniorityListViewer', () => {
     const Component = (await import('./SeniorityListViewer.vue')).default
     const wrapper = await mountSuspended(Component, { global: { stubs } })
 
-    await wrapper.find('select').setValue('JFK|737|CA')
+    await wrapper.find('select').setValue('["JFK","CA","737"]')
 
     expect(wrapper.text()).toContain('JFK-737-CA · 2 pilots')
     expect(wrapper.text()).toContain('First|E1|1|1|active')

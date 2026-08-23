@@ -8,30 +8,20 @@ import {
 } from '~/utils/seniority'
 import type {
   GrowthAssumptions,
+  PresentedRetirementCountProjection,
+  PresentedSeniorityTrajectoryComparison,
   PresentedTrajectoryChange,
   QualificationScope,
   SeniorityTrajectoryPoint,
 } from '~/utils/seniority'
 import { useSeniorityCore } from './useSeniorityCore'
 
-interface RetirementProjectionPresentation {
-  labels: string[]
-  data: number[]
-  scopedPilotCount: number
-}
-
-interface TrajectoryComparisonPresentation {
-  labels: string[]
-  baselineData: number[]
-  comparisonData: number[]
-}
-
 export function useTrajectory(growthAssumptions?: Ref<GrowthAssumptions>): {
   chartData: ComputedRef<{ labels: string[]; data: number[] }>
   changes: ComputedRef<PresentedTrajectoryChange[]>
   fullTrajectory: ComputedRef<readonly SeniorityTrajectoryPoint[]>
-  computeRetirementProjection: (scope?: QualificationScope) => RetirementProjectionPresentation
-  computeComparativeTrajectory: (baseline: QualificationScope, comparison: QualificationScope) => TrajectoryComparisonPresentation
+  computeRetirementProjection: (scope?: QualificationScope) => PresentedRetirementCountProjection
+  computeComparativeTrajectory: (baseline: QualificationScope, comparison: QualificationScope) => PresentedSeniorityTrajectoryComparison
 } {
   const { lens, anchoredLens, projectionEndDate } = useSeniorityCore()
   const effectiveAssumptions = growthAssumptions
@@ -47,7 +37,7 @@ export function useTrajectory(growthAssumptions?: Ref<GrowthAssumptions>): {
   const fullTrajectory = computed(() => trajectory.value?.points ?? [])
   const changes = computed(() => presentedTrajectory.value?.changes ?? [])
 
-  function computeRetirementProjection(scope: QualificationScope = {}): RetirementProjectionPresentation {
+  function computeRetirementProjection(scope: QualificationScope = {}): PresentedRetirementCountProjection {
     const through = projectionEndDate.value
     if (!lens.value || !through) return { labels: [], data: [], scopedPilotCount: 0 }
     return presentRetirementCountProjection(lens.value.retirementCountProjection({
@@ -59,7 +49,7 @@ export function useTrajectory(growthAssumptions?: Ref<GrowthAssumptions>): {
   function computeComparativeTrajectory(
     baseline: QualificationScope,
     comparison: QualificationScope,
-  ): TrajectoryComparisonPresentation {
+  ): PresentedSeniorityTrajectoryComparison {
     const through = projectionEndDate.value
     if (!anchoredLens.value || !through) return { labels: [], baselineData: [], comparisonData: [] }
     return presentSeniorityTrajectoryComparison(anchoredLens.value.seniorityTrajectoryComparison({

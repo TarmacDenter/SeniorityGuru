@@ -84,7 +84,7 @@ mockNuxtImport('useTrajectory', () => () => ({
   computeRetirementProjection: vi.fn(),
 }))
 
-mockNuxtImport('useQualFilter', () => () => mockQualFilter)
+mockNuxtImport('useQualificationFilter', () => () => mockQualFilter)
 mockNuxtImport('useDeferredReady', () => () => ({ value: true }))
 
 describe('TrajectoryTab', () => {

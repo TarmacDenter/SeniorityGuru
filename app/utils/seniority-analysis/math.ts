@@ -58,7 +58,8 @@ export interface CalculateSeniorityTrajectoryComparisonOptions {
   readonly through: PlainDate
   readonly baselinePredicate: EntryPredicate
   readonly comparisonPredicate: EntryPredicate
-  readonly growthAssumptions?: GrowthAssumptions
+  readonly baselineGrowthAssumptions?: GrowthAssumptions
+  readonly comparisonGrowthAssumptions?: GrowthAssumptions
 }
 
 export interface CalculateRetirementCountProjectionOptions {
@@ -137,8 +138,16 @@ export function calculateSeniorityTrajectory(options: CalculateSeniorityTrajecto
 export function calculateSeniorityTrajectoryComparison(
   options: CalculateSeniorityTrajectoryComparisonOptions,
 ): SeniorityTrajectoryComparison {
-  const baseline = calculateTrajectoryPoints({ ...options, predicate: options.baselinePredicate })
-  const comparison = calculateTrajectoryPoints({ ...options, predicate: options.comparisonPredicate })
+  const baseline = calculateTrajectoryPoints({
+    ...options,
+    predicate: options.baselinePredicate,
+    growthAssumptions: options.baselineGrowthAssumptions,
+  })
+  const comparison = calculateTrajectoryPoints({
+    ...options,
+    predicate: options.comparisonPredicate,
+    growthAssumptions: options.comparisonGrowthAssumptions,
+  })
   return {
     points: baseline.map((point, index) => ({
       date: point.date,

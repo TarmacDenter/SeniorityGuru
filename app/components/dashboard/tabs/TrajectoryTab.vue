@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useSeniorityCore, useQualFilter, useStanding, useTrajectory } from '~/composables/seniority'
+import { useSeniorityCore, useQualificationFilter, useStanding, useTrajectory } from '~/composables/seniority'
 import { DEFAULT_SENIORITY_GROWTH_ASSUMPTIONS, createSeniorityScenario, presentPercentileCrossing, presentSeniorityTrajectory, type GrowthAssumptions } from '~/utils/seniority'
 
 defineProps<{ loading?: boolean }>()
@@ -16,10 +16,10 @@ const {
   computeRetirementProjection,
 } = useTrajectory(growthAssumptions)
 
-const qualFilter = useQualFilter()
+const qualificationFilter = useQualificationFilter()
 const scopedScenario = computed(() => createSeniorityScenario({
   growthAssumptions: growthAssumptions.value,
-  qualificationScope: qualFilter.qualificationScope.value,
+  qualificationScope: qualificationFilter.qualificationScope.value,
 }))
 const retirementWave = computed(() => lens.value?.retirementYearAnalysis(scopedScenario.value) ?? [])
 const waveTrajectoryResult = computed(() => projectionEndDate.value
@@ -130,15 +130,15 @@ const ready = useDeferredReady()
       <!-- Section B: Retirement & qual-filtered analysis -->
 
       <AnalyticsQualFilterBar
-        :fleet="qualFilter.selectedFleet.value"
-        :seat="qualFilter.selectedSeat.value"
-        :base="qualFilter.selectedBase.value"
-        :fleets="qualFilter.availableFleets.value"
-        :seats="qualFilter.availableSeats.value"
-        :bases="qualFilter.availableBases.value"
-        @update:fleet="qualFilter.selectedFleet.value = $event"
-        @update:seat="qualFilter.selectedSeat.value = $event"
-        @update:base="qualFilter.selectedBase.value = $event"
+        :fleet="qualificationFilter.selectedFleet.value"
+        :seat="qualificationFilter.selectedSeat.value"
+        :base="qualificationFilter.selectedBase.value"
+        :fleets="qualificationFilter.availableFleets.value"
+        :seats="qualificationFilter.availableSeats.value"
+        :bases="qualificationFilter.availableBases.value"
+        @update:fleet="qualificationFilter.selectedFleet.value = $event"
+        @update:seat="qualificationFilter.selectedSeat.value = $event"
+        @update:base="qualificationFilter.selectedBase.value = $event"
       />
 
       <AnalyticsAssumptionsBanner
@@ -156,19 +156,19 @@ const ready = useDeferredReady()
         <div class="sm:col-span-6">
           <UCard >
             <template #header>
-              <h3 class="font-semibold">Retirement Wave{{ qualFilter.qualificationLabel.value ? ` — ${qualFilter.qualificationLabel.value}` : '' }}</h3>
+              <h3 class="font-semibold">Retirement Wave{{ qualificationFilter.qualificationLabel.value ? ` — ${qualificationFilter.qualificationLabel.value}` : '' }}</h3>
             </template>
             <AnalyticsRetirementWaveChart
               :wave-buckets="retirementWave"
               :trajectory-points="waveTrajectory"
-              :qualification-scope="qualFilter.qualificationLabel.value"
+              :qualification-scope="qualificationFilter.qualificationLabel.value"
             />
           </UCard>
         </div>
         <div class="sm:col-span-5">
           <UCard >
             <template #header>
-              <h3 class="font-semibold">Percentile Threshold{{ qualFilter.qualificationLabel.value ? ` — ${qualFilter.qualificationLabel.value}` : '' }}</h3>
+              <h3 class="font-semibold">Percentile Threshold{{ qualificationFilter.qualificationLabel.value ? ` — ${qualificationFilter.qualificationLabel.value}` : '' }}</h3>
             </template>
             <AnalyticsPercentileThresholdCalculator
               :result="thresholdResult"

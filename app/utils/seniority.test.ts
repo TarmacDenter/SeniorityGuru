@@ -32,19 +32,39 @@ function assertInternalAndLegacyNamesAreExcluded() {
 void assertInternalAndLegacyNamesAreExcluded
 
 describe('supported Seniority Analysis interface', () => {
-  it('exports domain-qualified math, engine, and presentation entry points', () => {
-    expect(seniority).toEqual(expect.objectContaining({
-      calculateSeniorityRank: expect.any(Function),
-      calculateSeniorityPercentile: expect.any(Function),
-      calculateSeniorityTrajectory: expect.any(Function),
-      createSenioritySnapshot: expect.any(Function),
-      createSeniorityScenario: expect.any(Function),
-      createSeniorityLens: expect.any(Function),
-      analyzeSeniorityQualificationViewer: expect.any(Function),
-      presentSeniorityTrajectory: expect.any(Function),
-      presentRetirementCountProjection: expect.any(Function),
-      formatQualificationScope: expect.any(Function),
-    }))
+  it('exports exactly the supported domain-qualified runtime interface', () => {
+    expect(Object.keys(seniority).sort()).toEqual([
+      'AnchorNotFoundError',
+      'COMPANY_WIDE_QUALIFICATION_SCOPE',
+      'DEFAULT_SENIORITY_GROWTH_ASSUMPTIONS',
+      'InvalidSenioritySnapshotDataError',
+      'analyzeSeniorityQualificationViewer',
+      'calculateAdditionalSeniorityPilots',
+      'calculateRetirementCountProjection',
+      'calculateSeniorityPercentile',
+      'calculateSeniorityRank',
+      'calculateSeniorityTrajectory',
+      'calculateSeniorityTrajectoryComparison',
+      'calculateTrajectoryChanges',
+      'countRetiredPilotsSeniorTo',
+      'createSeniorityLens',
+      'createSeniorityScenario',
+      'createSenioritySnapshot',
+      'enumerateQualificationScopes',
+      'formatQualification',
+      'formatQualificationScope',
+      'formatSeniorityCount',
+      'formatSeniorityRankChange',
+      'generateAnnualSeniorityDates',
+      'getSeniorityEntryValues',
+      'presentAgeBucket',
+      'presentPercentileCrossing',
+      'presentQualificationPositions',
+      'presentRetirementCountProjection',
+      'presentSeniorityDemographics',
+      'presentSeniorityTrajectory',
+      'presentSeniorityTrajectoryComparison',
+    ].sort())
   })
 
   it('does not expose old aliases or internal helpers at runtime', () => {

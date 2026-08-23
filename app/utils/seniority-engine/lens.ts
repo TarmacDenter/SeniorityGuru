@@ -266,7 +266,8 @@ class AnchoredSeniorityLensImplementation implements AnchoredSeniorityLens {
       through: options.through,
       baselinePredicate: qualificationScopeToEntryPredicate(options.baselineScenario.qualificationScope),
       comparisonPredicate: qualificationScopeToEntryPredicate(options.comparisonScenario.qualificationScope),
-      growthAssumptions: options.baselineScenario.growthAssumptions,
+      baselineGrowthAssumptions: options.baselineScenario.growthAssumptions,
+      comparisonGrowthAssumptions: options.comparisonScenario.growthAssumptions,
     }))
 
     this.percentileCrossing = memoizeLast((options) => {

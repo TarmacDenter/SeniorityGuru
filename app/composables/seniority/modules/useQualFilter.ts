@@ -2,7 +2,7 @@ import type { QualificationScope } from '~/utils/seniority'
 import { formatQualificationScope, getSeniorityEntryValues } from '~/utils/seniority'
 import { useSeniorityCore } from './useSeniorityCore'
 
-export function useQualFilter() {
+export function useQualificationFilter() {
   const { entries, snapshot } = useSeniorityCore()
 
   const selectedFleet = ref<string | null>(null)

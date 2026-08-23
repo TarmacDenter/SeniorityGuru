@@ -235,7 +235,7 @@ describe('calculateSeniorityTrajectoryComparison', () => {
     expect(comparison).not.toHaveProperty('comparisonData')
   })
 
-  it('preserves the baseline Growth Assumptions for both compared scopes', () => {
+  it('applies baseline and comparison Growth Assumptions independently', () => {
     const entries = [100, 105, 110, 125].map(seniorityNumber => makeEntry({
       seniority_number: seniorityNumber,
       retire_date: '2045-01-01',
@@ -248,11 +248,12 @@ describe('calculateSeniorityTrajectoryComparison', () => {
       through: date('2031-01-01'),
       baselinePredicate: () => true,
       comparisonPredicate: () => true,
-      growthAssumptions: { enabled: true, annualGrowthRate: 0.1 },
+      baselineGrowthAssumptions: { enabled: false, annualGrowthRate: 0.1 },
+      comparisonGrowthAssumptions: { enabled: true, annualGrowthRate: 0.1 },
     })
 
     expect(comparison.points[0]).toMatchObject({ baselinePercentile: 25, comparisonPercentile: 25 })
-    expect(comparison.points.at(-1)).toMatchObject({ baselinePercentile: 50, comparisonPercentile: 50 })
+    expect(comparison.points.at(-1)).toMatchObject({ baselinePercentile: 25, comparisonPercentile: 50 })
   })
 })
 
