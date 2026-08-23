@@ -1,7 +1,9 @@
-import { defineComponent } from 'vue'
+import { computed, defineComponent } from 'vue'
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { mountSuspended, mockNuxtImport } from '@nuxt/test-utils/runtime'
 import { makeDomainEntry, makeList } from '~/test-utils/factories'
+import { createSeniorityAnalysis } from '~/utils/seniority'
+import { parsePlainDate } from '~/utils/temporal'
 
 const state = vi.hoisted(() => {
   const { ref: vRef } = require('vue')
@@ -16,7 +18,12 @@ const state = vi.hoisted(() => {
 
 vi.mock('~/composables/seniority', () => ({
   useSeniorityLists: () => ({ lists: state.lists, entriesLoading: state.entriesLoading }),
-  useSeniorityCore: () => ({ entries: state.entries, isNewHireMode: state.isNewHireMode }),
+  useSeniorityCore: () => ({
+    listAnalysis: computed(() => state.entries.value.length === 0
+      ? null
+      : createSeniorityAnalysis({ entries: state.entries.value, asOfDate: parsePlainDate('2026-06-15') })),
+    isNewHireMode: state.isNewHireMode,
+  }),
 }))
 
 mockNuxtImport('useUser', () => () => ({ employeeNumber: state.employeeNumber }))

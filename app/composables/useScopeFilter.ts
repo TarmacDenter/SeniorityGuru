@@ -1,16 +1,13 @@
-import type { SeniorityEntry } from '~/utils/schemas/seniority-list'
-import { enumerateQualificationScopes, formatQualificationScope } from '~/utils/seniority'
-import type { QualificationScope } from '~/utils/seniority'
+import type { QualificationScope, SeniorityQualificationScopeOption } from '~/utils/seniority'
 
-export function useScopeFilter(entries: Ref<readonly SeniorityEntry[]> | ComputedRef<readonly SeniorityEntry[]>) {
-  const specs = computed(() => enumerateQualificationScopes(entries.value))
+export function useScopeFilter(options: Ref<readonly SeniorityQualificationScopeOption[]> | ComputedRef<readonly SeniorityQualificationScopeOption[]>) {
 
-  const scopeOptions = computed(() => specs.value.map(formatQualificationScope))
+  const scopeOptions = computed(() => options.value.map(option => option.label))
 
   const labelToSpec = computed(() => {
     const map = new Map<string, QualificationScope>()
-    for (const spec of specs.value) {
-      map.set(formatQualificationScope(spec), spec)
+    for (const option of options.value) {
+      map.set(option.label, option.scope)
     }
     return map
   })

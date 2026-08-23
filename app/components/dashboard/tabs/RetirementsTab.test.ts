@@ -5,13 +5,13 @@ import { parsePlainDate } from '~/utils/temporal'
 
 const mockUpcomingRetirements = vi.fn()
 
-const { mockHasData, mockHasAnchor, mockLens, mockAnchoredLens } = vi.hoisted(() => {
+const { mockHasData, mockHasAnchor, mockAnalysis, mockAnchoredAnalysis } = vi.hoisted(() => {
   const { ref: vRef } = require('vue')
   return {
     mockHasData: vRef(false) as { value: boolean },
     mockHasAnchor: vRef(false) as { value: boolean },
-    mockLens: vRef(null) as { value: { upcomingRetirements: ReturnType<typeof vi.fn> } | null },
-    mockAnchoredLens: vRef(null) as { value: { upcomingRetirementsRelativeToAnchor: ReturnType<typeof vi.fn> } | null },
+    mockAnalysis: vRef(null) as { value: { upcomingRetirements: ReturnType<typeof vi.fn> } | null },
+    mockAnchoredAnalysis: vRef(null) as { value: { relativeUpcomingRetirements: ReturnType<typeof vi.fn> } | null },
   }
 })
 
@@ -20,8 +20,9 @@ const mockStoreState = { employeeNumber: null as string | null, entries: [] as u
 mockNuxtImport('useSeniorityCore', () => () => ({
   hasData: mockHasData,
   hasAnchor: mockHasAnchor,
-  lens: mockLens,
-  anchoredLens: mockAnchoredLens,
+  listAnalysis: { value: null },
+  analysis: mockAnalysis,
+  anchoredAnalysis: mockAnchoredAnalysis,
   get entries() { return { value: mockStoreState.entries } },
 }))
 
@@ -48,8 +49,8 @@ describe('RetirementsTab', () => {
   beforeEach(() => {
     mockHasData.value = false
     mockHasAnchor.value = false
-    mockLens.value = null
-    mockAnchoredLens.value = null
+    mockAnalysis.value = null
+    mockAnchoredAnalysis.value = null
     mockStoreState.employeeNumber = null
     mockStoreState.entries = []
     mockUpcomingRetirements.mockReturnValue([])
@@ -64,7 +65,7 @@ describe('RetirementsTab', () => {
 
   it('renders table rows when data is available', async () => {
     mockHasData.value = true
-    mockLens.value = { upcomingRetirements: mockUpcomingRetirements }
+    mockAnalysis.value = { upcomingRetirements: mockUpcomingRetirements }
     mockUpcomingRetirements.mockReturnValue(sampleRows)
     const Comp = await import('./RetirementsTab.vue')
     const wrapper = await mountSuspended(Comp.default)
@@ -74,7 +75,7 @@ describe('RetirementsTab', () => {
 
   it('calls upcomingRetirements with a two-year through date', async () => {
     mockHasData.value = true
-    mockLens.value = { upcomingRetirements: mockUpcomingRetirements }
+    mockAnalysis.value = { upcomingRetirements: mockUpcomingRetirements }
     mockUpcomingRetirements.mockReturnValue([])
     const Comp = await import('./RetirementsTab.vue')
     await mountSuspended(Comp.default)
@@ -88,7 +89,7 @@ describe('RetirementsTab', () => {
 
   it('shows employee number prompt when no employee number is set', async () => {
     mockHasData.value = true
-    mockLens.value = { upcomingRetirements: mockUpcomingRetirements }
+    mockAnalysis.value = { upcomingRetirements: mockUpcomingRetirements }
     mockStoreState.employeeNumber = null
     const Comp = await import('./RetirementsTab.vue')
     const wrapper = await mountSuspended(Comp.default)

@@ -110,6 +110,19 @@ export class InvalidSenioritySnapshotDataError extends Error {
   }
 }
 
+/** Validates entry invariants without building analysis indexes. */
+export function assertValidSeniorityAnalysisEntries(entries: readonly SeniorityEntry[]): void {
+  const issue = validateSnapshotEntryIssues(entries)[0]
+  if (issue) {
+    throw new InvalidSenioritySnapshotDataError(`${issue.message}.`, entries[issue.rowIndex])
+  }
+  for (const entry of entries) {
+    if (!entry.base || !entry.seat || !entry.fleet) {
+      throw new InvalidSenioritySnapshotDataError('Entry is missing required Qualification data (base/seat/fleet).', entry)
+    }
+  }
+}
+
 /**
  * Indexes validated seniority entries for repeatable organization analysis.
  *
@@ -120,16 +133,7 @@ export class InvalidSenioritySnapshotDataError extends Error {
  * @throws {InvalidSenioritySnapshotDataError} When an invariant is not satisfied.
  */
 export function createSenioritySnapshot(entries: readonly SeniorityEntry[]): SenioritySnapshot {
-  const duplicateIssues = validateSnapshotEntryIssues(entries)
-  if (duplicateIssues.length > 0) {
-    const issue = duplicateIssues[0]!
-    throw new InvalidSenioritySnapshotDataError(`${issue.message}.`, entries[issue.rowIndex])
-  }
-
-  for (const e of entries) {
-    if (!e.base || !e.seat || !e.fleet)
-      throw new InvalidSenioritySnapshotDataError(`Entry is missing required Qualification data (base/seat/fleet).`, e)
-  }
+  assertValidSeniorityAnalysisEntries(entries)
 
   const entriesBySeniority = entries
     .toSorted((a, b) => a.seniority_number - b.seniority_number)

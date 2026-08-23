@@ -5,7 +5,7 @@ import type { RelativeUpcomingRetirement, UpcomingRetirement } from '~/utils/sen
 import { addYearsDate } from '~/utils/date'
 import { Temporal, todayPlainDate } from '~/utils/temporal'
 
-const { lens, anchoredLens, hasData, hasAnchor, entries } = useSeniorityCore()
+const { listAnalysis, analysis, anchoredAnalysis, hasData, hasAnchor } = useSeniorityCore()
 
 // ── Filter state ────────────────────────────────────────────────────────────
 const yearsHorizon = ref<1 | 2 | 3 | 5 | number>(2)
@@ -31,15 +31,9 @@ function toggleSort(key: SortKey) {
 }
 
 // ── Qualification options ─────────────────────────────────────────────────────────────
-const availableBases = computed(() =>
-  [...new Set(entries.value.map(e => e.base).filter(Boolean) as string[])].sort(),
-)
-const availableSeats = computed(() =>
-  [...new Set(entries.value.map(e => e.seat).filter(Boolean) as string[])].sort(),
-)
-const availableFleets = computed(() =>
-  [...new Set(entries.value.map(e => e.fleet).filter(Boolean) as string[])].sort(),
-)
+const availableBases = computed(() => listAnalysis.value?.catalog.bases ?? [])
+const availableSeats = computed(() => listAnalysis.value?.catalog.seats ?? [])
+const availableFleets = computed(() => listAnalysis.value?.catalog.fleets ?? [])
 
 type SelectItem = { label: string; value: string | null }
 const baseItems = computed<SelectItem[]>(() => [
@@ -59,7 +53,7 @@ const fleetItems = computed<SelectItem[]>(() => [
 type RetirementRow = UpcomingRetirement | RelativeUpcomingRetirement
 
 const rows = computed((): RetirementRow[] => {
-  if (!hasData.value || !lens.value) return []
+  if (!hasData.value || !analysis.value) return []
 
   const filter = {
     through: addYearsDate(todayPlainDate(), yearsHorizon.value),
@@ -69,9 +63,9 @@ const rows = computed((): RetirementRow[] => {
       ...(filterFleet.value && { fleet: filterFleet.value }),
     },
   }
-  const raw = anchoredLens.value
-    ? anchoredLens.value.relativeUpcomingRetirements({ ...filter, seniorOnly: seniorOnly.value })
-    : lens.value.upcomingRetirements(filter)
+  const raw = anchoredAnalysis.value
+    ? anchoredAnalysis.value.relativeUpcomingRetirements({ ...filter, seniorOnly: seniorOnly.value })
+    : analysis.value.upcomingRetirements(filter)
 
   return [...raw].sort((a, b) => {
     let cmp = 0

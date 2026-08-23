@@ -1,11 +1,10 @@
 <script setup lang="ts">
 import type { ChartData, TooltipItem } from 'chart.js'
 import { formatMonthYear, formatYear } from '~/utils/date'
-import type { QualificationScope } from '~/utils/seniority'
-import type { SeniorityEntry } from '~/utils/schemas/seniority-list'
+import type { QualificationScope, SeniorityQualificationScopeOption } from '~/utils/seniority'
 
 const props = defineProps<{
-  entries: readonly SeniorityEntry[]
+  qualificationScopeOptions: readonly SeniorityQualificationScopeOption[]
   computeComparative: (
     specA: QualificationScope,
     specB: QualificationScope
@@ -16,8 +15,8 @@ const props = defineProps<{
 }>()
 
 const { colors } = useChartTheme()
-const entriesRef = computed(() => props.entries)
-const { scopeOptions, specForLabel } = useScopeFilter(entriesRef)
+const qualificationScopeOptions = computed(() => props.qualificationScopeOptions)
+const { scopeOptions, specForLabel } = useScopeFilter(qualificationScopeOptions)
 
 const defaultScope = computed(() => {
   if (props.userBase && props.userSeat && props.userFleet) {

@@ -25,6 +25,8 @@ Component → composable → store → Dexie
 - `app/utils/seniority-analysis/math.ts` and `growth.ts` contain deterministic calculations with explicit inputs.
 - `app/utils/seniority-engine/` owns snapshots, lenses, As-of Dates, scenarios, scope, memoization, and contextual analysis.
 - `app/utils/seniority-analysis/presentation.ts` maps completed domain results to labels and component-facing values.
+- `app/utils/seniority.ts` is the supported deep public interface. It binds entries and an As-of Date, hides engine construction, and returns completed domain and presentation values.
+- Components and composables do not construct snapshots, lenses, or scenarios. They do not call free presentation adapters.
 - Seniority analysis follows `math → engine → presentation`. These layers receive validated `SeniorityEntry` values and do not access stores or Dexie.
 - Zod schemas in `app/utils/schemas/` validate data at the upload boundary. Downstream code uses the validated domain types.
 

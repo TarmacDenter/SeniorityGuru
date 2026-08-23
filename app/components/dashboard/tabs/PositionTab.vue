@@ -2,11 +2,11 @@
 import { useSeniorityCore } from '~/composables/seniority'
 import { addYearsDate, diffDateYears } from '~/utils/date'
 import { todayPlainDate } from '~/utils/temporal'
-import { DEFAULT_SENIORITY_GROWTH_ASSUMPTIONS, presentQualificationPositions, type GrowthAssumptions } from '~/utils/seniority'
+import { DEFAULT_SENIORITY_GROWTH_ASSUMPTIONS, type GrowthAssumptions } from '~/utils/seniority'
 
 defineProps<{ loading?: boolean }>()
 
-const { hasData, newHire, anchoredLens, projectionEndDate } = useSeniorityCore()
+const { hasData, newHire, anchoredAnalysis, projectionEndDate } = useSeniorityCore()
 const { employeeNumber } = useUser()
 const hasEmployeeNumber = computed(() => !!employeeNumber.value || !!newHire.syntheticEntry.value)
 
@@ -15,12 +15,12 @@ const usePositionProjection = ref(false)
 const positionYearsInput = ref(1)
 const projectionYears = ref(0)
 const projectionDate = computed(() => addYearsDate(todayPlainDate(), projectionYears.value))
-const qualificationPositions = computed(() => presentQualificationPositions(
-  anchoredLens.value?.qualificationPositions({
+const qualificationPositions = computed(() =>
+  [...(anchoredAnalysis.value?.qualificationPositions({
     through: projectionDate.value,
     growthAssumptions: growthAssumptions.value,
-  }) ?? [],
-))
+  }).presentation ?? [])],
+)
 
 const hasProjection = computed(() =>
   qualificationPositions.value.some(

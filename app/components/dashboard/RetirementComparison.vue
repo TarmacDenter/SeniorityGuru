@@ -1,16 +1,15 @@
 <script setup lang="ts">
 import type { ChartData } from 'chart.js'
-import type { QualificationScope } from '~/utils/seniority'
-import type { SeniorityEntry } from '~/utils/schemas/seniority-list'
+import type { QualificationScope, SeniorityQualificationScopeOption } from '~/utils/seniority'
 
 const props = defineProps<{
-  entries: readonly SeniorityEntry[]
+  qualificationScopeOptions: readonly SeniorityQualificationScopeOption[]
   computeProjection: (scope: QualificationScope) => { labels: string[]; data: number[]; scopedPilotCount: number }
 }>()
 
 const { colors } = useChartTheme()
-const entriesRef = computed(() => props.entries)
-const { scopeOptions, specForLabel } = useScopeFilter(entriesRef)
+const qualificationScopeOptions = computed(() => props.qualificationScopeOptions)
+const { scopeOptions, specForLabel } = useScopeFilter(qualificationScopeOptions)
 
 const currentScope = ref('Company-wide')
 const compareScope = ref('')

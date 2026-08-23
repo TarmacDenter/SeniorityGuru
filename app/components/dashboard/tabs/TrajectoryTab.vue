@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { useSeniorityCore, useQualificationFilter, useStanding, useTrajectory } from '~/composables/seniority'
-import { DEFAULT_SENIORITY_GROWTH_ASSUMPTIONS, createSeniorityScenario, presentPercentileCrossing, presentSeniorityTrajectory, type GrowthAssumptions } from '~/utils/seniority'
+import { DEFAULT_SENIORITY_GROWTH_ASSUMPTIONS, type GrowthAssumptions } from '~/utils/seniority'
 
 defineProps<{ loading?: boolean }>()
 
-const { hasData, hasAnchor, entries, lens, anchoredLens, projectionEndDate } = useSeniorityCore()
+const { hasData, hasAnchor, analysis, anchoredAnalysis, projectionEndDate } = useSeniorityCore()
 
 const growthAssumptions = ref<GrowthAssumptions>({ ...DEFAULT_SENIORITY_GROWTH_ASSUMPTIONS })
 
@@ -17,18 +17,17 @@ const {
 } = useTrajectory(growthAssumptions)
 
 const qualificationFilter = useQualificationFilter()
-const scopedScenario = computed(() => createSeniorityScenario({
+const scopedScenario = computed(() => ({
   growthAssumptions: growthAssumptions.value,
   qualificationScope: qualificationFilter.qualificationScope.value,
 }))
-const retirementWave = computed(() => lens.value?.retirementYearAnalysis(scopedScenario.value) ?? [])
-const waveTrajectoryResult = computed(() => projectionEndDate.value
-  ? anchoredLens.value?.seniorityTrajectory({ through: projectionEndDate.value, scenario: scopedScenario.value }) ?? null
+const retirementWave = computed(() => analysis.value?.retirementYearAnalysis(scopedScenario.value) ?? [])
+const qualificationScopeOptions = computed(() => analysis.value?.catalog?.qualificationScopeOptions ?? [])
+const waveTrajectoryOutput = computed(() => projectionEndDate.value
+  ? anchoredAnalysis.value?.seniorityTrajectory({ through: projectionEndDate.value, scenario: scopedScenario.value }) ?? null
   : null)
-const waveTrajectory = computed(() => waveTrajectoryResult.value?.points ?? [])
-const qualificationTrajectoryChanges = computed(() => waveTrajectoryResult.value
-  ? presentSeniorityTrajectory(waveTrajectoryResult.value).changes
-  : [])
+const waveTrajectory = computed(() => waveTrajectoryOutput.value?.domain.points ?? [])
+const qualificationTrajectoryChanges = computed(() => waveTrajectoryOutput.value?.presentation.changes ?? [])
 const targetPercentile = ref(50)
 const targetPercentileMin = computed(() => waveTrajectory.value[0]?.percentile ?? 0)
 const targetPercentileMax = computed(() => {
@@ -41,13 +40,13 @@ watch([targetPercentileMin, targetPercentileMax], ([min, max]) => {
   targetPercentile.value = Math.min(Math.max(targetPercentile.value, min), max)
 }, { immediate: true })
 
-const thresholdResult = computed(() => presentPercentileCrossing(projectionEndDate.value
-  ? anchoredLens.value?.percentileCrossing({
+const thresholdResult = computed(() => projectionEndDate.value
+  ? anchoredAnalysis.value?.percentileCrossing({
     targetPercentile: targetPercentile.value,
     through: projectionEndDate.value,
     scenario: scopedScenario.value,
-  }) ?? null
-  : null))
+  }).presentation ?? null
+  : null)
 const bannerKey = 'qual-projections-banner-dismissed'
 const isBannerDismissed = ref(typeof localStorage !== 'undefined' && localStorage.getItem(bannerKey) === 'true')
 
@@ -120,7 +119,7 @@ const ready = useDeferredReady()
       <!-- Seniority Comparison (dual-scope trajectory lines) -->
       <DashboardSeniorityComparison
         v-if="hasAnchor"
-        :entries="entries"
+        :qualification-scope-options="qualificationScopeOptions"
         :compute-comparative="computeComparativeTrajectory"
         :user-base="rankCard.base"
         :user-seat="rankCard.seat"
@@ -184,7 +183,7 @@ const ready = useDeferredReady()
 
       <!-- Retirement Comparison (dual-scope) -->
       <DashboardRetirementComparison
-        :entries="entries"
+        :qualification-scope-options="qualificationScopeOptions"
         :compute-projection="computeRetirementProjection"
       />
 

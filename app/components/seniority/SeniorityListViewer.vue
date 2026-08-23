@@ -4,29 +4,20 @@ import { useMediaQuery } from '@vueuse/core'
 import { getPaginationRowModel } from '@tanstack/vue-table'
 import type { Row, Table } from '@tanstack/vue-table'
 import type { TableColumn } from '@nuxt/ui'
-import type { QualificationScope, QualificationViewerEntry } from '~/utils/seniority'
-import { analyzeSeniorityQualificationViewer } from '~/utils/seniority'
-import { diffYears } from '~/utils/date'
-import { todayPlainDate } from '~/utils/temporal'
-import { normalizeEmployeeNumber } from '~/utils/schemas/seniority-list'
+import type { PresentedQualificationViewerAnalysis, PresentedQualificationViewerEntry, QualificationScope } from '~/utils/seniority'
 import { useSeniorityCore, useSeniorityLists } from '~/composables/seniority'
 
 const props = defineProps<{ loading?: boolean }>()
 
-type RetirementTimeline = 'past' | 'imminent' | 'soon' | null
-type SeniorityRow = QualificationViewerEntry & { _retirementTimeline: RetirementTimeline }
+type SeniorityRow = PresentedQualificationViewerEntry
 const COMPANY_WIDE_VALUE = '__company_wide__'
 
-function retirementTimeline(today: string, retireDate: string): RetirementTimeline {
-  const days = diffYears(today, retireDate) * 365.25
-  if (days < 0) return 'past'
-  if (days <= 180) return 'imminent'
-  if (days <= 365) return 'soon'
-  return null
+function qualificationOptionKey(qualification: QualificationScope): string {
+  return JSON.stringify([qualification.base, qualification.seat, qualification.fleet])
 }
 
 const { lists, entriesLoading } = useSeniorityLists()
-const { entries, isNewHireMode } = useSeniorityCore()
+const { listAnalysis, isNewHireMode } = useSeniorityCore()
 const { employeeNumber } = useUser()
 const table = useTemplateRef<{ tableApi: Table<SeniorityRow> }>('table')
 const isMobile = useMediaQuery('(max-width: 639px)')
@@ -37,19 +28,12 @@ const insertSelf = ref(false)
 const isLoading = computed(() => !!props.loading || entriesLoading.value)
 
 const qualOptions = computed(() => {
-  const seen = new Set<string>()
-  const options = entries.value
-    .toSorted((a, b) => a.seniority_number - b.seniority_number)
-    .filter((entry) => {
-      const key = `${entry.base}|${entry.fleet}|${entry.seat}`
-      if (seen.has(key)) return false
-      seen.add(key)
-      return true
-    })
-    .map(entry => ({
-      label: `${entry.base}-${entry.fleet}-${entry.seat}`,
-      value: JSON.stringify([entry.base, entry.seat, entry.fleet]),
-      qualificationScope: { base: entry.base, fleet: entry.fleet, seat: entry.seat },
+  const options = (listAnalysis.value?.catalog.qualificationScopeOptions ?? [])
+    .filter(option => option.scope.base && option.scope.fleet && option.scope.seat)
+    .map(option => ({
+      label: `${option.scope.base}-${option.scope.fleet}-${option.scope.seat}`,
+      value: qualificationOptionKey(option.scope),
+      qualificationScope: option.scope,
     }))
   return [{ label: 'Company-wide', value: COMPANY_WIDE_VALUE, qualificationScope: {} }, ...options]
 })
@@ -59,20 +43,28 @@ const qualificationScope = computed<QualificationScope>(() => {
   return qualOptions.value.find(option => option.value === selectedQualKey.value)?.qualificationScope ?? {}
 })
 const isQualMode = computed(() => Object.keys(qualificationScope.value).length === 3)
-const anchorFound = computed(() => {
-  if (!employeeNumber.value) return false
-  const normalized = normalizeEmployeeNumber(employeeNumber.value)
-  return entries.value.some(e => normalizeEmployeeNumber(e.employee_number) === normalized)
+const qualificationOutput = computed(() => listAnalysis.value?.qualificationViewer({
+  qualificationScope: qualificationScope.value,
+  employeeNumber: employeeNumber.value,
+  insertSelf: insertSelf.value && !isNewHireMode.value,
+}) ?? null)
+const projected = computed<PresentedQualificationViewerAnalysis>(() => qualificationOutput.value?.presentation ?? {
+  entries: [],
+  totalEntryCount: 0,
+  activeEntryCount: 0,
+  qualificationScope: {},
+  canInsert: false,
+  anchorFound: false,
 })
-const canInsert = computed(() => anchorFound.value && !isNewHireMode.value)
+const canInsert = computed(() => (qualificationOutput.value?.domain.canInsert ?? false) && !isNewHireMode.value)
 const insertDisabledReason = computed(() => {
   if (isNewHireMode.value) return 'Insert yourself is unavailable in New Hire Mode.'
   if (!employeeNumber.value) return 'Enter your employee number to enable Insert yourself.'
-  if (!anchorFound.value) return 'Your employee number is not present in this selected list.'
+  if (!qualificationOutput.value?.domain.anchorFound) return 'Your employee number is not present in this selected list.'
   return ''
 })
 
-watch(entries, () => {
+watch(listAnalysis, () => {
   if (selectedQualKey.value && !qualOptions.value.some(option => option.value === selectedQualKey.value)) selectedQualKey.value = ''
   pagination.value.pageIndex = 0
 })
@@ -85,18 +77,7 @@ watch(globalFilter, (value) => {
   pagination.value.pageIndex = 0
 })
 
-const projected = computed(() => analyzeSeniorityQualificationViewer({
-  entries: entries.value,
-  qualificationScope: qualificationScope.value,
-  employeeNumber: employeeNumber.value,
-  insertSelf: insertSelf.value && canInsert.value,
-  asOfDate: todayPlainDate(),
-}))
-
-const tableData = computed<SeniorityRow[]>(() => projected.value.entries.map(row => ({
-  ...row,
-  _retirementTimeline: retirementTimeline(todayPlainDate().toString(), row.retirementDate?.toString() ?? todayPlainDate().toString()),
-})))
+const tableData = computed<SeniorityRow[]>(() => [...projected.value.entries])
 
 const columnVisibility = computed(() => ({
   expand: isMobile.value,
@@ -144,8 +125,8 @@ const tableMeta = {
       row.original.isAnchor ? 'bg-primary/10' : '',
       row.original.isMarker ? 'ring-1 ring-inset ring-primary' : '',
       row.original.status === 'retired' ? 'bg-past/10 text-muted' : '',
-      row.original._retirementTimeline === 'imminent' ? 'bg-imminent/10' : '',
-      row.original._retirementTimeline === 'soon' ? 'bg-soon/10' : '',
+      row.original.retirementTimeline === 'imminent' ? 'bg-imminent/10' : '',
+      row.original.retirementTimeline === 'soon' ? 'bg-soon/10' : '',
     ].join(' ').trim(),
   },
 }

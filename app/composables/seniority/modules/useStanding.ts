@@ -1,5 +1,4 @@
 import type { ComputedRef } from 'vue'
-import { formatQualification, formatSeniorityCount } from '~/utils/seniority'
 import { useSeniorityStore } from '~/stores/seniority'
 import { useSeniorityCore } from './useSeniorityCore'
 
@@ -35,8 +34,8 @@ export interface StatCard {
 }
 
 export interface RetirementSnapshotData {
-  atRetirement: { date: string; rank: number; percentile: number }
-  fullTrajectory: { date: string; rank: number; percentile: number }[]
+  atRetirement: { date: string; rank: number; percentile: number; rankDelta: string }
+  fullTrajectory: { date: string; rank: number; percentile: number; rankDelta: string }[]
   retireDate: string
 }
 
@@ -46,10 +45,11 @@ export function useStanding(): {
   statCards: ComputedRef<StatCard[]>
   retirementSnapshot: ComputedRef<RetirementSnapshotData | null>
 } {
-  const { lens, anchoredLens, userEntry, projectionEndDate } = useSeniorityCore()
+  const { analysis, anchoredAnalysis, userEntry, projectionEndDate } = useSeniorityCore()
   const seniorityStore = useSeniorityStore()
 
-  const standingResult = computed(() => anchoredLens.value?.seniorityStanding() ?? null)
+  const standingOutput = computed(() => anchoredAnalysis.value?.seniorityStanding() ?? null)
+  const standingResult = computed(() => standingOutput.value?.domain ?? null)
 
   const rankCard = computed<RankCardData>(() => {
     const entry = userEntry.value
@@ -102,28 +102,29 @@ export function useStanding(): {
     let baseRankValue = '--'
     let baseRankLabel = 'Your Base Rank'
     if (standing && entry?.base && entry?.seat && entry?.fleet) {
-      const userQualification = standing.qualificationStandings.find(
+      const userQualification = standingOutput.value?.presentation.qualificationStandings.find(
         item => item.qualification.base === entry.base
           && item.qualification.seat === entry.seat
           && item.qualification.fleet === entry.fleet,
       )
       if (userQualification) {
-        baseRankValue = formatSeniorityCount(userQualification.activeRank)
-        baseRankLabel = formatQualification({ base: entry.base, seat: entry.seat, fleet: entry.fleet })
+        baseRankValue = userQualification.activeRank.toLocaleString()
+        baseRankLabel = userQualification.qualificationLabel
       }
     }
 
     return [
       {
         label: 'Total Pilots',
-        value: formatSeniorityCount(entries.length),
+        value: entries.length.toLocaleString(),
         icon: 'i-lucide-users',
       },
       {
         label: 'Retirements (Next 12 mo.)',
-        value: formatSeniorityCount(lens.value?.retirementsNext12Months() ?? 0),
+        value: standingOutput.value?.presentation.rollingNext12MonthRetirementsLabel
+          ?? (analysis.value?.retirementsNext12Months() ?? 0).toLocaleString(),
         trend: entry && standing
-          ? `${formatSeniorityCount(standing.rollingNext12MonthRetirementsSeniorToAnchor)} senior to you`
+          ? `${standing.rollingNext12MonthRetirementsSeniorToAnchor.toLocaleString()} senior to you`
           : undefined,
         trendUp: (standing?.rollingNext12MonthRetirementsSeniorToAnchor ?? 0) > 0 || undefined,
         icon: 'i-lucide-calendar-clock',
@@ -135,23 +136,32 @@ export function useStanding(): {
       },
       {
         label: 'Lists Uploaded',
-        value: formatSeniorityCount(lists.length),
+        value: lists.length.toLocaleString(),
         icon: 'i-lucide-file-text',
       },
     ]
   })
 
   const trajectoryResult = computed(() => projectionEndDate.value
-    ? anchoredLens.value?.seniorityTrajectory({ through: projectionEndDate.value }) ?? null
+    ? anchoredAnalysis.value?.seniorityTrajectory({ through: projectionEndDate.value }).domain ?? null
     : null)
 
   const retirementSnapshot = computed<RetirementSnapshotData | null>(() => {
     const entry = userEntry.value
     const traj = trajectoryResult.value
     if (!entry?.retire_date || !traj || traj.points.length === 0) return null
+    const fullTrajectory = traj.points.map((point, index, points) => {
+      const previous = points[index - 1]
+      const delta = previous ? point.rank - previous.rank : 0
+      return {
+        ...point,
+        date: point.date.toString(),
+        rankDelta: delta === 0 ? '--' : delta > 0 ? `+${delta}` : String(delta),
+      }
+    })
     return {
-      atRetirement: { ...traj.points[traj.points.length - 1]!, date: traj.points[traj.points.length - 1]!.date.toString() },
-      fullTrajectory: traj.points.map(point => ({ ...point, date: point.date.toString() })),
+      atRetirement: fullTrajectory[fullTrajectory.length - 1]!,
+      fullTrajectory,
       retireDate: entry.retire_date.toString(),
     }
   })

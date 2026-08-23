@@ -5,12 +5,13 @@ import type {
   PercentileCrossingResult,
   QualificationPosition,
   SeniorityDemographics,
-} from '~/utils/seniority'
+} from '~/utils/seniority-engine/types'
 import {
   formatQualification,
   formatQualificationScope,
   formatSeniorityCount,
   formatSeniorityRankChange,
+  presentAnchoredSeniorityDemographics,
   presentAgeBucket,
   presentPercentileCrossing,
   presentQualificationPositions,
@@ -176,6 +177,7 @@ describe('seniority presentation', () => {
         seniorityNumber: 125,
         hireDate: date('2012-04-05'),
         yos: 13.75,
+        modeledHoldable: false,
       }],
     })
   })
@@ -212,5 +214,39 @@ describe('seniority presentation', () => {
       projectedPercentile: 61,
       modeledHoldable: true,
     }])
+  })
+
+  it('joins modeled Holdable state into a completed anchored demographics presentation', () => {
+    const demographics: SeniorityDemographics = {
+      ageDistribution: { buckets: [], unknownAgePilotCount: 0 },
+      yearsOfServiceDistribution: { entryFloor: 0, p10: 0, p25: 0, median: 0, p75: 0, p90: 0, maximum: 0 },
+      yearsOfServiceBuckets: [],
+      qualificationComposition: [],
+      captainQualificationThresholds: [{
+        qualification: { base: 'JFK', seat: 'CA', fleet: '737' },
+        seniorityNumber: 125,
+        hireDate: date('2012-04-05'),
+        yearsOfService: 13.75,
+      }],
+    }
+    const positions: QualificationPosition[] = [{
+      distribution: {
+        qualification: { base: 'JFK', seat: 'CA', fleet: '737' },
+        activePilotCount: 12,
+        thresholdPercentile: 36,
+        thresholdSeniorityNumber: 125,
+        percentile25: 25,
+        medianPercentile: 50,
+        percentile75: 75,
+        maximumPercentile: 98,
+        percentileDensity: [],
+      },
+      currentPercentile: 42,
+      projectedPercentile: 61,
+      modeledHoldable: true,
+    }]
+
+    expect(presentAnchoredSeniorityDemographics(demographics, positions)
+      .captainQualificationThresholds[0]?.modeledHoldable).toBe(true)
   })
 })

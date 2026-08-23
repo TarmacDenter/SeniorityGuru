@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
-import { DEFAULT_SENIORITY_GROWTH_ASSUMPTIONS } from '~/utils/seniority'
+import { DEFAULT_SENIORITY_GROWTH_ASSUMPTIONS } from '~/utils/seniority-analysis/growth'
 import { createSeniorityScenario } from './scenario'
 
 describe('createSeniorityScenario', () => {

@@ -83,7 +83,7 @@ describe('_useConfirm', () => {
     expect(error.value).toBe('DB full')
   })
 
-  it('rejects with snapshot error and does not call store when entries have duplicate seniority numbers', async () => {
+  it('rejects invalid analysis data and does not call store when entries have duplicate seniority numbers', async () => {
     const error = ref<string | null>(null)
     const confirm = _useConfirm(createUploadSession({ error }))
     confirm.effectiveDate.value = { toString: () => '2025-01-01' } as never
@@ -98,7 +98,7 @@ describe('_useConfirm', () => {
     expect(mockStore.addList).not.toHaveBeenCalled()
   })
 
-  it('rejects with snapshot error and does not call store when entries have duplicate employee numbers', async () => {
+  it('rejects invalid analysis data and does not call store when entries have duplicate employee numbers', async () => {
     const error = ref<string | null>(null)
     const confirm = _useConfirm(createUploadSession({ error }))
     confirm.effectiveDate.value = { toString: () => '2025-01-01' } as never

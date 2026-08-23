@@ -19,7 +19,7 @@ beforeEach(() => {
 })
 
 describe('useTrajectory', () => {
-  it('returns empty chartData when lens is null', () => {
+  it('returns empty chartData when analysis is null', () => {
     const { chartData } = useTrajectory()
     expect(chartData.value).toEqual({ labels: [], data: [] })
   })
@@ -68,7 +68,7 @@ describe('useTrajectory', () => {
     expect(change).toHaveProperty('isPeak')
   })
 
-  it('computeRetirementProjection delegates to lens with scoped scenario', () => {
+  it('computeRetirementProjection uses the analysis presentation with a scoped scenario', () => {
     mockStore.entries = [
       makeEntry({ seniority_number: 1, employee_number: 'E1', base: 'JFK', seat: 'CA', fleet: '737', retire_date: '2030-06-15' }),
       makeEntry({ seniority_number: 2, employee_number: 'E2', base: 'JFK', seat: 'FO', fleet: '737', retire_date: '2035-06-15' }),
@@ -91,13 +91,13 @@ describe('useTrajectory', () => {
     expect(filtered.scopedPilotCount).toBeLessThanOrEqual(result.scopedPilotCount)
   })
 
-  it('computeRetirementProjection returns empty when lens is null', () => {
+  it('computeRetirementProjection returns empty when analysis is null', () => {
     const { computeRetirementProjection } = useTrajectory()
     const result = computeRetirementProjection()
     expect(result).toEqual({ labels: [], data: [], scopedPilotCount: 0 })
   })
 
-  it('computeComparativeTrajectory delegates to lens with two scoped scenarios', () => {
+  it('computeComparativeTrajectory uses the analysis presentation with two scoped scenarios', () => {
     mockStore.entries = [
       makeEntry({ seniority_number: 1, employee_number: 'E1', base: 'JFK', seat: 'CA', fleet: '737', retire_date: '2030-06-15' }),
       makeEntry({ seniority_number: 2, employee_number: 'E2', base: 'JFK', seat: 'FO', fleet: '737', retire_date: '2035-06-15' }),
@@ -117,7 +117,7 @@ describe('useTrajectory', () => {
     expect(result.labels.length).toBe(result.comparisonData.length)
   })
 
-  it('computeComparativeTrajectory returns empty when lens is null', () => {
+  it('computeComparativeTrajectory returns empty when analysis is null', () => {
     const { computeComparativeTrajectory } = useTrajectory()
     const result = computeComparativeTrajectory({ seat: 'CA' }, { base: 'JFK' })
     expect(result).toEqual({ labels: [], baselineData: [], comparisonData: [] })

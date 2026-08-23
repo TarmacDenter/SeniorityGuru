@@ -1,15 +1,11 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
 import { makeDomainEntry as makeEntry } from '~/test-utils/factories'
-import {
-  AnchorNotFoundError,
-  createSeniorityLens,
-  createSeniorityScenario,
-  createSenioritySnapshot,
-  type AnchoredSeniorityLens,
-  type SeniorityLens,
-} from '~/utils/seniority'
 import { Temporal } from '~/utils/temporal'
+import { AnchorNotFoundError, createSeniorityLens } from './lens'
+import { createSeniorityScenario } from './scenario'
+import { createSenioritySnapshot } from './snapshot'
+import type { AnchoredSeniorityLens, SeniorityLens } from './types'
 
 const asOfDate = Temporal.PlainDate.from('2026-06-15')
 const through = Temporal.PlainDate.from('2050-06-15')

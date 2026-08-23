@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
-import type { PresentedQualificationPosition } from './seniority'
+import type { PresentedQualificationPosition } from './seniority-analysis/presentation'
 import { sortQualificationPositions } from './qualification-order'
 
 function position(overrides: Partial<PresentedQualificationPosition>): PresentedQualificationPosition {

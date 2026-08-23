@@ -6,10 +6,10 @@ vi.mock('~/components/dashboard/GrowthBar.vue', () => ({
   default: { template: '<div />' },
 }))
 
-const { mockAnchoredLens, mockHasData } = vi.hoisted(() => {
+const { mockAnchoredAnalysis, mockHasData } = vi.hoisted(() => {
   const { ref: vRef } = require('vue')
   return {
-    mockAnchoredLens: vRef(null) as { value: { qualificationPositions: () => unknown[] } | null },
+    mockAnchoredAnalysis: vRef(null) as { value: { qualificationPositions: () => { domain: unknown[]; presentation: unknown[] } } | null },
     mockHasData: vRef(false),
   }
 })
@@ -31,9 +31,8 @@ mockNuxtImport('useSeniorityCore', () => () => ({
     birthDate: { value: null },
     reset: vi.fn(),
   },
-  snapshot: { value: null },
-  lens: { value: null },
-  anchoredLens: mockAnchoredLens,
+  analysis: { value: null },
+  anchoredAnalysis: mockAnchoredAnalysis,
   userEntry: { value: undefined },
   hasAnchor: { value: false },
   isNewHireMode: { value: false },
@@ -60,10 +59,11 @@ describe('PositionTab', () => {
 
   it('renders anchored qualification-scale holdability states', async () => {
     mockHasData.value = true
-    mockAnchoredLens.value = {
-      qualificationPositions: () => [
-        {
-          distribution: {
+    mockAnchoredAnalysis.value = {
+      qualificationPositions: () => ({
+        domain: [],
+        presentation: [
+          {
             qualification: { fleet: '737', seat: 'CA', base: 'JFK' },
             activePilotCount: 1,
             thresholdPercentile: 60,
@@ -73,13 +73,11 @@ describe('PositionTab', () => {
             percentile75: 75,
             maximumPercentile: 100,
             percentileDensity: [],
+            projectedPercentile: 70,
+            currentPercentile: 60,
+            modeledHoldable: true,
           },
-          projectedPercentile: 70,
-          currentPercentile: 60,
-          modeledHoldable: true,
-        },
-        {
-          distribution: {
+          {
             qualification: { fleet: '737', seat: 'FO', base: 'JFK' },
             activePilotCount: 1,
             thresholdPercentile: 60,
@@ -89,12 +87,12 @@ describe('PositionTab', () => {
             percentile75: 75,
             maximumPercentile: 100,
             percentileDensity: [],
+            projectedPercentile: 50,
+            currentPercentile: 40,
+            modeledHoldable: false,
           },
-          projectedPercentile: 50,
-          currentPercentile: 40,
-          modeledHoldable: false,
-        },
-      ],
+        ],
+      }),
     }
     const Tab = await import('./PositionTab.vue')
     const wrapper = await mountSuspended(Tab.default)

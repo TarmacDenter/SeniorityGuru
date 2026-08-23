@@ -4,14 +4,48 @@ import type {
   QualificationPosition,
   QualificationScope,
   SeniorityDemographics,
+  SeniorityStanding,
 } from '~/utils/seniority-engine/types'
+import type { QualificationViewerAnalysis, QualificationViewerEntry } from '~/utils/seniority-engine/qual-viewer'
+import type { PlainDate } from '~/utils/temporal'
 import type {
   RetirementCountProjection,
   SeniorityTrajectory,
   SeniorityTrajectoryComparison,
   TrajectoryChange,
 } from './math'
-import { formatMonthYear } from '~/utils/date'
+import { diffYears, formatMonthYear } from '~/utils/date'
+
+export type QualificationViewerRetirementTimeline = 'past' | 'imminent' | 'soon' | null
+
+export interface PresentedQualificationViewerEntry extends QualificationViewerEntry {
+  readonly retirementTimeline: QualificationViewerRetirementTimeline
+}
+
+export interface PresentedQualificationViewerAnalysis extends Omit<QualificationViewerAnalysis, 'entries'> {
+  readonly entries: readonly PresentedQualificationViewerEntry[]
+}
+
+export function presentSeniorityQualificationViewer(
+  analysis: QualificationViewerAnalysis,
+  asOfDate: PlainDate,
+): PresentedQualificationViewerAnalysis {
+  return {
+    ...analysis,
+    entries: analysis.entries.map((entry) => {
+      if (!entry.retirementDate) return { ...entry, retirementTimeline: null }
+      const days = diffYears(asOfDate.toString(), entry.retirementDate.toString()) * 365.25
+      const retirementTimeline = days < 0
+        ? 'past'
+        : days <= 180
+          ? 'imminent'
+          : days <= 365
+            ? 'soon'
+            : null
+      return { ...entry, retirementTimeline }
+    }),
+  }
+}
 
 export interface PresentedTrajectoryChange extends TrajectoryChange {
   readonly isPeak: boolean
@@ -93,9 +127,24 @@ export function formatSeniorityRankChange(value: number): string {
   return value > 0 ? `+${value}` : String(value)
 }
 
+export function presentSeniorityStanding(standing: SeniorityStanding) {
+  return {
+    ...standing,
+    rollingNext12MonthRetirementsLabel: formatSeniorityCount(standing.rollingNext12MonthRetirements),
+    qualificationStandings: standing.qualificationStandings.map(item => ({
+      ...item,
+      qualificationLabel: formatQualification(item.qualification),
+    })),
+  }
+}
+
+export type PresentedSeniorityStanding = ReturnType<typeof presentSeniorityStanding>
+
 export function presentPercentileCrossing(result: PercentileCrossingResult | null): { year: string } | null {
   return result ? { year: String(result.crossingYear) } : null
 }
+
+export type PresentedPercentileCrossing = ReturnType<typeof presentPercentileCrossing>
 
 export function presentAgeBucket(bucket: SeniorityDemographics['ageDistribution']['buckets'][number]) {
   const label = bucket.maximumAge === undefined
@@ -148,7 +197,28 @@ export function presentSeniorityDemographics(demographics: SeniorityDemographics
       seniorityNumber: threshold.seniorityNumber,
       hireDate: threshold.hireDate,
       yos: threshold.yearsOfService,
+      modeledHoldable: false,
     })),
+  }
+}
+
+export type PresentedSeniorityDemographics = ReturnType<typeof presentSeniorityDemographics>
+
+export function presentAnchoredSeniorityDemographics(
+  demographics: SeniorityDemographics,
+  positions: readonly QualificationPosition[],
+): PresentedSeniorityDemographics {
+  const presented = presentSeniorityDemographics(demographics)
+  return {
+    ...presented,
+    captainQualificationThresholds: presented.captainQualificationThresholds.map((threshold) => {
+      const position = positions.find(candidate =>
+        candidate.distribution.qualification.base === threshold.base
+        && candidate.distribution.qualification.seat === threshold.seat
+        && candidate.distribution.qualification.fleet === threshold.fleet,
+      )
+      return { ...threshold, modeledHoldable: position?.modeledHoldable ?? false }
+    }),
   }
 }
 

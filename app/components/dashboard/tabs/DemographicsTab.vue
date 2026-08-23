@@ -1,36 +1,22 @@
 <script setup lang="ts">
 import { useSeniorityCore, useQualificationFilter } from '~/composables/seniority'
 import { computeYOS } from '~/utils/date'
-import { createSeniorityScenario, presentSeniorityDemographics } from '~/utils/seniority'
 import { todayPlainDate } from '~/utils/temporal'
 
 defineProps<{ loading?: boolean }>()
 
-const { hasData, newHire, lens, anchoredLens, userEntry } = useSeniorityCore()
+const { hasData, newHire, analysis, anchoredAnalysis, userEntry } = useSeniorityCore()
 const { retirementAge } = useUser()
 const qualificationFilter = useQualificationFilter()
-const demographicScenario = computed(() => createSeniorityScenario({ qualificationScope: qualificationFilter.qualificationScope.value }))
 const demographicsResult = computed(() => {
-  const result = lens.value?.demographics({
+  const currentAnalysis = anchoredAnalysis.value ?? analysis.value
+  return currentAnalysis?.demographics({
     mandatoryRetirementAge: retirementAge.value,
-    scenario: demographicScenario.value,
-  })
-  return result ? presentSeniorityDemographics(result) : null
+    scenario: { qualificationScope: qualificationFilter.qualificationScope.value },
+  }).presentation ?? null
 })
 const ageDistribution = computed(() => demographicsResult.value?.ageDistribution ?? { buckets: [], nullCount: 0 })
-const currentQualificationPositions = computed(() => anchoredLens.value?.qualificationPositions({
-  through: todayPlainDate(),
-}) ?? [])
-const captainQualificationThresholds = computed(() =>
-  (demographicsResult.value?.captainQualificationThresholds ?? []).map((threshold) => {
-    const position = currentQualificationPositions.value.find(candidate =>
-      candidate.distribution.qualification.base === threshold.base
-      && candidate.distribution.qualification.seat === threshold.seat
-      && candidate.distribution.qualification.fleet === threshold.fleet,
-    )
-    return { ...threshold, modeledHoldable: position?.modeledHoldable ?? false }
-  }),
-)
+const captainQualificationThresholds = computed(() => demographicsResult.value?.captainQualificationThresholds ?? [])
 const qualificationComposition = computed(() => demographicsResult.value?.qualificationComposition ?? [])
 const yearsOfServiceDistribution = computed(() => demographicsResult.value?.yearsOfServiceDistribution ?? { entryFloor: 0, p10: 0, p25: 0, median: 0, p75: 0, p90: 0, max: 0 })
 const yearsOfServiceBuckets = computed(() => demographicsResult.value?.yearsOfServiceBuckets ?? [])

@@ -1,11 +1,11 @@
 import { describe, it, expect, vi } from 'vitest'
 import { mountSuspended, mockNuxtImport } from '@nuxt/test-utils/runtime'
 
-const { mockHasData, mockLens } = vi.hoisted(() => {
+const { mockAnalysis, mockHasData } = vi.hoisted(() => {
   const { ref: vRef } = require('vue')
   return {
+    mockAnalysis: vRef(null) as { value: { retirementYearAnalysis: ReturnType<typeof vi.fn> } | null },
     mockHasData: vRef(false) as { value: boolean },
-    mockLens: vRef(null) as { value: { retirementYearAnalysis: ReturnType<typeof vi.fn> } | null },
   }
 })
 
@@ -61,9 +61,8 @@ mockNuxtImport('useSeniorityCore', () => () => ({
     birthDate: { value: null },
     reset: vi.fn(),
   },
-  snapshot: { value: null },
-  lens: mockLens,
-  anchoredLens: { value: null },
+  analysis: mockAnalysis,
+  anchoredAnalysis: { value: null },
   userEntry: { value: undefined },
   hasAnchor: { value: false },
   isNewHireMode: { value: false },
@@ -90,7 +89,7 @@ mockNuxtImport('useDeferredReady', () => () => ({ value: true }))
 describe('TrajectoryTab', () => {
   it('shows empty state when no seniority data', async () => {
     mockHasData.value = false
-    mockLens.value = null
+    mockAnalysis.value = null
     const Tab = await import('./TrajectoryTab.vue')
     const wrapper = await mountSuspended(Tab.default)
     expect(wrapper.text()).toContain('No Seniority Data')
@@ -98,7 +97,7 @@ describe('TrajectoryTab', () => {
 
   it('shows loading skeleton when loading prop is true', async () => {
     mockHasData.value = true
-    mockLens.value = null
+    mockAnalysis.value = null
     const Tab = await import('./TrajectoryTab.vue')
     const wrapper = await mountSuspended(Tab.default, {
       props: { loading: true },
@@ -106,14 +105,14 @@ describe('TrajectoryTab', () => {
     expect(wrapper.html()).toContain('skeleton')
   })
 
-  it('renders scoped retirement-wave buckets supplied by the lens', async () => {
+  it('renders scoped retirement-wave buckets supplied by Seniority Analysis', async () => {
     const retirementYearAnalysis = vi.fn(() => [{
       year: 2030,
       retirementCount: 6,
       isRetirementWave: true,
     }])
     mockHasData.value = true
-    mockLens.value = { retirementYearAnalysis }
+    mockAnalysis.value = { retirementYearAnalysis }
     const Tab = await import('./TrajectoryTab.vue')
     const wrapper = await mountSuspended(Tab.default)
 
