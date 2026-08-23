@@ -4,6 +4,9 @@ This context turns airline seniority-list spreadsheets into validated local data
 
 ## Seniority Analysis Language
 
+**Seniority Analysis Module**:
+The supported public module is the barrel at `app/utils/seniority.ts`, imported as `~/utils/seniority`. It creates analysis context from validated entries and an As-of Date, then exposes completed domain and presentation results. Engine construction, snapshot creation, and presentation adapters remain internal implementation details.
+
 **Seniority List**:
 An airline's ordered collection of pilot entries at a stated effective date.
 

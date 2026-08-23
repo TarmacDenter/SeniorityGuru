@@ -354,6 +354,25 @@ describe('seniority store (Dexie)', () => {
       )
     })
 
+    it('rejects invalid entries before writing to Dexie', async () => {
+      mockDb.seniorityLists.add.mockResolvedValue(42)
+
+      const { useSeniorityStore } = await import('./seniority')
+      const store = useSeniorityStore()
+      store.clearStore()
+
+      await expect(store.addList(
+        { title: 'Invalid List', effectiveDate: '2026-03-15' },
+        [
+          { seniorityNumber: 1, employeeNumber: '00123', name: 'Smith', seat: 'CA', base: 'LAX', fleet: '737', hireDate: '2010-01-01', retireDate: '2040-01-01' },
+          { seniorityNumber: 2, employeeNumber: '123', name: 'Jones', seat: 'FO', base: 'LAX', fleet: '737', hireDate: '2011-01-01', retireDate: '2041-01-01' },
+        ],
+      )).rejects.toThrow('Duplicate employee number')
+
+      expect(mockDb.seniorityLists.add).not.toHaveBeenCalled()
+      expect(mockDb.seniorityEntries.bulkAdd).not.toHaveBeenCalled()
+    })
+
     it('does not change currentListId or entries', async () => {
       mockDb.seniorityLists.add.mockResolvedValue(42)
       mockDb.seniorityEntries.bulkAdd.mockResolvedValue(undefined)

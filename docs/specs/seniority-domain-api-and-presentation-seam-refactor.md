@@ -20,6 +20,8 @@ The math layer will contain pure calculations whose results follow only from exp
 
 Keep the existing immutable capability seam. A `SeniorityLens` will expose organization analysis only. Calling `withAnchor()` will return an `AnchoredSeniorityLens` with pilot-relative capabilities. The anchored lens will share the snapshot and organization memoization without mutating the organization lens.
 
+The public module boundary is the barrel at `app/utils/seniority.ts`, imported as `~/utils/seniority`. It exposes `createSeniorityAnalysis`, supported result types, and supported errors. Entry invariants are enforced by the persistence write seam before data reaches Dexie. `seniority-api/analysis.ts`, the engine modules, and presentation adapters are internal implementation details. Clients must not import those modules directly or depend on the coordinator's file name.
+
 Use one consistent seniority vocabulary across public functions, types, results, tests, and domain documentation. Use explicit dates and domain-qualified utility names. Return domain-shaped results from math and engine operations. Build chart-shaped values and display labels through presentation adapters.
 
 ## User Stories
@@ -166,9 +168,9 @@ Use one consistent seniority vocabulary across public functions, types, results,
 
 - Keep `withAnchor()` as the capability seam. Do not introduce a mutable lens or builder.
 
-- `SeniorityLens` will expose organization-only operations. It will not expose the Anchor Pilot, standing, trajectory, trajectory comparison, percentile crossing, or qualification positions.
+- `SeniorityLens` will expose organization-only operations inside the engine. It will not be a client-facing import and will not expose the Anchor Pilot, standing, trajectory, trajectory comparison, percentile crossing, or qualification positions.
 
-- `AnchoredSeniorityLens` will add pilot-relative operations and retain organization operations. It will expose the canonical readonly entry as its anchor.
+- `AnchoredSeniorityLens` will add pilot-relative operations and retain organization operations inside the engine. The public barrel exposes the corresponding `SeniorityAnalysis` and `AnchoredSeniorityAnalysis` capabilities without exposing lens construction.
 
 - Calling `withAnchor()` will not mutate the organization lens. The anchored lens will share the same snapshot, As-of Date, and organization-level memoized results. Each anchored lens may memoize pilot-relative results independently.
 
@@ -230,7 +232,7 @@ Use one consistent seniority vocabulary across public functions, types, results,
 
 - Correct employee-number indexing and lookup normalization. Correct Qualification viewer percentile calculations. Preserve every other existing calculation formula and selection rule, including percentile direction, growth, retirement-wave classification, trajectory, retirement counts, qualification thresholds, and demographics.
 
-- Keep one public seniority API barrel for supported explicit imports. Do not add per-directory barrels. Do not expose internal helpers solely for convenience.
+- Keep `app/utils/seniority.ts` as the one public seniority API barrel for supported explicit imports. Clients import from `~/utils/seniority`. Do not add per-directory barrels, expose `seniority-api/analysis.ts`, or expose internal helpers solely for convenience.
 
 - Remove old public aliases after consumers migrate. Do not retain compatibility shims that leave two public vocabularies for one concept.
 

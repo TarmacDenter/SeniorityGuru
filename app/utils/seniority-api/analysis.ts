@@ -1,6 +1,6 @@
 import type { SeniorityEntry } from '~/utils/schemas/seniority-list'
 import type { PlainDate } from '~/utils/temporal'
-import { assertValidSeniorityAnalysisEntries, createSenioritySnapshot } from '~/utils/seniority-engine/snapshot'
+import { createSenioritySnapshot } from '~/utils/seniority-engine/snapshot'
 import { createSeniorityLens } from '~/utils/seniority-engine/lens'
 import { createSeniorityScenario } from '~/utils/seniority-engine/scenario'
 import type {
@@ -254,9 +254,4 @@ export function createSeniorityAnalysis(options: CreateSeniorityAnalysisOptions)
     ...commonSeniorityAnalysis(lens, options.asOfDate),
     withAnchor: employeeNumber => anchoredSeniorityAnalysis(lens.withAnchor(employeeNumber), options.asOfDate),
   }
-}
-
-/** Returns complete, ordered choices without exposing scope enumeration and formatting as separate steps. */
-export function validateSeniorityAnalysisEntries(entries: readonly SeniorityEntry[]): void {
-  assertValidSeniorityAnalysisEntries(entries)
 }

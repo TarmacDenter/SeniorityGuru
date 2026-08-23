@@ -14,6 +14,7 @@ Component → composable → store → Dexie
 
 - Components and pages use composables. They do not import Pinia stores or `~/utils/db`.
 - Stores own all Dexie reads and writes. A write updates the store's reactive state in the same operation.
+- Stores enforce domain invariants before their Dexie writes. Composables do not duplicate persistence validation.
 - Stores do not import other stores. A composable coordinates actions that span stores.
 - `app/utils/db.ts` owns the Dexie schema. Add a new version block for every schema change. Preserve all existing version blocks and their order.
 
@@ -25,7 +26,8 @@ Component → composable → store → Dexie
 - `app/utils/seniority-analysis/math.ts` and `growth.ts` contain deterministic calculations with explicit inputs.
 - `app/utils/seniority-engine/` owns snapshots, lenses, As-of Dates, scenarios, scope, memoization, and contextual analysis.
 - `app/utils/seniority-analysis/presentation.ts` maps completed domain results to labels and component-facing values.
-- `app/utils/seniority.ts` is the supported deep public interface. It binds entries and an As-of Date, hides engine construction, and returns completed domain and presentation values.
+- `app/utils/seniority.ts` is the supported deep public interface and barrel export. Clients import seniority analysis only from `~/utils/seniority`; they do not import `~/utils/seniority-api/analysis`, engine modules, or presentation adapters directly.
+- The barrel binds entries and an As-of Date, hides engine construction, and returns completed domain and presentation values. Its internal coordinator is an implementation detail, not a client-facing module boundary.
 - Components and composables do not construct snapshots, lenses, or scenarios. They do not call free presentation adapters.
 - Seniority analysis follows `math → engine → presentation`. These layers receive validated `SeniorityEntry` values and do not access stores or Dexie.
 - Zod schemas in `app/utils/schemas/` validate data at the upload boundary. Downstream code uses the validated domain types.

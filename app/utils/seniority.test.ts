@@ -45,7 +45,6 @@ describe('public Seniority Analysis interface', () => {
       'DEFAULT_SENIORITY_GROWTH_ASSUMPTIONS',
       'InvalidSenioritySnapshotDataError',
       'createSeniorityAnalysis',
-      'validateSeniorityAnalysisEntries',
     ].sort())
   })
 
@@ -151,7 +150,7 @@ describe('public Seniority Analysis interface', () => {
     })
   })
 
-  it('preserves public validation and missing-anchor errors', () => {
+  it('preserves public missing-anchor and snapshot errors', () => {
     const duplicateIdentityEntries = [
       makeEntry({ seniority_number: 1, employee_number: '00125' }),
       makeEntry({ seniority_number: 2, employee_number: '125' }),

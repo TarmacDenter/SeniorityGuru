@@ -83,7 +83,8 @@ describe('_useConfirm', () => {
     expect(error.value).toBe('DB full')
   })
 
-  it('rejects invalid analysis data and does not call store when entries have duplicate seniority numbers', async () => {
+  it('propagates store validation errors for duplicate seniority numbers', async () => {
+    mockStore.addList.mockRejectedValueOnce(new Error('Duplicate seniority number'))
     const error = ref<string | null>(null)
     const confirm = _useConfirm(createUploadSession({ error }))
     confirm.effectiveDate.value = { toString: () => '2025-01-01' } as never
@@ -95,10 +96,11 @@ describe('_useConfirm', () => {
 
     await expect(confirm.save(entries)).rejects.toThrow()
     expect(error.value).toContain('Duplicate seniority number')
-    expect(mockStore.addList).not.toHaveBeenCalled()
+    expect(mockStore.addList).toHaveBeenCalled()
   })
 
-  it('rejects invalid analysis data and does not call store when entries have duplicate employee numbers', async () => {
+  it('propagates store validation errors for duplicate employee numbers', async () => {
+    mockStore.addList.mockRejectedValueOnce(new Error('Duplicate employee number'))
     const error = ref<string | null>(null)
     const confirm = _useConfirm(createUploadSession({ error }))
     confirm.effectiveDate.value = { toString: () => '2025-01-01' } as never
@@ -110,6 +112,6 @@ describe('_useConfirm', () => {
 
     await expect(confirm.save(entries)).rejects.toThrow()
     expect(error.value).toContain('Duplicate employee number')
-    expect(mockStore.addList).not.toHaveBeenCalled()
+    expect(mockStore.addList).toHaveBeenCalled()
   })
 })

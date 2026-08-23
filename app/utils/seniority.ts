@@ -1,7 +1,6 @@
 /** Deep public interface for Seniority Analysis. */
 export {
   createSeniorityAnalysis,
-  validateSeniorityAnalysisEntries,
 } from './seniority-api/analysis'
 export type {
   AnchoredSeniorityAnalysis,
