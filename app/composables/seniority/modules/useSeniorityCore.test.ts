@@ -48,7 +48,7 @@ describe('useSeniorityCore', () => {
     mockUserStore.employeeNumber = 'E1'
     const { lens, anchoredLens } = useSeniorityCore()
     expect(lens.value).not.toBeNull()
-    expect(anchoredLens.value?.anchor).toBe(lens.value?.snapshot.byEmployeeNumber.get('E1'))
+    expect(anchoredLens.value?.anchor).toBe(lens.value?.snapshot.entriesByEmployeeNumber.get('E1'))
   })
 
   it('anchors to employee numbers after normalization', () => {
@@ -169,7 +169,7 @@ describe('useSeniorityCore', () => {
     newHire.birthDate.value = parsePlainDate('1990-06-15')
     expect(snapshot.value).not.toBeNull()
     expect(snapshot.value!.entries).toHaveLength(2)
-    expect(snapshot.value!.byEmployeeNumber.has('_new_hire')).toBe(true)
+    expect(snapshot.value!.entriesByEmployeeNumber.has('_new_hire')).toBe(true)
   })
 
   it('new-hire mode: lens re-anchors to synthetic entry when active', () => {

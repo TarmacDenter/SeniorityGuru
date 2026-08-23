@@ -5,7 +5,7 @@ const { mockHasData, mockLens } = vi.hoisted(() => {
   const { ref: vRef } = require('vue')
   return {
     mockHasData: vRef(false) as { value: boolean },
-    mockLens: vRef(null) as { value: { retirementWave: ReturnType<typeof vi.fn> } | null },
+    mockLens: vRef(null) as { value: { retirementYearAnalysis: ReturnType<typeof vi.fn> } | null },
   }
 })
 
@@ -39,8 +39,8 @@ const mockQualFilter = {
   availableFleets: { value: [] },
   availableSeats: { value: [] },
   availableBases: { value: [] },
-  qualSpec: { value: {} },
-  qualLabel: { value: '' },
+  qualificationScope: { value: {} },
+  qualificationLabel: { value: '' },
   clear: vi.fn(),
 }
 
@@ -71,7 +71,7 @@ mockNuxtImport('useSeniorityCore', () => () => ({
 }))
 
 mockNuxtImport('useStanding', () => () => ({
-  rankCard: { value: { base: '--', seat: '--', fleet: '--', percentile: 0, seniorityNumber: 0, adjustedSeniority: 0, hireDate: '--' } },
+  rankCard: { value: { base: '--', seat: '--', fleet: '--', percentile: 0, seniorityNumber: 0, activeRank: 0, hireDate: '--' } },
   baseStatus: { value: [] },
   statCards: { value: [] },
   retirementSnapshot: { value: null },
@@ -79,7 +79,7 @@ mockNuxtImport('useStanding', () => () => ({
 
 mockNuxtImport('useTrajectory', () => () => ({
   chartData: { value: { labels: [], data: [] } },
-  deltas: { value: [] },
+  changes: { value: [] },
   computeComparativeTrajectory: vi.fn(),
   computeRetirementProjection: vi.fn(),
 }))
@@ -107,13 +107,17 @@ describe('TrajectoryTab', () => {
   })
 
   it('renders scoped retirement-wave buckets supplied by the lens', async () => {
-    const retirementWave = vi.fn(() => [{ year: 2030, count: 6, isWave: true }])
+    const retirementYearAnalysis = vi.fn(() => [{
+      year: 2030,
+      retirementCount: 6,
+      isRetirementWave: true,
+    }])
     mockHasData.value = true
-    mockLens.value = { retirementWave }
+    mockLens.value = { retirementYearAnalysis }
     const Tab = await import('./TrajectoryTab.vue')
     const wrapper = await mountSuspended(Tab.default)
 
-    expect(retirementWave).toHaveBeenCalledWith(expect.objectContaining({ scopeFilter: {} }))
+    expect(retirementYearAnalysis).toHaveBeenCalledWith(expect.objectContaining({ qualificationScope: {} }))
     expect(wrapper.text()).toContain('Retirement Wave')
     expect(wrapper.get('[data-testid="retirement-wave-buckets"]').text()).toBe('2030')
   })

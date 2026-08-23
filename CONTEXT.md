@@ -1,8 +1,65 @@
-# Seniority List Import
+# SeniorityGuru
 
-This context turns airline seniority-list spreadsheets into validated local data. It defines the terms used by import code and user-visible feedback.
+This context turns airline seniority-list spreadsheets into validated local data and analyzes pilot position over time. It defines the terms used by product, analysis, import, and user-visible feedback.
 
-## Language
+## Seniority Analysis Language
+
+**Seniority List**:
+An airline's ordered collection of pilot entries at a stated effective date.
+
+**Seniority Entry**:
+One validated pilot record in a Seniority List.
+
+**Seniority Number**:
+The company-assigned ordering number for a pilot. A smaller number means greater company seniority, but numeric gaps do not represent positional distance.
+
+**Rank**:
+A one-based position calculated from membership in a defined pilot set. Rank, not Seniority Number, measures positional distance.
+
+**Qualification**:
+One Base, Seat, and Fleet combination.
+_Avoid_: Qual, Cell
+
+**Qualification Scope**:
+An optional constraint over Base, Seat, Fleet, or any combination of them. An empty Qualification Scope means company-wide.
+_Avoid_: Qual Spec, Cell Filter
+
+**Anchor Pilot**:
+The pilot whose relative Standing and projections are being analyzed.
+_Avoid_: User Pilot, Subject Pilot
+
+**Seniority Percentile**:
+An inverted position measure within a defined pilot set. A value of 100 is the most senior end, and 0 is the most junior end.
+
+**Standing**:
+A pilot's Rank, pilot count, and Seniority Percentile within defined list and active-pilot sets.
+
+**As-of Date**:
+The date that determines current active status, age, Rank, and years of service.
+_Avoid_: Reference Date, Today
+
+**Projection Through Date**:
+The inclusive upper date bound for a projection.
+_Avoid_: Projection Horizon, End Date
+
+**Scenario**:
+A Qualification Scope and Growth Assumptions used for one analysis.
+
+**Growth Assumptions**:
+The modeled annual company growth state and decimal annual growth rate.
+_Avoid_: Growth Config
+
+**Qualification Threshold**:
+The most junior active position in a Qualification, expressed as a Seniority Number and Seniority Percentile.
+_Avoid_: Plug
+
+**Holdable**:
+A modeled outcome in which an Anchor Pilot's projected Seniority Percentile meets a Qualification Threshold. It does not imply contractual certainty.
+
+**Retirement Wave**:
+A retirement year with a notable concentration of scheduled retirements relative to other years in the same analysis.
+
+## Seniority List Import Language
 
 **Import Plugin**: A compiled-in definition that prepares an airline format or Generic spreadsheet and may transform mapped entries. Avoid: pre-parser, parser framework.
 

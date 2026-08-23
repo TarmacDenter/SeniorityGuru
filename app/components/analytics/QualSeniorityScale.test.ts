@@ -1,23 +1,21 @@
 import { describe, expect, it } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
-import type { QualDemographicScale } from '~/utils/seniority-engine/types'
+import type { PresentedQualificationPosition } from '~/utils/seniority'
 
-function scale(overrides: Partial<QualDemographicScale>): QualDemographicScale {
+function position(overrides: Partial<PresentedQualificationPosition>): PresentedQualificationPosition {
   return {
-    fleet: '737',
-    seat: 'FO',
-    base: 'JFK',
-    activeCount: 1,
-    plugPercentile: 50,
-    plugSenNum: 100,
-    p25: 25,
-    median: 50,
-    p75: 75,
-    max: 100,
-    density: [],
-    userPercentile: 50,
-    currentUserPercentile: 50,
-    isHoldable: true,
+    qualification: { fleet: '737', seat: 'FO', base: 'JFK' },
+    activePilotCount: 1,
+    thresholdPercentile: 50,
+    thresholdSeniorityNumber: 100,
+    percentile25: 25,
+    medianPercentile: 50,
+    percentile75: 75,
+    maximumPercentile: 100,
+    percentileDensity: [],
+    projectedPercentile: 50,
+    currentPercentile: 50,
+    modeledHoldable: true,
     ...overrides,
   }
 }
@@ -27,9 +25,9 @@ describe('QualSeniorityScale', () => {
     const Scale = await import('./QualSeniorityScale.vue')
     const wrapper = await mountSuspended(Scale.default, {
       props: {
-        scales: [
-          scale({ fleet: '737', seat: 'FO' }),
-          scale({ fleet: '320', seat: 'CA' }),
+        positions: [
+          position({ qualification: { fleet: '737', seat: 'FO', base: 'JFK' } }),
+          position({ qualification: { fleet: '320', seat: 'CA', base: 'JFK' } }),
         ],
       },
     })
@@ -42,9 +40,19 @@ describe('QualSeniorityScale', () => {
     const Scale = await import('./QualSeniorityScale.vue')
     const wrapper = await mountSuspended(Scale.default, {
       props: {
-        scales: [
-          scale({ seat: 'CA', isHoldable: true, userPercentile: 70, currentUserPercentile: 60 }),
-          scale({ seat: 'FO', isHoldable: false, userPercentile: 50, currentUserPercentile: 40 }),
+        positions: [
+          position({
+            qualification: { fleet: '737', seat: 'CA', base: 'JFK' },
+            modeledHoldable: true,
+            projectedPercentile: 70,
+            currentPercentile: 60,
+          }),
+          position({
+            qualification: { fleet: '737', seat: 'FO', base: 'JFK' },
+            modeledHoldable: false,
+            projectedPercentile: 50,
+            currentPercentile: 40,
+          }),
         ],
       },
     })

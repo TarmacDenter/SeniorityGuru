@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import type { TableColumn } from '@nuxt/ui'
 import { useSeniorityCore } from '~/composables/seniority'
-import type { UpcomingRetirementRelativeRow, UpcomingRetirementRow } from '~/utils/seniority-engine'
-import { Temporal } from '~/utils/temporal'
+import type { RelativeUpcomingRetirement, UpcomingRetirement } from '~/utils/seniority'
+import { addYearsDate } from '~/utils/date'
+import { Temporal, todayPlainDate } from '~/utils/temporal'
 
 const { lens, anchoredLens, hasData, hasAnchor, entries } = useSeniorityCore()
 
@@ -14,9 +15,9 @@ const filterSeat = ref<string | null>(null)
 const filterFleet = ref<string | null>(null)
 
 // ── Sort state ───────────────────────────────────────────────────────────────
-type SortKey = 'retireDate' | 'seniorityNumber' | 'rankRelativeToMe'
+type SortKey = 'retirementDate' | 'seniorityNumber' | 'rankRelativeToMe'
 type SortDir = 'asc' | 'desc'
-const sortKey = ref<SortKey>('retireDate')
+const sortKey = ref<SortKey>('retirementDate')
 const sortDir = ref<SortDir>('asc')
 
 function toggleSort(key: SortKey) {
@@ -29,7 +30,7 @@ function toggleSort(key: SortKey) {
   }
 }
 
-// ── Qual options ─────────────────────────────────────────────────────────────
+// ── Qualification options ─────────────────────────────────────────────────────────────
 const availableBases = computed(() =>
   [...new Set(entries.value.map(e => e.base).filter(Boolean) as string[])].sort(),
 )
@@ -55,24 +56,26 @@ const fleetItems = computed<SelectItem[]>(() => [
 ])
 
 // ── Rows ─────────────────────────────────────────────────────────────────────
-type RetirementRow = UpcomingRetirementRow | UpcomingRetirementRelativeRow
+type RetirementRow = UpcomingRetirement | RelativeUpcomingRetirement
 
 const rows = computed((): RetirementRow[] => {
   if (!hasData.value || !lens.value) return []
 
   const filter = {
-    yearsHorizon: yearsHorizon.value,
-    base: filterBase.value || null,
-    seat: filterSeat.value || null,
-    fleet: filterFleet.value || null,
+    through: addYearsDate(todayPlainDate(), yearsHorizon.value),
+    qualificationScope: {
+      ...(filterBase.value && { base: filterBase.value }),
+      ...(filterSeat.value && { seat: filterSeat.value }),
+      ...(filterFleet.value && { fleet: filterFleet.value }),
+    },
   }
   const raw = anchoredLens.value
-    ? anchoredLens.value.upcomingRetirementsRelativeToAnchor({ ...filter, seniorOnly: seniorOnly.value })
+    ? anchoredLens.value.relativeUpcomingRetirements({ ...filter, seniorOnly: seniorOnly.value })
     : lens.value.upcomingRetirements(filter)
 
   return [...raw].sort((a, b) => {
     let cmp = 0
-    if (sortKey.value === 'retireDate') cmp = Temporal.PlainDate.compare(a.retireDate, b.retireDate)
+    if (sortKey.value === 'retirementDate') cmp = Temporal.PlainDate.compare(a.retirementDate, b.retirementDate)
     else if (sortKey.value === 'seniorityNumber') cmp = a.seniorityNumber - b.seniorityNumber
     else if (sortKey.value === 'rankRelativeToMe') cmp = (relativeRank(a) - relativeRank(b))
     return sortDir.value === 'asc' ? cmp : -cmp
@@ -80,7 +83,7 @@ const rows = computed((): RetirementRow[] => {
 })
 
 function relativeRank(row: RetirementRow): number {
-  return 'rankRelativeToAnchor' in row ? row.rankRelativeToAnchor : 0
+  return 'positionsSeniorToAnchor' in row ? row.positionsSeniorToAnchor : 0
 }
 
 const columns = computed((): TableColumn<RetirementRow>[] => {
@@ -88,17 +91,17 @@ const columns = computed((): TableColumn<RetirementRow>[] => {
     { accessorKey: 'seniorityNumber', header: 'Seniority #' },
     {
       accessorKey: 'qual',
-      header: 'Qual',
-      cell: ({ row }) => `${row.original.base} · ${row.original.seat} / ${row.original.fleet}`,
+      header: 'Qualification',
+      cell: ({ row }) => `${row.original.qualification.base} · ${row.original.qualification.seat} / ${row.original.qualification.fleet}`,
     },
-    { accessorKey: 'retireDate', header: 'Est. Retire Date' },
+    { accessorKey: 'retirementDate', header: 'Est. Retire Date' },
   ]
   if (hasAnchor.value) {
     base.splice(1, 0, {
       accessorKey: 'rankRelativeToMe',
       header: 'Rank Relative to Me',
       cell: ({ row }) => {
-        const v = 'rankRelativeToAnchor' in row.original ? row.original.rankRelativeToAnchor : 0
+        const v = 'positionsSeniorToAnchor' in row.original ? row.original.positionsSeniorToAnchor : 0
         return v > 0 ? `+${v}` : String(v)
       },
     })
@@ -146,7 +149,7 @@ const horizonOptions = [
           </span>
         </div>
 
-        <!-- Qual filters -->
+        <!-- Qualification filters -->
         <div class="flex items-center gap-2 flex-wrap">
           <USelectMenu
             v-model="filterBase"
@@ -221,12 +224,12 @@ const horizonOptions = [
             </button>
           </template>
 
-          <template #retireDate-header>
-            <button class="flex items-center gap-1" @click="toggleSort('retireDate')">
+          <template #retirementDate-header>
+            <button class="flex items-center gap-1" @click="toggleSort('retirementDate')">
               Est. Retire Date
               <UIcon
-                :name="sortKey === 'retireDate' && sortDir === 'desc' ? 'i-lucide-chevron-down' : 'i-lucide-chevron-up'"
-                :class="sortKey === 'retireDate' ? 'text-primary' : 'text-muted'"
+                :name="sortKey === 'retirementDate' && sortDir === 'desc' ? 'i-lucide-chevron-down' : 'i-lucide-chevron-up'"
+                :class="sortKey === 'retirementDate' ? 'text-primary' : 'text-muted'"
                 class="size-3"
               />
             </button>

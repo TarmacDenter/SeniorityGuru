@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
 import { mountSuspended, mockNuxtImport } from '@nuxt/test-utils/runtime'
-import type { DemographicsResult } from '~/utils/seniority-engine'
+import type { SeniorityDemographics } from '~/utils/seniority'
 import { parsePlainDate } from '~/utils/temporal'
 
 const { mockHasData, mockLens } = vi.hoisted(() => {
@@ -43,26 +43,44 @@ mockNuxtImport('useQualFilter', () => () => ({
   availableFleets: { value: [] },
   availableSeats: { value: [] },
   availableBases: { value: [] },
-  qualSpec: { value: {} },
-  qualLabel: { value: '' },
+  qualificationScope: { value: {} },
+  qualificationLabel: { value: '' },
   clear: vi.fn(),
 }))
 
 mockNuxtImport('useUser', () => () => ({ retirementAge: { value: 65 } }))
 mockNuxtImport('useDeferredReady', () => () => ({ value: true }))
 
-const demographicsResult: DemographicsResult = {
-  ageDistribution: { buckets: [{ label: '50–54', count: 2 }], nullCount: 0 },
-  mostJuniorCAs: [{
-    qualKey: '737 CA JFK', fleet: '737', seat: 'CA', base: 'JFK',
-    seniorityNumber: 10, hireDate: parsePlainDate('2010-01-01'), yos: 16,
+const demographicsResult: SeniorityDemographics = {
+  ageDistribution: {
+    buckets: [{ minimumAge: 50, maximumAge: 54, pilotCount: 2 }],
+    unknownAgePilotCount: 0,
+  },
+  captainQualificationThresholds: [{
+    qualification: { fleet: '737', seat: 'CA', base: 'JFK' },
+    seniorityNumber: 10,
+    hireDate: parsePlainDate('2010-01-01'),
+    yearsOfService: 16,
   }],
-  qualComposition: [{
-    qualKey: '737 CA', fleet: '737', seat: 'CA', total: 2, caCount: 2,
-    foCount: 0, caFoRatio: 2, byBase: [{ base: 'JFK', count: 2, pct: 100 }],
+  qualificationComposition: [{
+    fleet: '737',
+    seat: 'CA',
+    pilotCount: 2,
+    captainCount: 2,
+    firstOfficerCount: 0,
+    captainToFirstOfficerRatio: 2,
+    byBase: [{ base: 'JFK', pilotCount: 2, percentage: 100 }],
   }],
-  yosDistribution: { entryFloor: 16, p10: 16, p25: 16, median: 16, p75: 16, p90: 16, max: 16 },
-  yosHistogram: [{ label: '16', minYos: 16, count: 2 }],
+  yearsOfServiceDistribution: {
+    entryFloor: 16,
+    p10: 16,
+    p25: 16,
+    median: 16,
+    p75: 16,
+    p90: 16,
+    maximum: 16,
+  },
+  yearsOfServiceBuckets: [{ minimumYears: 16, maximumYears: 16, pilotCount: 2 }],
 }
 
 describe('DemographicsTab', () => {
@@ -92,10 +110,13 @@ describe('DemographicsTab', () => {
     const Tab = await import('./DemographicsTab.vue')
     const wrapper = await mountSuspended(Tab.default)
 
-    expect(demographics).toHaveBeenCalledWith(65, expect.any(Object))
-    expect(wrapper.text()).toContain('Most Junior Captain by Qual')
+    expect(demographics).toHaveBeenCalledWith({
+      mandatoryRetirementAge: 65,
+      scenario: expect.objectContaining({ qualificationScope: {} }),
+    })
+    expect(wrapper.text()).toContain('Most Junior Captain by Qualification')
     expect(wrapper.text()).toContain('Base / Fleet / Seat Sizes')
-    expect(wrapper.text()).toContain('Qual Composition')
+    expect(wrapper.text()).toContain('Qualification Composition')
     expect(wrapper.text()).toContain('Age Distribution')
     expect(wrapper.text()).toContain('Years of Service')
   })

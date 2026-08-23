@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useSeniorityCore, useQualFilter } from '~/composables/seniority'
 import { computeYOS } from '~/utils/date'
-import { createScenario } from '~/utils/seniority-engine'
+import { createSeniorityScenario, presentSeniorityDemographics } from '~/utils/seniority'
 import { todayPlainDate } from '~/utils/temporal'
 
 defineProps<{ loading?: boolean }>()
@@ -9,15 +9,19 @@ defineProps<{ loading?: boolean }>()
 const { hasData, newHire, lens, userEntry } = useSeniorityCore()
 const { retirementAge } = useUser()
 const qualFilter = useQualFilter()
-const demographicScenario = computed(() => createScenario({ projectionDate: todayPlainDate(), scopeFilter: qualFilter.qualSpec.value }))
+const demographicScenario = computed(() => createSeniorityScenario({ qualificationScope: qualFilter.qualificationScope.value }))
 const demographicsResult = computed(() => {
-  return lens.value?.demographics(retirementAge.value, demographicScenario.value) ?? null
+  const result = lens.value?.demographics({
+    mandatoryRetirementAge: retirementAge.value,
+    scenario: demographicScenario.value,
+  })
+  return result ? presentSeniorityDemographics(result) : null
 })
 const ageDistribution = computed(() => demographicsResult.value?.ageDistribution ?? { buckets: [], nullCount: 0 })
-const mostJuniorCAs = computed(() => demographicsResult.value?.mostJuniorCAs ?? [])
-const qualComposition = computed(() => demographicsResult.value?.qualComposition ?? [])
-const yosDistribution = computed(() => demographicsResult.value?.yosDistribution ?? { entryFloor: 0, p10: 0, p25: 0, median: 0, p75: 0, p90: 0, max: 0 })
-const yosHistogram = computed(() => demographicsResult.value?.yosHistogram ?? [])
+const captainQualificationThresholds = computed(() => demographicsResult.value?.captainQualificationThresholds ?? [])
+const qualificationComposition = computed(() => demographicsResult.value?.qualificationComposition ?? [])
+const yearsOfServiceDistribution = computed(() => demographicsResult.value?.yearsOfServiceDistribution ?? { entryFloor: 0, p10: 0, p25: 0, median: 0, p75: 0, p90: 0, max: 0 })
+const yearsOfServiceBuckets = computed(() => demographicsResult.value?.yearsOfServiceBuckets ?? [])
 
 const userYos = computed(() => {
   const synthetic = newHire.syntheticEntry.value
@@ -66,32 +70,32 @@ const ready = useDeferredReady()
       @update:base="qualFilter.selectedBase.value = $event"
     />
 
-    <!-- Most Junior Captain by Qual — full width, own row -->
-    <USkeleton v-if="!ready || !mostJuniorCAs.length" class="h-48 rounded-lg" />
+    <!-- Most Junior Captain by Qualification — full width, own row -->
+    <USkeleton v-if="!ready || !captainQualificationThresholds.length" class="h-48 rounded-lg" />
     <UCard v-else>
       <template #header>
-        <h3 class="font-semibold">Most Junior Captain by Qual</h3>
+        <h3 class="font-semibold">Most Junior Captain by Qualification</h3>
       </template>
       <AnalyticsJuniorCaptainTable
-        :rows="mostJuniorCAs"
+        :rows="captainQualificationThresholds"
         :user-seniority-number="userSeniorityNumber"
       />
     </UCard>
 
     <!-- Base / Fleet / Seat Sizes — own row -->
-    <USkeleton v-if="!ready || !qualComposition.length" class="h-32 rounded-lg" />
-    <AnalyticsQualSizesCard v-else :composition="qualComposition" />
+    <USkeleton v-if="!ready || !qualificationComposition.length" class="h-32 rounded-lg" />
+    <AnalyticsQualSizesCard v-else :composition="qualificationComposition" />
 
-    <!-- Qual Composition list — full width, own row -->
-    <USkeleton v-if="!ready || !qualComposition.length" class="h-64 rounded-lg" />
+    <!-- Qualification Composition list — full width, own row -->
+    <USkeleton v-if="!ready || !qualificationComposition.length" class="h-64 rounded-lg" />
     <UCard v-else>
       <template #header>
-        <h3 class="font-semibold">Qual Composition</h3>
+        <h3 class="font-semibold">Qualification Composition</h3>
       </template>
       <div class="space-y-2">
         <AnalyticsQualCompositionCard
-          v-for="row in qualComposition"
-          :key="row.qualKey"
+          v-for="row in qualificationComposition"
+          :key="row.qualificationLabel"
           :row="row"
         />
       </div>
@@ -101,7 +105,7 @@ const ready = useDeferredReady()
     <USkeleton v-if="!ready || !ageDistribution.buckets.length" class="h-64 rounded-lg" />
     <UCard v-else>
       <template #header>
-        <h3 class="font-semibold">Age Distribution{{ qualFilter.qualLabel.value ? ` — ${qualFilter.qualLabel.value}` : '' }}</h3>
+        <h3 class="font-semibold">Age Distribution{{ qualFilter.qualificationLabel.value ? ` — ${qualFilter.qualificationLabel.value}` : '' }}</h3>
       </template>
       <AnalyticsAgeDistributionChart
         :buckets="ageDistribution.buckets"
@@ -110,14 +114,14 @@ const ready = useDeferredReady()
     </UCard>
 
     <!-- YOS breakdown -->
-    <USkeleton v-if="!ready || !yosHistogram.length" class="h-48 rounded-lg" />
+    <USkeleton v-if="!ready || !yearsOfServiceBuckets.length" class="h-48 rounded-lg" />
     <UCard v-else>
       <template #header>
-        <h3 class="font-semibold">Years of Service{{ qualFilter.qualLabel.value ? ` — ${qualFilter.qualLabel.value}` : '' }}</h3>
+        <h3 class="font-semibold">Years of Service{{ qualFilter.qualificationLabel.value ? ` — ${qualFilter.qualificationLabel.value}` : '' }}</h3>
       </template>
       <AnalyticsYearsOfServiceBreakdown
-        :distribution="yosDistribution"
-        :histogram="yosHistogram"
+        :distribution="yearsOfServiceDistribution"
+        :histogram="yearsOfServiceBuckets"
         :user-yos="userYos"
       />
     </UCard>

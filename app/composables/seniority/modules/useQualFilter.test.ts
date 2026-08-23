@@ -23,7 +23,7 @@ beforeEach(() => {
 })
 
 describe('useQualFilter', () => {
-  it('derives the selected Qual and cascades available bases', () => {
+  it('derives the selected Qualification and cascades available bases', () => {
     mockStore.entries = [
       makeEntry({ fleet: '737', seat: 'CA', base: 'JFK' }),
       makeEntry({ fleet: '737', seat: 'FO', base: 'LAX' }),
@@ -35,8 +35,8 @@ describe('useQualFilter', () => {
     filter.selectedSeat.value = 'CA'
 
     expect(filter.availableBases.value).toEqual(['JFK'])
-    expect(filter.qualSpec.value).toEqual({ fleet: '737', seat: 'CA' })
-    expect(filter.qualLabel.value).toContain('737')
+    expect(filter.qualificationScope.value).toEqual({ fleet: '737', seat: 'CA' })
+    expect(filter.qualificationLabel.value).toContain('737')
   })
 
   it('clears a selected value that disappears after the list changes', async () => {
@@ -58,6 +58,6 @@ describe('useQualFilter', () => {
 
     filter.clear()
 
-    expect(filter.qualSpec.value).toEqual({})
+    expect(filter.qualificationScope.value).toEqual({})
   })
 })

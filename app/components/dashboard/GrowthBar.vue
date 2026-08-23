@@ -1,21 +1,21 @@
 <script setup lang="ts">
-import type { GrowthConfig } from '~/utils/seniority-engine'
+import type { GrowthAssumptions } from '~/utils/seniority'
 
-const props = defineProps<{ modelValue: GrowthConfig }>()
-const emit = defineEmits<{ 'update:modelValue': [config: GrowthConfig] }>()
+const props = defineProps<{ modelValue: GrowthAssumptions }>()
+const emit = defineEmits<{ 'update:modelValue': [config: GrowthAssumptions] }>()
 
 const enabled = ref(props.modelValue.enabled)
-const sliderValue = ref(Math.round(props.modelValue.annualRate / 0.005))
+const sliderValue = ref(Math.round(props.modelValue.annualGrowthRate / 0.005))
 let debounceTimer: ReturnType<typeof setTimeout> | null = null
 
 watch(enabled, (on) => {
-  emit('update:modelValue', { annualRate: props.modelValue.annualRate, enabled: on })
+  emit('update:modelValue', { annualGrowthRate: props.modelValue.annualGrowthRate, enabled: on })
 })
 
 watch(sliderValue, (val) => {
   if (debounceTimer) clearTimeout(debounceTimer)
   debounceTimer = setTimeout(() => {
-    emit('update:modelValue', { enabled: props.modelValue.enabled, annualRate: val * 0.005 })
+    emit('update:modelValue', { enabled: props.modelValue.enabled, annualGrowthRate: val * 0.005 })
   }, 500)
 })
 

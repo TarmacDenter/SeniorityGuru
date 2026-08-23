@@ -52,7 +52,7 @@ describe('useTrajectory', () => {
     expect(point).toHaveProperty('percentile')
   })
 
-  it('computes trajectory deltas', () => {
+  it('computes presented trajectory changes', () => {
     mockStore.entries = [
       makeEntry({ seniority_number: 1, employee_number: 'E1', base: 'JFK', seat: 'CA', fleet: '737', retire_date: '2030-06-15' }),
       makeEntry({ seniority_number: 2, employee_number: 'E2', base: 'JFK', seat: 'CA', fleet: '737', retire_date: '2035-06-15' }),
@@ -60,12 +60,12 @@ describe('useTrajectory', () => {
     ]
     mockUserStore.employeeNumber = 'E3'
 
-    const { deltas } = useTrajectory()
-    // Deltas represent year-over-year changes; with retirements ahead there should be entries
-    expect(deltas.value.length).toBeGreaterThan(0)
-    const delta = deltas.value[0]!
-    expect(delta).toHaveProperty('date')
-    expect(delta).toHaveProperty('delta')
+    const { changes } = useTrajectory()
+    expect(changes.value.length).toBeGreaterThan(0)
+    const change = changes.value[0]!
+    expect(change).toHaveProperty('date')
+    expect(change).toHaveProperty('percentilePointChange')
+    expect(change).toHaveProperty('isPeak')
   })
 
   it('computeRetirementProjection delegates to lens with scoped scenario', () => {
@@ -82,19 +82,19 @@ describe('useTrajectory', () => {
     const result = computeRetirementProjection()
     expect(result).toHaveProperty('labels')
     expect(result).toHaveProperty('data')
-    expect(result).toHaveProperty('filteredTotal')
+    expect(result).toHaveProperty('scopedPilotCount')
     expect(result.labels.length).toBe(result.data.length)
 
     // With scope filter
     const filtered = computeRetirementProjection({ seat: 'CA' })
-    expect(filtered).toHaveProperty('filteredTotal')
-    expect(filtered.filteredTotal).toBeLessThanOrEqual(result.filteredTotal)
+    expect(filtered).toHaveProperty('scopedPilotCount')
+    expect(filtered.scopedPilotCount).toBeLessThanOrEqual(result.scopedPilotCount)
   })
 
   it('computeRetirementProjection returns empty when lens is null', () => {
     const { computeRetirementProjection } = useTrajectory()
     const result = computeRetirementProjection()
-    expect(result).toEqual({ labels: [], data: [], filteredTotal: 0 })
+    expect(result).toEqual({ labels: [], data: [], scopedPilotCount: 0 })
   })
 
   it('computeComparativeTrajectory delegates to lens with two scoped scenarios', () => {
@@ -111,19 +111,19 @@ describe('useTrajectory', () => {
       { base: 'JFK' },
     )
     expect(result).toHaveProperty('labels')
-    expect(result).toHaveProperty('currentData')
-    expect(result).toHaveProperty('compareData')
-    expect(result.labels.length).toBe(result.currentData.length)
-    expect(result.labels.length).toBe(result.compareData.length)
+    expect(result).toHaveProperty('baselineData')
+    expect(result).toHaveProperty('comparisonData')
+    expect(result.labels.length).toBe(result.baselineData.length)
+    expect(result.labels.length).toBe(result.comparisonData.length)
   })
 
   it('computeComparativeTrajectory returns empty when lens is null', () => {
     const { computeComparativeTrajectory } = useTrajectory()
     const result = computeComparativeTrajectory({ seat: 'CA' }, { base: 'JFK' })
-    expect(result).toEqual({ labels: [], currentData: [], compareData: [] })
+    expect(result).toEqual({ labels: [], baselineData: [], comparisonData: [] })
   })
 
-  it('respects custom growthConfig when provided', () => {
+  it('respects custom growthAssumptions when provided', () => {
     mockStore.entries = [
       makeEntry({ seniority_number: 1, employee_number: 'E1', base: 'JFK', seat: 'CA', fleet: '737', retire_date: '2030-06-15' }),
       makeEntry({ seniority_number: 2, employee_number: 'E2', base: 'JFK', seat: 'CA', fleet: '737', retire_date: '2035-06-15' }),
@@ -131,8 +131,8 @@ describe('useTrajectory', () => {
     ]
     mockUserStore.employeeNumber = 'E3'
 
-    const growthConfig = ref({ enabled: true, annualRate: 0.05 })
-    const { fullTrajectory: withGrowth } = useTrajectory(growthConfig)
+    const growthAssumptions = ref({ enabled: true, annualGrowthRate: 0.05 })
+    const { fullTrajectory: withGrowth } = useTrajectory(growthAssumptions)
 
     const { fullTrajectory: withoutGrowth } = useTrajectory()
 

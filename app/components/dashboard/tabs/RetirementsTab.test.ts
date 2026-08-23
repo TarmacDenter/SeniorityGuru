@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mountSuspended, mockNuxtImport } from '@nuxt/test-utils/runtime'
-import type { UpcomingRetirementRow } from '~/utils/seniority-engine'
+import type { UpcomingRetirement } from '~/utils/seniority'
 import { parsePlainDate } from '~/utils/temporal'
 
 const mockUpcomingRetirements = vi.fn()
@@ -29,9 +29,19 @@ mockNuxtImport('useUser', () => () => ({
   get employeeNumber() { return { value: mockStoreState.employeeNumber } },
 }))
 
-const sampleRows: UpcomingRetirementRow[] = [
-  { seniorityNumber: 2, employeeNumber: 'E2', base: 'JFK', seat: 'CA', fleet: '737', retireDate: parsePlainDate('2027-06-01') },
-  { seniorityNumber: 5, employeeNumber: 'E5', base: 'ATL', seat: 'FO', fleet: '320', retireDate: parsePlainDate('2028-03-15') },
+const sampleRows: UpcomingRetirement[] = [
+  {
+    seniorityNumber: 2,
+    employeeNumber: 'E2',
+    qualification: { base: 'JFK', seat: 'CA', fleet: '737' },
+    retirementDate: parsePlainDate('2027-06-01'),
+  },
+  {
+    seniorityNumber: 5,
+    employeeNumber: 'E5',
+    qualification: { base: 'ATL', seat: 'FO', fleet: '320' },
+    retirementDate: parsePlainDate('2028-03-15'),
+  },
 ]
 
 describe('RetirementsTab', () => {
@@ -62,14 +72,17 @@ describe('RetirementsTab', () => {
     expect(wrapper.text()).toContain('2028-03-15')
   })
 
-  it('calls upcomingRetirements with default yearsHorizon of 2', async () => {
+  it('calls upcomingRetirements with a two-year through date', async () => {
     mockHasData.value = true
     mockLens.value = { upcomingRetirements: mockUpcomingRetirements }
     mockUpcomingRetirements.mockReturnValue([])
     const Comp = await import('./RetirementsTab.vue')
     await mountSuspended(Comp.default)
     expect(mockUpcomingRetirements).toHaveBeenCalledWith(
-      expect.objectContaining({ yearsHorizon: 2 }),
+      expect.objectContaining({
+        qualificationScope: {},
+        through: expect.any(Object),
+      }),
     )
   })
 

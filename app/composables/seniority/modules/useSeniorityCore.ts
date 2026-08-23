@@ -1,7 +1,7 @@
 import type { SeniorityEntry } from '~/utils/schemas/seniority-list'
-import type { AnchoredSeniorityLens, SeniorityLens, SenioritySnapshot } from '~/utils/seniority-engine'
+import type { AnchoredSeniorityLens, SeniorityLens, SenioritySnapshot } from '~/utils/seniority'
 import type { ComputedRef, Ref } from 'vue'
-import { createSnapshot, createLens, uniqueEntryValues } from '~/utils/seniority-engine'
+import { createSeniorityLens, createSenioritySnapshot, getSeniorityEntryValues } from '~/utils/seniority'
 import { computeRetireDateValue } from '~/utils/date'
 import { parsePlainDate, serializePlainDate, todayPlainDate, Temporal, type PlainDate } from '~/utils/temporal'
 import { normalizeEmployeeNumber } from '~/utils/schemas/seniority-list'
@@ -40,7 +40,7 @@ const birthDate = shallowRef<PlainDate | null>(null)
 let _dbInitialized = false
 
 // Lazy singleton computeds — created once on first call, shared by all callers.
-// Prevents re-evaluating createSnapshot(17k entries) on every tab switch.
+// Prevents re-evaluating createSenioritySnapshot(17k entries) on every tab switch.
 let _userEntry: ComputedRef<SeniorityEntry | undefined> | null = null
 let _baseSnapshot: ComputedRef<SenioritySnapshot | null> | null = null
 let _snapshot: ComputedRef<SenioritySnapshot | null> | null = null
@@ -109,15 +109,15 @@ export function useSeniorityCore() {
         selectedSeat: selectedSeat.value,
         selectedFleet: selectedFleet.value,
       }).catch((e: unknown) => {
-        log.error('Failed to persist growthConfig preference', { error: String(e) })
+        log.error('Failed to persist new-hire configuration preference', { error: String(e) })
       })
     })
   }
 
   // New-hire computed helpers
-  const availableBases = computed(() => uniqueEntryValues(seniorityStore.entries, 'base'))
-  const availableSeats = computed(() => uniqueEntryValues(seniorityStore.entries, 'seat'))
-  const availableFleets = computed(() => uniqueEntryValues(seniorityStore.entries, 'fleet'))
+  const availableBases = computed(() => [...getSeniorityEntryValues(seniorityStore.entries, 'base')])
+  const availableSeats = computed(() => [...getSeniorityEntryValues(seniorityStore.entries, 'seat')])
+  const availableFleets = computed(() => [...getSeniorityEntryValues(seniorityStore.entries, 'fleet')])
 
   const realUserFound = computed(() => {
     const empNum = userStore.employeeNumber
@@ -183,7 +183,7 @@ export function useSeniorityCore() {
   }
 
   // Lazy singleton computeds — created once, reused by all callers.
-  // This avoids re-evaluating createSnapshot(17k entries) on every tab switch.
+  // This avoids re-evaluating createSenioritySnapshot(17k entries) on every tab switch.
   if (!_userEntry) {
     _userEntry = computed<SeniorityEntry | undefined>(() => {
       const empNum = userStore.employeeNumber
@@ -196,7 +196,7 @@ export function useSeniorityCore() {
   if (!_baseSnapshot) {
     _baseSnapshot = computed<SenioritySnapshot | null>(() => {
       if (seniorityStore.entries.length === 0) return null
-      return createSnapshot([...seniorityStore.entries])
+      return createSenioritySnapshot([...seniorityStore.entries])
     })
   }
 
@@ -205,14 +205,14 @@ export function useSeniorityCore() {
       const synthetic = syntheticEntry.value
       if (!synthetic) return _baseSnapshot!.value
       if (seniorityStore.entries.length === 0) return null
-      return createSnapshot([...seniorityStore.entries, synthetic])
+      return createSenioritySnapshot([...seniorityStore.entries, synthetic])
     })
   }
 
   if (!_lens) {
     _lens = computed<SeniorityLens | null>(() => {
       if (!_snapshot!.value) return null
-      return createLens(_snapshot!.value, { asOfDate: todayPlainDate() })
+      return createSeniorityLens(_snapshot!.value, { asOfDate: todayPlainDate() })
     })
   }
 

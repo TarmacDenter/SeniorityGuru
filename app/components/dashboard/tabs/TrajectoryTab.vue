@@ -1,13 +1,12 @@
 <script setup lang="ts">
 import { useSeniorityCore, useQualFilter, useStanding, useTrajectory } from '~/composables/seniority'
-import { DEFAULT_GROWTH_CONFIG, createScenario, type GrowthConfig } from '~/utils/seniority-engine'
-import { todayPlainDate } from '~/utils/temporal'
+import { DEFAULT_SENIORITY_GROWTH_ASSUMPTIONS, createSeniorityScenario, presentPercentileCrossing, presentSeniorityTrajectory, type GrowthAssumptions } from '~/utils/seniority'
 
 defineProps<{ loading?: boolean }>()
 
 const { hasData, hasAnchor, entries, lens, anchoredLens, projectionEndDate } = useSeniorityCore()
 
-const growthConfig = ref<GrowthConfig>({ ...DEFAULT_GROWTH_CONFIG })
+const growthAssumptions = ref<GrowthAssumptions>({ ...DEFAULT_SENIORITY_GROWTH_ASSUMPTIONS })
 
 const { rankCard } = useStanding()
 
@@ -15,18 +14,21 @@ const {
   chartData: trajectoryChartData,
   computeComparativeTrajectory,
   computeRetirementProjection,
-} = useTrajectory(growthConfig)
+} = useTrajectory(growthAssumptions)
 
 const qualFilter = useQualFilter()
-const scopedScenario = computed(() => createScenario({
-  projectionDate: todayPlainDate(),
-  growthConfig: growthConfig.value,
-  scopeFilter: qualFilter.qualSpec.value,
+const scopedScenario = computed(() => createSeniorityScenario({
+  growthAssumptions: growthAssumptions.value,
+  qualificationScope: qualFilter.qualificationScope.value,
 }))
-const retirementWave = computed(() => lens.value?.retirementWave(scopedScenario.value) ?? [])
-const waveTrajectoryResult = computed(() => projectionEndDate.value && anchoredLens.value?.trajectory(projectionEndDate.value, scopedScenario.value) || null)
+const retirementWave = computed(() => lens.value?.retirementYearAnalysis(scopedScenario.value) ?? [])
+const waveTrajectoryResult = computed(() => projectionEndDate.value
+  ? anchoredLens.value?.seniorityTrajectory({ through: projectionEndDate.value, scenario: scopedScenario.value }) ?? null
+  : null)
 const waveTrajectory = computed(() => waveTrajectoryResult.value?.points ?? [])
-const qualTrajectoryDeltas = computed(() => waveTrajectoryResult.value?.deltas ?? [])
+const qualificationTrajectoryChanges = computed(() => waveTrajectoryResult.value
+  ? presentSeniorityTrajectory(waveTrajectoryResult.value).changes
+  : [])
 const targetPercentile = ref(50)
 const targetPercentileMin = computed(() => waveTrajectory.value[0]?.percentile ?? 0)
 const targetPercentileMax = computed(() => {
@@ -39,9 +41,13 @@ watch([targetPercentileMin, targetPercentileMax], ([min, max]) => {
   targetPercentile.value = Math.min(Math.max(targetPercentile.value, min), max)
 }, { immediate: true })
 
-const thresholdResult = computed(() => projectionEndDate.value
-  ? anchoredLens.value?.percentileCrossing(targetPercentile.value, projectionEndDate.value, scopedScenario.value) ?? null
-  : null)
+const thresholdResult = computed(() => presentPercentileCrossing(projectionEndDate.value
+  ? anchoredLens.value?.percentileCrossing({
+    targetPercentile: targetPercentile.value,
+    through: projectionEndDate.value,
+    scenario: scopedScenario.value,
+  }) ?? null
+  : null))
 const bannerKey = 'qual-projections-banner-dismissed'
 const isBannerDismissed = ref(typeof localStorage !== 'undefined' && localStorage.getItem(bannerKey) === 'true')
 
@@ -75,7 +81,7 @@ const ready = useDeferredReady()
 
     <template v-else>
     <!-- Growth assumption bar -->
-    <DashboardGrowthBar v-model="growthConfig" />
+    <DashboardGrowthBar v-model="growthAssumptions" />
 
     <!-- Scrollable content -->
     <div class="p-3 sm:p-6 space-y-6 flex-1 overflow-y-auto">
@@ -104,9 +110,9 @@ const ready = useDeferredReady()
         v-else-if="hasAnchor"
         :data="trajectoryChartData"
       >
-        <template v-if="growthConfig.enabled" #badge>
+        <template v-if="growthAssumptions.enabled" #badge>
           <UBadge color="primary" variant="subtle" size="xs" class="ml-2">
-            {{ (growthConfig.annualRate * 100).toFixed(1) }}% annual growth
+            {{ (growthAssumptions.annualGrowthRate * 100).toFixed(1) }}% annual growth
           </UBadge>
         </template>
       </DashboardTrajectoryChart>
@@ -150,19 +156,19 @@ const ready = useDeferredReady()
         <div class="sm:col-span-6">
           <UCard >
             <template #header>
-              <h3 class="font-semibold">Retirement Wave{{ qualFilter.qualLabel.value ? ` — ${qualFilter.qualLabel.value}` : '' }}</h3>
+              <h3 class="font-semibold">Retirement Wave{{ qualFilter.qualificationLabel.value ? ` — ${qualFilter.qualificationLabel.value}` : '' }}</h3>
             </template>
             <AnalyticsRetirementWaveChart
               :wave-buckets="retirementWave"
               :trajectory-points="waveTrajectory"
-              :selected-qual="qualFilter.qualLabel.value"
+              :qualification-scope="qualFilter.qualificationLabel.value"
             />
           </UCard>
         </div>
         <div class="sm:col-span-5">
           <UCard >
             <template #header>
-              <h3 class="font-semibold">Percentile Threshold{{ qualFilter.qualLabel.value ? ` — ${qualFilter.qualLabel.value}` : '' }}</h3>
+              <h3 class="font-semibold">Percentile Threshold{{ qualFilter.qualificationLabel.value ? ` — ${qualFilter.qualificationLabel.value}` : '' }}</h3>
             </template>
             <AnalyticsPercentileThresholdCalculator
               :result="thresholdResult"
@@ -185,11 +191,11 @@ const ready = useDeferredReady()
       <!-- Section C: Rate of change -->
 
       <!-- Trajectory Rate of Change (qual-filtered) -->
-      <UCard v-if="qualTrajectoryDeltas.length > 0">
+      <UCard v-if="qualificationTrajectoryChanges.length > 0">
         <template #header>
           <h3 class="font-semibold">Seniority Improvement Rate</h3>
         </template>
-        <AnalyticsTrajectoryRateOfChange :deltas="qualTrajectoryDeltas" selected-qual="" />
+        <AnalyticsTrajectoryRateOfChange :changes="qualificationTrajectoryChanges" qualification-scope="" />
       </UCard>
 
     </div>

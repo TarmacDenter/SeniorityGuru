@@ -5,7 +5,7 @@ import { formatDate } from '~/utils/date'
 import type { PlainDate } from '~/utils/temporal'
 
 interface TableRow {
-  qualKey: string
+  qualificationLabel: string
   base: string | null
   seniorityNumber: number
   hireDate: PlainDate
@@ -14,7 +14,7 @@ interface TableRow {
 }
 
 const props = defineProps<{
-  rows: { qualKey: string; fleet: string; seat: string; base: string | null; seniorityNumber: number; hireDate: PlainDate; yos: number }[]
+  rows: { qualificationLabel: string; fleet: string; seat: string; base: string | null; seniorityNumber: number; hireDate: PlainDate; yos: number }[]
   userSeniorityNumber: number | undefined
 }>()
 
@@ -29,11 +29,11 @@ const tableRows = computed<TableRow[]>(() =>
 
 const columns: TableColumn<TableRow>[] = [
   {
-    accessorKey: 'qualKey',
-    header: 'Qual',
+    accessorKey: 'qualificationLabel',
+    header: 'Qualification',
     cell: ({ row }) =>
       h('div', { class: 'flex items-center gap-2' }, [
-        h('span', row.original.qualKey),
+        h('span', row.original.qualificationLabel),
         row.original.isHoldable
           ? h('span', {
               class: 'inline-block size-2 rounded-full bg-[var(--ui-color-success-500)]',

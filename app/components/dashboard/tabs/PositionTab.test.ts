@@ -9,7 +9,7 @@ vi.mock('~/components/dashboard/GrowthBar.vue', () => ({
 const { mockAnchoredLens, mockHasData } = vi.hoisted(() => {
   const { ref: vRef } = require('vue')
   return {
-    mockAnchoredLens: vRef(null) as { value: { qualScales: () => unknown[] } | null },
+    mockAnchoredLens: vRef(null) as { value: { qualificationPositions: () => unknown[] } | null },
     mockHasData: vRef(false),
   }
 })
@@ -61,16 +61,38 @@ describe('PositionTab', () => {
   it('renders anchored qualification-scale holdability states', async () => {
     mockHasData.value = true
     mockAnchoredLens.value = {
-      qualScales: () => [
+      qualificationPositions: () => [
         {
-          fleet: '737', seat: 'CA', base: 'JFK', activeCount: 1,
-          plugPercentile: 60, plugSenNum: 100, p25: 25, median: 50, p75: 75, max: 100,
-          density: [], userPercentile: 70, currentUserPercentile: 60, isHoldable: true,
+          distribution: {
+            qualification: { fleet: '737', seat: 'CA', base: 'JFK' },
+            activePilotCount: 1,
+            thresholdPercentile: 60,
+            thresholdSeniorityNumber: 100,
+            percentile25: 25,
+            medianPercentile: 50,
+            percentile75: 75,
+            maximumPercentile: 100,
+            percentileDensity: [],
+          },
+          projectedPercentile: 70,
+          currentPercentile: 60,
+          modeledHoldable: true,
         },
         {
-          fleet: '737', seat: 'FO', base: 'JFK', activeCount: 1,
-          plugPercentile: 60, plugSenNum: 100, p25: 25, median: 50, p75: 75, max: 100,
-          density: [], userPercentile: 50, currentUserPercentile: 40, isHoldable: false,
+          distribution: {
+            qualification: { fleet: '737', seat: 'FO', base: 'JFK' },
+            activePilotCount: 1,
+            thresholdPercentile: 60,
+            thresholdSeniorityNumber: 100,
+            percentile25: 25,
+            medianPercentile: 50,
+            percentile75: 75,
+            maximumPercentile: 100,
+            percentileDensity: [],
+          },
+          projectedPercentile: 50,
+          currentPercentile: 40,
+          modeledHoldable: false,
         },
       ],
     }

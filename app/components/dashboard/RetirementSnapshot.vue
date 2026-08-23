@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { h } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
-import { formatRankDelta } from '~/utils/seniority-engine'
+import { formatSeniorityRankChange } from '~/utils/seniority'
 import { formatMonthYear, formatYear } from '~/utils/date'
 
-interface TrajectoryPoint {
+interface SeniorityTrajectoryPoint {
   date: string
   rank: number
   percentile: number
@@ -12,8 +12,8 @@ interface TrajectoryPoint {
 
 const props = defineProps<{
   snapshot: {
-    atRetirement: TrajectoryPoint
-    fullTrajectory: TrajectoryPoint[]
+    atRetirement: SeniorityTrajectoryPoint
+    fullTrajectory: SeniorityTrajectoryPoint[]
     retireDate: string
   }
 }>()
@@ -54,7 +54,7 @@ const tableData = computed<TableRow[]>(() => {
       year: formatYear(point.date),
       rank: point.rank,
       percentile: point.percentile,
-      rankDelta: formatRankDelta(delta),
+      rankDelta: formatSeniorityRankChange(delta),
     }
   })
 })

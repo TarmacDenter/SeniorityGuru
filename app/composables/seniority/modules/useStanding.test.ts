@@ -23,7 +23,7 @@ describe('useStanding', () => {
     const { rankCard } = useStanding()
     expect(rankCard.value).toEqual({
       seniorityNumber: 0,
-      adjustedSeniority: 0,
+      activeRank: 0,
       percentile: 0,
       base: '--',
       seat: '--',
@@ -46,9 +46,7 @@ describe('useStanding', () => {
     expect(rankCard.value.seat).toBe('FO')
     expect(rankCard.value.fleet).toBe('777')
     expect(rankCard.value.hireDate).toBe('2012-03-01')
-    // adjustedRank = rank - retiredAbove; rank=2 (1 entry < sen#2), retiredAbove=0
-    expect(rankCard.value.adjustedSeniority).toBe(2)
-    // percentile = ((adjustedTotal - adjustedRank + 1) / adjustedTotal) * 100 rounded to 1 decimal
+    expect(rankCard.value.activeRank).toBe(2)
     expect(rankCard.value.percentile).toBe(Math.round((2 / 3) * 100 * 10) / 10)
   })
 
@@ -70,14 +68,13 @@ describe('useStanding', () => {
     expect(jfkCell).toBeDefined()
     expect(jfkCell.seat).toBe('CA')
     expect(jfkCell.fleet).toBe('737')
-    expect(jfkCell.isUserCurrent).toBe(true) // E2 is JFK/CA/737
-    expect(jfkCell.total).toBe(2)
-    // rank of seniority_number=2 within [1,2]: rank=2
-    expect(jfkCell.rank).toBe(2)
+    expect(jfkCell.isAnchorCurrentQualification).toBe(true)
+    expect(jfkCell.listPilotCount).toBe(2)
+    expect(jfkCell.listRank).toBe(2)
 
     const laxCell = baseStatus.value.find(r => r.base === 'LAX')!
     expect(laxCell).toBeDefined()
-    expect(laxCell.isUserCurrent).toBe(false)
+    expect(laxCell.isAnchorCurrentQualification).toBe(false)
   })
 
   it('computes statCards with total pilots, retirements, base rank, and lists uploaded', () => {

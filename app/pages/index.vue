@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { QualDemographicScale } from '~/utils/seniority-engine'
+import type { PresentedQualificationPosition } from '~/utils/seniority'
 
 definePageMeta({ layout: 'default' })
 
@@ -124,14 +124,26 @@ const DEMO_CURRENT_PCT = 35
 const demoProjection = useState('landing-demo-projection', () => false)
 const demoProjectionYears = useState('landing-demo-projection-years', () => 5)
 
-const demoQualScales = computed<QualDemographicScale[]>(() => {
+const demoQualScales = computed<PresentedQualificationPosition[]>(() => {
   const years = demoProjection.value ? demoProjectionYears.value : 0
   const projectedPct = Math.min(99, DEMO_CURRENT_PCT + years * 3.2)
   return BASE_QUAL_SCALES.map(scale => ({
-    ...scale,
-    userPercentile: projectedPct,
-    currentUserPercentile: DEMO_CURRENT_PCT,
-    isHoldable: projectedPct >= scale.plugPercentile,
+    qualification: { fleet: scale.fleet, seat: scale.seat, base: scale.base },
+    activePilotCount: scale.activeCount,
+    thresholdPercentile: scale.plugPercentile,
+    thresholdSeniorityNumber: scale.plugSenNum,
+    percentile25: scale.p25,
+    medianPercentile: scale.median,
+    percentile75: scale.p75,
+    maximumPercentile: scale.max,
+    percentileDensity: scale.density.map(bucket => ({
+      minimumPercentile: bucket.start,
+      maximumPercentile: bucket.start + 5,
+      pilotCount: bucket.count,
+    })),
+    projectedPercentile: projectedPct,
+    currentPercentile: DEMO_CURRENT_PCT,
+    modeledHoldable: projectedPct >= scale.plugPercentile,
   }))
 })
 
@@ -231,7 +243,11 @@ const demoQualOptions: { key: DemoQual; label: string }[] = [
 ]
 
 const demoAgeBuckets = computed(() => demoAgeData[demoQual.value])
-const demoWaveBuckets = computed(() => demoWaveData[demoQual.value])
+const demoWaveBuckets = computed(() => demoWaveData[demoQual.value].map(bucket => ({
+  year: bucket.year,
+  retirementCount: bucket.count,
+  isRetirementWave: bucket.isWave,
+})))
 
 const config = useRuntimeConfig()
 const feedbackEmail = config.public.feedbackEmail as string
@@ -506,7 +522,7 @@ async function enterDemo() {
     </section>
 
     <section>
-      <!-- Qual Position Scale -->
+      <!-- Qualification Position Scale -->
       <div class="max-w-5xl mx-auto py-20">
         <UCard>
           <template #header>
@@ -533,7 +549,7 @@ async function enterDemo() {
               Instead of assuming that every retirement creates a seat for you, this view shows how competitive each
               qualification is over time. Each histogram row shows the number of pilots in a 5% seniority band.
             </p>
-            <AnalyticsQualSeniorityScale :scales="demoQualScales" />
+            <AnalyticsQualSeniorityScale :positions="demoQualScales" />
           </div>
         </UCard>
       </div>
@@ -658,7 +674,7 @@ async function enterDemo() {
           </p>
         </div>
 
-        <!-- Qual toggle -->
+        <!-- Qualification toggle -->
         <div class="flex justify-center mb-8">
           <div class="flex rounded-lg border border-(--ui-border) overflow-hidden text-sm font-medium">
             <button v-for="opt in demoQualOptions" :key="opt.key" class="px-4 py-1.5 transition-colors" :class="demoQual === opt.key
@@ -692,7 +708,7 @@ async function enterDemo() {
               <p class="text-sm text-muted">
                 The chart shows projected retirements by year.
               </p>
-              <AnalyticsRetirementWaveChart :wave-buckets="demoWaveBuckets" :trajectory-points="[]" selected-qual="" />
+              <AnalyticsRetirementWaveChart :wave-buckets="demoWaveBuckets" :trajectory-points="[]" qualification-scope="" />
             </div>
           </UCard>
         </div>

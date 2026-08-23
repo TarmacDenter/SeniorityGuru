@@ -1,15 +1,15 @@
 <script setup lang="ts">
 import type { ChartData, TooltipItem } from 'chart.js'
 import { formatMonthYear, formatYear } from '~/utils/date'
-import type { QualSpec } from '~/utils/seniority-engine'
+import type { QualificationScope } from '~/utils/seniority'
 import type { SeniorityEntry } from '~/utils/schemas/seniority-list'
 
 const props = defineProps<{
   entries: readonly SeniorityEntry[]
   computeComparative: (
-    specA: QualSpec,
-    specB: QualSpec
-  ) => { labels: string[]; currentData: number[]; compareData: number[] }
+    specA: QualificationScope,
+    specB: QualificationScope
+  ) => { labels: string[]; baselineData: number[]; comparisonData: number[] }
   userBase?: string
   userSeat?: string
   userFleet?: string
@@ -42,7 +42,7 @@ const chartData = computed<ChartData<'line'>>(() => {
 
   const datasets: ChartData<'line'>['datasets'] = [{
     label: currentScope.value || 'Company-wide',
-    data: result.currentData,
+    data: result.baselineData,
     borderColor: colors.amber,
     backgroundColor: colors.amberLight,
     fill: false,
@@ -54,7 +54,7 @@ const chartData = computed<ChartData<'line'>>(() => {
   if (compareScope.value && compareScope.value !== currentScope.value) {
     datasets.push({
       label: compareScope.value,
-      data: result.compareData,
+      data: result.comparisonData,
       borderColor: colors.cyan,
       backgroundColor: colors.cyanLight,
       fill: false,

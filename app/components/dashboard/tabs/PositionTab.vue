@@ -2,7 +2,7 @@
 import { useSeniorityCore } from '~/composables/seniority'
 import { addYearsDate, diffDateYears } from '~/utils/date'
 import { todayPlainDate } from '~/utils/temporal'
-import { DEFAULT_GROWTH_CONFIG, createScenario, type GrowthConfig } from '~/utils/seniority-engine'
+import { DEFAULT_SENIORITY_GROWTH_ASSUMPTIONS, presentQualificationPositions, type GrowthAssumptions } from '~/utils/seniority'
 
 defineProps<{ loading?: boolean }>()
 
@@ -10,20 +10,21 @@ const { hasData, newHire, anchoredLens, projectionEndDate } = useSeniorityCore()
 const { employeeNumber } = useUser()
 const hasEmployeeNumber = computed(() => !!employeeNumber.value || !!newHire.syntheticEntry.value)
 
-const growthConfig = ref<GrowthConfig>({ ...DEFAULT_GROWTH_CONFIG })
+const growthAssumptions = ref<GrowthAssumptions>({ ...DEFAULT_SENIORITY_GROWTH_ASSUMPTIONS })
 const usePositionProjection = ref(false)
 const positionYearsInput = ref(1)
 const projectionYears = ref(0)
 const projectionDate = computed(() => addYearsDate(todayPlainDate(), projectionYears.value))
-const positionScenario = computed(() => createScenario({
-  projectionDate: projectionDate.value,
-  growthConfig: growthConfig.value,
-}))
-const qualScales = computed(() => anchoredLens.value?.qualScales(positionScenario.value) ?? [])
+const qualificationPositions = computed(() => presentQualificationPositions(
+  anchoredLens.value?.qualificationPositions({
+    through: projectionDate.value,
+    growthAssumptions: growthAssumptions.value,
+  }) ?? [],
+))
 
 const hasProjection = computed(() =>
-  qualScales.value.some(
-    s => Math.abs(s.userPercentile - s.currentUserPercentile) > 0.1,
+  qualificationPositions.value.some(
+    position => Math.abs(position.projectedPercentile - position.currentPercentile) > 0.1,
   ),
 )
 let positionDebounceTimer: ReturnType<typeof setTimeout> | null = null
@@ -67,7 +68,7 @@ onUnmounted(() => {
       v-else-if="!hasData"
       icon="i-lucide-map-pin"
       title="No Seniority Data Yet"
-      description="Upload your airline's seniority list to see your position across all quals and see holdability projections."
+      description="Upload your airline's seniority list to see your position across all qualifications and see holdability projections."
       :actions="[{ label: 'Upload Seniority List', icon: 'i-lucide-upload', to: '/seniority/upload', size: 'lg' as const }]"
       class="py-24 flex-1"
     />
@@ -96,7 +97,7 @@ onUnmounted(() => {
     </div>
 
     <!-- Growth assumption bar -->
-    <DashboardGrowthBar v-model="growthConfig" />
+    <DashboardGrowthBar v-model="growthAssumptions" />
 
     <!-- Scrollable content -->
     <div class="p-3 sm:p-6 space-y-6 flex-1 overflow-y-auto">
@@ -165,12 +166,12 @@ onUnmounted(() => {
         </template>
       </UCollapsible>
 
-      <!-- Qual Seniority Scale -->
-      <UCard v-if="qualScales.length > 0">
+      <!-- Qualification Seniority Scale -->
+      <UCard v-if="qualificationPositions.length > 0">
         <template #header>
-          <h3 class="font-semibold">Seniority Position by Qual</h3>
+          <h3 class="font-semibold">Seniority Position by Qualification</h3>
         </template>
-        <AnalyticsQualSeniorityScale :scales="qualScales" />
+        <AnalyticsQualSeniorityScale :positions="qualificationPositions" />
       </UCard>
 
       <UAlert
@@ -179,7 +180,7 @@ onUnmounted(() => {
         color="warning"
         variant="subtle"
         title="Employee Number Required"
-        description="Set your employee number in Settings to see your position across quals."
+        description="Set your employee number in Settings to see your position across qualifications."
       />
     </div>
     </template>

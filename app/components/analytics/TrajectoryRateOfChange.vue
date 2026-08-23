@@ -11,7 +11,7 @@ import {
   Legend,
 } from 'chart.js'
 import type { ChartOptions, TooltipItem } from 'chart.js'
-import type { TrajectoryDelta } from '~/utils/seniority-engine'
+import type { PresentedTrajectoryChange } from '~/utils/seniority'
 
 ChartJS.register(
   CategoryScale,
@@ -23,25 +23,25 @@ ChartJS.register(
 )
 
 const props = defineProps<{
-  deltas: TrajectoryDelta[]
-  selectedQual: string
+  changes: PresentedTrajectoryChange[]
+  qualificationScope: string
 }>()
 
 const { defaults, colors } = useChartTheme()
 
 const chartData = computed(() => ({
-  labels: props.deltas.map((d) => {
-    return formatYear(d.date)
+  labels: props.changes.map((change) => {
+    return formatYear(change.date)
   }),
   datasets: [
     {
       label: 'Percentile Change (pp/yr)',
-      data: props.deltas.map((d) => d.delta),
-      backgroundColor: props.deltas.map((d) =>
-        d.isPeak ? colors.peakHighlight : colors.primaryLight,
+      data: props.changes.map(change => change.percentilePointChange),
+      backgroundColor: props.changes.map(change =>
+        change.isPeak ? colors.peakHighlight : colors.primaryLight,
       ),
-      borderColor: props.deltas.map((d) =>
-        d.isPeak ? colors.peakBorder : colors.primary,
+      borderColor: props.changes.map(change =>
+        change.isPeak ? colors.peakBorder : colors.primary,
       ),
       borderWidth: 1,
     },
@@ -57,10 +57,10 @@ const chartOptions = computed<ChartOptions<'bar'>>(() => ({
       ...defaults.plugins?.tooltip,
       callbacks: {
         label: (item: TooltipItem<'bar'>) => {
-          const delta = props.deltas[item.dataIndex]
+          const change = props.changes[item.dataIndex]
           const y = item.parsed.y ?? 0
           const sign = y >= 0 ? '+' : ''
-          const peak = delta?.isPeak ? ' (Peak year)' : ''
+          const peak = change?.isPeak ? ' (Peak year)' : ''
           return `${sign}${y}pp${peak}`
         },
       },
@@ -83,7 +83,7 @@ const chartOptions = computed<ChartOptions<'bar'>>(() => ({
 <template>
   <div>
     <p class="mb-1 text-xs font-medium text-[var(--ui-text-muted)]">
-      YoY Percentile Point Change{{ selectedQual ? ` — ${selectedQual}` : '' }}
+      YoY Percentile Point Change{{ qualificationScope ? ` — ${qualificationScope}` : '' }}
     </p>
     <ClientOnly>
       <div class="h-56 relative">

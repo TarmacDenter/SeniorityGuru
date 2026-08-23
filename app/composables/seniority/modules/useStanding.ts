@@ -1,11 +1,11 @@
 import type { ComputedRef } from 'vue'
-import { formatNumber } from '~/utils/seniority-engine'
+import { formatSeniorityCount } from '~/utils/seniority'
 import { useSeniorityStore } from '~/stores/seniority'
 import { useSeniorityCore } from './useSeniorityCore'
 
 export interface RankCardData {
   seniorityNumber: number
-  adjustedSeniority: number
+  activeRank: number
   percentile: number
   base: string
   seat: string
@@ -17,13 +17,13 @@ export interface BaseStatusRow {
   base: string
   seat: string
   fleet: string
-  rank: number
-  adjustedRank: number
-  total: number
-  adjustedTotal: number
-  percentile: number
-  adjustedPercentile: number
-  isUserCurrent: boolean
+  listRank: number
+  activeRank: number
+  listPilotCount: number
+  activePilotCount: number
+  listPercentile: number
+  activePercentile: number
+  isAnchorCurrentQualification: boolean
 }
 
 export interface StatCard {
@@ -49,7 +49,7 @@ export function useStanding(): {
   const { lens, anchoredLens, userEntry, projectionEndDate } = useSeniorityCore()
   const seniorityStore = useSeniorityStore()
 
-  const standingResult = computed(() => anchoredLens.value?.standing() ?? null)
+  const standingResult = computed(() => anchoredLens.value?.seniorityStanding() ?? null)
 
   const rankCard = computed<RankCardData>(() => {
     const entry = userEntry.value
@@ -57,7 +57,7 @@ export function useStanding(): {
     if (!entry || !standing) {
       return {
         seniorityNumber: 0,
-        adjustedSeniority: 0,
+        activeRank: 0,
         percentile: 0,
         base: '--',
         seat: '--',
@@ -67,8 +67,8 @@ export function useStanding(): {
     }
     return {
       seniorityNumber: entry.seniority_number,
-      adjustedSeniority: standing.adjustedRank,
-      percentile: standing.adjustedPercentile,
+      activeRank: standing.activeRank,
+      percentile: standing.activePercentile,
       base: entry.base ?? '--',
       seat: entry.seat ?? '--',
       fleet: entry.fleet ?? '--',
@@ -79,17 +79,17 @@ export function useStanding(): {
   const baseStatus = computed<BaseStatusRow[]>(() => {
     const standing = standingResult.value
     if (!standing) return []
-    return standing.cellBreakdown.map(row => ({
-      base: row.base,
-      seat: row.seat,
-      fleet: row.fleet,
-      rank: row.rank,
-      adjustedRank: row.adjustedRank,
-      total: row.total,
-      adjustedTotal: row.adjustedTotal,
-      percentile: row.percentile,
-      adjustedPercentile: row.adjustedPercentile,
-      isUserCurrent: row.isAnchorCurrent,
+    return standing.qualificationStandings.map(row => ({
+      base: row.qualification.base,
+      seat: row.qualification.seat,
+      fleet: row.qualification.fleet,
+      listRank: row.listRank,
+      activeRank: row.activeRank,
+      listPilotCount: row.listPilotCount,
+      activePilotCount: row.activePilotCount,
+      listPercentile: row.listPercentile,
+      activePercentile: row.activePercentile,
+      isAnchorCurrentQualification: row.isAnchorCurrentQualification,
     }))
   })
 
@@ -102,11 +102,13 @@ export function useStanding(): {
     let baseRankValue = '--'
     let baseRankLabel = 'Your Base Rank'
     if (standing && entry?.base && entry?.seat && entry?.fleet) {
-      const userCell = standing.cellBreakdown.find(
-        c => c.base === entry.base && c.seat === entry.seat && c.fleet === entry.fleet,
+      const userQualification = standing.qualificationStandings.find(
+        item => item.qualification.base === entry.base
+          && item.qualification.seat === entry.seat
+          && item.qualification.fleet === entry.fleet,
       )
-      if (userCell) {
-        baseRankValue = formatNumber(userCell.adjustedRank)
+      if (userQualification) {
+        baseRankValue = formatSeniorityCount(userQualification.activeRank)
         baseRankLabel = `${entry.seat}/${entry.fleet}/${entry.base}`
       }
     }
@@ -114,16 +116,16 @@ export function useStanding(): {
     return [
       {
         label: 'Total Pilots',
-        value: formatNumber(entries.length),
+        value: formatSeniorityCount(entries.length),
         icon: 'i-lucide-users',
       },
       {
         label: 'Retirements (Next 12 mo.)',
-        value: formatNumber(lens.value?.retirementsThisYear() ?? 0),
+        value: formatSeniorityCount(lens.value?.retirementsNext12Months() ?? 0),
         trend: entry && standing
-          ? `${formatNumber(standing.retirementsThisYearSeniorToAnchor)} senior to you`
+          ? `${formatSeniorityCount(standing.rollingNext12MonthRetirementsSeniorToAnchor)} senior to you`
           : undefined,
-        trendUp: (standing?.retirementsThisYearSeniorToAnchor ?? 0) > 0 || undefined,
+        trendUp: (standing?.rollingNext12MonthRetirementsSeniorToAnchor ?? 0) > 0 || undefined,
         icon: 'i-lucide-calendar-clock',
       },
       {
@@ -133,13 +135,15 @@ export function useStanding(): {
       },
       {
         label: 'Lists Uploaded',
-        value: formatNumber(lists.length),
+        value: formatSeniorityCount(lists.length),
         icon: 'i-lucide-file-text',
       },
     ]
   })
 
-  const trajectoryResult = computed(() => projectionEndDate.value && anchoredLens.value?.trajectory(projectionEndDate.value) || null)
+  const trajectoryResult = computed(() => projectionEndDate.value
+    ? anchoredLens.value?.seniorityTrajectory({ through: projectionEndDate.value }) ?? null
+    : null)
 
   const retirementSnapshot = computed<RetirementSnapshotData | null>(() => {
     const entry = userEntry.value

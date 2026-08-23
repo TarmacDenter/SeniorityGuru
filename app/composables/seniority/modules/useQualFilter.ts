@@ -1,5 +1,5 @@
-import type { QualSpec } from '~/utils/seniority-engine'
-import { qualSpecLabel, uniqueEntryValues } from '~/utils/seniority-engine'
+import type { QualificationScope } from '~/utils/seniority'
+import { formatQualificationScope, getSeniorityEntryValues } from '~/utils/seniority'
 import { useSeniorityCore } from './useSeniorityCore'
 
 export function useQualFilter() {
@@ -9,25 +9,25 @@ export function useQualFilter() {
   const selectedSeat = ref<string | null>(null)
   const selectedBase = ref<string | null>(null)
 
-  const availableFleets = computed(() => snapshot.value?.uniqueFleets ?? [])
-  const availableSeats = computed(() => snapshot.value?.uniqueSeats ?? [])
+  const availableFleets = computed(() => [...(snapshot.value?.fleets ?? [])])
+  const availableSeats = computed(() => [...(snapshot.value?.seats ?? [])])
   const availableBases = computed(() => {
     const matchingEntries = entries.value.filter((entry) => {
       if (selectedFleet.value && entry.fleet !== selectedFleet.value) return false
       if (selectedSeat.value && entry.seat !== selectedSeat.value) return false
       return true
     })
-    return uniqueEntryValues(matchingEntries, 'base')
+    return [...getSeniorityEntryValues(matchingEntries, 'base')]
   })
 
-  const qualSpec = computed<QualSpec>(() => ({
+  const qualificationScope = computed<QualificationScope>(() => ({
     ...(selectedFleet.value && { fleet: selectedFleet.value }),
     ...(selectedSeat.value && { seat: selectedSeat.value }),
     ...(selectedBase.value && { base: selectedBase.value }),
   }))
 
-  const qualLabel = computed(() => {
-    const label = qualSpecLabel(qualSpec.value)
+  const qualificationLabel = computed(() => {
+    const label = formatQualificationScope(qualificationScope.value)
     return label === 'Company-wide' ? '' : label
   })
 
@@ -54,8 +54,8 @@ export function useQualFilter() {
     availableFleets,
     availableSeats,
     availableBases,
-    qualSpec,
-    qualLabel,
+    qualificationScope,
+    qualificationLabel,
     clear,
   }
 }
