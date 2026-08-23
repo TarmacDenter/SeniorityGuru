@@ -44,6 +44,22 @@ describe('demographic domain analysis', () => {
     expect(result.every(row => row.qualification.seat === 'CA')).toBe(true)
   })
 
+  it('orders captain Qualification thresholds by fleet, seat, then base', () => {
+    const result = findCaptainQualificationThresholds([
+      makeEntry({ fleet: '787', seat: 'CA', base: 'LAX', seniority_number: 100 }),
+      makeEntry({ fleet: '787', seat: 'CA', base: 'JFK', seniority_number: 200 }),
+      makeEntry({ fleet: '737', seat: 'CA', base: 'LAX', seniority_number: 300 }),
+      makeEntry({ fleet: '737', seat: 'CA', base: 'JFK', seniority_number: 400 }),
+    ], asOfDate)
+
+    expect(result.map(row => row.qualification)).toEqual([
+      { fleet: '737', seat: 'CA', base: 'JFK' },
+      { fleet: '737', seat: 'CA', base: 'LAX' },
+      { fleet: '787', seat: 'CA', base: 'JFK' },
+      { fleet: '787', seat: 'CA', base: 'LAX' },
+    ])
+  })
+
   it('returns no captain thresholds when the scope has no captains', () => {
     expect(findCaptainQualificationThresholds([makeEntry({ seat: 'FO' })], asOfDate)).toEqual([])
   })

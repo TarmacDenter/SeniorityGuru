@@ -66,7 +66,11 @@ export function findCaptainQualificationThresholds(
     seniorityNumber: entry.seniority_number,
     hireDate: entry.hire_date,
     yearsOfService: computeYOSDate(entry.hire_date, asOfDate),
-  })).sort((a, b) => qualificationKey(a.qualification).localeCompare(qualificationKey(b.qualification)))
+  })).sort((a, b) =>
+    a.qualification.fleet.localeCompare(b.qualification.fleet)
+    || a.qualification.seat.localeCompare(b.qualification.seat)
+    || a.qualification.base.localeCompare(b.qualification.base),
+  )
 }
 
 export function analyzeYearsOfServiceBuckets(
