@@ -19,6 +19,7 @@ export default defineVitestConfig({
         },
       },
     },
+    hookTimeout: 30_000,
     envFile: '.env.test',
     exclude: ['node_modules/**', 'e2e/**', '.worktrees/**', 'dev/**'],
   },

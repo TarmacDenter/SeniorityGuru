@@ -1,9 +1,17 @@
 import { describe, it, expect, vi } from 'vitest'
 import { mountSuspended, mockNuxtImport } from '@nuxt/test-utils/runtime'
+import { parsePlainDate } from '~/utils/temporal'
 
-const { mockHasData } = vi.hoisted(() => {
+vi.mock('~/components/dashboard/GrowthBar.vue', () => ({
+  default: { template: '<div />' },
+}))
+
+const { mockAnchoredAnalysis, mockHasData } = vi.hoisted(() => {
   const { ref: vRef } = require('vue')
-  return { mockHasData: vRef(false) }
+  return {
+    mockAnchoredAnalysis: vRef(null) as { value: { qualificationPositions: () => { domain: unknown[]; presentation: unknown[] } } | null },
+    mockHasData: vRef(false),
+  }
 })
 
 mockNuxtImport('useSeniorityCore', () => () => ({
@@ -23,11 +31,12 @@ mockNuxtImport('useSeniorityCore', () => () => ({
     birthDate: { value: null },
     reset: vi.fn(),
   },
-  snapshot: { value: null },
-  lens: { value: null },
+  analysis: { value: null },
+  anchoredAnalysis: mockAnchoredAnalysis,
   userEntry: { value: undefined },
   hasAnchor: { value: false },
   isNewHireMode: { value: false },
+  projectionEndDate: { value: parsePlainDate('2040-06-15') },
 }))
 
 mockNuxtImport('useUser', () => () => ({ employeeNumber: { value: null } }))
@@ -46,5 +55,51 @@ describe('PositionTab', () => {
       props: { loading: true },
     })
     expect(wrapper.html()).toContain('skeleton')
+  })
+
+  it('renders anchored qualification-scale holdability states', async () => {
+    mockHasData.value = true
+    mockAnchoredAnalysis.value = {
+      qualificationPositions: () => ({
+        domain: [],
+        presentation: [
+          {
+            qualification: { fleet: '737', seat: 'CA', base: 'JFK' },
+            activePilotCount: 1,
+            thresholdPercentile: 60,
+            thresholdSeniorityNumber: 100,
+            percentile25: 25,
+            medianPercentile: 50,
+            percentile75: 75,
+            maximumPercentile: 100,
+            percentileDensity: [],
+            projectedPercentile: 70,
+            currentPercentile: 60,
+            modeledHoldable: true,
+          },
+          {
+            qualification: { fleet: '737', seat: 'FO', base: 'JFK' },
+            activePilotCount: 1,
+            thresholdPercentile: 60,
+            thresholdSeniorityNumber: 100,
+            percentile25: 25,
+            medianPercentile: 50,
+            percentile75: 75,
+            maximumPercentile: 100,
+            percentileDensity: [],
+            projectedPercentile: 50,
+            currentPercentile: 40,
+            modeledHoldable: false,
+          },
+        ],
+      }),
+    }
+    const Tab = await import('./PositionTab.vue')
+    const wrapper = await mountSuspended(Tab.default)
+
+    const projectedMarkers = wrapper.findAll('[data-testid="qualification-scale-projected-position"]')
+    expect(projectedMarkers).toHaveLength(2)
+    expect(projectedMarkers[0]!.classes()).toContain('bg-[var(--ui-color-success-500)]')
+    expect(projectedMarkers[1]!.classes()).toContain('bg-[var(--ui-color-primary-500)]')
   })
 })

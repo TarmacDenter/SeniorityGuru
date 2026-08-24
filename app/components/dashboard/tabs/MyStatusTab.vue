@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { RankCardData, BaseStatusRow, StatCard, RetirementSnapshotData } from '~/composables/seniority'
-import type { TrajectoryDelta } from '~/utils/seniority-engine'
+import type { PresentedTrajectoryChange } from '~/utils/seniority'
 
 defineProps<{
   loading: boolean
@@ -11,7 +11,7 @@ defineProps<{
   rankCard: RankCardData
   stats: StatCard[]
   retirementSnapshot: RetirementSnapshotData | null
-  trajectoryDeltas: TrajectoryDelta[]
+  trajectoryChanges: PresentedTrajectoryChange[]
   baseStatusData: BaseStatusRow[]
   trajectoryChartData: { labels: string[]; data: number[] }
 }>()
@@ -54,8 +54,8 @@ defineProps<{
         <!-- Quick-hits: sparkline + retirement snapshot -->
         <template v-if="userFound">
           <DashboardTrajectoryDeltaSparkline
-            v-if="trajectoryDeltas.length > 0"
-            :deltas="trajectoryDeltas"
+            v-if="trajectoryChanges.length > 0"
+            :changes="trajectoryChanges"
             class="lg:[grid-column:1/3] dashboard-enter"
             style="animation-delay: 260ms"
           />

@@ -1,9 +1,9 @@
 import type { SeniorityEntry } from '~/utils/schemas/seniority-list'
-import type { SenioritySnapshot, SeniorityLens, PilotAnchor } from '~/utils/seniority-engine'
+import type { AnchoredSeniorityAnalysis, SeniorityAnalysis } from '~/utils/seniority'
 import type { ComputedRef, Ref } from 'vue'
-import { createSnapshot, createLens, uniqueEntryValues } from '~/utils/seniority-engine'
+import { createSeniorityAnalysis } from '~/utils/seniority'
 import { computeRetireDateValue } from '~/utils/date'
-import { parsePlainDate, serializePlainDate, todayPlainDate, type PlainDate } from '~/utils/temporal'
+import { parsePlainDate, serializePlainDate, todayPlainDate, Temporal, type PlainDate } from '~/utils/temporal'
 import { normalizeEmployeeNumber } from '~/utils/schemas/seniority-list'
 import { useSeniorityStore } from '~/stores/seniority'
 import { useUserStore } from '~/stores/user'
@@ -40,20 +40,18 @@ const birthDate = shallowRef<PlainDate | null>(null)
 let _dbInitialized = false
 
 // Lazy singleton computeds — created once on first call, shared by all callers.
-// Prevents re-evaluating createSnapshot(17k entries) on every tab switch.
+// Prevents rebuilding the Seniority Analysis indexes for 17k entries on every tab switch.
 let _userEntry: ComputedRef<SeniorityEntry | undefined> | null = null
-let _baseSnapshot: ComputedRef<SenioritySnapshot | null> | null = null
-let _snapshot: ComputedRef<SenioritySnapshot | null> | null = null
-let _baseLens: ComputedRef<SeniorityLens | null> | null = null
-let _lens: ComputedRef<SeniorityLens | null> | null = null
+let _baseAnalysis: ComputedRef<SeniorityAnalysis | null> | null = null
+let _analysis: ComputedRef<SeniorityAnalysis | null> | null = null
+let _anchoredAnalysis: ComputedRef<AnchoredSeniorityAnalysis | null> | null = null
 
 /** Reset singleton computeds. Called by tests that create fresh Pinia instances. */
 export function _resetCoreSingletons() {
   _userEntry = null
-  _baseSnapshot = null
-  _snapshot = null
-  _baseLens = null
-  _lens = null
+  _baseAnalysis = null
+  _analysis = null
+  _anchoredAnalysis = null
   _dbInitialized = false
 }
 
@@ -109,15 +107,15 @@ export function useSeniorityCore() {
         selectedSeat: selectedSeat.value,
         selectedFleet: selectedFleet.value,
       }).catch((e: unknown) => {
-        log.error('Failed to persist growthConfig preference', { error: String(e) })
+        log.error('Failed to persist new-hire configuration preference', { error: String(e) })
       })
     })
   }
 
   // New-hire computed helpers
-  const availableBases = computed(() => uniqueEntryValues(seniorityStore.entries, 'base'))
-  const availableSeats = computed(() => uniqueEntryValues(seniorityStore.entries, 'seat'))
-  const availableFleets = computed(() => uniqueEntryValues(seniorityStore.entries, 'fleet'))
+  const availableBases = computed(() => [...(_baseAnalysis?.value?.catalog.bases ?? [])])
+  const availableSeats = computed(() => [...(_baseAnalysis?.value?.catalog.seats ?? [])])
+  const availableFleets = computed(() => [...(_baseAnalysis?.value?.catalog.fleets ?? [])])
 
   const realUserFound = computed(() => {
     const empNum = userStore.employeeNumber
@@ -183,7 +181,7 @@ export function useSeniorityCore() {
   }
 
   // Lazy singleton computeds — created once, reused by all callers.
-  // This avoids re-evaluating createSnapshot(17k entries) on every tab switch.
+  // This avoids rebuilding the Seniority Analysis indexes for 17k entries on every tab switch.
   if (!_userEntry) {
     _userEntry = computed<SeniorityEntry | undefined>(() => {
       const empNum = userStore.employeeNumber
@@ -193,58 +191,59 @@ export function useSeniorityCore() {
     })
   }
 
-  if (!_baseSnapshot) {
-    _baseSnapshot = computed<SenioritySnapshot | null>(() => {
+  if (!_baseAnalysis) {
+    _baseAnalysis = computed<SeniorityAnalysis | null>(() => {
       if (seniorityStore.entries.length === 0) return null
-      return createSnapshot([...seniorityStore.entries])
+      return createSeniorityAnalysis({
+        entries: seniorityStore.entries,
+        asOfDate: todayPlainDate(),
+      })
     })
   }
 
-  if (!_snapshot) {
-    _snapshot = computed<SenioritySnapshot | null>(() => {
+  if (!_analysis) {
+    _analysis = computed<SeniorityAnalysis | null>(() => {
       const synthetic = syntheticEntry.value
-      if (!synthetic) return _baseSnapshot!.value
+      if (!synthetic) return _baseAnalysis!.value
       if (seniorityStore.entries.length === 0) return null
-      return createSnapshot([...seniorityStore.entries, synthetic])
+      return createSeniorityAnalysis({
+        entries: [...seniorityStore.entries, synthetic],
+        asOfDate: todayPlainDate(),
+      })
     })
   }
 
-  if (!_baseLens) {
-    _baseLens = computed<SeniorityLens | null>(() => {
-      if (!_baseSnapshot!.value) return null
-      const entry = _userEntry!.value
+  if (!_anchoredAnalysis) {
+    _anchoredAnalysis = computed<AnchoredSeniorityAnalysis | null>(() => {
+      const currentAnalysis = _analysis!.value
+      if (!currentAnalysis) return null
+      const synthetic = syntheticEntry.value
+      const entry = synthetic ?? _userEntry!.value
       if (!entry) return null
-      const anchor: PilotAnchor = {
-        seniorityNumber: entry.seniority_number,
-        retireDate: entry.retire_date ?? null,
-        employeeNumber: entry.employee_number,
-      }
-      return createLens(_baseSnapshot!.value, anchor, todayPlainDate())
-    })
-  }
-
-  if (!_lens) {
-    _lens = computed<SeniorityLens | null>(() => {
-      const synthetic = syntheticEntry.value
-      if (!_snapshot!.value || !synthetic) return _baseLens!.value
-      const anchor: PilotAnchor = {
-        seniorityNumber: synthetic.seniority_number,
-        retireDate: synthetic.retire_date ?? null,
-        employeeNumber: synthetic.employee_number,
-      }
-      return createLens(_snapshot!.value, anchor, todayPlainDate())
+      return currentAnalysis.withAnchor(entry.employee_number)
     })
   }
 
   const userEntry = _userEntry
-  const snapshot = _snapshot
-  const lens = _lens
+  const listAnalysis = _baseAnalysis
+  const analysis = _analysis
+  const anchoredAnalysis = _anchoredAnalysis
 
-  const hasData = computed(() => snapshot.value !== null)
-  const hasAnchor = computed(() => lens.value !== null)
+  const hasData = computed(() => analysis.value !== null)
+  const hasAnchor = computed(() => anchoredAnalysis.value !== null)
   const isNewHireMode = computed(() => enabled.value)
 
   const entries = computed(() => seniorityStore.entries)
+  const projectionEndDate = computed<PlainDate | null>(() => {
+    const userRetireDate = syntheticEntry.value?.retire_date ?? _userEntry!.value?.retire_date
+    if (userRetireDate) return userRetireDate
 
-  return { snapshot, lens, userEntry, entries, hasData, hasAnchor, isNewHireMode, newHire }
+    return seniorityStore.entries.reduce<PlainDate | null>((latest, entry) => {
+      if (!entry.retire_date) return latest
+      if (!latest || Temporal.PlainDate.compare(entry.retire_date, latest) > 0) return entry.retire_date
+      return latest
+    }, null)
+  })
+
+  return { listAnalysis, analysis, anchoredAnalysis, userEntry, entries, projectionEndDate, hasData, hasAnchor, isNewHireMode, newHire }
 }

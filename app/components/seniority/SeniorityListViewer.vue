@@ -4,29 +4,20 @@ import { useMediaQuery } from '@vueuse/core'
 import { getPaginationRowModel } from '@tanstack/vue-table'
 import type { Row, Table } from '@tanstack/vue-table'
 import type { TableColumn } from '@nuxt/ui'
-import type { QualSpec, QualViewerRow } from '~/utils/seniority-engine'
-import { projectQualViewer } from '~/utils/seniority-engine'
-import { diffYears } from '~/utils/date'
-import { todayPlainDate } from '~/utils/temporal'
-import { normalizeEmployeeNumber } from '~/utils/schemas/seniority-list'
+import type { PresentedQualificationViewerAnalysis, PresentedQualificationViewerEntry, QualificationScope } from '~/utils/seniority'
 import { useSeniorityCore, useSeniorityLists } from '~/composables/seniority'
 
 const props = defineProps<{ loading?: boolean }>()
 
-type RetirementTimeline = 'past' | 'imminent' | 'soon' | null
-type SeniorityRow = QualViewerRow & { _retirementTimeline: RetirementTimeline }
+type SeniorityRow = PresentedQualificationViewerEntry
 const COMPANY_WIDE_VALUE = '__company_wide__'
 
-function retirementTimeline(today: string, retireDate: string): RetirementTimeline {
-  const days = diffYears(today, retireDate) * 365.25
-  if (days < 0) return 'past'
-  if (days <= 180) return 'imminent'
-  if (days <= 365) return 'soon'
-  return null
+function qualificationOptionKey(qualification: QualificationScope): string {
+  return JSON.stringify([qualification.base, qualification.seat, qualification.fleet])
 }
 
 const { lists, entriesLoading } = useSeniorityLists()
-const { entries, isNewHireMode } = useSeniorityCore()
+const { listAnalysis, isNewHireMode } = useSeniorityCore()
 const { employeeNumber } = useUser()
 const table = useTemplateRef<{ tableApi: Table<SeniorityRow> }>('table')
 const isMobile = useMediaQuery('(max-width: 639px)')
@@ -37,42 +28,43 @@ const insertSelf = ref(false)
 const isLoading = computed(() => !!props.loading || entriesLoading.value)
 
 const qualOptions = computed(() => {
-  const seen = new Set<string>()
-  const options = entries.value
-    .toSorted((a, b) => a.seniority_number - b.seniority_number)
-    .filter((entry) => {
-      const key = `${entry.base}|${entry.fleet}|${entry.seat}`
-      if (seen.has(key)) return false
-      seen.add(key)
-      return true
-    })
-    .map(entry => ({
-      label: `${entry.base}-${entry.fleet}-${entry.seat}`,
-      value: `${entry.base}|${entry.fleet}|${entry.seat}`,
+  const options = (listAnalysis.value?.catalog.qualificationScopeOptions ?? [])
+    .filter(option => option.scope.base && option.scope.fleet && option.scope.seat)
+    .map(option => ({
+      label: `${option.scope.base}-${option.scope.fleet}-${option.scope.seat}`,
+      value: qualificationOptionKey(option.scope),
+      qualificationScope: option.scope,
     }))
-  return [{ label: 'Company-wide', value: COMPANY_WIDE_VALUE }, ...options]
+  return [{ label: 'Company-wide', value: COMPANY_WIDE_VALUE, qualificationScope: {} }, ...options]
 })
 
-const selectedQual = computed<QualSpec>(() => {
+const qualificationScope = computed<QualificationScope>(() => {
   if (!selectedQualKey.value || selectedQualKey.value === COMPANY_WIDE_VALUE) return {}
-  const [base, fleet, seat] = selectedQualKey.value.split('|')
-  return { base, fleet, seat }
+  return qualOptions.value.find(option => option.value === selectedQualKey.value)?.qualificationScope ?? {}
 })
-const isQualMode = computed(() => Object.keys(selectedQual.value).length === 3)
-const anchorFound = computed(() => {
-  if (!employeeNumber.value) return false
-  const normalized = normalizeEmployeeNumber(employeeNumber.value)
-  return entries.value.some(e => normalizeEmployeeNumber(e.employee_number) === normalized)
+const isQualMode = computed(() => Object.keys(qualificationScope.value).length === 3)
+const qualificationOutput = computed(() => listAnalysis.value?.qualificationViewer({
+  qualificationScope: qualificationScope.value,
+  employeeNumber: employeeNumber.value,
+  insertSelf: insertSelf.value && !isNewHireMode.value,
+}) ?? null)
+const projected = computed<PresentedQualificationViewerAnalysis>(() => qualificationOutput.value?.presentation ?? {
+  entries: [],
+  totalEntryCount: 0,
+  activeEntryCount: 0,
+  qualificationScope: {},
+  canInsert: false,
+  anchorFound: false,
 })
-const canInsert = computed(() => anchorFound.value && !isNewHireMode.value)
+const canInsert = computed(() => (qualificationOutput.value?.domain.canInsert ?? false) && !isNewHireMode.value)
 const insertDisabledReason = computed(() => {
   if (isNewHireMode.value) return 'Insert yourself is unavailable in New Hire Mode.'
   if (!employeeNumber.value) return 'Enter your employee number to enable Insert yourself.'
-  if (!anchorFound.value) return 'Your employee number is not present in this selected list.'
+  if (!qualificationOutput.value?.domain.anchorFound) return 'Your employee number is not present in this selected list.'
   return ''
 })
 
-watch(entries, () => {
+watch(listAnalysis, () => {
   if (selectedQualKey.value && !qualOptions.value.some(option => option.value === selectedQualKey.value)) selectedQualKey.value = ''
   pagination.value.pageIndex = 0
 })
@@ -85,24 +77,13 @@ watch(globalFilter, (value) => {
   pagination.value.pageIndex = 0
 })
 
-const projected = computed(() => projectQualViewer({
-  entries: entries.value,
-  qual: selectedQual.value,
-  employeeNumber: employeeNumber.value,
-  insertSelf: insertSelf.value && canInsert.value,
-  asOfDate: todayPlainDate(),
-}))
-
-const tableData = computed<SeniorityRow[]>(() => projected.value.rows.map(row => ({
-  ...row,
-  _retirementTimeline: retirementTimeline(todayPlainDate().toString(), row.retireDate?.toString() ?? todayPlainDate().toString()),
-})))
+const tableData = computed<SeniorityRow[]>(() => [...projected.value.entries])
 
 const columnVisibility = computed(() => ({
   expand: isMobile.value,
-  qualSeniority: true,
-  qualPercentile: true,
-  companySeniority: true,
+  qualificationRank: true,
+  qualificationPercentile: true,
+  companyRank: true,
   name: true,
   employeeNumber: !isMobile.value,
   companyPercentile: !isMobile.value,
@@ -110,7 +91,7 @@ const columnVisibility = computed(() => ({
   base: !isMobile.value,
   fleet: !isMobile.value,
   hireDate: !isMobile.value,
-  retireDate: !isMobile.value,
+  retirementDate: !isMobile.value,
   status: !isMobile.value,
 }))
 
@@ -121,11 +102,11 @@ const columns: TableColumn<SeniorityRow>[] = [
       'aria-label': 'Expand row', onClick: row.getToggleExpandedHandler(),
     }),
   },
-  { accessorKey: 'qualSeniority', header: 'Qual seniority', cell: ({ row }) => h('span', { class: 'font-mono font-semibold' }, row.original.qualSeniority ?? '—') },
-  { accessorKey: 'qualPercentile', header: 'Qual percentile', cell: ({ row }) => row.original.qualPercentile === null ? '—' : `${row.original.qualPercentile}%` },
-  { accessorKey: 'companySeniority', header: 'Company seniority', cell: ({ row }) => h('span', { class: 'font-mono' }, row.original.companySeniority ?? row.original.selectedListCompanySeniority) },
+  { accessorKey: 'qualificationRank', header: 'Qualification Rank', cell: ({ row }) => h('span', { class: 'font-mono font-semibold' }, row.original.qualificationRank ?? '—') },
+  { accessorKey: 'qualificationPercentile', header: 'Qualification percentile', cell: ({ row }) => row.original.qualificationPercentile === null ? '—' : `${row.original.qualificationPercentile}%` },
+  { accessorKey: 'companyRank', header: 'Company Rank', cell: ({ row }) => h('span', { class: 'font-mono' }, row.original.companyRank ?? row.original.listRank) },
   { accessorKey: 'companyPercentile', header: 'Company %', cell: ({ row }) => {
-    const percentile = row.original.companyPercentile ?? (row.original.status === 'retired' ? row.original.selectedListCompanyPercentile : null)
+    const percentile = row.original.companyPercentile ?? (row.original.status === 'retired' ? row.original.listPercentile : null)
     return percentile === null ? '—' : `${percentile}%`
   } },
   { accessorKey: 'name', header: 'Name' },
@@ -134,18 +115,18 @@ const columns: TableColumn<SeniorityRow>[] = [
   { accessorKey: 'base', header: 'Base' },
   { accessorKey: 'fleet', header: 'Fleet' },
   { accessorKey: 'hireDate', header: 'Hire Date' },
-  { accessorKey: 'retireDate', header: 'Retire Date' },
+  { accessorKey: 'retirementDate', header: 'Retire Date' },
   { accessorKey: 'status', header: 'Status', cell: ({ row }) => row.original.status === 'active' ? '' : row.original.status },
 ]
 
 const tableMeta = {
   class: {
     tr: (row: Row<SeniorityRow>) => [
-      row.original.isUser ? 'bg-primary/10' : '',
+      row.original.isAnchor ? 'bg-primary/10' : '',
       row.original.isMarker ? 'ring-1 ring-inset ring-primary' : '',
       row.original.status === 'retired' ? 'bg-past/10 text-muted' : '',
-      row.original._retirementTimeline === 'imminent' ? 'bg-imminent/10' : '',
-      row.original._retirementTimeline === 'soon' ? 'bg-soon/10' : '',
+      row.original.retirementTimeline === 'imminent' ? 'bg-imminent/10' : '',
+      row.original.retirementTimeline === 'soon' ? 'bg-soon/10' : '',
     ].join(' ').trim(),
   },
 }
@@ -153,11 +134,11 @@ const tableMeta = {
 const latestList = computed(() => lists.value[0] ?? null)
 const currentPage = computed(() => (table.value?.tableApi?.getState().pagination.pageIndex ?? 0) + 1)
 const pageCount = computed(() => table.value?.tableApi?.getPageCount() ?? 1)
-const totalRows = computed(() => table.value?.tableApi?.getFilteredRowModel().rows.length ?? tableData.value.length)
+const totalEntryCount = computed(() => table.value?.tableApi?.getFilteredRowModel().rows.length ?? tableData.value.length)
 const pagination = ref({ pageIndex: 0, pageSize: 50 })
 
 function focusUserPage() {
-  const targetIndex = projected.value.rows.findIndex(row => row.isUser)
+  const targetIndex = projected.value.entries.findIndex(row => row.isAnchor)
   if (targetIndex >= 0) {
     pagination.value.pageIndex = Math.floor(targetIndex / pagination.value.pageSize)
   }
@@ -205,17 +186,17 @@ function scrollToUserRow() {
       <div class="h-full min-h-0 sm:p-6 flex flex-col">
         <UEmpty v-if="!latestList && !isLoading" icon="i-lucide-list-ordered" title="No Seniority List Yet" description="Upload your airline's seniority list to view your position." :actions="[{ label: 'Upload Seniority List', icon: 'i-lucide-upload', to: '/seniority/upload', size: 'lg' as const }]" class="py-24" />
         <template v-else>
-          <p v-if="latestList" class="shrink-0 text-sm text-muted mb-4">{{ isQualMode ? `${selectedQual.base}-${selectedQual.fleet}-${selectedQual.seat}` : 'Company-wide' }} · {{ projected.totalRows }} pilots</p>
+          <p v-if="latestList" class="shrink-0 text-sm text-muted mb-4">{{ isQualMode ? `${qualificationScope.base}-${qualificationScope.fleet}-${qualificationScope.seat}` : 'Company-wide' }} · {{ projected.totalEntryCount }} pilots</p>
           <div class="flex-1 min-h-0 overflow-auto overscroll-contain">
             <UTable ref="table" v-model:global-filter="globalFilter" v-model:pagination="pagination" v-model:expanded="expanded" v-model:column-visibility="columnVisibility" :data="tableData" :columns="columns" :loading="isLoading" :pagination-options="{ getPaginationRowModel: getPaginationRowModel() }" sticky :meta="tableMeta" :expanded-options="{ getRowCanExpand: () => true }" :ui="isMobile ? { th: 'px-2 py-2 text-xs', td: 'px-2 py-1.5 text-xs' } : {}" class="w-full text-xs sm:text-base">
               <template #expanded="{ row }">
                 <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 px-4 py-3 text-xs">
-                  <div><p class="text-muted mb-0.5">Qual seniority</p><p>{{ row.original.qualSeniority ?? '—' }}</p></div>
-                  <div><p class="text-muted mb-0.5">Qual percentile</p><p>{{ row.original.qualPercentile === null ? '—' : `${row.original.qualPercentile}%` }}</p></div>
-                  <div><p class="text-muted mb-0.5">Company seniority</p><p>{{ row.original.companySeniority ?? (row.original.status === 'retired' ? row.original.selectedListCompanySeniority : '—') }}</p></div>
-                  <div><p class="text-muted mb-0.5">Company percentile</p><p>{{ row.original.companyPercentile ?? (row.original.status === 'retired' ? row.original.selectedListCompanyPercentile : '—') }}<span v-if="row.original.companyPercentile !== null || row.original.status === 'retired'">%</span></p></div>
+                  <div><p class="text-muted mb-0.5">Qualification Rank</p><p>{{ row.original.qualificationRank ?? '—' }}</p></div>
+                  <div><p class="text-muted mb-0.5">Qualification percentile</p><p>{{ row.original.qualificationPercentile === null ? '—' : `${row.original.qualificationPercentile}%` }}</p></div>
+                  <div><p class="text-muted mb-0.5">Company Rank</p><p>{{ row.original.companyRank ?? (row.original.status === 'retired' ? row.original.listRank : '—') }}</p></div>
+                  <div><p class="text-muted mb-0.5">Company percentile</p><p>{{ row.original.companyPercentile ?? (row.original.status === 'retired' ? row.original.listPercentile : '—') }}<span v-if="row.original.companyPercentile !== null || row.original.status === 'retired'">%</span></p></div>
                   <div><p class="text-muted mb-0.5">Employee number</p><p>{{ row.original.employeeNumber }}</p></div>
-                  <div><p class="text-muted mb-0.5">Retirement</p><p>{{ row.original.retireDate }} <span v-if="row.original.status !== 'active'">· {{ row.original.status }}</span></p></div>
+                  <div><p class="text-muted mb-0.5">Retirement</p><p>{{ row.original.retirementDate }} <span v-if="row.original.status !== 'active'">· {{ row.original.status }}</span></p></div>
                 </div>
               </template>
             </UTable>
@@ -225,7 +206,7 @@ function scrollToUserRow() {
     </div>
 
     <div v-if="latestList" class="shrink-0 py-2 sm:py-3 border-t border-default">
-      <TablePagination :current-page="currentPage" :page-count="pageCount" :total-rows="totalRows" :page-size="pagination.pageSize" @update:page="(p: number) => table?.tableApi?.setPageIndex(p - 1)" />
+      <TablePagination :current-page="currentPage" :page-count="pageCount" :total-rows="totalEntryCount" :page-size="pagination.pageSize" @update:page="(p: number) => table?.tableApi?.setPageIndex(p - 1)" />
     </div>
   </div>
 </template>

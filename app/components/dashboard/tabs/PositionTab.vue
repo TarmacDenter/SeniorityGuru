@@ -2,36 +2,36 @@
 import { useSeniorityCore } from '~/composables/seniority'
 import { addYearsDate, diffDateYears } from '~/utils/date'
 import { todayPlainDate } from '~/utils/temporal'
-import { DEFAULT_GROWTH_CONFIG, createScenario, type GrowthConfig } from '~/utils/seniority-engine'
+import { DEFAULT_SENIORITY_GROWTH_ASSUMPTIONS, type GrowthAssumptions } from '~/utils/seniority'
 
 defineProps<{ loading?: boolean }>()
 
-const { hasData, newHire, lens, userEntry } = useSeniorityCore()
+const { hasData, newHire, anchoredAnalysis, projectionEndDate } = useSeniorityCore()
 const { employeeNumber } = useUser()
 const hasEmployeeNumber = computed(() => !!employeeNumber.value || !!newHire.syntheticEntry.value)
 
-const growthConfig = ref<GrowthConfig>({ ...DEFAULT_GROWTH_CONFIG })
+const growthAssumptions = ref<GrowthAssumptions>({ ...DEFAULT_SENIORITY_GROWTH_ASSUMPTIONS })
 const usePositionProjection = ref(false)
 const positionYearsInput = ref(1)
 const projectionYears = ref(0)
 const projectionDate = computed(() => addYearsDate(todayPlainDate(), projectionYears.value))
-const positionScenario = computed(() => createScenario({
-  projectionDate: projectionDate.value,
-  growthConfig: growthConfig.value,
-}))
-const qualScales = computed(() => lens.value?.qualScales(positionScenario.value) ?? [])
+const qualificationPositions = computed(() =>
+  [...(anchoredAnalysis.value?.qualificationPositions({
+    through: projectionDate.value,
+    growthAssumptions: growthAssumptions.value,
+  }).presentation ?? [])],
+)
 
 const hasProjection = computed(() =>
-  qualScales.value.some(
-    s => Math.abs(s.userPercentile - s.currentUserPercentile) > 0.1,
+  qualificationPositions.value.some(
+    position => Math.abs(position.projectedPercentile - position.currentPercentile) > 0.1,
   ),
 )
 let positionDebounceTimer: ReturnType<typeof setTimeout> | null = null
 
 const positionSliderMax = computed(() => {
-  const retireDate = userEntry.value?.retire_date
-  if (!retireDate) return 30
-  const years = Math.ceil(diffDateYears(todayPlainDate(), retireDate))
+  if (!projectionEndDate.value) return 0
+  const years = Math.ceil(diffDateYears(todayPlainDate(), projectionEndDate.value))
   return Math.max(1, years)
 })
 
@@ -77,7 +77,7 @@ onUnmounted(() => {
     <!-- Projection controls — pinned toolbar -->
     <div class="shrink-0 bg-[var(--ui-bg)] border-b border-[var(--ui-border)] px-3 sm:px-6 py-3 flex items-center gap-4 flex-wrap">
       <div class="flex items-center gap-2">
-        <USwitch v-model="usePositionProjection" />
+        <USwitch v-model="usePositionProjection" :disabled="positionSliderMax === 0" />
         <span class="text-sm text-[var(--ui-text-muted)]">Project forward</span>
       </div>
       <template v-if="usePositionProjection">
@@ -92,11 +92,12 @@ onUnmounted(() => {
           +{{ positionYearsInput }}yr{{ positionYearsInput === 1 ? '' : 's' }}
         </UBadge>
       </template>
+      <span v-if="positionSliderMax === 0" class="text-sm text-[var(--ui-text-muted)]">Add a retirement date to project forward.</span>
       <UBadge v-else color="neutral" variant="subtle" size="sm">As of today</UBadge>
     </div>
 
     <!-- Growth assumption bar -->
-    <DashboardGrowthBar v-model="growthConfig" />
+    <DashboardGrowthBar v-model="growthAssumptions" />
 
     <!-- Scrollable content -->
     <div class="p-3 sm:p-6 space-y-6 flex-1 overflow-y-auto">
@@ -166,11 +167,11 @@ onUnmounted(() => {
       </UCollapsible>
 
       <!-- Qual Seniority Scale -->
-      <UCard v-if="qualScales.length > 0">
+      <UCard v-if="qualificationPositions.length > 0">
         <template #header>
           <h3 class="font-semibold">Seniority Position by Qual</h3>
         </template>
-        <AnalyticsQualSeniorityScale :scales="qualScales" />
+        <AnalyticsQualSeniorityScale :positions="qualificationPositions" />
       </UCard>
 
       <UAlert

@@ -1,27 +1,27 @@
 <script setup lang="ts">
 import type { ChartData, ChartOptions } from 'chart.js'
-import type { TrajectoryDelta } from '~/utils/seniority-engine'
+import type { PresentedTrajectoryChange } from '~/utils/seniority'
 import { formatYear, extractYear } from '~/utils/date'
 
 const props = defineProps<{
-  deltas: TrajectoryDelta[]
+  changes: PresentedTrajectoryChange[]
 }>()
 
 const { colors } = useChartTheme()
 
 const chartData = computed<ChartData<'bar'>>(() => ({
-  labels: props.deltas.map((d) => {
-    return formatYear(d.date)
+  labels: props.changes.map((change) => {
+    return formatYear(change.date)
   }),
   datasets: [
     {
       label: 'pp/yr',
-      data: props.deltas.map((d) => d.delta),
-      backgroundColor: props.deltas.map((d) =>
-        d.isPeak ? colors.peakHighlight : colors.primaryLight,
+      data: props.changes.map(change => change.percentilePointChange),
+      backgroundColor: props.changes.map(change =>
+        change.isPeak ? colors.peakHighlight : colors.primaryLight,
       ),
-      borderColor: props.deltas.map((d) =>
-        d.isPeak ? colors.peakBorder : colors.primary,
+      borderColor: props.changes.map(change =>
+        change.isPeak ? colors.peakBorder : colors.primary,
       ),
       borderWidth: 1,
     },
@@ -54,15 +54,15 @@ const chartOptions: ChartOptions = {
 }
 
 const bestYear = computed(() => {
-  if (props.deltas.length === 0) return null
-  let best = props.deltas[0]!
-  for (const d of props.deltas) {
-    if (d.delta > best.delta) best = d
+  if (props.changes.length === 0) return null
+  let best = props.changes[0]!
+  for (const change of props.changes) {
+    if (change.percentilePointChange > best.percentilePointChange) best = change
   }
-  if (best.delta <= 0) return null
+  if (best.percentilePointChange <= 0) return null
   return {
     year: extractYear(best.date),
-    delta: best.delta,
+    percentilePointChange: best.percentilePointChange,
   }
 })
 </script>
@@ -84,7 +84,7 @@ const bestYear = computed(() => {
     </ClientOnly>
 
     <p v-if="bestYear" class="mt-2 text-xs text-[var(--ui-text-muted)]">
-      Best year: {{ bestYear.year }} (+{{ bestYear.delta }}pp)
+      Best year: {{ bestYear.year }} (+{{ bestYear.percentilePointChange }}pp)
     </p>
   </UCard>
 </template>

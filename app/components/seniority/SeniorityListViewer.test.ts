@@ -1,7 +1,9 @@
-import { defineComponent } from 'vue'
+import { computed, defineComponent } from 'vue'
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { mountSuspended, mockNuxtImport } from '@nuxt/test-utils/runtime'
 import { makeDomainEntry, makeList } from '~/test-utils/factories'
+import { createSeniorityAnalysis } from '~/utils/seniority'
+import { parsePlainDate } from '~/utils/temporal'
 
 const state = vi.hoisted(() => {
   const { ref: vRef } = require('vue')
@@ -16,7 +18,12 @@ const state = vi.hoisted(() => {
 
 vi.mock('~/composables/seniority', () => ({
   useSeniorityLists: () => ({ lists: state.lists, entriesLoading: state.entriesLoading }),
-  useSeniorityCore: () => ({ entries: state.entries, isNewHireMode: state.isNewHireMode }),
+  useSeniorityCore: () => ({
+    listAnalysis: computed(() => state.entries.value.length === 0
+      ? null
+      : createSeniorityAnalysis({ entries: state.entries.value, asOfDate: parsePlainDate('2026-06-15') })),
+    isNewHireMode: state.isNewHireMode,
+  }),
 }))
 
 mockNuxtImport('useUser', () => () => ({ employeeNumber: state.employeeNumber }))
@@ -49,7 +56,7 @@ const stubs = {
       }
       return { tableApi }
     },
-    template: '<div data-testid="table"><span v-if="loading" data-testid="loading">loading</span><div v-for="row in data" :key="row.employeeNumber + row.status">{{ row.name }}|{{ row.employeeNumber }}|{{ row.qualSeniority }}|{{ row.companySeniority }}|{{ row.status }}|{{ row.isUser ? "user" : "" }}</div></div>',
+    template: '<div data-testid="table"><span v-if="loading" data-testid="loading">loading</span><div v-for="row in data" :key="row.employeeNumber + row.status">{{ row.name }}|{{ row.employeeNumber }}|{{ row.qualificationRank }}|{{ row.companyRank }}|{{ row.status }}|{{ row.isAnchor ? "anchor" : "" }}</div></div>',
   }),
   TablePagination: defineComponent({
     props: { currentPage: Number, pageCount: Number, totalRows: Number },
@@ -88,7 +95,7 @@ describe('SeniorityListViewer', () => {
     const Component = (await import('./SeniorityListViewer.vue')).default
     const wrapper = await mountSuspended(Component, { global: { stubs } })
 
-    await wrapper.find('select').setValue('JFK|737|CA')
+    await wrapper.find('select').setValue('["JFK","CA","737"]')
 
     expect(wrapper.text()).toContain('JFK-737-CA · 2 pilots')
     expect(wrapper.text()).toContain('First|E1|1|1|active')
@@ -99,7 +106,7 @@ describe('SeniorityListViewer', () => {
     await wrapper.find('select').setValue('__company_wide__')
 
     expect(wrapper.text()).toContain('Company-wide · 3 pilots')
-    expect(wrapper.text()).toContain('First|E1|1|1|active|user')
+    expect(wrapper.text()).toContain('First|E1|1|1|active|anchor')
   })
 
   it('keeps insertion synthetic and exposes pagination for large lists', async () => {
@@ -119,6 +126,6 @@ describe('SeniorityListViewer', () => {
     expect(wrapper.find('[data-testid="pagination"]').text()).toContain('51 rows')
     await wrapper.find('button').trigger('click')
 
-    expect(wrapper.text()).toContain('Pilot 51|E51|51|51|active|user')
+    expect(wrapper.text()).toContain('Pilot 51|E51|51|51|active|anchor')
   })
 })

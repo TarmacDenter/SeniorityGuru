@@ -64,12 +64,10 @@ const { activeTab, tabs } = useDashboardTabs()
 const { lists, selectedListId, listOptions, isHistorical, selectedList, navbarDescription, loading } = useDashboardListSelection(activeTab)
 const { employeeNumber } = useUser()
 const { showBadge: showDemoBadge } = useDemoBanner()
-const { hasData, hasAnchor: userFound, isNewHireMode, newHire, lens } = useSeniorityCore()
+const { hasData, hasAnchor: userFound, isNewHireMode, newHire } = useSeniorityCore()
 const hasEmployeeNumber = computed(() => !!employeeNumber.value || !!newHire.syntheticEntry.value)
 const { rankCard, statCards: stats, retirementSnapshot, baseStatus: baseStatusData } = useStanding()
-const trajectoryResult = computed(() => lens.value?.trajectory() ?? null)
-const trajectoryChartData = computed(() => trajectoryResult.value?.chartData ?? { labels: [] as string[], data: [] as number[] })
-const trajectoryDeltas = computed(() => trajectoryResult.value?.deltas ?? [])
+const { chartData: trajectoryChartData, changes: trajectoryChanges } = useTrajectory()
 const fullBleedTabs = new Set(['position', 'trajectory', 'seniority'])
 const panelUi = computed(() => ({
   body: fullBleedTabs.has(activeTab.value) ? 'flex flex-col flex-1 sm:overflow-y-auto p-0' : undefined,
@@ -150,7 +148,7 @@ const panelUi = computed(() => ({
         :rank-card="rankCard"
         :stats="stats"
         :retirement-snapshot="retirementSnapshot"
-        :trajectory-deltas="trajectoryDeltas"
+        :trajectory-changes="trajectoryChanges"
         :base-status-data="baseStatusData"
         :trajectory-chart-data="trajectoryChartData"
       />

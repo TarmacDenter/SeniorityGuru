@@ -30,44 +30,69 @@ beforeEach(() => {
 })
 
 describe('useSeniorityCore', () => {
-  it('returns null snapshot and lens when store entries are empty', () => {
-    const { snapshot, lens } = useSeniorityCore()
-    expect(snapshot.value).toBeNull()
-    expect(lens.value).toBeNull()
+  it('returns null analysis capabilities when store entries are empty', () => {
+    const { analysis, anchoredAnalysis } = useSeniorityCore()
+    expect(analysis.value).toBeNull()
+    expect(anchoredAnalysis.value).toBeNull()
   })
 
-  it('creates snapshot when entries exist', () => {
+  it('creates an organization analysis when entries exist', () => {
     mockStore.entries = [makeEntry()]
-    const { snapshot } = useSeniorityCore()
-    expect(snapshot.value).not.toBeNull()
-    expect(snapshot.value!.entries).toHaveLength(1)
+    const { analysis } = useSeniorityCore()
+    expect(analysis.value).not.toBeNull()
+    expect(analysis.value!.retirementsNext12Months()).toBeTypeOf('number')
   })
 
-  it('creates lens anchored to user employee_number when matched', () => {
+  it('creates organization and anchored analyses when the user matches', () => {
     mockStore.entries = [makeEntry({ seniority_number: 1, employee_number: 'E1', retire_date: '2045-01-01' })]
     mockUserStore.employeeNumber = 'E1'
-    const { lens } = useSeniorityCore()
-    expect(lens.value).not.toBeNull()
-    expect(lens.value!.anchor).toEqual({
-      seniorityNumber: 1,
-      retireDate: parsePlainDate('2045-01-01'),
-      employeeNumber: 'E1',
-    })
+    const { analysis, anchoredAnalysis, userEntry } = useSeniorityCore()
+    expect(analysis.value).not.toBeNull()
+    expect(anchoredAnalysis.value?.anchor).toBe(userEntry.value)
   })
 
   it('anchors to employee numbers after normalization', () => {
     mockStore.entries = [makeEntry({ seniority_number: 1, employee_number: '00123', retire_date: '2045-01-01' })]
     mockUserStore.employeeNumber = '123'
-    const { lens, userEntry } = useSeniorityCore()
-    expect(lens.value).not.toBeNull()
+    const { analysis, anchoredAnalysis, userEntry } = useSeniorityCore()
+    expect(analysis.value).not.toBeNull()
+    expect(anchoredAnalysis.value?.anchor.employee_number).toBe('00123')
     expect(userEntry.value?.employee_number).toBe('00123')
   })
 
-  it('returns null lens when user has no matching entry', () => {
+  it('uses the user retirement date as the projection end date', () => {
+    mockStore.entries = [
+      makeEntry({ employee_number: 'E1', retire_date: '2040-01-01' }),
+      makeEntry({ employee_number: 'E2', retire_date: '2050-01-01' }),
+    ]
+    mockUserStore.employeeNumber = 'E1'
+    const { projectionEndDate } = useSeniorityCore()
+    expect(projectionEndDate.value?.toString()).toBe('2040-01-01')
+  })
+
+  it('uses the latest company retirement date without a matched user', () => {
+    mockStore.entries = [
+      makeEntry({ employee_number: 'E1', retire_date: '2040-01-01' }),
+      makeEntry({ employee_number: 'E2', retire_date: '2050-01-01' }),
+      makeEntry({ employee_number: 'E3', retire_date: undefined }),
+    ]
+    mockUserStore.employeeNumber = 'UNKNOWN'
+    const { projectionEndDate } = useSeniorityCore()
+    expect(projectionEndDate.value?.toString()).toBe('2050-01-01')
+  })
+
+  it('returns no projection end date when the data has no retirements', () => {
+    mockStore.entries = [makeEntry({ employee_number: 'E1', retire_date: undefined })]
+    const { projectionEndDate } = useSeniorityCore()
+    expect(projectionEndDate.value).toBeNull()
+  })
+
+  it('keeps the organization analysis when the user has no matching entry', () => {
     mockStore.entries = [makeEntry()]
     mockUserStore.employeeNumber = 'UNKNOWN'
-    const { lens } = useSeniorityCore()
-    expect(lens.value).toBeNull()
+    const { analysis, anchoredAnalysis } = useSeniorityCore()
+    expect(analysis.value).not.toBeNull()
+    expect(anchoredAnalysis.value).toBeNull()
   })
 
   it('hasData/hasAnchor readiness signals are correct', () => {
@@ -133,31 +158,31 @@ describe('useSeniorityCore', () => {
     expect(newHire.syntheticEntry.value!.fleet).toBe('737')
   })
 
-  it('new-hire mode: snapshot includes synthetic entry when active', () => {
+  it('new-hire mode: analysis includes the synthetic entry when active', () => {
     mockStore.entries = [
       makeEntry({ seniority_number: 1, employee_number: 'A' }),
     ]
-    const { snapshot, newHire } = useSeniorityCore()
+    const { anchoredAnalysis, newHire } = useSeniorityCore()
     newHire.enabled.value = true
     newHire.selectedBase.value = 'JFK'
     newHire.selectedSeat.value = 'FO'
     newHire.selectedFleet.value = '737'
     newHire.birthDate.value = parsePlainDate('1990-06-15')
-    expect(snapshot.value).not.toBeNull()
-    expect(snapshot.value!.entries).toHaveLength(2)
-    expect(snapshot.value!.byEmployeeNumber.has('_new_hire')).toBe(true)
+    expect(anchoredAnalysis.value).not.toBeNull()
+    expect(anchoredAnalysis.value!.anchor.employee_number).toBe('_new_hire')
+    expect(anchoredAnalysis.value!.seniorityStanding().domain.listPilotCount).toBe(2)
   })
 
-  it('new-hire mode: lens re-anchors to synthetic entry when active', () => {
+  it('new-hire mode: analysis re-anchors to synthetic entry when active', () => {
     mockStore.entries = [
       makeEntry({ seniority_number: 1, employee_number: 'A' }),
     ]
     mockUserStore.employeeNumber = 'A'
-    const { lens, newHire } = useSeniorityCore()
+    const { analysis, anchoredAnalysis, newHire } = useSeniorityCore()
 
-    // Before new-hire mode: lens anchored to real user
-    expect(lens.value).not.toBeNull()
-    expect(lens.value!.anchor!.employeeNumber).toBe('A')
+    // Before new-hire mode: the anchored analysis uses the real user.
+    expect(analysis.value).not.toBeNull()
+    expect(anchoredAnalysis.value!.anchor.employee_number).toBe('A')
 
     // Enable new-hire mode
     newHire.enabled.value = true
@@ -166,9 +191,9 @@ describe('useSeniorityCore', () => {
     newHire.selectedFleet.value = '737'
     newHire.birthDate.value = parsePlainDate('1990-06-15')
 
-    // Now: lens re-anchored to synthetic entry
-    expect(lens.value).not.toBeNull()
-    expect(lens.value!.anchor!.employeeNumber).toBe('_new_hire')
+    // Now: the same organization capability derives from the synthetic entry.
+    expect(analysis.value).not.toBeNull()
+    expect(anchoredAnalysis.value!.anchor.employee_number).toBe('_new_hire')
   })
 
   it('isNewHireMode reflects enabled state', () => {

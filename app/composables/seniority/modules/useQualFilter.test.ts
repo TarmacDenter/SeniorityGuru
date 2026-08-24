@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { nextTick } from 'vue'
-import { useQualFilter } from './useQualFilter'
+import { useQualificationFilter } from './useQualFilter'
 import { useSeniorityCore, _resetCoreSingletons } from './useSeniorityCore'
 import { resetMockStores } from '~/test-utils/seniority-mocks'
 
@@ -22,26 +22,26 @@ beforeEach(() => {
   useSeniorityCore().newHire.reset()
 })
 
-describe('useQualFilter', () => {
-  it('derives the selected Qual and cascades available bases', () => {
+describe('useQualificationFilter', () => {
+  it('derives the selected Qualification and cascades available bases', () => {
     mockStore.entries = [
       makeEntry({ fleet: '737', seat: 'CA', base: 'JFK' }),
       makeEntry({ fleet: '737', seat: 'FO', base: 'LAX' }),
       makeEntry({ fleet: '777', seat: 'CA', base: 'ORD' }),
     ]
-    const filter = useQualFilter()
+    const filter = useQualificationFilter()
 
     filter.selectedFleet.value = '737'
     filter.selectedSeat.value = 'CA'
 
     expect(filter.availableBases.value).toEqual(['JFK'])
-    expect(filter.qualSpec.value).toEqual({ fleet: '737', seat: 'CA' })
-    expect(filter.qualLabel.value).toContain('737')
+    expect(filter.qualificationScope.value).toEqual({ fleet: '737', seat: 'CA' })
+    expect(filter.qualificationLabel.value).toContain('737')
   })
 
   it('clears a selected value that disappears after the list changes', async () => {
     mockStore.entries = [makeEntry({ fleet: '737', seat: 'CA', base: 'JFK' })]
-    const filter = useQualFilter()
+    const filter = useQualificationFilter()
     filter.selectedFleet.value = '737'
 
     mockStore.entries = [makeEntry({ fleet: '777', seat: 'CA', base: 'JFK' })]
@@ -51,13 +51,13 @@ describe('useQualFilter', () => {
   })
 
   it('clears every filter selection together', () => {
-    const filter = useQualFilter()
+    const filter = useQualificationFilter()
     filter.selectedFleet.value = '737'
     filter.selectedSeat.value = 'CA'
     filter.selectedBase.value = 'JFK'
 
     filter.clear()
 
-    expect(filter.qualSpec.value).toEqual({})
+    expect(filter.qualificationScope.value).toEqual({})
   })
 })

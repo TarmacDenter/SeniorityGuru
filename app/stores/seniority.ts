@@ -6,6 +6,7 @@ import type { SeniorityEntry } from '~/utils/schemas/seniority-list'
 import { parsePlainDate, Temporal, nowInstant } from '~/utils/temporal'
 import { createLogger } from '~/utils/logger'
 import { emitHook } from '~/utils/hooks'
+import { assertValidSeniorityAnalysisEntries } from '~/utils/seniority-engine/snapshot'
 
 const log = createLogger('seniority-store')
 
@@ -99,6 +100,7 @@ export const useSeniorityStore = defineStore('seniority', () => {
     const domainEntries = entries.map((entry) => 'seniorityNumber' in entry
       ? localEntryToSeniorityEntry({ ...entry, listId: 'listId' in entry ? entry.listId : 0 })
       : entry)
+    assertValidSeniorityAnalysisEntries(domainEntries)
     const createdAt = nowInstant()
     const listId = await db.seniorityLists.add(seniorityListToLocalList({
       title: listData.title,

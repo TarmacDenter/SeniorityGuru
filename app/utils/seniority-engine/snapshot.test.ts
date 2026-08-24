@@ -1,9 +1,34 @@
 // @vitest-environment node
 import { describe, it, expect } from 'vitest'
 import { makeDomainEntry } from '~/test-utils/factories'
-import { createSnapshot, InvalidSnapshotDataError, validateSnapshotEntries } from './snapshot'
+import { createSenioritySnapshot, InvalidSenioritySnapshotDataError, validateSnapshotEntries } from './snapshot'
+import type { SenioritySnapshot } from './types'
 
-describe('createSnapshot', () => {
+function assertReadonlySnapshot(snapshot: SenioritySnapshot) {
+  // @ts-expect-error Snapshot collection properties cannot be replaced.
+  snapshot.entries = []
+  // @ts-expect-error Snapshot entries are exposed through a readonly array.
+  snapshot.entries.push(makeDomainEntry())
+  // @ts-expect-error Validated entries are exposed through readonly views.
+  snapshot.entries[0]!.base = 'LAX'
+  // @ts-expect-error Seniority ordering is exposed through a readonly array.
+  snapshot.entriesBySeniority.reverse()
+  // @ts-expect-error Employee lookup is exposed through ReadonlyMap.
+  snapshot.entriesByEmployeeNumber.set('NEW', makeDomainEntry())
+  // @ts-expect-error Qualification lookup is exposed through ReadonlyMap.
+  snapshot.entriesByQualification.clear()
+  const qualificationEntries = snapshot.entriesByQualification.values().next().value
+  if (qualificationEntries) {
+    // @ts-expect-error Qualification groups are readonly arrays.
+    qualificationEntries.push(makeDomainEntry())
+  }
+  // @ts-expect-error Qualification values are readonly.
+  snapshot.qualifications[0]!.base = 'LAX'
+}
+
+void assertReadonlySnapshot
+
+describe('createSenioritySnapshot', () => {
   const entries = [
     makeDomainEntry({ seniority_number: 3, employee_number: 'E3', base: 'ATL', seat: 'FO', fleet: '737' }),
     makeDomainEntry({ seniority_number: 1, employee_number: 'E1', base: 'JFK', seat: 'CA', fleet: '737' }),
@@ -11,59 +36,63 @@ describe('createSnapshot', () => {
   ]
 
   it('preserves original entry order', () => {
-    const snap = createSnapshot(entries)
+    const snap = createSenioritySnapshot(entries)
     expect(snap.entries.map(e => e.seniority_number)).toEqual([3, 1, 2])
   })
 
   it('sorts entries by seniority numbers ascending', () => {
-    const snap = createSnapshot(entries)
-    expect([...snap.sortedEntries.map(s => s.seniority_number)]).toEqual([1, 2, 3])
+    const snap = createSenioritySnapshot(entries)
+    expect([...snap.entriesBySeniority.map(s => s.seniority_number)]).toEqual([1, 2, 3])
   })
 
-  it('groups entries by cell key (base|seat|fleet)', () => {
-    const snap = createSnapshot(entries)
-    expect(snap.byCell.size).toBe(3)
-    expect(snap.byCell.get('ATL|FO|737')?.length).toBe(1)
-    expect(snap.byCell.get('JFK|CA|737')?.length).toBe(1)
-    expect(snap.byCell.get('ATL|CA|320')?.length).toBe(1)
+  it('groups entries by Qualification key (base|seat|fleet)', () => {
+    const snap = createSenioritySnapshot(entries)
+    expect(snap.entriesByQualification.size).toBe(3)
+    expect(snap.entriesByQualification.get('ATL|FO|737')?.length).toBe(1)
+    expect(snap.entriesByQualification.get('JFK|CA|737')?.length).toBe(1)
+    expect(snap.entriesByQualification.get('ATL|CA|320')?.length).toBe(1)
   })
 
-  it('groups additional entries into existing cells', () => {
+  it('groups additional entries into existing Qualifications', () => {
     const withExtra = [...entries, makeDomainEntry({ seniority_number: 4, employee_number: 'E4', base: 'ATL', seat: 'CA', fleet: '320' })]
-    const snap = createSnapshot(withExtra)
-    expect(snap.byCell.size).toBe(3)
-    expect(snap.byCell.get('ATL|CA|320')?.length).toBe(2)
+    const snap = createSenioritySnapshot(withExtra)
+    expect(snap.entriesByQualification.size).toBe(3)
+    expect(snap.entriesByQualification.get('ATL|CA|320')?.length).toBe(2)
   })
 
-  it('throws InvalidSnapshotDataError for entries with missing base/seat/fleet', () => {
+  it('throws InvalidSenioritySnapshotDataError for entries with missing base/seat/fleet', () => {
     const withNull = [...entries, makeDomainEntry({ seniority_number: 4, employee_number: 'E4', base: '' as unknown as string, seat: 'CA', fleet: '737' })]
-    expect(() => createSnapshot(withNull)).toThrow(InvalidSnapshotDataError)
+    expect(() => createSenioritySnapshot(withNull)).toThrow(InvalidSenioritySnapshotDataError)
   })
 
   it('indexes entries by employee number', () => {
-    const snap = createSnapshot(entries)
-    expect(snap.byEmployeeNumber.get('E2')?.seniority_number).toBe(2)
+    const snap = createSenioritySnapshot(entries)
+    expect(snap.entriesByEmployeeNumber.get('E2')?.seniority_number).toBe(2)
   })
 
   it('extracts unique sorted base/seat/fleet values', () => {
-    const snap = createSnapshot(entries)
-    expect([...snap.uniqueBases]).toEqual(['ATL', 'JFK'])
-    expect([...snap.uniqueSeats]).toEqual(['CA', 'FO'])
-    expect([...snap.uniqueFleets]).toEqual(['320', '737'])
+    const snap = createSenioritySnapshot(entries)
+    expect([...snap.bases]).toEqual(['ATL', 'JFK'])
+    expect([...snap.seats]).toEqual(['CA', 'FO'])
+    expect([...snap.fleets]).toEqual(['320', '737'])
   })
 
-  it('builds sorted qual labels', () => {
-    const snap = createSnapshot(entries)
-    const labels = snap.quals.map(q => q.label)
-    expect(labels).toEqual(['CA/320/ATL', 'CA/737/JFK', 'FO/737/ATL'])
+  it('builds sorted domain Qualifications without display labels', () => {
+    const snap = createSenioritySnapshot(entries)
+    expect(snap.qualifications).toEqual([
+      { base: 'ATL', seat: 'CA', fleet: '320' },
+      { base: 'ATL', seat: 'FO', fleet: '737' },
+      { base: 'JFK', seat: 'CA', fleet: '737' },
+    ])
+    expect(snap.qualifications.every(qualification => !('label' in qualification))).toBe(true)
   })
 
   it('handles empty entries', () => {
-    const snap = createSnapshot([])
+    const snap = createSenioritySnapshot([])
     expect(snap.entries).toHaveLength(0)
-    expect(snap.sortedEntries).toHaveLength(0)
-    expect(snap.byCell.size).toBe(0)
-    expect(snap.quals).toHaveLength(0)
+    expect(snap.entriesBySeniority).toHaveLength(0)
+    expect(snap.entriesByQualification.size).toBe(0)
+    expect(snap.qualifications).toHaveLength(0)
   })
 })
 
@@ -99,6 +128,23 @@ describe('validateSnapshotEntries', () => {
     expect(errors.has(1)).toBe(true)
     const allErrors = Array.from(errors.values()).flat()
     expect(allErrors.some(e => e.includes('Duplicate employee number SAME'))).toBe(true)
+  })
+
+  it('uses normalized identity when validating duplicate employee numbers', () => {
+    const errors = validateSnapshotEntries([
+      makeDomainEntry({ seniority_number: 100, employee_number: '00123' }),
+      makeDomainEntry({ seniority_number: 105, employee_number: '123' }),
+    ])
+
+    expect([...errors.keys()]).toEqual([0, 1])
+    expect(Array.from(errors.values()).flat()).toContain('employee_number: Duplicate employee number 123')
+  })
+
+  it('rejects normalized duplicate employee identity during snapshot creation', () => {
+    expect(() => createSenioritySnapshot([
+      makeDomainEntry({ seniority_number: 100, employee_number: '00123' }),
+      makeDomainEntry({ seniority_number: 105, employee_number: '123' }),
+    ])).toThrow(InvalidSenioritySnapshotDataError)
   })
 
   it('reports both duplicate seniority and employee number violations in the same pass', () => {

@@ -2,7 +2,6 @@ import type { ConfirmPhase, UploadSession } from './types'
 import { toDomainSeniorityEntry, type SeniorityEntry, type SeniorityEntryInput } from '~/utils/schemas/seniority-list'
 import { parsePlainDate, type PlainDate } from '~/utils/temporal'
 import { useSeniorityStore } from '~/stores/seniority'
-import { createSnapshot } from '~/utils/seniority-engine/snapshot'
 import { createLogger } from '~/utils/logger'
 import { useImportAttemptsStore } from '~/stores/import-attempts'
 
@@ -20,7 +19,6 @@ export function _useConfirm(opts: UploadSession): ConfirmPhase & { _reset: () =>
 
     try {
       const domainEntries = entries.map(toDomainSeniorityEntry)
-      createSnapshot(domainEntries)
 
       const store = useSeniorityStore()
       const listId = await store.addList(

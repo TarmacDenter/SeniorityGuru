@@ -1,12 +1,14 @@
 import type { SeniorityEntry, SeniorityEntryInput } from '~/utils/schemas/seniority-list'
 import { normalizeEmployeeNumber } from '~/utils/schemas/seniority-list'
-import type { SenioritySnapshot, Qual } from './types'
-import { cellKey } from './cell-key'
+import type { Qualification, SenioritySnapshot } from './types'
+import { qualificationKey } from './qualification-key'
 
-export type SnapshotIssueCode = 'duplicate_seniority_number' | 'duplicate_employee_number'
+/** Cross-row rules that prevent an entry collection from becoming a snapshot. */
+export type SenioritySnapshotIssueCode = 'duplicate_seniority_number' | 'duplicate_employee_number'
 
-export interface SnapshotValidationIssue {
-  code: SnapshotIssueCode
+/** A structural validation problem associated with one input row. */
+export interface SenioritySnapshotValidationIssue {
+  code: SenioritySnapshotIssueCode
   field: 'seniority_number' | 'employee_number'
   rowIndex: number
   message: string
@@ -14,8 +16,8 @@ export interface SnapshotValidationIssue {
 
 type EntryIdentity = Pick<SeniorityEntryInput, 'seniority_number' | 'employee_number'>
 
-function collectDuplicateIssues(entries: readonly Partial<EntryIdentity>[]): SnapshotValidationIssue[] {
-  const issues: SnapshotValidationIssue[] = []
+function collectDuplicateIssues(entries: readonly Partial<EntryIdentity>[]): SenioritySnapshotValidationIssue[] {
+  const issues: SenioritySnapshotValidationIssue[] = []
 
   const senNumToIndices = new Map<number, number[]>()
   entries.forEach((entry, i) => {
@@ -66,7 +68,7 @@ function collectDuplicateIssues(entries: readonly Partial<EntryIdentity>[]): Sna
   return issues
 }
 
-function issuesToErrorMap(issues: SnapshotValidationIssue[]): Map<number, string[]> {
+function issuesToErrorMap(issues: SenioritySnapshotValidationIssue[]): Map<number, string[]> {
   const errors = new Map<number, string[]>()
   for (const issue of issues) {
     const rowErrors = errors.get(issue.rowIndex) ?? []
@@ -78,7 +80,7 @@ function issuesToErrorMap(issues: SnapshotValidationIssue[]): Map<number, string
 
 /**
  * Returns all cross-row snapshot invariant violations as a row-indexed error map.
- * Checks the same constraints that createSnapshot enforces (uniqueness of seniority
+ * Checks the same constraints that createSenioritySnapshot enforces (uniqueness of seniority
  * and employee numbers) but collects every violation instead of failing on the first.
  * Used by computeStructuralErrors as the authoritative source for these rules.
  */
@@ -86,11 +88,13 @@ export function validateSnapshotEntries(entries: Partial<EntryIdentity>[]): Map<
   return issuesToErrorMap(collectDuplicateIssues(entries))
 }
 
-export function validateSnapshotEntryIssues(entries: readonly Partial<EntryIdentity>[]): SnapshotValidationIssue[] {
+/** Returns every duplicate employee-number and seniority-number violation. */
+export function validateSnapshotEntryIssues(entries: readonly Partial<EntryIdentity>[]): SenioritySnapshotValidationIssue[] {
   return collectDuplicateIssues(entries)
 }
 
-export function uniqueEntryValues(entries: SeniorityEntry[], field: 'fleet' | 'seat' | 'base'): string[] {
+/** Returns sorted, non-empty values for one qualification dimension. */
+export function getSeniorityEntryValues(entries: readonly SeniorityEntry[], field: 'fleet' | 'seat' | 'base'): readonly string[] {
   const values = new Set<string>()
   for (const e of entries) {
     const v = e[field]
@@ -99,62 +103,76 @@ export function uniqueEntryValues(entries: SeniorityEntry[], field: 'fleet' | 's
   return Array.from(values).sort()
 }
 
-export class InvalidSnapshotDataError extends Error {
+/** Thrown when entries violate a snapshot invariant or lack qualification data. */
+export class InvalidSenioritySnapshotDataError extends Error {
   constructor(message: string, public invalidEntry?: SeniorityEntry) {
       super(message)
   }
 }
 
-export function createSnapshot(entries: readonly SeniorityEntry[]): SenioritySnapshot {
-  const duplicateIssues = validateSnapshotEntryIssues(entries)
-  if (duplicateIssues.length > 0) {
-    const issue = duplicateIssues[0]!
-    throw new InvalidSnapshotDataError(`${issue.message}.`, entries[issue.rowIndex])
+/** Validates entry invariants without building analysis indexes. */
+export function assertValidSeniorityAnalysisEntries(entries: readonly SeniorityEntry[]): void {
+  const issue = validateSnapshotEntryIssues(entries)[0]
+  if (issue) {
+    throw new InvalidSenioritySnapshotDataError(`${issue.message}.`, entries[issue.rowIndex])
   }
-
-  for (const e of entries) {
-    if (!e.base || !e.seat || !e.fleet)
-      throw new InvalidSnapshotDataError(`Entry is missing required qual data (base/seat/fleet).`, e)
+  for (const entry of entries) {
+    if (!entry.base || !entry.seat || !entry.fleet) {
+      throw new InvalidSenioritySnapshotDataError('Entry is missing required Qualification data (base/seat/fleet).', entry)
+    }
   }
+}
 
-  const sortedEntries = entries
+/**
+ * Indexes validated seniority entries for repeatable organization analysis.
+ *
+ * Entries must have unique seniority and employee numbers. Every entry must
+ * also provide base, seat, and fleet values. The returned snapshot retains the
+ * original entry references and adds sorted and grouped lookup views.
+ *
+ * @throws {InvalidSenioritySnapshotDataError} When an invariant is not satisfied.
+ */
+export function createSenioritySnapshot(entries: readonly SeniorityEntry[]): SenioritySnapshot {
+  assertValidSeniorityAnalysisEntries(entries)
+
+  const entriesBySeniority = entries
     .toSorted((a, b) => a.seniority_number - b.seniority_number)
 
-  const byCell = new Map<string, SeniorityEntry[]>()
+  const entriesByQualification = new Map<string, SeniorityEntry[]>()
   for (const e of entries) {
-    const key = cellKey(e)
-    let group = byCell.get(key)
-    if (!group) { group = []; byCell.set(key, group) }
+    const key = qualificationKey(e)
+    let group = entriesByQualification.get(key)
+    if (!group) { group = []; entriesByQualification.set(key, group) }
     group.push(e)
   }
 
-  const byEmployeeNumber = new Map<string, SeniorityEntry>()
+  const entriesByEmployeeNumber = new Map<string, SeniorityEntry>()
   for (const e of entries) {
-    byEmployeeNumber.set(e.employee_number, e)
+    entriesByEmployeeNumber.set(normalizeEmployeeNumber(e.employee_number), e)
   }
 
-  const uniqueBases = uniqueEntryValues(sortedEntries, 'base')
-  const uniqueSeats = uniqueEntryValues(sortedEntries, 'seat')
-  const uniqueFleets = uniqueEntryValues(sortedEntries, 'fleet')
+  const bases = getSeniorityEntryValues(entriesBySeniority, 'base')
+  const seats = getSeniorityEntryValues(entriesBySeniority, 'seat')
+  const fleets = getSeniorityEntryValues(entriesBySeniority, 'fleet')
 
   const qualSet = new Set<string>()
-  const quals: Qual[] = []
+  const qualifications: Qualification[] = []
   for (const e of entries) {
-    const label = `${e.seat}/${e.fleet}/${e.base}`
-    if (qualSet.has(label)) continue
-    qualSet.add(label)
-    quals.push({ seat: e.seat, fleet: e.fleet, base: e.base, label })
+    const key = qualificationKey(e)
+    if (qualSet.has(key)) continue
+    qualSet.add(key)
+    qualifications.push({ seat: e.seat, fleet: e.fleet, base: e.base })
   }
-  quals.sort((a, b) => a.label.localeCompare(b.label))
+  qualifications.sort((a, b) => qualificationKey(a).localeCompare(qualificationKey(b)))
 
   return {
     entries,
-    sortedEntries,
-    byCell,
-    byEmployeeNumber,
-    uniqueBases,
-    uniqueSeats,
-    uniqueFleets,
-    quals,
+    entriesBySeniority,
+    entriesByQualification,
+    entriesByEmployeeNumber,
+    bases,
+    seats,
+    fleets,
+    qualifications,
   }
 }

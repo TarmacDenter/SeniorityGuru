@@ -1,15 +1,17 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mountSuspended, mockNuxtImport } from '@nuxt/test-utils/runtime'
-import type { UpcomingRetirementRow } from '~/utils/seniority-engine'
+import type { UpcomingRetirement } from '~/utils/seniority'
 import { parsePlainDate } from '~/utils/temporal'
 
 const mockUpcomingRetirements = vi.fn()
 
-const { mockHasData, mockLens } = vi.hoisted(() => {
+const { mockHasData, mockHasAnchor, mockAnalysis, mockAnchoredAnalysis } = vi.hoisted(() => {
   const { ref: vRef } = require('vue')
   return {
     mockHasData: vRef(false) as { value: boolean },
-    mockLens: vRef(null) as { value: { upcomingRetirements: ReturnType<typeof vi.fn> } | null },
+    mockHasAnchor: vRef(false) as { value: boolean },
+    mockAnalysis: vRef(null) as { value: { upcomingRetirements: ReturnType<typeof vi.fn> } | null },
+    mockAnchoredAnalysis: vRef(null) as { value: { relativeUpcomingRetirements: ReturnType<typeof vi.fn> } | null },
   }
 })
 
@@ -17,7 +19,10 @@ const mockStoreState = { employeeNumber: null as string | null, entries: [] as u
 
 mockNuxtImport('useSeniorityCore', () => () => ({
   hasData: mockHasData,
-  lens: mockLens,
+  hasAnchor: mockHasAnchor,
+  listAnalysis: { value: null },
+  analysis: mockAnalysis,
+  anchoredAnalysis: mockAnchoredAnalysis,
   get entries() { return { value: mockStoreState.entries } },
 }))
 
@@ -25,15 +30,27 @@ mockNuxtImport('useUser', () => () => ({
   get employeeNumber() { return { value: mockStoreState.employeeNumber } },
 }))
 
-const sampleRows: UpcomingRetirementRow[] = [
-  { seniorityNumber: 2, employeeNumber: 'E2', base: 'JFK', seat: 'CA', fleet: '737', retireDate: parsePlainDate('2027-06-01'), rankRelativeToMe: 48 },
-  { seniorityNumber: 5, employeeNumber: 'E5', base: 'ATL', seat: 'FO', fleet: '320', retireDate: parsePlainDate('2028-03-15'), rankRelativeToMe: 45 },
+const sampleRows: UpcomingRetirement[] = [
+  {
+    seniorityNumber: 2,
+    employeeNumber: 'E2',
+    qualification: { base: 'JFK', seat: 'CA', fleet: '737' },
+    retirementDate: parsePlainDate('2027-06-01'),
+  },
+  {
+    seniorityNumber: 5,
+    employeeNumber: 'E5',
+    qualification: { base: 'ATL', seat: 'FO', fleet: '320' },
+    retirementDate: parsePlainDate('2028-03-15'),
+  },
 ]
 
 describe('RetirementsTab', () => {
   beforeEach(() => {
     mockHasData.value = false
-    mockLens.value = null
+    mockHasAnchor.value = false
+    mockAnalysis.value = null
+    mockAnchoredAnalysis.value = null
     mockStoreState.employeeNumber = null
     mockStoreState.entries = []
     mockUpcomingRetirements.mockReturnValue([])
@@ -48,7 +65,7 @@ describe('RetirementsTab', () => {
 
   it('renders table rows when data is available', async () => {
     mockHasData.value = true
-    mockLens.value = { upcomingRetirements: mockUpcomingRetirements }
+    mockAnalysis.value = { upcomingRetirements: mockUpcomingRetirements }
     mockUpcomingRetirements.mockReturnValue(sampleRows)
     const Comp = await import('./RetirementsTab.vue')
     const wrapper = await mountSuspended(Comp.default)
@@ -56,23 +73,26 @@ describe('RetirementsTab', () => {
     expect(wrapper.text()).toContain('2028-03-15')
   })
 
-  it('calls upcomingRetirements with default yearsHorizon of 2', async () => {
+  it('calls upcomingRetirements with a two-year through date', async () => {
     mockHasData.value = true
-    mockLens.value = { upcomingRetirements: mockUpcomingRetirements }
+    mockAnalysis.value = { upcomingRetirements: mockUpcomingRetirements }
     mockUpcomingRetirements.mockReturnValue([])
     const Comp = await import('./RetirementsTab.vue')
     await mountSuspended(Comp.default)
     expect(mockUpcomingRetirements).toHaveBeenCalledWith(
-      expect.objectContaining({ yearsHorizon: 2 }),
+      expect.objectContaining({
+        qualificationScope: {},
+        through: expect.any(Object),
+      }),
     )
   })
 
   it('shows employee number prompt when no employee number is set', async () => {
     mockHasData.value = true
-    mockLens.value = { upcomingRetirements: mockUpcomingRetirements }
+    mockAnalysis.value = { upcomingRetirements: mockUpcomingRetirements }
     mockStoreState.employeeNumber = null
     const Comp = await import('./RetirementsTab.vue')
     const wrapper = await mountSuspended(Comp.default)
-    expect(wrapper.text()).toContain('Set your employee number')
+    expect(wrapper.text()).toContain('Set an employee number that appears in this list')
   })
 })

@@ -29,9 +29,9 @@ ChartJS.register(
 )
 
 const props = defineProps<{
-  waveBuckets: { year: number; count: number; isWave: boolean }[]
-  trajectoryPoints: { date: import('~/utils/temporal').PlainDate; rank: number; percentile: number }[]
-  selectedQual: string
+  waveBuckets: readonly { year: number; retirementCount: number; isRetirementWave: boolean }[]
+  trajectoryPoints: readonly { date: import('~/utils/temporal').PlainDate; rank: number; percentile: number }[]
+  qualificationScope: string
 }>()
 
 const { defaults, colors } = useChartTheme()
@@ -41,12 +41,12 @@ const waveChartData = computed(() => ({
   datasets: [
     {
       label: 'Retirements',
-      data: props.waveBuckets.map((b) => b.count),
+      data: props.waveBuckets.map((b) => b.retirementCount),
       backgroundColor: props.waveBuckets.map((b) =>
-        b.isWave ? colors.peakHighlight : colors.primaryLight,
+        b.isRetirementWave ? colors.peakHighlight : colors.primaryLight,
       ),
       borderColor: props.waveBuckets.map((b) =>
-        b.isWave ? colors.peakBorder : colors.primary,
+        b.isRetirementWave ? colors.peakBorder : colors.primary,
       ),
       borderWidth: 1,
     },
@@ -63,7 +63,7 @@ const waveChartOptions = computed<ChartOptions<'bar'>>(() => ({
       callbacks: {
         label: (item: TooltipItem<'bar'>) =>
           `${item.parsed.y} retiree${item.parsed.y === 1 ? '' : 's'}${
-            props.waveBuckets[item.dataIndex]?.isWave ? ' ⚠ Wave year' : ''
+            props.waveBuckets[item.dataIndex]?.isRetirementWave ? ' ⚠ Wave year' : ''
           }`,
       },
     },
@@ -139,7 +139,7 @@ const trajectoryChartOptions = computed<ChartOptions<'line'>>(() => ({
     <!-- Retirement Wave Bar Chart -->
     <div>
       <p class="mb-1 text-xs font-medium text-[var(--ui-text-muted)]">
-        Retirements per Year{{ selectedQual ? ` — ${selectedQual}` : '' }}
+        Retirements per Year{{ qualificationScope ? ` — ${qualificationScope}` : '' }}
       </p>
       <ClientOnly>
         <div class="h-48 relative">
@@ -154,7 +154,7 @@ const trajectoryChartOptions = computed<ChartOptions<'line'>>(() => ({
     <!-- Trajectory line chart (user percentile over time) -->
     <div v-if="trajectoryPoints.length > 0">
       <p class="mb-1 text-xs font-medium text-[var(--ui-text-muted)]">
-        Your Percentile Trajectory{{ selectedQual ? ` — ${selectedQual}` : '' }}
+        Your Percentile Trajectory{{ qualificationScope ? ` — ${qualificationScope}` : '' }}
       </p>
       <ClientOnly>
         <div class="h-40 relative">

@@ -7,13 +7,13 @@ type BaseStatusRow = {
   base: string;
   seat: string;
   fleet: string;
-  rank: number;
-  adjustedRank: number;
-  total: number;
-  adjustedTotal: number;
-  percentile: number;
-  adjustedPercentile: number;
-  isUserCurrent: boolean;
+  listRank: number;
+  activeRank: number;
+  listPilotCount: number;
+  activePilotCount: number;
+  listPercentile: number;
+  activePercentile: number;
+  isAnchorCurrentQualification: boolean;
 };
 
 type DisplayRow = BaseStatusRow & {
@@ -41,9 +41,9 @@ watch(availableSeats, (seats) => {
 const displayData = computed<DisplayRow[]>(() => {
   const base = props.data.map((row) => ({
     ...row,
-    displayRank: adjusted.value ? row.adjustedRank : row.rank,
-    displayTotal: adjusted.value ? row.adjustedTotal : row.total,
-    displayPercentile: adjusted.value ? row.adjustedPercentile : row.percentile,
+    displayRank: adjusted.value ? row.activeRank : row.listRank,
+    displayTotal: adjusted.value ? row.activePilotCount : row.listPilotCount,
+    displayPercentile: adjusted.value ? row.activePercentile : row.listPercentile,
   }));
   // On mobile, filter by selected seat to reduce rows
   if (isMobile.value && mobileSeat.value) {
@@ -60,7 +60,7 @@ function highlightClass(row: DisplayRow): string {
   if (!userCanHold(row)) {
     return 'text-past';
   }
-  return row.isUserCurrent ? 'font-bold text-primary' : '';
+  return row.isAnchorCurrentQualification ? 'font-bold text-primary' : '';
 }
 
 const columns: TableColumn<DisplayRow>[] = [

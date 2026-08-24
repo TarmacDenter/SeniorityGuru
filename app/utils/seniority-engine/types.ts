@@ -1,254 +1,235 @@
 import type { SeniorityEntry } from '~/utils/schemas/seniority-list'
-import type { QualSpec } from './qual-spec'
 import type { PlainDate } from '~/utils/temporal'
+import type { QualificationScope } from './qualification-scope'
+import type { GrowthAssumptions } from '~/utils/seniority-analysis/growth'
+import type {
+  EntryPredicate,
+  RetirementCountProjection,
+  SeniorityTrajectory,
+  SeniorityTrajectoryComparison,
+  SeniorityTrajectoryPoint,
+  TrajectoryChange,
+} from '~/utils/seniority-analysis/math'
 
-export type { QualSpec }
-
-export type FilterFn = (entry: SeniorityEntry) => boolean
-
-export interface TrajectoryPoint {
-  date: PlainDate
-  rank: number
-  percentile: number
+export type {
+  EntryPredicate,
+  GrowthAssumptions,
+  QualificationScope,
+  RetirementCountProjection,
+  SeniorityTrajectory,
+  SeniorityTrajectoryComparison,
+  SeniorityTrajectoryPoint,
+  TrajectoryChange,
 }
 
-export interface TrajectoryDelta {
-  date: PlainDate
-  percentile: number
-  delta: number
-  isPeak: boolean
-}
-
-export interface AgeBucket {
-  label: string
-  count: number
-}
-
-export interface MostJuniorCARow {
-  qualKey: string
-  fleet: string
-  seat: string
-  base: string
-  seniorityNumber: number
-  hireDate: PlainDate
-  yos: number
-}
-
-export interface YosDistribution {
-  entryFloor: number
-  p10: number
-  p25: number
-  median: number
-  p75: number
-  p90: number
-  max: number
-}
-
-export interface YosHistogramBucket {
-  label: string
-  minYos: number
-  count: number
-}
-
-export interface QualCompositionRow {
-  qualKey: string
-  fleet: string
-  seat: string
-  total: number
-  caCount: number
-  foCount: number
-  caFoRatio: number
-  byBase: { base: string; count: number; pct: number }[]
-}
-
-export interface RetirementWaveBucket {
-  year: number
-  count: number
-  isWave: boolean
-}
-
-export type PowerIndexCellState = 'green' | 'amber' | 'red'
-
-export interface PowerIndexCell {
-  fleet: string
-  seat: string
-  base: string
-  state: PowerIndexCellState
-  retiredCount: number
-  totalInCell: number
-  pilotsAhead: number
-  isLowestSeniority: boolean
-  cellPercentile: number
-  numbersJuniorToPlug: number
-  plugPercentile: number
-  userPercentile: number
-}
-
-export interface DensityBucket {
-  start: number
-  count: number
-}
-
-export interface QualDemographicSnapshot {
-  fleet: string
-  seat: string
-  base: string
-  activeCount: number
-  plugPercentile: number
-  plugSenNum: number
-  p25: number
-  median: number
-  p75: number
-  max: number
-  density: DensityBucket[]
-}
-
-export interface QualDemographicScale extends QualDemographicSnapshot {
-  userPercentile: number
-  currentUserPercentile: number
-  isHoldable: boolean
-}
-
-export interface ThresholdResult {
-  year: string
-}
-
-export interface UpgradeTransition {
-  employeeNumber: string
-  name: string | undefined
-  seniorityNumber: number
-  type: 'upgrade' | 'fleet-change' | 'downgrade' | 'other'
-  oldSeat: string
-  newSeat: string
-  oldFleet: string
-  newFleet: string
-}
-
-export interface GrowthConfig {
-  enabled: boolean
-  annualRate: number
-  qualOverrides?: { spec: QualSpec; rate: number }[]
-}
-
-export interface PilotAnchor {
-  readonly seniorityNumber: number
-  readonly retireDate: PlainDate | null
-  readonly employeeNumber: string
+export interface Qualification {
+  readonly base: string
+  readonly seat: string
+  readonly fleet: string
 }
 
 export interface ScenarioOptions {
-  projectionDate: PlainDate
-  growthConfig?: GrowthConfig
-  scopeFilter?: QualSpec
+  readonly growthAssumptions?: GrowthAssumptions
+  readonly qualificationScope?: QualificationScope
 }
 
+/** Analysis assumptions without an implicit date or projection horizon. */
 export interface Scenario {
-  readonly projectionDate: PlainDate
-  readonly growthConfig: GrowthConfig
-  readonly scopeFilter: QualSpec
+  readonly growthAssumptions: GrowthAssumptions
+  readonly qualificationScope: QualificationScope
 }
 
-export interface Qual {
-  readonly seat: string
-  readonly fleet: string
-  readonly base: string
-  readonly label: string
-}
-
+/** Compile-time readonly views over validated Seniority Entries and their indexes. */
 export interface SenioritySnapshot {
-  readonly entries: readonly SeniorityEntry[]
-  readonly sortedEntries: SeniorityEntry[]
-  readonly byCell: Map<string, SeniorityEntry[]>
-  readonly byEmployeeNumber: Map<string, SeniorityEntry>
-  readonly uniqueBases: string[]
-  readonly uniqueSeats: string[]
-  readonly uniqueFleets: string[]
-  readonly quals: Qual[]
+  readonly entries: readonly Readonly<SeniorityEntry>[]
+  readonly entriesBySeniority: readonly Readonly<SeniorityEntry>[]
+  readonly entriesByQualification: ReadonlyMap<string, readonly Readonly<SeniorityEntry>[]>
+  readonly entriesByEmployeeNumber: ReadonlyMap<string, Readonly<SeniorityEntry>>
+  readonly bases: readonly string[]
+  readonly seats: readonly string[]
+  readonly fleets: readonly string[]
+  readonly qualifications: readonly Qualification[]
 }
 
-export interface StandingResult {
-  rank: number
-  adjustedRank: number
-  total: number
-  adjustedTotal: number
-  percentile: number
-  adjustedPercentile: number
-  retiredAbove: number
-  retirementsThisYear: number
-  retirementsThisYearSeniorToAnchor: number
-  cellBreakdown: CellBreakdownRow[]
+export interface QualificationStanding {
+  readonly qualification: Qualification
+  readonly listRank: number
+  readonly activeRank: number
+  readonly listPilotCount: number
+  readonly activePilotCount: number
+  readonly listPercentile: number
+  readonly activePercentile: number
+  readonly isAnchorCurrentQualification: boolean
 }
 
-export interface CellBreakdownRow {
-  base: string
-  seat: string
-  fleet: string
-  rank: number
-  adjustedRank: number
-  total: number
-  adjustedTotal: number
-  percentile: number
-  adjustedPercentile: number
-  isAnchorCurrent: boolean
+export interface SeniorityStanding {
+  readonly listRank: number
+  readonly activeRank: number
+  readonly listPilotCount: number
+  readonly activePilotCount: number
+  readonly listPercentile: number
+  readonly activePercentile: number
+  readonly retiredPilotsSeniorToAnchor: number
+  readonly rollingNext12MonthRetirements: number
+  readonly rollingNext12MonthRetirementsSeniorToAnchor: number
+  readonly qualificationStandings: readonly QualificationStanding[]
 }
 
-export interface TrajectoryResult {
-  points: TrajectoryPoint[]
-  chartData: { labels: string[]; data: number[] }
-  deltas: TrajectoryDelta[]
+export interface AgeBucket {
+  readonly minimumAge: number
+  readonly maximumAge?: number
+  readonly pilotCount: number
 }
 
-export interface ComparativeTrajectoryResult {
-  labels: string[]
-  currentData: number[]
-  compareData: number[]
+export interface CaptainQualificationThreshold {
+  readonly qualification: Qualification
+  readonly seniorityNumber: number
+  readonly hireDate: PlainDate
+  readonly yearsOfService: number
 }
 
-export interface RetirementProjectionResult {
-  labels: string[]
-  data: number[]
-  filteredTotal: number
+export interface YearsOfServiceDistribution {
+  readonly entryFloor: number
+  readonly p10: number
+  readonly p25: number
+  readonly median: number
+  readonly p75: number
+  readonly p90: number
+  readonly maximum: number
 }
 
-export interface DemographicsResult {
-  ageDistribution: { buckets: AgeBucket[]; nullCount: number }
-  yosDistribution: YosDistribution
-  yosHistogram: YosHistogramBucket[]
-  qualComposition: QualCompositionRow[]
-  mostJuniorCAs: MostJuniorCARow[]
+export interface YearsOfServiceBucket {
+  readonly minimumYears: number
+  readonly maximumYears?: number
+  readonly pilotCount: number
+}
+
+export interface QualificationComposition {
+  readonly fleet: string
+  readonly seat: string
+  readonly pilotCount: number
+  readonly captainCount: number
+  readonly firstOfficerCount: number
+  readonly captainToFirstOfficerRatio: number
+  readonly byBase: readonly { readonly base: string; readonly pilotCount: number; readonly percentage: number }[]
+}
+
+export interface RetirementYearAnalysis {
+  readonly year: number
+  readonly retirementCount: number
+  readonly isRetirementWave: boolean
+}
+
+export interface PercentileDensityBucket {
+  readonly minimumPercentile: number
+  readonly maximumPercentile: number
+  readonly pilotCount: number
+}
+
+export interface QualificationDistribution {
+  readonly qualification: Qualification
+  readonly activePilotCount: number
+  readonly thresholdPercentile: number
+  readonly thresholdSeniorityNumber: number
+  readonly percentile25: number
+  readonly medianPercentile: number
+  readonly percentile75: number
+  readonly maximumPercentile: number
+  readonly percentileDensity: readonly PercentileDensityBucket[]
+}
+
+export interface QualificationPosition {
+  readonly distribution: QualificationDistribution
+  readonly currentPercentile: number
+  readonly projectedPercentile: number
+  readonly modeledHoldable: boolean
+}
+
+export interface PercentileCrossingResult {
+  readonly crossingYear: number
+}
+
+export interface SeniorityDemographics {
+  readonly ageDistribution: {
+    readonly buckets: readonly AgeBucket[]
+    readonly unknownAgePilotCount: number
+  }
+  readonly yearsOfServiceDistribution: YearsOfServiceDistribution
+  readonly yearsOfServiceBuckets: readonly YearsOfServiceBucket[]
+  readonly qualificationComposition: readonly QualificationComposition[]
+  readonly captainQualificationThresholds: readonly CaptainQualificationThreshold[]
+}
+
+export interface RetirementCountProjectionOptions {
+  readonly through: PlainDate
+  readonly scenario?: Scenario
+}
+
+export interface DemographicsOptions {
+  readonly mandatoryRetirementAge: number
+  readonly scenario?: Scenario
 }
 
 export interface UpcomingRetirementFilter {
-  yearsHorizon: number
-  seniorOnly: boolean
-  base?: string | null
-  seat?: string | null
-  fleet?: string | null
+  readonly through: PlainDate
+  readonly qualificationScope?: QualificationScope
 }
 
-export interface UpcomingRetirementRow {
-  seniorityNumber: number
-  employeeNumber: string
-  base: string
-  seat: string
-  fleet: string
-  retireDate: PlainDate
-  /** Positive = user is N positions junior to this pilot; null when no anchor. */
-  rankRelativeToMe: number | null
+export interface UpcomingRetirement {
+  readonly seniorityNumber: number
+  readonly employeeNumber: string
+  readonly qualification: Qualification
+  readonly retirementDate: PlainDate
 }
 
-export interface SeniorityLens {
-  retirementsThisYear(): number
-  standing(): StandingResult | null
-  trajectory(scenario?: Scenario): TrajectoryResult | null
-  compareTrajectories(scenarioA: Scenario, scenarioB: Scenario): ComparativeTrajectoryResult | null
-  percentileCrossing(targetPercentile: number, scenario?: Scenario): ThresholdResult | null
-  holdability(scenario?: Scenario): PowerIndexCell[]
-  qualScales(scenario?: Scenario): QualDemographicScale[]
-  retirementWave(scenario?: Scenario): RetirementWaveBucket[]
-  retirementProjection(scenario?: Scenario): RetirementProjectionResult
-  demographics(mandatoryAge: number, scenario?: Scenario): DemographicsResult
-  upcomingRetirements(filter: UpcomingRetirementFilter): UpcomingRetirementRow[]
+export interface RelativeUpcomingRetirementFilter extends UpcomingRetirementFilter {
+  readonly seniorOnly?: boolean
+}
+
+export interface RelativeUpcomingRetirement extends UpcomingRetirement {
+  /** Positive is senior to the anchor; zero is the anchor; negative is junior. */
+  readonly positionsSeniorToAnchor: number
+}
+
+export interface SeniorityTrajectoryOptions {
+  readonly through: PlainDate
+  readonly scenario?: Scenario
+}
+
+export interface SeniorityTrajectoryComparisonOptions {
+  readonly through: PlainDate
+  readonly baselineScenario: Scenario
+  readonly comparisonScenario: Scenario
+}
+
+export interface PercentileCrossingOptions extends SeniorityTrajectoryOptions {
+  readonly targetPercentile: number
+}
+
+export interface QualificationPositionOptions {
+  readonly through: PlainDate
+  readonly growthAssumptions?: GrowthAssumptions
+}
+
+export interface CommonSeniorityLens {
   readonly snapshot: SenioritySnapshot
-  readonly anchor: PilotAnchor | null
+  retirementsNext12Months(): number
+  retirementYearAnalysis(scenario?: Scenario): readonly RetirementYearAnalysis[]
+  retirementCountProjection(options: RetirementCountProjectionOptions): RetirementCountProjection
+  demographics(options: DemographicsOptions): SeniorityDemographics
+  upcomingRetirements(filter: UpcomingRetirementFilter): readonly UpcomingRetirement[]
+}
+
+export interface SeniorityLens extends CommonSeniorityLens {
+  withAnchor(employeeNumber: string): AnchoredSeniorityLens
+}
+
+export interface AnchoredSeniorityLens extends CommonSeniorityLens {
+  readonly anchor: Readonly<SeniorityEntry>
+  seniorityStanding(): SeniorityStanding
+  seniorityTrajectory(options: SeniorityTrajectoryOptions): SeniorityTrajectory
+  seniorityTrajectoryComparison(options: SeniorityTrajectoryComparisonOptions): SeniorityTrajectoryComparison
+  percentileCrossing(options: PercentileCrossingOptions): PercentileCrossingResult | null
+  qualificationPositions(options: QualificationPositionOptions): readonly QualificationPosition[]
+  relativeUpcomingRetirements(filter: RelativeUpcomingRetirementFilter): readonly RelativeUpcomingRetirement[]
 }

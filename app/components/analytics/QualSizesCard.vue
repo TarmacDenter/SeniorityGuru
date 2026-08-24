@@ -8,8 +8,8 @@ interface ByBase {
   pct: number
 }
 
-interface QualCompositionRow {
-  qualKey: string
+interface QualificationComposition {
+  qualificationLabel: string
   fleet: string
   seat: string
   total: number
@@ -20,7 +20,7 @@ interface QualCompositionRow {
 }
 
 const props = defineProps<{
-  composition: QualCompositionRow[]
+  composition: QualificationComposition[]
 }>()
 
 interface SizeRow {

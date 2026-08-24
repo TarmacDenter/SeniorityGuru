@@ -1,19 +1,22 @@
 <script setup lang="ts">
 import { h } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
-import { formatRankDelta } from '~/utils/seniority-engine'
 import { formatMonthYear, formatYear } from '~/utils/date'
 
-interface TrajectoryPoint {
+interface SeniorityTrajectoryPoint {
   date: string
   rank: number
   percentile: number
 }
 
+interface PresentedSeniorityTrajectoryPoint extends SeniorityTrajectoryPoint {
+  rankDelta: string
+}
+
 const props = defineProps<{
   snapshot: {
-    atRetirement: TrajectoryPoint
-    fullTrajectory: TrajectoryPoint[]
+    atRetirement: SeniorityTrajectoryPoint
+    fullTrajectory: PresentedSeniorityTrajectoryPoint[]
     retireDate: string
   }
 }>()
@@ -46,15 +49,11 @@ const tableData = computed<TableRow[]>(() => {
   const sliced = trajectory.slice(-yearsToShow.value)
 
   return sliced.map((point) => {
-    const prevIndex = trajectory.indexOf(point) - 1
-    const prev = prevIndex >= 0 ? trajectory[prevIndex] : null
-    const delta = prev ? point.rank - prev.rank : 0
-
     return {
       year: formatYear(point.date),
       rank: point.rank,
       percentile: point.percentile,
-      rankDelta: formatRankDelta(delta),
+      rankDelta: point.rankDelta,
     }
   })
 })

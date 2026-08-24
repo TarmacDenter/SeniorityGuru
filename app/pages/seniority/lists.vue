@@ -5,6 +5,7 @@ import { useSeniorityLists, type SeniorityListSummary } from '~/composables/seni
 import { createLogger } from '~/utils/logger'
 import { formatDate } from '~/utils/date'
 import { formatInstantLocal, parsePlainDate } from '~/utils/temporal'
+import { instantSortingFn, plainDateSortingFn } from '~/utils/table/temporal-sorting'
 
 const log = createLogger('lists-page')
 
@@ -33,11 +34,12 @@ const {
 
 const columns: TableColumn<SeniorityList>[] = [
   { accessorKey: 'title', header: sortableHeader<SeniorityList>('Title') },
-  { accessorKey: 'effectiveDate', header: sortableHeader<SeniorityList>('Effective Date') },
+  { accessorKey: 'effectiveDate', header: sortableHeader<SeniorityList>('Effective Date'), sortingFn: plainDateSortingFn },
   {
     accessorKey: 'createdAt',
     header: sortableHeader<SeniorityList>('Uploaded'),
     cell: ({ row }) => formatInstantLocal(row.original.createdAt),
+    sortingFn: instantSortingFn,
   },
   { id: 'actions', header: '' },
 ]

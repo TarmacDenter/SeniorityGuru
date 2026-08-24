@@ -1,13 +1,11 @@
 <script setup lang="ts">
 import type { TableColumn } from '@nuxt/ui'
 import { useSeniorityCore } from '~/composables/seniority'
-import type { UpcomingRetirementRow } from '~/utils/seniority-engine'
-import { Temporal } from '~/utils/temporal'
+import type { RelativeUpcomingRetirement, UpcomingRetirement } from '~/utils/seniority'
+import { addYearsDate } from '~/utils/date'
+import { Temporal, todayPlainDate } from '~/utils/temporal'
 
-const { lens, hasData, entries } = useSeniorityCore()
-const { employeeNumber } = useUser()
-
-const hasEmployeeNumber = computed(() => !!employeeNumber.value)
+const { listAnalysis, analysis, anchoredAnalysis, hasData, hasAnchor } = useSeniorityCore()
 
 // ── Filter state ────────────────────────────────────────────────────────────
 const yearsHorizon = ref<1 | 2 | 3 | 5 | number>(2)
@@ -17,9 +15,9 @@ const filterSeat = ref<string | null>(null)
 const filterFleet = ref<string | null>(null)
 
 // ── Sort state ───────────────────────────────────────────────────────────────
-type SortKey = 'retireDate' | 'seniorityNumber' | 'rankRelativeToMe'
+type SortKey = 'retirementDate' | 'seniorityNumber' | 'rankRelativeToMe'
 type SortDir = 'asc' | 'desc'
-const sortKey = ref<SortKey>('retireDate')
+const sortKey = ref<SortKey>('retirementDate')
 const sortDir = ref<SortDir>('asc')
 
 function toggleSort(key: SortKey) {
@@ -32,16 +30,10 @@ function toggleSort(key: SortKey) {
   }
 }
 
-// ── Qual options ─────────────────────────────────────────────────────────────
-const availableBases = computed(() =>
-  [...new Set(entries.value.map(e => e.base).filter(Boolean) as string[])].sort(),
-)
-const availableSeats = computed(() =>
-  [...new Set(entries.value.map(e => e.seat).filter(Boolean) as string[])].sort(),
-)
-const availableFleets = computed(() =>
-  [...new Set(entries.value.map(e => e.fleet).filter(Boolean) as string[])].sort(),
-)
+// ── Qualification options ─────────────────────────────────────────────────────────────
+const availableBases = computed(() => listAnalysis.value?.catalog.bases ?? [])
+const availableSeats = computed(() => listAnalysis.value?.catalog.seats ?? [])
+const availableFleets = computed(() => listAnalysis.value?.catalog.fleets ?? [])
 
 type SelectItem = { label: string; value: string | null }
 const baseItems = computed<SelectItem[]>(() => [
@@ -58,43 +50,52 @@ const fleetItems = computed<SelectItem[]>(() => [
 ])
 
 // ── Rows ─────────────────────────────────────────────────────────────────────
-const rows = computed((): UpcomingRetirementRow[] => {
-  if (!hasData.value || !lens.value) return []
+type RetirementRow = UpcomingRetirement | RelativeUpcomingRetirement
 
-  const raw = lens.value.upcomingRetirements({
-    yearsHorizon: yearsHorizon.value,
-    seniorOnly: seniorOnly.value && hasEmployeeNumber.value,
-    base: filterBase.value || null,
-    seat: filterSeat.value || null,
-    fleet: filterFleet.value || null,
-  })
+const rows = computed((): RetirementRow[] => {
+  if (!hasData.value || !analysis.value) return []
+
+  const filter = {
+    through: addYearsDate(todayPlainDate(), yearsHorizon.value),
+    qualificationScope: {
+      ...(filterBase.value && { base: filterBase.value }),
+      ...(filterSeat.value && { seat: filterSeat.value }),
+      ...(filterFleet.value && { fleet: filterFleet.value }),
+    },
+  }
+  const raw = anchoredAnalysis.value
+    ? anchoredAnalysis.value.relativeUpcomingRetirements({ ...filter, seniorOnly: seniorOnly.value })
+    : analysis.value.upcomingRetirements(filter)
 
   return [...raw].sort((a, b) => {
     let cmp = 0
-    if (sortKey.value === 'retireDate') cmp = Temporal.PlainDate.compare(a.retireDate, b.retireDate)
+    if (sortKey.value === 'retirementDate') cmp = Temporal.PlainDate.compare(a.retirementDate, b.retirementDate)
     else if (sortKey.value === 'seniorityNumber') cmp = a.seniorityNumber - b.seniorityNumber
-    else if (sortKey.value === 'rankRelativeToMe') cmp = ((a.rankRelativeToMe ?? 0) - (b.rankRelativeToMe ?? 0))
+    else if (sortKey.value === 'rankRelativeToMe') cmp = (relativeRank(a) - relativeRank(b))
     return sortDir.value === 'asc' ? cmp : -cmp
   })
 })
 
-const columns = computed((): TableColumn<UpcomingRetirementRow>[] => {
-  const base: TableColumn<UpcomingRetirementRow>[] = [
+function relativeRank(row: RetirementRow): number {
+  return 'positionsSeniorToAnchor' in row ? row.positionsSeniorToAnchor : 0
+}
+
+const columns = computed((): TableColumn<RetirementRow>[] => {
+  const base: TableColumn<RetirementRow>[] = [
     { accessorKey: 'seniorityNumber', header: 'Seniority #' },
     {
       accessorKey: 'qual',
       header: 'Qual',
-      cell: ({ row }) => `${row.original.base} · ${row.original.seat} / ${row.original.fleet}`,
+      cell: ({ row }) => `${row.original.qualification.base} · ${row.original.qualification.seat} / ${row.original.qualification.fleet}`,
     },
-    { accessorKey: 'retireDate', header: 'Est. Retire Date' },
+    { accessorKey: 'retirementDate', header: 'Est. Retire Date' },
   ]
-  if (hasEmployeeNumber.value) {
+  if (hasAnchor.value) {
     base.splice(1, 0, {
       accessorKey: 'rankRelativeToMe',
       header: 'Rank Relative to Me',
       cell: ({ row }) => {
-        const v = row.original.rankRelativeToMe
-        if (v == null) return '—'
+        const v = 'positionsSeniorToAnchor' in row.original ? row.original.positionsSeniorToAnchor : 0
         return v > 0 ? `+${v}` : String(v)
       },
     })
@@ -136,13 +137,13 @@ const horizonOptions = [
 
         <!-- Senior only toggle -->
         <div class="flex items-center gap-2">
-          <USwitch v-model="seniorOnly" :disabled="!hasEmployeeNumber" size="sm" />
-          <span class="text-sm" :class="!hasEmployeeNumber ? 'text-muted' : ''">
+          <USwitch v-model="seniorOnly" :disabled="!hasAnchor" size="sm" />
+          <span class="text-sm" :class="!hasAnchor ? 'text-muted' : ''">
             Senior to me only
           </span>
         </div>
 
-        <!-- Qual filters -->
+        <!-- Qualification filters -->
         <div class="flex items-center gap-2 flex-wrap">
           <USelectMenu
             v-model="filterBase"
@@ -176,12 +177,12 @@ const horizonOptions = [
 
       <!-- Employee number prompt -->
       <div
-        v-if="!hasEmployeeNumber"
+        v-if="!hasAnchor"
         class="flex items-center gap-3 rounded-lg border border-[var(--ui-border)] bg-[var(--ui-bg-muted)] px-4 py-3 text-sm"
       >
         <UIcon name="i-lucide-user-x" class="size-4 shrink-0 text-muted" />
         <span class="text-muted">
-          Set your employee number in
+          Set an employee number that appears in this list in
           <NuxtLink to="/settings" class="underline text-primary">Settings</NuxtLink>
           to see rank relative to you and filter by seniority.
         </span>
@@ -217,12 +218,12 @@ const horizonOptions = [
             </button>
           </template>
 
-          <template #retireDate-header>
-            <button class="flex items-center gap-1" @click="toggleSort('retireDate')">
+          <template #retirementDate-header>
+            <button class="flex items-center gap-1" @click="toggleSort('retirementDate')">
               Est. Retire Date
               <UIcon
-                :name="sortKey === 'retireDate' && sortDir === 'desc' ? 'i-lucide-chevron-down' : 'i-lucide-chevron-up'"
-                :class="sortKey === 'retireDate' ? 'text-primary' : 'text-muted'"
+                :name="sortKey === 'retirementDate' && sortDir === 'desc' ? 'i-lucide-chevron-down' : 'i-lucide-chevron-up'"
+                :class="sortKey === 'retirementDate' ? 'text-primary' : 'text-muted'"
                 class="size-3"
               />
             </button>

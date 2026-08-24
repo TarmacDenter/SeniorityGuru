@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { ChartData, ChartOptions, TooltipItem } from 'chart.js'
 
-// ── Qual presets ──────────────────────────────────────────────────────────────
+// ── Qualification presets ──────────────────────────────────────────────────────────────
 
 type QualKey = 'company' | 'fleet' | 'qual'
 
@@ -11,9 +11,9 @@ const qualPresets: { key: QualKey; label: string; startPct: number; yearsToRetir
   { key: 'qual',    label: 'DEN · FO · E175', startPct: 28, yearsToRetirement: 37, thresholdLabel: 'Top 25%' },
 ]
 
-const selectedQual = ref<QualKey>('company')
+const qualificationScope = ref<QualKey>('company')
 
-const activePreset = computed(() => qualPresets.find((q) => q.key === selectedQual.value)!)
+const activePreset = computed(() => qualPresets.find((q) => q.key === qualificationScope.value)!)
 
 // ── Actuarial model ───────────────────────────────────────────────────────────
 
@@ -185,17 +185,17 @@ const legendItems = [
 <template>
   <ClientOnly>
     <div ref="container" class="space-y-6">
-      <!-- Qual toggle -->
+      <!-- Qualification toggle -->
       <div class="flex justify-center">
         <div class="flex rounded-lg border border-(--ui-border) overflow-hidden text-sm font-medium">
           <button
             v-for="q in qualPresets"
             :key="q.key"
             class="px-4 py-1.5 transition-colors"
-            :class="selectedQual === q.key
+            :class="qualificationScope === q.key
               ? 'bg-primary text-white'
               : 'text-muted hover:bg-(--ui-bg-elevated)'"
-            @click="selectedQual = q.key"
+            @click="qualificationScope = q.key"
           >
             {{ q.label }}
           </button>

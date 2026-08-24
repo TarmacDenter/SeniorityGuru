@@ -1,280 +1,311 @@
 import type {
-  CellBreakdownRow,
-  ComparativeTrajectoryResult,
-  DemographicsResult,
-  PilotAnchor,
-  PowerIndexCell,
-  QualDemographicScale,
-  RetirementProjectionResult,
-  RetirementWaveBucket,
+  AnchoredSeniorityLens,
+  CommonSeniorityLens,
+  DemographicsOptions,
+  PercentileCrossingOptions,
+  PercentileCrossingResult,
+  QualificationPosition,
+  QualificationPositionOptions,
+  QualificationStanding,
+  RelativeUpcomingRetirement,
+  RelativeUpcomingRetirementFilter,
+  RetirementCountProjection,
+  RetirementCountProjectionOptions,
+  RetirementYearAnalysis,
   Scenario,
+  SeniorityDemographics,
   SeniorityLens,
   SenioritySnapshot,
-  StandingResult,
-  ThresholdResult,
-  TrajectoryResult,
+  SeniorityStanding,
+  SeniorityTrajectory,
+  SeniorityTrajectoryComparison,
+  SeniorityTrajectoryComparisonOptions,
+  SeniorityTrajectoryOptions,
+  UpcomingRetirement,
   UpcomingRetirementFilter,
-  UpcomingRetirementRow,
 } from './types'
+import type { SeniorityEntry } from '~/utils/schemas/seniority-list'
+import { normalizeEmployeeNumber } from '~/utils/schemas/seniority-list'
 import {
-  computeRank,
-  countRetiredAbove,
-  buildTrajectory,
-  generateTimePoints,
-  getProjectionEndDateValue,
-  projectRetirements,
-  projectComparativeTrajectory,
-  computeTrajectoryDeltas,
-} from '~/utils/seniority-math'
-import { createScenario } from './scenario'
+  calculateRetirementCountProjection,
+  calculateSeniorityPercentile,
+  calculateSeniorityRank,
+  calculateSeniorityTrajectory,
+  calculateSeniorityTrajectoryComparison,
+  countRetiredPilotsSeniorTo,
+} from '~/utils/seniority-analysis/math'
+import { createSeniorityScenario } from './scenario'
 import { memoizeLast } from './memoize'
-import { qualSpecToFilter } from './qual-spec'
-import { computePercentile } from './percentile'
+import { qualificationScopeToEntryPredicate } from './qualification-scope'
 import {
-  findThresholdYear,
-  computePowerIndexCells,
-  computeQualSnapshots,
-  applyProjectionToSnapshots,
-  computeRetirementWave,
-  computeAgeDistribution,
-  computeYosDistribution,
-  computeYosHistogram,
-  computeQualComposition,
-  findMostJuniorCA,
-} from '~/utils/qual-analytics'
-import { addYearsDate, isRetiredBy, retiresWithinNextYear } from '~/utils/date'
+  analyzeAgeDistribution,
+  analyzeQualificationComposition,
+  analyzeYearsOfServiceBuckets,
+  analyzeYearsOfServiceDistribution,
+  findCaptainQualificationThresholds,
+} from './demographics'
+import { analyzeRetirementYears } from './retirement-analysis'
+import { analyzeQualificationPositions } from './qualification-position'
+import { findPercentileCrossing } from './trajectory-analysis'
+import { isRetiredBy, retiresWithinNextYear } from '~/utils/date'
 import { Temporal } from '~/utils/temporal'
 
-export function createLens(
-  snapshot: SenioritySnapshot,
-  anchor: PilotAnchor | undefined,
-  asOfDate: Temporal.PlainDate,
-): SeniorityLens {
-  const resolvedAnchor: PilotAnchor | null = anchor ?? null
-  // Resolve once so every calculation in this lens observes the same date.
-  const referenceISO = asOfDate.toString()
-  const referenceDate = () => Temporal.PlainDate.from(referenceISO)
+export interface CreateSeniorityLensOptions {
+  readonly asOfDate: Temporal.PlainDate
+}
+
+export class AnchorNotFoundError extends Error {
+  constructor(readonly employeeNumber: string) {
+    super(`No seniority entry exists for employee number "${employeeNumber}".`)
+    this.name = 'AnchorNotFoundError'
+  }
+}
+
+interface LensContext {
+  readonly snapshot: SenioritySnapshot
+  readonly asOfDateISO: string
+  readonly retirementsNext12Months: () => number
+  readonly retirementYearAnalysis: (scenario?: Scenario) => readonly RetirementYearAnalysis[]
+  readonly retirementCountProjection: (options: RetirementCountProjectionOptions) => RetirementCountProjection
+  readonly demographics: (options: DemographicsOptions) => SeniorityDemographics
+  readonly upcomingRetirements: (filter: UpcomingRetirementFilter) => readonly UpcomingRetirement[]
+}
+
+function asOfDate(context: LensContext): Temporal.PlainDate {
+  return Temporal.PlainDate.from(context.asOfDateISO)
+}
+
+function createLensContext(snapshot: SenioritySnapshot, date: Temporal.PlainDate): LensContext {
   const entries = snapshot.entries
+  const dateISO = date.toString()
+  const currentDate = () => Temporal.PlainDate.from(dateISO)
 
-  const anchorEntry = resolvedAnchor
-    ? snapshot.byEmployeeNumber.get(resolvedAnchor.employeeNumber) ?? null
-    : null
+  const retirementsNext12Months = () => entries.filter(entry =>
+    !!entry.retire_date
+    && retiresWithinNextYear(entry.retire_date.toString(), currentDate().toString()),
+  ).length
 
-  function retirementsThisYear(): number {
-    return entries.filter(e => !!e.retire_date && retiresWithinNextYear(e.retire_date.toString(), referenceDate().toString())).length
+  const retirementYearAnalysis = (scenario?: Scenario) => {
+    const effectiveScenario = scenario ?? createSeniorityScenario()
+    return analyzeRetirementYears(entries, qualificationScopeToEntryPredicate(effectiveScenario.qualificationScope))
   }
 
-  function standing(): StandingResult | null {
-    if (!resolvedAnchor) return null
-    const { seniorityNumber } = resolvedAnchor
-    const today = referenceDate()
-    const total = entries.length
-
-    const rank = computeRank(entries, seniorityNumber)
-    const retiredAbove = countRetiredAbove(entries, seniorityNumber, today)
-    const adjustedRank = rank - retiredAbove
-
-    const retiringNextYear = entries.filter(e => !!e.retire_date && retiresWithinNextYear(e.retire_date.toString(), today.toString()))
-    const retirementsThisYearCount = retirementsThisYear()
-    const retirementsThisYearSeniorToAnchor = retiringNextYear.filter(
-      e => e.seniority_number < seniorityNumber,
-    ).length
-
-    const cellBreakdown: CellBreakdownRow[] = []
-    for (const cellEntries of snapshot.byCell.values()) {
-      const first = cellEntries[0]!
-      const cellTotal = cellEntries.length
-      const cellRetired = cellEntries.filter(
-        e => e.retire_date && isRetiredBy(e.retire_date, today),
-      ).length
-      const cellAdjustedTotal = cellTotal - cellRetired
-      const cellRank = computeRank(cellEntries, seniorityNumber)
-      const cellRetiredAbove = countRetiredAbove(cellEntries, seniorityNumber, today)
-      const cellAdjustedRank = cellRank - cellRetiredAbove
-
-      cellBreakdown.push({
-        base: first.base,
-        seat: first.seat,
-        fleet: first.fleet,
-        rank: cellRank,
-        adjustedRank: cellAdjustedRank,
-        total: cellTotal,
-        adjustedTotal: cellAdjustedTotal,
-        percentile: computePercentile(cellRank, cellTotal),
-        adjustedPercentile: computePercentile(cellAdjustedRank, cellAdjustedTotal),
-        isAnchorCurrent: !!(
-          anchorEntry
-          && anchorEntry.base === first.base
-          && anchorEntry.seat === first.seat
-          && anchorEntry.fleet === first.fleet
-        ),
-      })
-    }
-
-    const adjustedTotal = cellBreakdown.reduce((sum, cell) => sum + cell.adjustedTotal, 0)
-
-    return {
-      rank,
-      adjustedRank,
-      total,
-      adjustedTotal,
-      percentile: computePercentile(rank, total),
-      adjustedPercentile: computePercentile(adjustedRank, adjustedTotal),
-      retiredAbove,
-      retirementsThisYear: retirementsThisYearCount,
-      retirementsThisYearSeniorToAnchor,
-      cellBreakdown,
-    }
-  }
-
-  function trajectory(scenario?: Scenario): TrajectoryResult | null {
-    if (!resolvedAnchor) return null
-    const s = scenario ?? createScenario({ projectionDate: referenceDate() })
-    const { today, endDate } = getProjectionEndDateValue(resolvedAnchor.retireDate, referenceDate())
-    const timePoints = generateTimePoints(today, endDate)
-    const points = buildTrajectory(
-      entries, resolvedAnchor.seniorityNumber, timePoints,
-      qualSpecToFilter(s.scopeFilter), s.growthConfig,
-    )
-    return {
-      points,
-      chartData: {
-        labels: points.map(p => p.date.toString()),
-        data: points.map(p => p.percentile),
-      },
-      deltas: computeTrajectoryDeltas(points),
-    }
-  }
-
-  function compareTrajectories(
-    scenarioA: Scenario, scenarioB: Scenario,
-  ): ComparativeTrajectoryResult | null {
-    if (!resolvedAnchor) return null
-    return projectComparativeTrajectory(
+  const retirementCountProjection = (options: RetirementCountProjectionOptions) => {
+    const effectiveScenario = options.scenario ?? createSeniorityScenario()
+    return calculateRetirementCountProjection({
       entries,
-      resolvedAnchor.seniorityNumber,
-      resolvedAnchor.retireDate,
-      referenceDate(),
-      qualSpecToFilter(scenarioA.scopeFilter),
-      qualSpecToFilter(scenarioB.scopeFilter),
-      scenarioA.growthConfig,
-    )
+      from: currentDate(),
+      through: options.through,
+      predicate: qualificationScopeToEntryPredicate(effectiveScenario.qualificationScope),
+    })
   }
 
-  function percentileCrossing(
-    targetPercentile: number, scenario?: Scenario,
-  ): ThresholdResult | null {
-    if (!resolvedAnchor) return null
-    const s = scenario ?? createScenario({ projectionDate: referenceDate() })
-    const { today, endDate } = getProjectionEndDateValue(resolvedAnchor.retireDate, referenceDate())
-    const timePoints = generateTimePoints(today, endDate)
-    const gc = s.growthConfig
-
-    const filter = qualSpecToFilter(s.scopeFilter)
-
-    const base = buildTrajectory(
-      entries, resolvedAnchor.seniorityNumber, timePoints,
-      filter, gc,
-    )
-
-    return findThresholdYear(base, targetPercentile)
-  }
-
-  function holdability(scenario?: Scenario): PowerIndexCell[] {
-    if (!resolvedAnchor) return []
-    const s = scenario ?? createScenario({ projectionDate: referenceDate() })
-    return computePowerIndexCells(
-      entries,
-      resolvedAnchor.seniorityNumber,
-      s.projectionDate,
-      s.growthConfig,
-      referenceDate(),
-    )
-  }
-
-  function qualScales(scenario?: Scenario): QualDemographicScale[] {
-    if (!resolvedAnchor) return []
-    const s = scenario ?? createScenario({ projectionDate: referenceDate() })
-    const snapshots = computeQualSnapshots(entries, referenceDate())
-    if (snapshots.length === 0) return []
-    return applyProjectionToSnapshots(
-      snapshots, entries, resolvedAnchor.seniorityNumber,
-      s.projectionDate, s.growthConfig,
-      referenceDate(),
-    )
-  }
-
-  function retirementWave(scenario?: Scenario): RetirementWaveBucket[] {
-    const s = scenario ?? createScenario({ projectionDate: referenceDate() })
-    return computeRetirementWave(entries, qualSpecToFilter(s.scopeFilter))
-  }
-
-  function retirementProjection(scenario?: Scenario): RetirementProjectionResult {
-    const s = scenario ?? createScenario({ projectionDate: referenceDate() })
-    return projectRetirements(
-      entries,
-      resolvedAnchor?.retireDate ?? null,
-      referenceDate(),
-      qualSpecToFilter(s.scopeFilter),
-    )
-  }
-
-  function demographics(mandatoryAge: number, scenario?: Scenario): DemographicsResult {
-    const s = scenario ?? createScenario({ projectionDate: referenceDate() })
-    const filter = qualSpecToFilter(s.scopeFilter)
-    const filtered = entries.filter(filter)
-
+  const demographics = (options: DemographicsOptions): SeniorityDemographics => {
+    const effectiveScenario = options.scenario ?? createSeniorityScenario()
+    const predicate = qualificationScopeToEntryPredicate(effectiveScenario.qualificationScope)
+    const scopedEntries = entries.filter(predicate)
     return {
-      ageDistribution: computeAgeDistribution(entries, mandatoryAge, filter, referenceDate()),
-      yosDistribution: computeYosDistribution(entries, filter, referenceDate()),
-      yosHistogram: computeYosHistogram(entries, filter, referenceDate()),
-      qualComposition: computeQualComposition(filtered),
-      mostJuniorCAs: findMostJuniorCA(filtered, referenceDate()),
+      ageDistribution: analyzeAgeDistribution(entries, options.mandatoryRetirementAge, predicate, currentDate()),
+      yearsOfServiceDistribution: analyzeYearsOfServiceDistribution(entries, predicate, currentDate()),
+      yearsOfServiceBuckets: analyzeYearsOfServiceBuckets(entries, predicate, currentDate()),
+      qualificationComposition: analyzeQualificationComposition(scopedEntries),
+      captainQualificationThresholds: findCaptainQualificationThresholds(scopedEntries, currentDate()),
     }
   }
 
-  function upcomingRetirements(filter: UpcomingRetirementFilter): UpcomingRetirementRow[] {
-    const today = referenceDate()
-    const cutoff = addYearsDate(today, filter.yearsHorizon)
-
+  const upcomingRetirements = (filter: UpcomingRetirementFilter): readonly UpcomingRetirement[] => {
+    const today = currentDate()
+    const predicate = qualificationScopeToEntryPredicate(filter.qualificationScope ?? {})
     return entries
-      .filter((e) => {
-        if (!e.retire_date) return false
-        if (isRetiredBy(e.retire_date, today)) return false
-        if (!isRetiredBy(e.retire_date, cutoff)) return false
-        if (filter.seniorOnly && resolvedAnchor && e.seniority_number >= resolvedAnchor.seniorityNumber) return false
-        if (filter.base && e.base !== filter.base) return false
-        if (filter.seat && e.seat !== filter.seat) return false
-        if (filter.fleet && e.fleet !== filter.fleet) return false
-        return true
-      })
-      .sort((a, b) => Temporal.PlainDate.compare(a.retire_date!, b.retire_date!))
-      .map((e): UpcomingRetirementRow => ({
-        seniorityNumber: e.seniority_number,
-        employeeNumber: e.employee_number,
-        base: e.base,
-        seat: e.seat,
-        fleet: e.fleet,
-        retireDate: e.retire_date!,
-        rankRelativeToMe: resolvedAnchor
-          ? resolvedAnchor.seniorityNumber - e.seniority_number
-          : null,
+      .filter(entry =>
+        !!entry.retire_date
+        && !isRetiredBy(entry.retire_date, today)
+        && isRetiredBy(entry.retire_date, filter.through)
+        && predicate(entry),
+      )
+      .toSorted((a, b) => Temporal.PlainDate.compare(a.retire_date!, b.retire_date!))
+      .map(entry => ({
+        seniorityNumber: entry.seniority_number,
+        employeeNumber: entry.employee_number,
+        qualification: { base: entry.base, seat: entry.seat, fleet: entry.fleet },
+        retirementDate: entry.retire_date!,
       }))
   }
 
   return {
-    retirementsThisYear,
-    standing: memoizeLast(standing, () => 'standing'),
-    trajectory: memoizeLast(trajectory),
-    compareTrajectories: memoizeLast(compareTrajectories),
-    percentileCrossing: memoizeLast(percentileCrossing),
-    holdability: memoizeLast(holdability),
-    qualScales: memoizeLast(qualScales),
-    retirementWave: memoizeLast(retirementWave),
-    retirementProjection: memoizeLast(retirementProjection),
-    demographics: memoizeLast(demographics),
-    upcomingRetirements,
     snapshot,
-    anchor: resolvedAnchor,
+    asOfDateISO: dateISO,
+    retirementsNext12Months: memoizeLast(retirementsNext12Months, () => 'retirements-next-12-months'),
+    retirementYearAnalysis: memoizeLast(retirementYearAnalysis),
+    retirementCountProjection: memoizeLast(retirementCountProjection),
+    demographics: memoizeLast(demographics),
+    upcomingRetirements: memoizeLast(upcomingRetirements),
   }
+}
+
+function commonLensMethods(context: LensContext): Omit<CommonSeniorityLens, 'snapshot'> {
+  return {
+    retirementsNext12Months: () => context.retirementsNext12Months(),
+    retirementYearAnalysis: scenario => context.retirementYearAnalysis(scenario),
+    retirementCountProjection: options => context.retirementCountProjection(options),
+    demographics: options => context.demographics(options),
+    upcomingRetirements: filter => context.upcomingRetirements(filter),
+  }
+}
+
+class SeniorityLensImplementation implements SeniorityLens {
+  private readonly common: Omit<CommonSeniorityLens, 'snapshot'>
+
+  constructor(private readonly context: LensContext) {
+    this.common = commonLensMethods(context)
+  }
+
+  get snapshot(): SenioritySnapshot {
+    return this.context.snapshot
+  }
+
+  readonly retirementsNext12Months = () => this.common.retirementsNext12Months()
+  readonly retirementYearAnalysis = (scenario?: Scenario) => this.common.retirementYearAnalysis(scenario)
+  readonly retirementCountProjection = (options: RetirementCountProjectionOptions) => this.common.retirementCountProjection(options)
+  readonly demographics = (options: DemographicsOptions) => this.common.demographics(options)
+  readonly upcomingRetirements = (filter: UpcomingRetirementFilter) => this.common.upcomingRetirements(filter)
+
+  withAnchor(employeeNumber: string): AnchoredSeniorityLens {
+    const anchor = this.context.snapshot.entriesByEmployeeNumber.get(normalizeEmployeeNumber(employeeNumber))
+    if (!anchor) throw new AnchorNotFoundError(employeeNumber)
+    return new AnchoredSeniorityLensImplementation(this.context, anchor)
+  }
+}
+
+class AnchoredSeniorityLensImplementation implements AnchoredSeniorityLens {
+  private readonly common: Omit<CommonSeniorityLens, 'snapshot'>
+  readonly seniorityStanding: () => SeniorityStanding
+  readonly seniorityTrajectory: (options: SeniorityTrajectoryOptions) => SeniorityTrajectory
+  readonly seniorityTrajectoryComparison: (options: SeniorityTrajectoryComparisonOptions) => SeniorityTrajectoryComparison
+  readonly percentileCrossing: (options: PercentileCrossingOptions) => PercentileCrossingResult | null
+  readonly qualificationPositions: (options: QualificationPositionOptions) => readonly QualificationPosition[]
+  readonly relativeUpcomingRetirements: (filter: RelativeUpcomingRetirementFilter) => readonly RelativeUpcomingRetirement[]
+
+  constructor(private readonly context: LensContext, readonly anchor: Readonly<SeniorityEntry>) {
+    this.common = commonLensMethods(context)
+    const entries = context.snapshot.entries
+    const seniorityNumber = anchor.seniority_number
+    const anchorListRank = calculateSeniorityRank(entries, seniorityNumber)
+
+    this.seniorityStanding = memoizeLast(() => {
+      const today = asOfDate(context)
+      const listRank = calculateSeniorityRank(entries, seniorityNumber)
+      const retiredPilotsSeniorToAnchor = countRetiredPilotsSeniorTo(entries, seniorityNumber, today)
+      const qualificationStandings: QualificationStanding[] = []
+
+      for (const qualificationEntries of context.snapshot.entriesByQualification.values()) {
+        const first = qualificationEntries[0]!
+        const listPilotCount = qualificationEntries.length
+        const retiredPilotCount = qualificationEntries.filter(entry =>
+          entry.retire_date && isRetiredBy(entry.retire_date, today),
+        ).length
+        const activePilotCount = listPilotCount - retiredPilotCount
+        const qualificationListRank = calculateSeniorityRank(qualificationEntries, seniorityNumber)
+        const retiredQualificationPilotsSeniorToAnchor = countRetiredPilotsSeniorTo(
+          qualificationEntries,
+          seniorityNumber,
+          today,
+        )
+        const activeRank = qualificationListRank - retiredQualificationPilotsSeniorToAnchor
+        qualificationStandings.push({
+          qualification: { base: first.base, seat: first.seat, fleet: first.fleet },
+          listRank: qualificationListRank,
+          activeRank,
+          listPilotCount,
+          activePilotCount,
+          listPercentile: calculateSeniorityPercentile(qualificationListRank, listPilotCount),
+          activePercentile: calculateSeniorityPercentile(activeRank, activePilotCount),
+          isAnchorCurrentQualification:
+            anchor.base === first.base && anchor.seat === first.seat && anchor.fleet === first.fleet,
+        })
+      }
+
+      const activePilotCount = qualificationStandings.reduce((sum, standing) => sum + standing.activePilotCount, 0)
+      const activeRank = listRank - retiredPilotsSeniorToAnchor
+      const rollingNext12MonthRetirementsSeniorToAnchor = entries.filter(entry =>
+        entry.seniority_number < seniorityNumber
+        && !!entry.retire_date
+        && retiresWithinNextYear(entry.retire_date.toString(), today.toString()),
+      ).length
+
+      return {
+        listRank,
+        activeRank,
+        listPilotCount: entries.length,
+        activePilotCount,
+        listPercentile: calculateSeniorityPercentile(listRank, entries.length),
+        activePercentile: calculateSeniorityPercentile(activeRank, activePilotCount),
+        retiredPilotsSeniorToAnchor,
+        rollingNext12MonthRetirements: context.retirementsNext12Months(),
+        rollingNext12MonthRetirementsSeniorToAnchor,
+        qualificationStandings,
+      }
+    }, () => 'seniority-standing')
+
+    this.seniorityTrajectory = memoizeLast((options) => {
+      const scenario = options.scenario ?? createSeniorityScenario()
+      return calculateSeniorityTrajectory({
+        entries,
+        seniorityNumber,
+        from: asOfDate(context),
+        through: options.through,
+        predicate: qualificationScopeToEntryPredicate(scenario.qualificationScope),
+        growthAssumptions: scenario.growthAssumptions,
+      })
+    })
+
+    this.seniorityTrajectoryComparison = memoizeLast(options => calculateSeniorityTrajectoryComparison({
+      entries,
+      seniorityNumber,
+      from: asOfDate(context),
+      through: options.through,
+      baselinePredicate: qualificationScopeToEntryPredicate(options.baselineScenario.qualificationScope),
+      comparisonPredicate: qualificationScopeToEntryPredicate(options.comparisonScenario.qualificationScope),
+      baselineGrowthAssumptions: options.baselineScenario.growthAssumptions,
+      comparisonGrowthAssumptions: options.comparisonScenario.growthAssumptions,
+    }))
+
+    this.percentileCrossing = memoizeLast((options) => {
+      const trajectory = this.seniorityTrajectory({ through: options.through, scenario: options.scenario })
+      return findPercentileCrossing(trajectory.points, options.targetPercentile)
+    })
+
+    this.qualificationPositions = memoizeLast(options => analyzeQualificationPositions(
+      entries,
+      seniorityNumber,
+      asOfDate(context),
+      options.through,
+      options.growthAssumptions,
+    ))
+
+    this.relativeUpcomingRetirements = memoizeLast(filter => context.upcomingRetirements(filter)
+      .map(row => ({
+        ...row,
+        positionsSeniorToAnchor:
+          anchorListRank - calculateSeniorityRank(entries, row.seniorityNumber),
+      }))
+      .filter(row => !filter.seniorOnly || row.positionsSeniorToAnchor > 0))
+  }
+
+  get snapshot(): SenioritySnapshot {
+    return this.context.snapshot
+  }
+
+  readonly retirementsNext12Months = () => this.common.retirementsNext12Months()
+  readonly retirementYearAnalysis = (scenario?: Scenario) => this.common.retirementYearAnalysis(scenario)
+  readonly retirementCountProjection = (options: RetirementCountProjectionOptions) => this.common.retirementCountProjection(options)
+  readonly demographics = (options: DemographicsOptions) => this.common.demographics(options)
+  readonly upcomingRetirements = (filter: UpcomingRetirementFilter) => this.common.upcomingRetirements(filter)
+}
+
+export function createSeniorityLens(
+  snapshot: SenioritySnapshot,
+  options: CreateSeniorityLensOptions,
+): SeniorityLens {
+  return new SeniorityLensImplementation(createLensContext(snapshot, options.asOfDate))
 }

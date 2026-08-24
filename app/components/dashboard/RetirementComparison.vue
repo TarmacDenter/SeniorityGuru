@@ -1,23 +1,22 @@
 <script setup lang="ts">
 import type { ChartData } from 'chart.js'
-import type { QualSpec } from '~/utils/seniority-engine'
-import type { SeniorityEntry } from '~/utils/schemas/seniority-list'
+import type { QualificationScope, SeniorityQualificationScopeOption } from '~/utils/seniority'
 
 const props = defineProps<{
-  entries: readonly SeniorityEntry[]
-  computeProjection: (spec: QualSpec) => { labels: string[]; data: number[]; filteredTotal: number }
+  qualificationScopeOptions: readonly SeniorityQualificationScopeOption[]
+  computeProjection: (scope: QualificationScope) => { labels: string[]; data: number[]; scopedPilotCount: number }
 }>()
 
 const { colors } = useChartTheme()
-const entriesRef = computed(() => props.entries)
-const { scopeOptions, specForLabel } = useScopeFilter(entriesRef)
+const qualificationScopeOptions = computed(() => props.qualificationScopeOptions)
+const { scopeOptions, specForLabel } = useScopeFilter(qualificationScopeOptions)
 
 const currentScope = ref('Company-wide')
 const compareScope = ref('')
 const showPercentage = ref(false)
 
-function toPercentages(data: number[], filteredTotal: number): number[] {
-  let remaining = filteredTotal
+function toPercentages(data: number[], scopedPilotCount: number): number[] {
+  let remaining = scopedPilotCount
   return data.map((count) => {
     const pct = remaining > 0 ? Math.round((count / remaining) * 1000) / 10 : 0
     remaining -= count
@@ -28,7 +27,7 @@ function toPercentages(data: number[], filteredTotal: number): number[] {
 const chartData = computed<ChartData<'bar'>>(() => {
   const current = props.computeProjection(specForLabel(currentScope.value))
   const currentData = showPercentage.value
-    ? toPercentages(current.data, current.filteredTotal)
+    ? toPercentages(current.data, current.scopedPilotCount)
     : current.data
 
   const datasets: ChartData<'bar'>['datasets'] = [{
@@ -43,7 +42,7 @@ const chartData = computed<ChartData<'bar'>>(() => {
   if (compareScope.value && compareScope.value !== currentScope.value) {
     const compare = props.computeProjection(specForLabel(compareScope.value))
     const compareData = showPercentage.value
-      ? toPercentages(compare.data, compare.filteredTotal)
+      ? toPercentages(compare.data, compare.scopedPilotCount)
       : compare.data
 
     datasets.push({

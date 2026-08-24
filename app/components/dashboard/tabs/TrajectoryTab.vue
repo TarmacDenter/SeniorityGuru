@@ -1,13 +1,12 @@
 <script setup lang="ts">
-import { useSeniorityCore, useQualFilter, useStanding, useTrajectory } from '~/composables/seniority'
-import { DEFAULT_GROWTH_CONFIG, createScenario, type GrowthConfig } from '~/utils/seniority-engine'
-import { todayPlainDate } from '~/utils/temporal'
+import { useSeniorityCore, useQualificationFilter, useStanding, useTrajectory } from '~/composables/seniority'
+import { DEFAULT_SENIORITY_GROWTH_ASSUMPTIONS, type GrowthAssumptions } from '~/utils/seniority'
 
 defineProps<{ loading?: boolean }>()
 
-const { hasData, hasAnchor, entries, lens } = useSeniorityCore()
+const { hasData, hasAnchor, analysis, anchoredAnalysis, projectionEndDate } = useSeniorityCore()
 
-const growthConfig = ref<GrowthConfig>({ ...DEFAULT_GROWTH_CONFIG })
+const growthAssumptions = ref<GrowthAssumptions>({ ...DEFAULT_SENIORITY_GROWTH_ASSUMPTIONS })
 
 const { rankCard } = useStanding()
 
@@ -15,18 +14,20 @@ const {
   chartData: trajectoryChartData,
   computeComparativeTrajectory,
   computeRetirementProjection,
-} = useTrajectory(growthConfig)
+} = useTrajectory(growthAssumptions)
 
-const qualFilter = useQualFilter()
-const scopedScenario = computed(() => createScenario({
-  projectionDate: todayPlainDate(),
-  growthConfig: growthConfig.value,
-  scopeFilter: qualFilter.qualSpec.value,
+const qualificationFilter = useQualificationFilter()
+const scopedScenario = computed(() => ({
+  growthAssumptions: growthAssumptions.value,
+  qualificationScope: qualificationFilter.qualificationScope.value,
 }))
-const retirementWave = computed(() => lens.value?.retirementWave(scopedScenario.value) ?? [])
-const waveTrajectoryResult = computed(() => lens.value?.trajectory(scopedScenario.value) ?? null)
-const waveTrajectory = computed(() => waveTrajectoryResult.value?.points ?? [])
-const qualTrajectoryDeltas = computed(() => waveTrajectoryResult.value?.deltas ?? [])
+const retirementWave = computed(() => analysis.value?.retirementYearAnalysis(scopedScenario.value) ?? [])
+const qualificationScopeOptions = computed(() => analysis.value?.catalog?.qualificationScopeOptions ?? [])
+const waveTrajectoryOutput = computed(() => projectionEndDate.value
+  ? anchoredAnalysis.value?.seniorityTrajectory({ through: projectionEndDate.value, scenario: scopedScenario.value }) ?? null
+  : null)
+const waveTrajectory = computed(() => waveTrajectoryOutput.value?.domain.points ?? [])
+const qualificationTrajectoryChanges = computed(() => waveTrajectoryOutput.value?.presentation.changes ?? [])
 const targetPercentile = ref(50)
 const targetPercentileMin = computed(() => waveTrajectory.value[0]?.percentile ?? 0)
 const targetPercentileMax = computed(() => {
@@ -39,7 +40,13 @@ watch([targetPercentileMin, targetPercentileMax], ([min, max]) => {
   targetPercentile.value = Math.min(Math.max(targetPercentile.value, min), max)
 }, { immediate: true })
 
-const thresholdResult = computed(() => lens.value?.percentileCrossing(targetPercentile.value, scopedScenario.value) ?? null)
+const thresholdResult = computed(() => projectionEndDate.value
+  ? anchoredAnalysis.value?.percentileCrossing({
+    targetPercentile: targetPercentile.value,
+    through: projectionEndDate.value,
+    scenario: scopedScenario.value,
+  }).presentation ?? null
+  : null)
 const bannerKey = 'qual-projections-banner-dismissed'
 const isBannerDismissed = ref(typeof localStorage !== 'undefined' && localStorage.getItem(bannerKey) === 'true')
 
@@ -73,7 +80,7 @@ const ready = useDeferredReady()
 
     <template v-else>
     <!-- Growth assumption bar -->
-    <DashboardGrowthBar v-model="growthConfig" />
+    <DashboardGrowthBar v-model="growthAssumptions" />
 
     <!-- Scrollable content -->
     <div class="p-3 sm:p-6 space-y-6 flex-1 overflow-y-auto">
@@ -102,9 +109,9 @@ const ready = useDeferredReady()
         v-else-if="hasAnchor"
         :data="trajectoryChartData"
       >
-        <template v-if="growthConfig.enabled" #badge>
+        <template v-if="growthAssumptions.enabled" #badge>
           <UBadge color="primary" variant="subtle" size="xs" class="ml-2">
-            {{ (growthConfig.annualRate * 100).toFixed(1) }}% annual growth
+            {{ (growthAssumptions.annualGrowthRate * 100).toFixed(1) }}% annual growth
           </UBadge>
         </template>
       </DashboardTrajectoryChart>
@@ -112,7 +119,7 @@ const ready = useDeferredReady()
       <!-- Seniority Comparison (dual-scope trajectory lines) -->
       <DashboardSeniorityComparison
         v-if="hasAnchor"
-        :entries="entries"
+        :qualification-scope-options="qualificationScopeOptions"
         :compute-comparative="computeComparativeTrajectory"
         :user-base="rankCard.base"
         :user-seat="rankCard.seat"
@@ -122,15 +129,15 @@ const ready = useDeferredReady()
       <!-- Section B: Retirement & qual-filtered analysis -->
 
       <AnalyticsQualFilterBar
-        :fleet="qualFilter.selectedFleet.value"
-        :seat="qualFilter.selectedSeat.value"
-        :base="qualFilter.selectedBase.value"
-        :fleets="qualFilter.availableFleets.value"
-        :seats="qualFilter.availableSeats.value"
-        :bases="qualFilter.availableBases.value"
-        @update:fleet="qualFilter.selectedFleet.value = $event"
-        @update:seat="qualFilter.selectedSeat.value = $event"
-        @update:base="qualFilter.selectedBase.value = $event"
+        :fleet="qualificationFilter.selectedFleet.value"
+        :seat="qualificationFilter.selectedSeat.value"
+        :base="qualificationFilter.selectedBase.value"
+        :fleets="qualificationFilter.availableFleets.value"
+        :seats="qualificationFilter.availableSeats.value"
+        :bases="qualificationFilter.availableBases.value"
+        @update:fleet="qualificationFilter.selectedFleet.value = $event"
+        @update:seat="qualificationFilter.selectedSeat.value = $event"
+        @update:base="qualificationFilter.selectedBase.value = $event"
       />
 
       <AnalyticsAssumptionsBanner
@@ -148,19 +155,19 @@ const ready = useDeferredReady()
         <div class="sm:col-span-6">
           <UCard >
             <template #header>
-              <h3 class="font-semibold">Retirement Wave{{ qualFilter.qualLabel.value ? ` — ${qualFilter.qualLabel.value}` : '' }}</h3>
+              <h3 class="font-semibold">Retirement Wave{{ qualificationFilter.qualificationLabel.value ? ` — ${qualificationFilter.qualificationLabel.value}` : '' }}</h3>
             </template>
             <AnalyticsRetirementWaveChart
               :wave-buckets="retirementWave"
               :trajectory-points="waveTrajectory"
-              :selected-qual="qualFilter.qualLabel.value"
+              :qualification-scope="qualificationFilter.qualificationLabel.value"
             />
           </UCard>
         </div>
         <div class="sm:col-span-5">
           <UCard >
             <template #header>
-              <h3 class="font-semibold">Percentile Threshold{{ qualFilter.qualLabel.value ? ` — ${qualFilter.qualLabel.value}` : '' }}</h3>
+              <h3 class="font-semibold">Percentile Threshold{{ qualificationFilter.qualificationLabel.value ? ` — ${qualificationFilter.qualificationLabel.value}` : '' }}</h3>
             </template>
             <AnalyticsPercentileThresholdCalculator
               :result="thresholdResult"
@@ -176,18 +183,18 @@ const ready = useDeferredReady()
 
       <!-- Retirement Comparison (dual-scope) -->
       <DashboardRetirementComparison
-        :entries="entries"
+        :qualification-scope-options="qualificationScopeOptions"
         :compute-projection="computeRetirementProjection"
       />
 
       <!-- Section C: Rate of change -->
 
       <!-- Trajectory Rate of Change (qual-filtered) -->
-      <UCard v-if="qualTrajectoryDeltas.length > 0">
+      <UCard v-if="qualificationTrajectoryChanges.length > 0">
         <template #header>
           <h3 class="font-semibold">Seniority Improvement Rate</h3>
         </template>
-        <AnalyticsTrajectoryRateOfChange :deltas="qualTrajectoryDeltas" selected-qual="" />
+        <AnalyticsTrajectoryRateOfChange :changes="qualificationTrajectoryChanges" qualification-scope="" />
       </UCard>
 
     </div>
