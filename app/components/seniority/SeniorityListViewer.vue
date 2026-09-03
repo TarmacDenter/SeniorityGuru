@@ -81,8 +81,8 @@ const tableData = computed<SeniorityRow[]>(() => [...projected.value.entries])
 
 const columnVisibility = computed(() => ({
   expand: isMobile.value,
-  qualificationRank: true,
-  qualificationPercentile: true,
+  qualificationRank: isQualMode.value,
+  qualificationPercentile: isQualMode.value,
   companyRank: true,
   name: true,
   employeeNumber: !isMobile.value,
@@ -191,11 +191,11 @@ function scrollToUserRow() {
             <UTable ref="table" v-model:global-filter="globalFilter" v-model:pagination="pagination" v-model:expanded="expanded" v-model:column-visibility="columnVisibility" :data="tableData" :columns="columns" :loading="isLoading" :pagination-options="{ getPaginationRowModel: getPaginationRowModel() }" sticky :meta="tableMeta" :expanded-options="{ getRowCanExpand: () => true }" :ui="isMobile ? { th: 'px-2 py-2 text-xs', td: 'px-2 py-1.5 text-xs' } : {}" class="w-full text-xs sm:text-base">
               <template #expanded="{ row }">
                 <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 px-4 py-3 text-xs">
-                  <div><p class="text-muted mb-0.5">Qualification Rank</p><p>{{ row.original.qualificationRank ?? '—' }}</p></div>
-                  <div><p class="text-muted mb-0.5">Qualification percentile</p><p>{{ row.original.qualificationPercentile === null ? '—' : `${row.original.qualificationPercentile}%` }}</p></div>
-                  <div><p class="text-muted mb-0.5">Company Rank</p><p>{{ row.original.companyRank ?? (row.original.status === 'retired' ? row.original.listRank : '—') }}</p></div>
-                  <div><p class="text-muted mb-0.5">Company percentile</p><p>{{ row.original.companyPercentile ?? (row.original.status === 'retired' ? row.original.listPercentile : '—') }}<span v-if="row.original.companyPercentile !== null || row.original.status === 'retired'">%</span></p></div>
                   <div><p class="text-muted mb-0.5">Employee number</p><p>{{ row.original.employeeNumber }}</p></div>
+                  <div><p class="text-muted mb-0.5">Base</p><p>{{ row.original.base }}</p></div>
+                  <div><p class="text-muted mb-0.5">Seat</p><p>{{ row.original.seat }}</p></div>
+                  <div><p class="text-muted mb-0.5">Aircraft</p><p>{{ row.original.fleet }}</p></div>
+                  <div><p class="text-muted mb-0.5">Hire date</p><p>{{ row.original.hireDate }}</p></div>
                   <div><p class="text-muted mb-0.5">Retirement</p><p>{{ row.original.retirementDate }} <span v-if="row.original.status !== 'active'">· {{ row.original.status }}</span></p></div>
                 </div>
               </template>
