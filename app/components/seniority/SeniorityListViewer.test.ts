@@ -45,7 +45,12 @@ const stubs = {
   }),
   UEmpty: defineComponent({ template: '<div data-testid="empty"><slot />{{ title }}</div>', props: { title: String } }),
   UTable: defineComponent({
-    props: { data: { type: Array, default: () => [] }, loading: Boolean },
+    props: {
+      data: { type: Array, default: () => [] },
+      columns: { type: Array, default: () => [] },
+      columnVisibility: { type: Object, default: () => ({}) },
+      loading: Boolean,
+    },
     setup(props) {
       const tableApi = {
         getState: () => ({ pagination: { pageIndex: 0 } }),
@@ -56,7 +61,16 @@ const stubs = {
       }
       return { tableApi }
     },
-    template: '<div data-testid="table"><span v-if="loading" data-testid="loading">loading</span><div v-for="row in data" :key="row.employeeNumber + row.status">{{ row.name }}|{{ row.employeeNumber }}|{{ row.qualificationRank }}|{{ row.companyRank }}|{{ row.status }}|{{ row.isAnchor ? "anchor" : "" }}</div></div>',
+    template: `<div data-testid="table">
+      <span v-if="loading" data-testid="loading">loading</span>
+      <template v-for="column in columns" :key="column.accessorKey ?? column.id">
+        <span v-if="columnVisibility[column.accessorKey ?? column.id] !== false" data-testid="visible-column">{{ column.header }}</span>
+      </template>
+      <div v-for="row in data" :key="row.employeeNumber + row.status">
+        {{ row.name }}|{{ row.employeeNumber }}|{{ row.qualificationRank }}|{{ row.companyRank }}|{{ row.status }}|{{ row.isAnchor ? "anchor" : "" }}
+        <div data-testid="expanded-row"><slot name="expanded" :row="{ original: row }" /></div>
+      </div>
+    </div>`,
   }),
   TablePagination: defineComponent({
     props: { currentPage: Number, pageCount: Number, totalRows: Number },
@@ -99,6 +113,10 @@ describe('SeniorityListViewer', () => {
 
     expect(wrapper.text()).toContain('JFK-737-CA · 2 pilots')
     expect(wrapper.text()).toContain('First|E1|1|1|active')
+    expect(wrapper.findAll('[data-testid="visible-column"]').map(column => column.text())).toEqual(expect.arrayContaining([
+      'Qualification Rank',
+      'Qualification percentile',
+    ]))
     expect(wrapper.find('div.flex-1.min-h-0.overflow-auto').exists()).toBe(true)
 
     await wrapper.find('button').trigger('click')
@@ -107,6 +125,36 @@ describe('SeniorityListViewer', () => {
 
     expect(wrapper.text()).toContain('Company-wide · 3 pilots')
     expect(wrapper.text()).toContain('First|E1|1|1|active|anchor')
+    expect(wrapper.findAll('[data-testid="visible-column"]').map(column => column.text())).not.toEqual(expect.arrayContaining([
+      'Qualification Rank',
+      'Qualification percentile',
+    ]))
+  })
+
+  it('shows pilot details instead of duplicate ranks in the expanded row', async () => {
+    state.lists.value = [makeList()]
+    state.entries.value = [makeDomainEntry({
+      seniority_number: 245,
+      employee_number: 'E0245',
+      name: 'Jane Pilot',
+      base: 'JFK',
+      fleet: '737',
+      seat: 'CA',
+      hire_date: '2018-04-09',
+      retire_date: '2053-11-30',
+    })]
+    const Component = (await import('./SeniorityListViewer.vue')).default
+    const wrapper = await mountSuspended(Component, { global: { stubs } })
+    const expandedRow = wrapper.get('[data-testid="expanded-row"]')
+
+    expect(expandedRow.text()).toContain('Employee numberE0245')
+    expect(expandedRow.text()).toContain('BaseJFK')
+    expect(expandedRow.text()).toContain('SeatCA')
+    expect(expandedRow.text()).toContain('Aircraft737')
+    expect(expandedRow.text()).toContain('Hire date2018-04-09')
+    expect(expandedRow.text()).toContain('Retirement2053-11-30')
+    expect(expandedRow.text()).not.toContain('Rank')
+    expect(expandedRow.text()).not.toContain('percentile')
   })
 
   it('keeps insertion synthetic and exposes pagination for large lists', async () => {
