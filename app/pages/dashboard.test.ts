@@ -67,6 +67,10 @@ vi.mock('~/composables/useDemoBanner', () => ({
   useDemoBanner: () => ({ showBanner: ref(false), showBadge: ref(false), hasDemoLists: ref(false), dismiss: vi.fn() }),
 }))
 
+vi.mock('~/composables/usePwaInstall', () => ({
+  usePwaInstall: () => ({ showBanner: ref(false), isIos: false, showIosModal: ref(false), standalone: false, install: vi.fn(), snooze: vi.fn(), dismiss: vi.fn() }),
+}))
+
 // ---------------------------------------------------------------------------
 // Heavy composable mocks — isolate from test concerns
 // ---------------------------------------------------------------------------

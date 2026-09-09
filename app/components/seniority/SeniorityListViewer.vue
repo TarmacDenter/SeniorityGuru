@@ -7,7 +7,7 @@ import type { TableColumn } from '@nuxt/ui'
 import type { PresentedQualificationViewerAnalysis, PresentedQualificationViewerEntry, QualificationScope } from '~/utils/seniority'
 import { useSeniorityCore, useSeniorityLists } from '~/composables/seniority'
 
-const props = defineProps<{ loading?: boolean }>()
+const props = defineProps<{ loading?: boolean; compactControlsOpen?: boolean }>()
 
 type SeniorityRow = PresentedQualificationViewerEntry
 const COMPANY_WIDE_VALUE = '__company_wide__'
@@ -20,7 +20,7 @@ const { lists, entriesLoading } = useSeniorityLists()
 const { listAnalysis, isNewHireMode } = useSeniorityCore()
 const { employeeNumber } = useUser()
 const table = useTemplateRef<{ tableApi: Table<SeniorityRow> }>('table')
-const isMobile = useMediaQuery('(max-width: 639px)')
+const isCompact = useMediaQuery('(max-width: 639px), (max-height: 499px)')
 const globalFilter = ref('')
 const expanded = ref({})
 const selectedQualKey = ref('')
@@ -80,19 +80,19 @@ watch(globalFilter, (value) => {
 const tableData = computed<SeniorityRow[]>(() => [...projected.value.entries])
 
 const columnVisibility = computed(() => ({
-  expand: isMobile.value,
+  expand: isCompact.value,
   qualificationRank: isQualMode.value,
   qualificationPercentile: isQualMode.value,
   companyRank: true,
   name: true,
-  employeeNumber: !isMobile.value,
-  companyPercentile: !isMobile.value,
-  seat: !isMobile.value,
-  base: !isMobile.value,
-  fleet: !isMobile.value,
-  hireDate: !isMobile.value,
-  retirementDate: !isMobile.value,
-  status: !isMobile.value,
+  employeeNumber: !isCompact.value,
+  companyPercentile: !isCompact.value,
+  seat: !isCompact.value,
+  base: !isCompact.value,
+  fleet: !isCompact.value,
+  hireDate: !isCompact.value,
+  retirementDate: !isCompact.value,
+  status: !isCompact.value,
 }))
 
 const columns: TableColumn<SeniorityRow>[] = [
@@ -171,24 +171,36 @@ function scrollToUserRow() {
 
 <template>
   <div class="flex flex-col h-full min-h-0 min-w-0">
-    <div class="shrink-0 border-b border-default space-y-2 p-2 sm:p-3">
-      <div class="flex flex-wrap items-center gap-2">
-        <USelect v-model="selectedQualKey" :items="qualOptions" value-key="value" label-key="label" class="min-w-44" placeholder="Company-wide" />
-        <UButton :variant="insertSelf ? 'solid' : 'outline'" :disabled="!canInsert" icon="i-lucide-user-plus" size="sm" @click="toggleInsert">Insert yourself</UButton>
-        <span v-if="!canInsert" class="text-xs text-muted">{{ insertDisabledReason }}</span>
+    <div class="shrink-0 border-b border-default p-2 sm:p-3">
+      <div v-if="isCompact && props.compactControlsOpen" class="space-y-2 pt-1">
+        <div class="flex flex-wrap items-center gap-2">
+          <USelect v-model="selectedQualKey" :items="qualOptions" value-key="value" label-key="label" class="min-w-44 flex-1" placeholder="Company-wide" />
+          <UButton :variant="insertSelf ? 'solid' : 'outline'" :disabled="!canInsert" icon="i-lucide-user-plus" size="sm" @click="toggleInsert">Insert yourself</UButton>
+        </div>
+        <span v-if="!canInsert" class="block text-xs text-muted">{{ insertDisabledReason }}</span>
+        <UInput v-model="globalFilter" icon="i-lucide-search" placeholder="Search by name or employee number..." class="w-full text-xs sm:text-sm">
+          <template v-if="globalFilter" #trailing><UButton icon="i-lucide-x" variant="link" color="neutral" size="xs" aria-label="Clear search" @click="globalFilter = ''" /></template>
+        </UInput>
       </div>
-      <UInput v-model="globalFilter" icon="i-lucide-search" placeholder="Search by name or employee number..." class="w-full text-xs sm:text-sm">
-        <template v-if="globalFilter" #trailing><UButton icon="i-lucide-x" variant="link" color="neutral" size="xs" aria-label="Clear search" @click="globalFilter = ''" /></template>
-      </UInput>
+      <div v-else-if="!isCompact" class="space-y-2">
+        <div class="flex flex-wrap items-center gap-2">
+          <USelect v-model="selectedQualKey" :items="qualOptions" value-key="value" label-key="label" class="min-w-44" placeholder="Company-wide" />
+          <UButton :variant="insertSelf ? 'solid' : 'outline'" :disabled="!canInsert" icon="i-lucide-user-plus" size="sm" @click="toggleInsert">Insert yourself</UButton>
+          <span v-if="!canInsert" class="text-xs text-muted">{{ insertDisabledReason }}</span>
+        </div>
+        <UInput v-model="globalFilter" icon="i-lucide-search" placeholder="Search by name or employee number..." class="w-full text-xs sm:text-sm">
+          <template v-if="globalFilter" #trailing><UButton icon="i-lucide-x" variant="link" color="neutral" size="xs" aria-label="Clear search" @click="globalFilter = ''" /></template>
+        </UInput>
+      </div>
     </div>
 
     <div class="flex-1 min-h-0 overflow-hidden">
-      <div class="h-full min-h-0 sm:p-6 flex flex-col">
+      <div :class="isCompact ? 'h-full min-h-0 p-0 flex flex-col' : 'h-full min-h-0 sm:p-6 flex flex-col'">
         <UEmpty v-if="!latestList && !isLoading" icon="i-lucide-list-ordered" title="No Seniority List Yet" description="Upload your airline's seniority list to view your position." :actions="[{ label: 'Upload Seniority List', icon: 'i-lucide-upload', to: '/seniority/upload', size: 'lg' as const }]" class="py-24" />
         <template v-else>
-          <p v-if="latestList" class="shrink-0 text-sm text-muted mb-4">{{ isQualMode ? `${qualificationScope.base}-${qualificationScope.fleet}-${qualificationScope.seat}` : 'Company-wide' }} · {{ projected.totalEntryCount }} pilots</p>
+          <p v-if="latestList && !isCompact" class="shrink-0 text-sm text-muted mb-4">{{ isQualMode ? `${qualificationScope.base}-${qualificationScope.fleet}-${qualificationScope.seat}` : 'Company-wide' }} · {{ projected.totalEntryCount }} pilots</p>
           <div class="flex-1 min-h-0 overflow-auto overscroll-contain">
-            <UTable ref="table" v-model:global-filter="globalFilter" v-model:pagination="pagination" v-model:expanded="expanded" v-model:column-visibility="columnVisibility" :data="tableData" :columns="columns" :loading="isLoading" :pagination-options="{ getPaginationRowModel: getPaginationRowModel() }" sticky :meta="tableMeta" :expanded-options="{ getRowCanExpand: () => true }" :ui="isMobile ? { th: 'px-2 py-2 text-xs', td: 'px-2 py-1.5 text-xs' } : {}" class="w-full text-xs sm:text-base">
+            <UTable ref="table" v-model:global-filter="globalFilter" v-model:pagination="pagination" v-model:expanded="expanded" v-model:column-visibility="columnVisibility" :data="tableData" :columns="columns" :loading="isLoading" :pagination-options="{ getPaginationRowModel: getPaginationRowModel() }" sticky :meta="tableMeta" :expanded-options="{ getRowCanExpand: () => true }" :ui="isCompact ? { th: 'px-2 py-2 text-xs', td: 'px-2 py-1.5 text-xs' } : {}" class="w-full text-xs sm:text-base">
               <template #expanded="{ row }">
                 <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 px-4 py-3 text-xs">
                   <div><p class="text-muted mb-0.5">Employee number</p><p>{{ row.original.employeeNumber }}</p></div>
