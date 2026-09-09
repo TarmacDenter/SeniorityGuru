@@ -4,6 +4,7 @@ import { useMediaQuery } from '@vueuse/core'
 import { useSeniorityCore, useStanding, useSeniorityLists } from '~/composables/seniority'
 import { useDashboardTabs } from '~/composables/useDashboardTabs'
 import { useDemoBanner } from '~/composables/useDemoBanner'
+import { usePwaInstall } from '~/composables/usePwaInstall'
 import { DEFAULT_TAB } from '~/utils/dashboard-tabs'
 import { formatDate } from '~/utils/date'
 
@@ -65,14 +66,22 @@ const { activeTab, tabs } = useDashboardTabs()
 const { lists, selectedListId, listOptions, isHistorical, selectedList, navbarDescription, loading } = useDashboardListSelection(activeTab)
 const { employeeNumber } = useUser()
 const { showBadge: showDemoBadge } = useDemoBanner()
+const { showBanner: showInstallBanner } = usePwaInstall()
+const { showBanner: showDemoNotice } = useDemoBanner()
 const { hasData, hasAnchor: userFound, isNewHireMode, newHire } = useSeniorityCore()
 const hasEmployeeNumber = computed(() => !!employeeNumber.value || !!newHire.syntheticEntry.value)
 const { rankCard, statCards: stats, retirementSnapshot, baseStatus: baseStatusData } = useStanding()
 const { chartData: trajectoryChartData, changes: trajectoryChanges } = useTrajectory()
 const isCompactViewport = useMediaQuery('(max-width: 639px), (max-height: 499px)')
 const dashboardControlsOpen = ref(false)
+const compactNoticeDismissed = ref<string | null>(null)
 const activeTabLabel = computed(() => tabs.find(tab => String(tab.value) === activeTab.value)?.label ?? 'Dashboard')
 const selectedListLabel = computed(() => listOptions.value.find(option => option.id === selectedListId.value)?.label ?? 'Select list')
+const compactNotice = computed(() => {
+  if (showInstallBanner.value && compactNoticeDismissed.value !== 'install') return 'install'
+  if (showDemoNotice.value && compactNoticeDismissed.value !== 'demo') return 'demo'
+  return null
+})
 const fullBleedTabs = new Set(['position', 'trajectory', 'seniority'])
 const panelUi = computed(() => ({
   body: fullBleedTabs.has(activeTab.value)
@@ -154,8 +163,14 @@ const panelUi = computed(() => ({
     </template>
 
     <template #body>
-      <DashboardInstallBanner />
-      <DashboardDemoBanner />
+      <template v-if="isCompactViewport">
+        <DashboardInstallBanner v-if="compactNotice === 'install'" compact @dismissed="compactNoticeDismissed = 'install'" />
+        <DashboardDemoBanner v-else-if="compactNotice === 'demo'" compact @dismissed="compactNoticeDismissed = 'demo'" />
+      </template>
+      <template v-else>
+        <DashboardInstallBanner />
+        <DashboardDemoBanner />
+      </template>
 
       <!-- Empty state: no lists imported yet -->
       <div

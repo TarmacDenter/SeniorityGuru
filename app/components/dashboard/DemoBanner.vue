@@ -1,11 +1,18 @@
 <script setup lang="ts">
 import { useDemoBanner } from '~/composables/useDemoBanner'
 
+const props = defineProps<{ compact?: boolean }>()
+const emit = defineEmits<{ dismissed: [] }>()
 const { showBanner, dismiss, exit } = useDemoBanner()
+
+async function dismissBanner() {
+  await dismiss()
+  emit('dismissed')
+}
 </script>
 
 <template>
-  <div v-if="showBanner" class="px-4 pt-4">
+  <div v-if="showBanner" :class="props.compact ? 'px-2 pt-2' : 'px-4 pt-4'">
     <UAlert
       icon="i-lucide-flask-conical"
       color="info"
@@ -17,7 +24,7 @@ const { showBanner, dismiss, exit } = useDemoBanner()
         <UButton size="sm" color="primary" to="/seniority/upload" icon="i-lucide-upload">
           Upload my list
         </UButton>
-        <UButton size="sm" variant="ghost" color="neutral" @click="dismiss">
+        <UButton size="sm" variant="ghost" color="neutral" @click="dismissBanner">
           Dismiss
         </UButton>
         <UButton size="sm" variant="ghost" color="error" @click="exit">

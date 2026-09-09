@@ -39,6 +39,25 @@ test.describe('mobile layout (375×812)', () => {
 })
 
 test.describe('compact Seniority List layout', () => {
+  for (const viewport of [{ width: 390, height: 844 }, { width: 844, height: 390 }]) {
+    test(`shows eligible notices one at a time at ${viewport.width}×${viewport.height}`, async ({ page }) => {
+      await page.setViewportSize(viewport)
+      await page.goto('/')
+      await page.getByRole('button', { name: 'View Demo' }).click()
+      await page.waitForURL(/\/dashboard/)
+      await expect(page.getByText('Install Seniority Guru', { exact: true })).toBeVisible()
+      await expect(page.getByText("You're in demo mode", { exact: true })).toBeHidden()
+      await expect(page.getByRole('button', { name: 'Install' })).toBeVisible()
+      await expect(page.getByRole('button', { name: "Don't ask again" })).toBeVisible()
+      await page.getByRole('button', { name: 'Not now' }).click()
+      await expect(page.getByText("You're in demo mode", { exact: true })).toBeVisible()
+      await expect(page.getByRole('button', { name: 'Upload my list' })).toBeVisible()
+      await expect(page.getByRole('button', { name: 'Dismiss' })).toBeVisible()
+      await expect(page.getByRole('button', { name: 'Exit Demo' })).toBeVisible()
+      await expect(page.locator('table tbody tr').first()).toBeVisible()
+    })
+  }
+
   test('keeps the populated viewer usable in portrait', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 })
     await uploadTestList(page)
