@@ -1,0 +1,14 @@
+[mcp_servers.playwright]
+command = "npx"
+args = ["@playwright/mcp@latest"]
+
+[mcp_servers.nuxt]
+url = "https://nuxt.com/mcp"
+
+[mcp_servers.ui-nuxt]
+url = "https://ui.nuxt.com/mcp"
+
+developer_instructions = "Use .worktrees/<branch> at the project root as the default location for Git worktrees."
+
+[features]
+multi_agent = true
