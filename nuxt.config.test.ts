@@ -55,4 +55,9 @@ describe('nuxt.config app.head', () => {
     const meta = head?.meta?.find((m: any) => m.name === 'apple-mobile-web-app-status-bar-style')
     expect(meta?.content).toBeTruthy()
   })
+
+  it('opts into iOS safe-area insets', () => {
+    const meta = head?.meta?.find((m: any) => m.name === 'viewport')
+    expect(meta?.content).toContain('viewport-fit=cover')
+  })
 })
