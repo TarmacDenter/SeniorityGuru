@@ -1,11 +1,23 @@
 <script setup lang="ts">
 import { usePwaInstall } from '~/composables/usePwaInstall'
 
+const props = defineProps<{ compact?: boolean }>()
+const emit = defineEmits<{ dismissed: [] }>()
 const { showBanner, isIos, showIosModal, install, snooze, dismiss } = usePwaInstall()
+
+async function snoozeBanner() {
+  await snooze()
+  emit('dismissed')
+}
+
+async function dismissBanner() {
+  await dismiss()
+  emit('dismissed')
+}
 </script>
 
 <template>
-  <div v-if="showBanner" class="px-4 pt-4">
+  <div v-if="showBanner" :class="props.compact ? 'px-2 pt-2' : 'px-4 pt-4'">
     <UAlert
       icon="i-lucide-smartphone"
       color="primary"
@@ -17,10 +29,10 @@ const { showBanner, isIos, showIosModal, install, snooze, dismiss } = usePwaInst
         <UButton size="sm" color="primary" @click="install">
           {{ isIos ? 'How to Install' : 'Install' }}
         </UButton>
-        <UButton size="sm" variant="ghost" color="neutral" @click="snooze">
+        <UButton size="sm" variant="ghost" color="neutral" @click="snoozeBanner">
           Not now
         </UButton>
-        <UButton size="sm" variant="ghost" color="neutral" @click="dismiss">
+        <UButton size="sm" variant="ghost" color="neutral" @click="dismissBanner">
           Don't ask again
         </UButton>
       </template>
