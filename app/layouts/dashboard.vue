@@ -26,7 +26,7 @@ const sidebarOpen = useState<boolean>('dashboardSidebarOpen', () => false); // s
     </div>
 
     <div
-      class="flex flex-col flex-1 min-w-0 overflow-y-auto sm:overflow-hidden pb-[calc(4rem+env(safe-area-inset-bottom))] sm:pb-0">
+      class="flex flex-col flex-1 min-w-0 overflow-y-auto sm:overflow-hidden pb-16 sm:pb-0">
       <slot />
     </div>
 

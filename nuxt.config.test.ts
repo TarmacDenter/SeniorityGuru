@@ -56,8 +56,8 @@ describe('nuxt.config app.head', () => {
     expect(meta?.content).toBeTruthy()
   })
 
-  it('opts into iOS safe-area insets', () => {
+  it('does not opt into vertical iOS safe-area padding', () => {
     const meta = head?.meta?.find((m: any) => m.name === 'viewport')
-    expect(meta?.content).toContain('viewport-fit=cover')
+    expect(meta).toBeUndefined()
   })
 })

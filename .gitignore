@@ -67,6 +67,7 @@ plans/
 
 # Local docs (how-tos, summaries, scratch notes)
 docs.local/
+.scratch/
 
 # Graphify local state
 graphify-out/cost.json

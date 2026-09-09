@@ -16,7 +16,7 @@ function isActive(to: string) {
 </script>
 
 <template>
-  <nav class="sm:hidden fixed bottom-0 inset-x-0 z-50 bg-(--ui-bg) border-t border-(--ui-border) flex pb-[env(safe-area-inset-bottom)]">
+  <nav class="sm:hidden fixed bottom-0 inset-x-3 z-50 bg-(--ui-bg) border-t border-(--ui-border) rounded-t-xl flex">
     <NuxtLink
       v-for="item in navItems"
       :key="item.to"
