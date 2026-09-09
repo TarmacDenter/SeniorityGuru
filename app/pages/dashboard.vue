@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Ref } from 'vue'
+import { useMediaQuery } from '@vueuse/core'
 import { useSeniorityCore, useStanding, useSeniorityLists } from '~/composables/seniority'
 import { useDashboardTabs } from '~/composables/useDashboardTabs'
 import { useDemoBanner } from '~/composables/useDemoBanner'
@@ -68,9 +69,15 @@ const { hasData, hasAnchor: userFound, isNewHireMode, newHire } = useSeniorityCo
 const hasEmployeeNumber = computed(() => !!employeeNumber.value || !!newHire.syntheticEntry.value)
 const { rankCard, statCards: stats, retirementSnapshot, baseStatus: baseStatusData } = useStanding()
 const { chartData: trajectoryChartData, changes: trajectoryChanges } = useTrajectory()
+const isCompactViewport = useMediaQuery('(max-width: 639px), (max-height: 499px)')
+const dashboardControlsOpen = ref(false)
+const activeTabLabel = computed(() => tabs.find(tab => String(tab.value) === activeTab.value)?.label ?? 'Dashboard')
+const selectedListLabel = computed(() => listOptions.value.find(option => option.id === selectedListId.value)?.label ?? 'Select list')
 const fullBleedTabs = new Set(['position', 'trajectory', 'seniority'])
 const panelUi = computed(() => ({
-  body: fullBleedTabs.has(activeTab.value) ? 'flex flex-col flex-1 sm:overflow-y-auto p-0' : undefined,
+  body: fullBleedTabs.has(activeTab.value)
+    ? `flex flex-col flex-1 sm:overflow-y-auto p-0${activeTab.value === 'seniority' ? ' sm:p-0' : ''}`
+    : undefined,
 }))
 </script>
 
@@ -79,15 +86,53 @@ const panelUi = computed(() => ({
     <template #header>
       <SeniorityNavbar title="Dashboard" :description="navbarDescription" />
 
-      <UDashboardToolbar class="hidden sm:flex overflow-y-hidden">
+      <UDashboardToolbar v-if="!isCompactViewport" class="hidden sm:flex overflow-y-hidden">
         <UTabs v-model="activeTab" :items="tabs" :content="false" variant="link" />
       </UDashboardToolbar>
 
       <!-- Mobile-only: scrollable tab chip row -->
-      <DashboardTabChips v-model="activeTab" :tabs="tabs" />
+      <DashboardTabChips v-if="!isCompactViewport" v-model="activeTab" :tabs="tabs" />
+
+      <!-- Compact view: one disclosure keeps navigation and list selection out of the table viewport. -->
+      <div v-if="isCompactViewport" class="border-b border-(--ui-border) p-2">
+        <UCollapsible v-model:open="dashboardControlsOpen" class="flex flex-col gap-2">
+          <UButton
+            :label="`Controls · ${activeTabLabel} · ${selectedListLabel}`"
+            color="neutral"
+            variant="outline"
+            size="sm"
+            trailing-icon="i-lucide-sliders-horizontal"
+            block
+            class="justify-between"
+          />
+          <template #content>
+            <div class="flex flex-wrap items-center gap-2 pt-1">
+              <USelect v-model="activeTab" :items="tabs" value-key="value" label-key="label" class="min-w-40 flex-1" />
+              <USelectMenu
+                v-if="lists.length > 0"
+                v-model="selectedListId"
+                :items="listOptions"
+                value-key="id"
+                label-key="label"
+                placeholder="Select list..."
+                size="sm"
+                class="min-w-40 flex-1"
+              />
+              <UBadge v-if="selectedList?.isDemo && showDemoBadge" color="info" variant="subtle" size="sm">
+                <UIcon name="i-lucide-flask-conical" class="size-3 mr-1" />
+                Demo
+              </UBadge>
+              <UBadge v-if="isHistorical" color="warning" variant="subtle" size="sm">
+                <UIcon name="i-lucide-alert-triangle" class="size-3 mr-1" />
+                Historical
+              </UBadge>
+            </div>
+          </template>
+        </UCollapsible>
+      </div>
 
       <!-- List selector — all breakpoints -->
-      <div v-if="lists.length > 0" class="flex items-center gap-2 px-3 py-1.5 border-b border-(--ui-border)">
+      <div v-if="lists.length > 0 && !isCompactViewport" class="flex items-center gap-2 px-3 py-1.5 border-b border-(--ui-border)">
         <USelectMenu
           v-model="selectedListId"
           :items="listOptions"
@@ -163,7 +208,7 @@ const panelUi = computed(() => ({
       <DashboardTabsTrajectoryTab v-else-if="activeTab === 'trajectory'" :loading="loading" />
 
       <!-- Seniority List tab — fills panel body, manages its own scroll -->
-      <DashboardTabsSeniorityListTab v-else-if="activeTab === 'seniority'" :loading="loading" />
+      <DashboardTabsSeniorityListTab v-else-if="activeTab === 'seniority'" :loading="loading" :compact-controls-open="dashboardControlsOpen" />
 
       <!-- Retirements tab -->
       <DashboardTabsRetirementsTab v-else-if="activeTab === 'retirements'" />
