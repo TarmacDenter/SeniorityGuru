@@ -49,7 +49,7 @@ Component → composable → store → Dexie
 - Simplicity first. Minimum code that solves the problem. Nothing speculative.
 - Surgical changes. Touch only what you must. Clean up only your own mess.
 - Goal-driven execution. Define success criteria. Loop until verified.
-- Worktrees default to `.worktrees/<branch>` at the project root.
+- Worktrees default to `../worktrees/<branch>` as siblings of `repo-stable`.
 
 
 ## Agent skills

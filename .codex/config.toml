@@ -8,7 +8,7 @@ url = "https://nuxt.com/mcp"
 [mcp_servers.ui-nuxt]
 url = "https://ui.nuxt.com/mcp"
 
-developer_instructions = "Use .worktrees/<branch> at the project root as the default location for Git worktrees."
+developer_instructions = "Use ../worktrees/<branch> as the default location for Git worktrees, alongside repo-stable."
 
 [features]
 multi_agent = true
