@@ -59,9 +59,6 @@ Thumbs.db
 /playwright/.cache/
 .playwright-mcp/
 
-# Git worktrees
-.worktrees/
-
 # Active plans (per-worktree, untracked)
 plans/
 
