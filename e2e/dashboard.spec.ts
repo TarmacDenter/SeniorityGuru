@@ -30,6 +30,15 @@ test.describe('dashboard', () => {
     await expect(listSelector).toBeVisible()
   })
 
+  test('View Demo selects the current demo list even when a newer list exists', async ({ page }) => {
+    await page.goto('/')
+    await page.getByRole('button', { name: 'View Demo' }).click()
+    await page.waitForURL(/\/dashboard/)
+
+    await expect(page.getByRole('heading', { name: /Dashboard Demo — Current List · effective/ })).toBeVisible()
+    await expect(page.getByText('Your Seniority Number', { exact: true })).toBeVisible()
+  })
+
   test('settings page renders all cards', async ({ page }) => {
     await page.goto('/settings')
 
