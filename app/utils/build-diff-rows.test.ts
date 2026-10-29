@@ -7,7 +7,7 @@ const emptyResult: CompareResult = {
   retired: [],
   departed: [],
   qualMoves: [],
-  rankChanges: [],
+  seniorityNumberChanges: [],
   newHires: [],
 }
 
@@ -50,13 +50,13 @@ function makeQualMove(overrides: { employee_number: string; seniority_number: nu
   }
 }
 
-function makeRankChange(overrides: { employee_number: string; old_rank: number; new_rank: number }) {
+function makeSeniorityNumberChange(overrides: { employee_number: string; old_seniority_number: number; new_seniority_number: number }) {
   return {
     employee_number: overrides.employee_number,
     name: 'Test Pilot',
-    old_rank: overrides.old_rank,
-    new_rank: overrides.new_rank,
-    delta: overrides.old_rank - overrides.new_rank,
+    old_seniority_number: overrides.old_seniority_number,
+    new_seniority_number: overrides.new_seniority_number,
+    delta: overrides.old_seniority_number - overrides.new_seniority_number,
     seat: 'CA',
     fleet: '777',
     base: 'DFW',
@@ -80,7 +80,7 @@ function makeNewHire(overrides: { employee_number: string; seniority_number: num
 
 describe('buildDiffRows', () => {
   it('returns empty array for empty CompareResult', () => {
-    const rows = buildDiffRows(emptyResult, { includeRankChanges: false })
+    const rows = buildDiffRows(emptyResult, { includeSeniorityNumberChanges: false })
     expect(rows).toEqual([])
   })
 
@@ -89,7 +89,7 @@ describe('buildDiffRows', () => {
       ...emptyResult,
       retired: [makeRetired({ employee_number: '100', seniority_number: 412 })],
     }
-    const rows = buildDiffRows(result, { includeRankChanges: false })
+    const rows = buildDiffRows(result, { includeSeniorityNumberChanges: false })
     expect(rows).toHaveLength(1)
     expect(rows[0]).toMatchObject({ kind: 'retired', seniority_number: 412, employee_number: '100' })
   })
@@ -99,7 +99,7 @@ describe('buildDiffRows', () => {
       ...emptyResult,
       departed: [makeDeparted({ employee_number: '200', seniority_number: 300 })],
     }
-    const rows = buildDiffRows(result, { includeRankChanges: false })
+    const rows = buildDiffRows(result, { includeSeniorityNumberChanges: false })
     expect(rows).toHaveLength(1)
     expect(rows[0]).toMatchObject({ kind: 'departed', seniority_number: 300, employee_number: '200' })
   })
@@ -109,28 +109,28 @@ describe('buildDiffRows', () => {
       ...emptyResult,
       qualMoves: [makeQualMove({ employee_number: '300', seniority_number: 150 })],
     }
-    const rows = buildDiffRows(result, { includeRankChanges: false })
+    const rows = buildDiffRows(result, { includeSeniorityNumberChanges: false })
     expect(rows).toHaveLength(1)
     expect(rows[0]).toMatchObject({ kind: 'qualMove', seniority_number: 150, employee_number: '300' })
   })
 
-  it('excludes rank changes when includeRankChanges is false', () => {
+  it('excludes Seniority Number changes when includeSeniorityNumberChanges is false', () => {
     const result: CompareResult = {
       ...emptyResult,
-      rankChanges: [makeRankChange({ employee_number: '400', old_rank: 500, new_rank: 488 })],
+      seniorityNumberChanges: [makeSeniorityNumberChange({ employee_number: '400', old_seniority_number: 500, new_seniority_number: 488 })],
     }
-    const rows = buildDiffRows(result, { includeRankChanges: false })
+    const rows = buildDiffRows(result, { includeSeniorityNumberChanges: false })
     expect(rows).toHaveLength(0)
   })
 
-  it('includes rank changes with kind "rankChange" at the new seniority number when includeRankChanges is true', () => {
+  it('includes Seniority Number changes with kind "seniorityNumberChange" at the new seniority number when includeSeniorityNumberChanges is true', () => {
     const result: CompareResult = {
       ...emptyResult,
-      rankChanges: [makeRankChange({ employee_number: '400', old_rank: 500, new_rank: 488 })],
+      seniorityNumberChanges: [makeSeniorityNumberChange({ employee_number: '400', old_seniority_number: 500, new_seniority_number: 488 })],
     }
-    const rows = buildDiffRows(result, { includeRankChanges: true })
+    const rows = buildDiffRows(result, { includeSeniorityNumberChanges: true })
     expect(rows).toHaveLength(1)
-    expect(rows[0]).toMatchObject({ kind: 'rankChange', seniority_number: 488, employee_number: '400' })
+    expect(rows[0]).toMatchObject({ kind: 'seniorityNumberChange', seniority_number: 488, employee_number: '400' })
   })
 
   it('returns a newHire row with kind "newHire" at the new seniority number', () => {
@@ -138,7 +138,7 @@ describe('buildDiffRows', () => {
       ...emptyResult,
       newHires: [makeNewHire({ employee_number: '500', seniority_number: 2000 })],
     }
-    const rows = buildDiffRows(result, { includeRankChanges: false })
+    const rows = buildDiffRows(result, { includeSeniorityNumberChanges: false })
     expect(rows).toHaveLength(1)
     expect(rows[0]).toMatchObject({ kind: 'newHire', seniority_number: 2000, employee_number: '500' })
   })
@@ -148,24 +148,41 @@ describe('buildDiffRows', () => {
       retired: [makeRetired({ employee_number: '100', seniority_number: 500 })],
       departed: [makeDeparted({ employee_number: '200', seniority_number: 200 })],
       qualMoves: [makeQualMove({ employee_number: '300', seniority_number: 350 })],
-      rankChanges: [],
+      seniorityNumberChanges: [],
       newHires: [makeNewHire({ employee_number: '400', seniority_number: 1800 })],
     }
-    const rows = buildDiffRows(result, { includeRankChanges: false })
+    const rows = buildDiffRows(result, { includeSeniorityNumberChanges: false })
     const numbers = rows.map(r => r.seniority_number)
     expect(numbers).toEqual([200, 350, 500, 1800])
+  })
+
+  it('sorts mixed gapped rows using the newer assigned number for Seniority Number changes', () => {
+    const result: CompareResult = {
+      retired: [makeRetired({ employee_number: '100', seniority_number: 40 })],
+      departed: [makeDeparted({ employee_number: '200', seniority_number: 120 })],
+      qualMoves: [makeQualMove({ employee_number: '300', seniority_number: 150 })],
+      seniorityNumberChanges: [
+        makeSeniorityNumberChange({ employee_number: '400', old_seniority_number: 10, new_seniority_number: 210 }),
+        makeSeniorityNumberChange({ employee_number: '500', old_seniority_number: 300, new_seniority_number: 30 }),
+      ],
+      newHires: [makeNewHire({ employee_number: '600', seniority_number: 350 })],
+    }
+    const rows = buildDiffRows(result, { includeSeniorityNumberChanges: true })
+    expect(rows.map(row => row.seniority_number)).toEqual([30, 40, 120, 150, 210, 350])
+    expect(rows[0]).toMatchObject({ kind: 'seniorityNumberChange', old_seniority_number: 300, delta: 270 })
+    expect(rows[4]).toMatchObject({ kind: 'seniorityNumberChange', old_seniority_number: 10, delta: -200 })
   })
 
   it('places deleted rows before the new occupant when they share the same seniority number', () => {
     const result: CompareResult = {
       ...emptyResult,
       retired: [makeRetired({ employee_number: '100', seniority_number: 412 })],
-      rankChanges: [makeRankChange({ employee_number: '101', old_rank: 413, new_rank: 412 })],
+      seniorityNumberChanges: [makeSeniorityNumberChange({ employee_number: '101', old_seniority_number: 413, new_seniority_number: 412 })],
     }
-    const rows = buildDiffRows(result, { includeRankChanges: true })
+    const rows = buildDiffRows(result, { includeSeniorityNumberChanges: true })
     const atSameNumber = rows.filter(r => r.seniority_number === 412)
     expect(atSameNumber).toHaveLength(2)
     expect(atSameNumber[0]!.kind).toBe('retired')
-    expect(atSameNumber[1]!.kind).toBe('rankChange')
+    expect(atSameNumber[1]!.kind).toBe('seniorityNumberChange')
   })
 })

@@ -50,7 +50,7 @@ const featureCards = [
   {
     icon: 'i-lucide-git-compare-arrows',
     title: 'List comparison',
-    description: 'Compare two lists to identify retirements, departures, qualification changes, and rank changes.',
+    description: 'Compare two lists to identify retirements, departures, qualification changes, and Seniority Number changes.',
   },
   {
     icon: 'i-lucide-bar-chart-3',

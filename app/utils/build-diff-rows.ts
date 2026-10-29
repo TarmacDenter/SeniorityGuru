@@ -1,17 +1,17 @@
-import type { CompareResult, RetiredPilot, DepartedPilot, QualMove, RankChange, NewHire } from './seniority-compare'
+import type { CompareResult, RetiredPilot, DepartedPilot, QualMove, SeniorityNumberChange, NewHire } from './seniority-compare'
 
 export type DiffRow =
   | ({ kind: 'retired'; seniority_number: number } & Omit<RetiredPilot, 'seniority_number'>)
   | ({ kind: 'departed'; seniority_number: number } & Omit<DepartedPilot, 'seniority_number'>)
   | ({ kind: 'qualMove'; seniority_number: number } & Omit<QualMove, 'seniority_number'>)
-  | ({ kind: 'rankChange'; seniority_number: number } & Omit<RankChange, 'new_rank'>)
+  | ({ kind: 'seniorityNumberChange'; seniority_number: number } & Omit<SeniorityNumberChange, 'new_seniority_number'>)
   | ({ kind: 'newHire'; seniority_number: number } & Omit<NewHire, 'seniority_number'>)
 
 const DELETED_KINDS = new Set<DiffRow['kind']>(['retired', 'departed'])
 
 export function buildDiffRows(
   result: CompareResult,
-  options: { includeRankChanges: boolean },
+  options: { includeSeniorityNumberChanges: boolean },
 ): DiffRow[] {
   const rows: DiffRow[] = []
 
@@ -30,10 +30,10 @@ export function buildDiffRows(
     rows.push({ kind: 'qualMove', seniority_number, ...rest })
   }
 
-  if (options.includeRankChanges) {
-    for (const p of result.rankChanges) {
-      const { new_rank, ...rest } = p
-      rows.push({ kind: 'rankChange', seniority_number: new_rank, ...rest })
+  if (options.includeSeniorityNumberChanges) {
+    for (const p of result.seniorityNumberChanges) {
+      const { new_seniority_number, ...rest } = p
+      rows.push({ kind: 'seniorityNumberChange', seniority_number: new_seniority_number, ...rest })
     }
   }
 

@@ -1,6 +1,7 @@
 // @vitest-environment nuxt
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mountSuspended, mockNuxtImport } from '@nuxt/test-utils/runtime'
+import type { CompareResult } from '~/utils/seniority-compare'
 
 // ---------------------------------------------------------------------------
 // Hoisted mocks
@@ -10,7 +11,9 @@ const {
   mockRouteQuery,
   mockFetchLists,
   mockLists,
+  mockComparison,
 } = vi.hoisted(() => ({
+  mockComparison: { value: null as CompareResult | null },
   mockNavigateTo: vi.fn(),
   mockRouteQuery: { value: {} as Record<string, string> },
   mockFetchLists: vi.fn(),
@@ -39,11 +42,11 @@ vi.mock('~/stores/seniority', () => ({
 // ---------------------------------------------------------------------------
 // Composable mocks
 // ---------------------------------------------------------------------------
-vi.mock('~/composables/useSeniorityCompare', () => ({
+vi.mock('~/composables/seniority/modules/useSeniorityCompare', () => ({
   useSeniorityCompare: () => ({
     loading: ref(false),
     error: ref(null),
-    comparison: ref(null),
+    comparison: ref(mockComparison.value),
     listMetaA: ref(null),
     listMetaB: ref(null),
     loadComparison: vi.fn(),
@@ -54,7 +57,7 @@ vi.mock('~/utils/column-definitions', () => ({
   retiredColumns: [],
   departedColumns: [],
   qualMoveColumns: [],
-  rankChangeColumns: [],
+  seniorityNumberChangeColumns: [],
   newHireColumns: [],
   qualMoveFilters: [],
 }))
@@ -76,10 +79,19 @@ describe('seniority/compare.vue — route-synced ref / watcher race condition', 
     vi.clearAllMocks()
     mockRouteQuery.value = {}
     mockLists.value = []
+    mockComparison.value = null
     mockFetchLists.mockResolvedValue(undefined)
     mockNavigateTo.mockResolvedValue(undefined)
   })
 
+
+  it('labels comparison summaries and tabs as Seniority Number changes', async () => {
+    mockComparison.value = { retired: [], departed: [], qualMoves: [], seniorityNumberChanges: [], newHires: [] }
+    const ComparePage = await import('./compare.vue')
+    const wrapper = await mountSuspended(ComparePage.default)
+    expect(wrapper.text()).toContain('Seniority Number Changes')
+    expect(wrapper.text()).not.toContain('Rank Changes')
+  })
 
   it('auto-selects older/newer by effectiveDate when query params are missing', async () => {
     const olderByEffective = makeList(11, '2026-01-01')

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useSeniorityCompare, useSeniorityLists } from '~/composables/seniority'
-import { retiredColumns, departedColumns, qualMoveColumns, rankChangeColumns, newHireColumns, qualMoveFilters } from '~/utils/column-definitions'
+import { retiredColumns, departedColumns, qualMoveColumns, seniorityNumberChangeColumns, newHireColumns, qualMoveFilters } from '~/utils/column-definitions'
 import { buildDiffRows } from '~/utils/build-diff-rows'
 
 definePageMeta({
@@ -19,7 +19,7 @@ const listIdB = ref<number | undefined>(route.query.b ? Number(route.query.b) : 
 const { loading, error, comparison } = useSeniorityCompare(listIdA, listIdB)
 
 const diffRows = computed(() =>
-  comparison.value ? buildDiffRows(comparison.value, { includeRankChanges: true }) : [],
+  comparison.value ? buildDiffRows(comparison.value, { includeSeniorityNumberChanges: true }) : [],
 )
 
 // Keep query params in sync — only for user-initiated changes after mount.
@@ -49,7 +49,7 @@ const summaryStats = computed(() => {
     { label: 'Retired', count: comparison.value.retired.length, color: 'text-(--ui-text-muted)' },
     { label: 'Departed', count: comparison.value.departed.length, color: 'text-(--ui-warning)' },
     { label: 'Qual Moves', count: comparison.value.qualMoves.length, color: 'text-(--ui-info)' },
-    { label: 'Rank Changes', count: comparison.value.rankChanges.length, color: 'text-(--ui-primary)' },
+    { label: 'Seniority Number Changes', count: comparison.value.seniorityNumberChanges.length, color: 'text-(--ui-primary)' },
     { label: 'New Hires', count: comparison.value.newHires.length, color: 'text-(--ui-success)' },
   ]
 })
@@ -59,7 +59,7 @@ const compareTabs = [
   { label: 'Retired', value: 'retired' },
   { label: 'Departed', value: 'departed' },
   { label: 'Qual Moves', value: 'qual-moves' },
-  { label: 'Rank Changes', value: 'rank-changes' },
+  { label: 'Seniority Number Changes', value: 'seniority-number-changes' },
   { label: 'New Hires', value: 'new-hires' },
 ]
 
@@ -122,7 +122,7 @@ const activeCompareTab = ref('diff')
           <ComparisonTab v-else-if="activeCompareTab === 'retired'" :data="comparison.retired" :columns="retiredColumns" search-placeholder="Search retired..." />
           <ComparisonTab v-else-if="activeCompareTab === 'departed'" :data="comparison.departed" :columns="departedColumns" search-placeholder="Search departed..." />
           <ComparisonTab v-else-if="activeCompareTab === 'qual-moves'" :data="comparison.qualMoves" :columns="qualMoveColumns" :filters="qualMoveFilters" search-placeholder="Search qual moves..." />
-          <ComparisonTab v-else-if="activeCompareTab === 'rank-changes'" :data="comparison.rankChanges" :columns="rankChangeColumns" search-placeholder="Search rank changes..." />
+          <ComparisonTab v-else-if="activeCompareTab === 'seniority-number-changes'" :data="comparison.seniorityNumberChanges" :columns="seniorityNumberChangeColumns" search-placeholder="Search Seniority Number changes..." />
           <ComparisonTab v-else-if="activeCompareTab === 'new-hires'" :data="comparison.newHires" :columns="newHireColumns" search-placeholder="Search new hires..." />
         </div>
       </template>

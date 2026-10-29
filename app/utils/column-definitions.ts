@@ -1,6 +1,6 @@
 import type { TableColumn } from '@nuxt/ui'
 import { sortableHeader } from '~/utils/sortableHeader'
-import type { RetiredPilot, DepartedPilot, QualMove, RankChange, NewHire } from '~/utils/seniority-compare'
+import type { RetiredPilot, DepartedPilot, QualMove, SeniorityNumberChange, NewHire } from '~/utils/seniority-compare'
 
 export interface FilterConfig {
   key: string
@@ -42,14 +42,14 @@ export const qualMoveColumns: TableColumn<QualMove>[] = [
   { accessorKey: 'new_base', header: sortableHeader<QualMove>('New Base') },
 ]
 
-export const rankChangeColumns: TableColumn<RankChange>[] = [
-  { accessorKey: 'employee_number', header: sortableHeader<RankChange>('Employee #') },
-  { accessorKey: 'name', header: sortableHeader<RankChange>('Name') },
-  { accessorKey: 'old_rank', header: sortableHeader<RankChange>('Old Rank') },
-  { accessorKey: 'new_rank', header: sortableHeader<RankChange>('New Rank') },
+export const seniorityNumberChangeColumns: TableColumn<SeniorityNumberChange>[] = [
+  { accessorKey: 'employee_number', header: sortableHeader<SeniorityNumberChange>('Employee #') },
+  { accessorKey: 'name', header: sortableHeader<SeniorityNumberChange>('Name') },
+  { accessorKey: 'old_seniority_number', header: sortableHeader<SeniorityNumberChange>('Old Seniority Number') },
+  { accessorKey: 'new_seniority_number', header: sortableHeader<SeniorityNumberChange>('New Seniority Number') },
   {
     accessorKey: 'delta',
-    header: sortableHeader<RankChange>('Change'),
+    header: sortableHeader<SeniorityNumberChange>('Seniority Number Delta'),
     cell: ({ row }) => {
       const d = row.original.delta
       return d > 0 ? `+${d}` : `${d}`
