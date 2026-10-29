@@ -1,14 +1,21 @@
+import { nextTick } from 'vue'
 import { beforeEach, describe, it, expect, vi } from 'vitest'
 import { mountSuspended, mockNuxtImport } from '@nuxt/test-utils/runtime'
 import type { PresentedSeniorityDemographics } from '~/utils/seniority'
 import { parsePlainDate } from '~/utils/temporal'
 
-const { mockAnalysis, mockAnchoredAnalysis, mockHasData } = vi.hoisted(() => {
-  const { ref: vRef } = require('vue')
+const { mockAnalysis, mockAnchoredAnalysis, mockHasData, mockReady, mockRetirementAge, mockSelectedBase, mockQualificationScope } = vi.hoisted(() => {
+  const { ref: vRef, computed: vComputed } = require('vue')
+  const mockSelectedBase = vRef(null)
+  const mockQualificationScope = vComputed(() => mockSelectedBase.value ? { base: mockSelectedBase.value } : {})
   return {
     mockAnalysis: vRef(null) as { value: { demographics: ReturnType<typeof vi.fn> } | null },
     mockAnchoredAnalysis: vRef(null) as { value: { demographics: ReturnType<typeof vi.fn> } | null },
     mockHasData: vRef(false) as { value: boolean },
+    mockReady: vRef(true) as { value: boolean },
+    mockRetirementAge: vRef(65) as { value: number },
+    mockSelectedBase,
+    mockQualificationScope,
   }
 })
 
@@ -39,17 +46,19 @@ mockNuxtImport('useSeniorityCore', () => () => ({
 mockNuxtImport('useQualificationFilter', () => () => ({
   selectedFleet: { value: null },
   selectedSeat: { value: null },
-  selectedBase: { value: null },
+  selectedBase: mockSelectedBase,
   availableFleets: { value: [] },
   availableSeats: { value: [] },
-  availableBases: { value: [] },
-  qualificationScope: { value: {} },
+  availableBases: { value: ['JFK', 'NO-MATCH'] },
+  qualificationScope: mockQualificationScope,
   qualificationLabel: { value: '' },
   clear: vi.fn(),
 }))
 
-mockNuxtImport('useUser', () => () => ({ retirementAge: { value: 65 } }))
-mockNuxtImport('useDeferredReady', () => () => ({ value: true }))
+mockNuxtImport('useUser', () => () => ({ retirementAge: mockRetirementAge }))
+mockNuxtImport('useDeferredReady', () => () => mockReady)
+
+vi.mock('vue-chartjs', () => ({ Bar: { template: '<div />' } }))
 
 const demographicsResult = {
   ageDistribution: {
@@ -125,6 +134,9 @@ describe('DemographicsTab', () => {
     mockAnalysis.value = null
     mockAnchoredAnalysis.value = null
     mockHasData.value = false
+    mockReady.value = true
+    mockRetirementAge.value = 65
+    mockSelectedBase.value = null
   })
 
   it('shows empty state when no seniority data', async () => {
@@ -162,6 +174,8 @@ describe('DemographicsTab', () => {
     expect(wrapper.text()).toContain('Qual Composition')
     expect(wrapper.text()).toContain('Age Distribution')
     expect(wrapper.text()).toContain('Years of Service')
+    expect(wrapper.text()).not.toContain('Age derived using')
+    expect(wrapper.html()).not.toContain('animate-pulse')
   })
 
   it('uses the completed anchored presentation for modeled Holdable state', async () => {
@@ -186,5 +200,149 @@ describe('DemographicsTab', () => {
       mandatoryRetirementAge: 65,
       scenario: { qualificationScope: {} },
     })
+  })
+
+  it('shows completed zero matches and restores charts when the filter clears', async () => {
+    mockHasData.value = true
+    mockSelectedBase.value = 'NO-MATCH'
+    mockAnalysis.value = { demographics: vi.fn(({ scenario }) => ({
+      domain: demographicsResult,
+      presentation: scenario.qualificationScope.base ? {
+        ...demographicsPresentation,
+        qualificationComposition: [],
+        captainQualificationThresholds: [],
+        ageDistribution: { buckets: [{ label: '50–54', count: 0 }], nullCount: 0 },
+        yearsOfServiceBuckets: [],
+      } : demographicsPresentation,
+    })) }
+    const Tab = await import('./DemographicsTab.vue')
+    const wrapper = await mountSuspended(Tab.default)
+
+    expect(wrapper.text()).toContain('No matching pilots')
+    expect(wrapper.text()).not.toContain('Age Distribution')
+    expect(wrapper.html()).not.toContain('animate-pulse')
+
+    const clearButton = wrapper.findAll('button').find(button => button.text() === 'Clear filter')!
+    await clearButton.trigger('click')
+
+    expect(wrapper.text()).not.toContain('No matching pilots')
+    expect(wrapper.text()).toContain('Qual Composition')
+    expect(wrapper.text()).toContain('Age Distribution')
+    expect(wrapper.text()).toContain('Years of Service')
+    expect(wrapper.html()).not.toContain('animate-pulse')
+  })
+
+  it('shows no captains alongside populated FO demographics', async () => {
+    mockHasData.value = true
+    const presentation = {
+      ...demographicsPresentation,
+      captainQualificationThresholds: [],
+      qualificationComposition: [{
+        ...demographicsPresentation.qualificationComposition[0]!,
+        qualificationLabel: '737 FO',
+        seat: 'FO',
+        caCount: 0,
+        foCount: 2,
+        caFoRatio: 0,
+      }],
+    }
+    mockAnalysis.value = { demographics: vi.fn(() => ({ domain: demographicsResult, presentation })) }
+    const Tab = await import('./DemographicsTab.vue')
+    const wrapper = await mountSuspended(Tab.default)
+
+    expect(wrapper.text()).toContain('No captains in this scope')
+    expect(wrapper.text()).toContain('737 FO')
+    expect(wrapper.text()).toContain('Age Distribution')
+    expect(wrapper.text()).toContain('Years of Service')
+    expect(wrapper.text()).not.toContain('No matching pilots')
+    expect(wrapper.html()).not.toContain('animate-pulse')
+  })
+
+  it('shows the configured retirement age and excluded count from the completed result reactively', async () => {
+    mockHasData.value = true
+    mockRetirementAge.value = 67
+    const presentation = {
+      ...demographicsPresentation,
+      ageDistribution: { buckets: [{ label: '50–54', count: 1 }], nullCount: 1 },
+    }
+    const demographics = vi.fn(() => ({ domain: demographicsResult, presentation }))
+    mockAnalysis.value = { demographics }
+    const Tab = await import('./DemographicsTab.vue')
+    const wrapper = await mountSuspended(Tab.default)
+
+    expect(wrapper.text()).toContain('1 pilot excluded (no retirement date on file)')
+    expect(wrapper.text()).toContain('mandatory retirement age of 67')
+    expect(wrapper.text()).not.toContain('Age data unavailable')
+    expect(wrapper.html()).not.toContain('animate-pulse')
+
+    mockRetirementAge.value = 68
+    await nextTick()
+
+    expect(demographics).toHaveBeenLastCalledWith({
+      mandatoryRetirementAge: 68,
+      scenario: { qualificationScope: {} },
+    })
+    expect(wrapper.text()).toContain('mandatory retirement age of 68')
+    expect(wrapper.text()).not.toContain('mandatory retirement age of 67')
+    expect(wrapper.text()).toContain('1 pilot excluded (no retirement date on file)')
+  })
+
+  it('distinguishes all unknown ages from zero matching pilots', async () => {
+    mockHasData.value = true
+    mockRetirementAge.value = 67
+    const presentation = {
+      ...demographicsPresentation,
+      ageDistribution: { buckets: [{ label: '50–54', count: 0 }], nullCount: 2 },
+    }
+    mockAnalysis.value = { demographics: vi.fn(() => ({ domain: demographicsResult, presentation })) }
+    const Tab = await import('./DemographicsTab.vue')
+    const wrapper = await mountSuspended(Tab.default)
+
+    expect(wrapper.text()).toContain('Age data unavailable')
+    expect(wrapper.text()).toContain('2 pilots excluded (no retirement date on file)')
+    expect(wrapper.text()).toContain('mandatory retirement age of 67')
+    expect(wrapper.text()).toContain('Qual Composition')
+    expect(wrapper.text()).toContain('Years of Service')
+    expect(wrapper.text()).not.toContain('No matching pilots')
+    expect(wrapper.html()).not.toContain('animate-pulse')
+  })
+
+  it('keeps loading placeholders until deferred rendering is ready', async () => {
+    mockHasData.value = true
+    mockReady.value = false
+    const presentation = {
+      ...demographicsPresentation,
+      qualificationComposition: [],
+      captainQualificationThresholds: [],
+      ageDistribution: { buckets: [{ label: '50–54', count: 0 }], nullCount: 0 },
+      yearsOfServiceBuckets: [],
+    }
+    mockAnalysis.value = { demographics: vi.fn(() => ({ domain: demographicsResult, presentation })) }
+    const Tab = await import('./DemographicsTab.vue')
+    const wrapper = await mountSuspended(Tab.default)
+
+    expect(wrapper.html()).toContain('animate-pulse')
+    expect(wrapper.text()).not.toContain('No matching pilots')
+
+    mockReady.value = true
+    await nextTick()
+
+    expect(wrapper.text()).toContain('No matching pilots')
+    expect(wrapper.html()).not.toContain('animate-pulse')
+  })
+
+  it('keeps loading placeholders while analysis is pending', async () => {
+    mockHasData.value = true
+    const Tab = await import('./DemographicsTab.vue')
+    const wrapper = await mountSuspended(Tab.default)
+
+    expect(wrapper.html()).toContain('animate-pulse')
+    expect(wrapper.text()).not.toContain('No matching pilots')
+
+    mockAnalysis.value = { demographics: vi.fn(() => ({ domain: demographicsResult, presentation: demographicsPresentation })) }
+    await nextTick()
+
+    expect(wrapper.text()).toContain('Age Distribution')
+    expect(wrapper.html()).not.toContain('animate-pulse')
   })
 })
