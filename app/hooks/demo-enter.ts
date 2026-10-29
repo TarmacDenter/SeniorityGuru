@@ -20,13 +20,13 @@ export default function registerDemoEnterHook(nuxtApp: NuxtApp) {
       { title: 'Demo — Base List', effectiveDate: parsePlainDate('2025-01-01'), isDemo: true },
       baseEntries.map(e => localEntryToSeniorityEntry({ ...e, listId: 0 })),
     )
-    await seniorityStore.addList(
+    const currentDemoListId = await seniorityStore.addList(
       { title: 'Demo — Current List', effectiveDate: parsePlainDate('2025-04-01'), isDemo: true },
       variantEntries.map(e => localEntryToSeniorityEntry({ ...e, listId: 0 })),
     )
 
     await userStore.savePreference('employeeNumber', DEMO_EMPLOYEE_NUMBER)
 
-    await navigateTo('/dashboard')
+    await navigateTo({ path: '/dashboard', query: { list: String(currentDemoListId) } })
   }, nuxtApp)
 }

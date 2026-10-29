@@ -92,11 +92,11 @@ describe('ON_DEMO_ENTER hook listener', () => {
     expect(mockUserStore.savePreference).toHaveBeenCalledWith('employeeNumber', '1371')
   })
 
-  it('navigates to /dashboard after setup', async () => {
+  it('navigates to the current demo list after setup', async () => {
     const { emitHook } = await import('~/utils/hooks')
 
     await emitHook('app:demo:enter')
 
-    expect(mockNavigateTo).toHaveBeenCalledWith('/dashboard')
+    expect(mockNavigateTo).toHaveBeenCalledWith({ path: '/dashboard', query: { list: '1' } })
   })
 })
