@@ -113,9 +113,10 @@ onUnmounted(() => {
         />
         <template #content>
           <div class="rounded-lg border border-[var(--ui-border)] bg-[var(--ui-bg-muted)] p-4 space-y-2 text-sm text-[var(--ui-text-muted)]">
-            <p>The position view shows your standing within specific qualifications (fleet + seat combinations).</p>
-            <p>Holdable means your projected seniority is senior to the plug — the most junior pilot currently active in that qualification. This is a projection based on scheduled retirements, not a vacancy.</p>
-            <NuxtLink to="/how-it-works#holdability" class="text-primary text-sm underline">Learn more about holdability →</NuxtLink>
+            <p>The Position view compares your company Seniority Percentile across Qualifications (Base, Seat, and Fleet combinations).</p>
+            <p>Holdable is a modeled outcome: your projected company Seniority Percentile meets or exceeds the unchanged current Qualification Threshold percentile. The Qualification Threshold represents the most junior active position in that Qualification. This is a projection based on scheduled retirements, not a vacancy. Growth Assumptions also affect your projected percentile.</p>
+            <p>Future Qualification occupancy is not projected. Vacancies, bids, transfers, and awards are not modeled. Holdable does not guarantee a position.</p>
+            <NuxtLink to="/how-it-works#holdability" class="text-primary text-sm underline">Learn more about Holdable and Qualification Thresholds →</NuxtLink>
           </div>
         </template>
       </UCollapsible>
@@ -139,15 +140,15 @@ onUnmounted(() => {
                   <div class="w-3 h-3 rounded-full bg-[var(--ui-color-primary-500)]" />
                 </div>
                 <span>Your position (<span class="text-[var(--ui-color-success-500)]">holdable</span> / <span class="text-[var(--ui-color-primary-500)]">not yet</span>)</span>
-                <InfoIcon text="Holdable means your projected seniority number is ≤ the plug — the most junior pilot currently active in this qualification." size="xs" />
+                <InfoIcon text="Holdable is modeled: your projected company Seniority Percentile meets or exceeds the unchanged current Qualification Threshold percentile. Vacancies, bids, transfers, and awards are not modeled." size="xs" />
               </div>
               <div class="flex items-center gap-1.5">
                 <div class="flex gap-0.5">
                   <div class="w-0.5 h-4 border-l-2 border-dashed border-[var(--ui-color-success-500)]" />
                   <div class="w-0.5 h-4 border-l-2 border-dashed border-[var(--ui-color-error-500)]" />
                 </div>
-                <span>Plug — most junior pilot holding</span>
-                <InfoIcon text="The plug is the most junior pilot currently holding this qualification. Being senior to the plug means you can hold the position." size="xs" />
+                <span>Qualification Threshold — most junior active position</span>
+                <InfoIcon text="The Qualification Threshold is the current company Seniority Percentile of the most junior active position in this Qualification. It stays unchanged in projections; future occupancy is not projected. Holdable does not guarantee a position." size="xs" />
               </div>
               <div v-if="hasProjection" class="flex items-center gap-1.5">
                 <div class="w-3 h-3 rounded-full bg-[var(--ui-text-muted)] opacity-40" />

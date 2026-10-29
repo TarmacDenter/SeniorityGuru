@@ -4,7 +4,7 @@ definePageMeta({ layout: 'default' })
 const sections = [
   { id: 'percentile', title: 'Seniority Percentile' },
   { id: 'adjusted-rank', title: 'Raw and Adjusted Rank' },
-  { id: 'holdability', title: 'Holdability and the Plug' },
+  { id: 'holdability', title: 'Holdable and Qualification Thresholds' },
   { id: 'growth-model', title: 'Growth Assumptions' },
   { id: 'projection-limits', title: 'Projection Limitations' },
   { id: 'threshold-calculator', title: 'Percentile Thresholds' },
@@ -41,17 +41,19 @@ const sections = [
           <USeparator class="mb-4" />
           <div class="space-y-3 text-sm text-[--ui-text]">
             <p>
-              Seniority percentile expresses your position within the selected list or qualification.
-              It is inverted: 100% is the most senior position and 0% is the most junior position.
+              Seniority Percentile expresses your position within the selected list or Qualification.
+              Higher values mean greater seniority. The most senior pilot has a value of 100%.
             </p>
             <UCard variant="soft" class="font-mono text-sm">
-              percentile = ((total &minus; rank + 1) / total) &times; 100
+              Seniority Percentile = ((N &minus; Rank + 1) / N) &times; 100
             </UCard>
             <ul class="list-disc list-inside space-y-1 text-[--ui-text-muted]">
-              <li>The calculation uses the selected scope, such as company-wide or a qualification.</li>
+              <li>N is the number of pilots in the selected scope, such as company-wide or a Qualification. Rank is your one-based position.</li>
               <li>Displayed values are rounded to one decimal place.</li>
               <li>Rank #1 (most senior) = 100th percentile.</li>
-              <li>The most junior position = 0th percentile.</li>
+              <li>The most junior pilot (Rank = N) has an unrounded Seniority Percentile of 100/N. For 200 pilots, this is 0.5%.</li>
+              <li>On large lists, 100/N can round to 0.0%. For 3,000 pilots, about 0.0333% displays as 0.0%.</li>
+              <li>With one pilot (N = 1, Rank = 1), the result is 100%.</li>
             </ul>
             <UAlert color="info" variant="soft" icon="i-lucide-calculator" title="Example"
               description="If you're #50 out of 200 pilots, your percentile is ((200 − 50 + 1) / 200) × 100 = 75.5%." />
@@ -77,24 +79,24 @@ const sections = [
           </div>
         </section>
 
-        <!-- Holdability & The Plug -->
+        <!-- Holdable and Qualification Thresholds -->
         <section id="holdability">
-          <h2 class="text-xl font-bold mb-3">Holdability and the Plug</h2>
+          <h2 class="text-xl font-bold mb-3">Holdable and Qualification Thresholds</h2>
           <USeparator class="mb-4" />
           <div class="space-y-3 text-sm text-[--ui-text]">
             <p>
-              The <strong>plug</strong> is the most junior pilot currently active in a given base,
-              fleet, and seat combination. If your seniority number is less than or equal to the
-              plug's seniority number, the position is "holdable" in that combination.
+              The <strong>Qualification Threshold</strong> is the most junior active position in a Base,
+              Seat, and Fleet combination. The Position view compares your projected company Seniority Percentile
+              with the unchanged current Qualification Threshold percentile.
+              <strong>Holdable</strong> means your projected percentile meets or exceeds that threshold.
             </p>
             <p class="text-[--ui-text-muted]">
-              The Position view can project this comparison forward. It removes pilots whose
-              retirement date has passed and compares your seniority number with the remaining plug's rank.
-              Growth assumptions affect projected percentiles, but do not create specific pilots or
-              change seniority numbers.
+              Scheduled retirements and Growth Assumptions affect your projected Seniority Percentile.
+              The Qualification Threshold stays fixed at its current value; future Qualification occupancy is not projected.
+              Growth Assumptions do not create specific pilots or change Seniority Numbers.
             </p>
             <UAlert color="warning" variant="soft" icon="i-lucide-alert-triangle" title="Important"
-              description='"Holdable" is a calculation based on the current or projected list. It means you would not be the most junior pilot in that qual.' />
+              description='"Holdable" is a modeled outcome, not an awarded vacancy or a guarantee of a position. Vacancies, bids, transfers, and awards are not modeled.' />
           </div>
         </section>
 
@@ -141,6 +143,7 @@ const sections = [
               <li>Specific new-hire rows (growth adds only to the projected total; New Hire Mode creates one synthetic
                 pilot)
               </li>
+              <li>Vacancies, bids, transfers, and awards</li>
               <li>Pilot upgrades or downgrades between qualifications</li>
               <li>Base or seat reassignments</li>
               <li>Furloughs or voluntary leaves</li>
