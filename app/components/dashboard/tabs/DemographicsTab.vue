@@ -18,6 +18,7 @@ const demographicsResult = computed(() => {
 const ageDistribution = computed(() => demographicsResult.value?.ageDistribution ?? { buckets: [], nullCount: 0 })
 const captainQualificationThresholds = computed(() => demographicsResult.value?.captainQualificationThresholds ?? [])
 const qualificationComposition = computed(() => demographicsResult.value?.qualificationComposition ?? [])
+const matchingPilotCount = computed(() => qualificationComposition.value.reduce((total, row) => total + row.total, 0))
 const yearsOfServiceDistribution = computed(() => demographicsResult.value?.yearsOfServiceDistribution ?? { entryFloor: 0, p10: 0, p25: 0, median: 0, p75: 0, p90: 0, max: 0 })
 const yearsOfServiceBuckets = computed(() => demographicsResult.value?.yearsOfServiceBuckets ?? [])
 
@@ -64,23 +65,39 @@ const ready = useDeferredReady()
       @update:base="qualificationFilter.selectedBase.value = $event"
     />
 
+    <UEmpty
+      v-if="ready && demographicsResult && matchingPilotCount === 0"
+      icon="i-lucide-users"
+      title="No matching pilots"
+      description="No pilots match the selected qualification filters. Clear or change the filters to explore demographics."
+      class="py-16"
+    />
+
+    <template v-else>
     <!-- Most Junior Captain by Qual — full width, own row -->
-    <USkeleton v-if="!ready || !captainQualificationThresholds.length" class="h-48 rounded-lg" />
+    <USkeleton v-if="!ready || !demographicsResult" class="h-48 rounded-lg" />
     <UCard v-else>
       <template #header>
         <h3 class="font-semibold">Most Junior Captain by Qual</h3>
       </template>
+      <UEmpty
+        v-if="!captainQualificationThresholds.length"
+        icon="i-lucide-users"
+        title="No captains in this scope"
+        description="No captains have a Qualification Threshold in the selected scope. Other demographics include the matching pilots."
+      />
       <AnalyticsJuniorCaptainTable
+        v-else
         :rows="captainQualificationThresholds"
       />
     </UCard>
 
     <!-- Base / Fleet / Seat Sizes — own row -->
-    <USkeleton v-if="!ready || !qualificationComposition.length" class="h-32 rounded-lg" />
+    <USkeleton v-if="!ready || !demographicsResult" class="h-32 rounded-lg" />
     <AnalyticsQualSizesCard v-else :composition="qualificationComposition" />
 
     <!-- Qual Composition list — full width, own row -->
-    <USkeleton v-if="!ready || !qualificationComposition.length" class="h-64 rounded-lg" />
+    <USkeleton v-if="!ready || !demographicsResult" class="h-64 rounded-lg" />
     <UCard v-else>
       <template #header>
         <h3 class="font-semibold">Qual Composition</h3>
@@ -95,7 +112,7 @@ const ready = useDeferredReady()
     </UCard>
 
     <!-- Age distribution -->
-    <USkeleton v-if="!ready || !ageDistribution.buckets.length" class="h-64 rounded-lg" />
+    <USkeleton v-if="!ready || !demographicsResult" class="h-64 rounded-lg" />
     <UCard v-else>
       <template #header>
         <h3 class="font-semibold">Age Distribution{{ qualificationFilter.qualificationLabel.value ? ` — ${qualificationFilter.qualificationLabel.value}` : '' }}</h3>
@@ -103,11 +120,12 @@ const ready = useDeferredReady()
       <AnalyticsAgeDistributionChart
         :buckets="ageDistribution.buckets"
         :null-count="ageDistribution.nullCount"
+        :mandatory-retirement-age="retirementAge"
       />
     </UCard>
 
     <!-- YOS breakdown -->
-    <USkeleton v-if="!ready || !yearsOfServiceBuckets.length" class="h-48 rounded-lg" />
+    <USkeleton v-if="!ready || !demographicsResult" class="h-48 rounded-lg" />
     <UCard v-else>
       <template #header>
         <h3 class="font-semibold">Years of Service{{ qualificationFilter.qualificationLabel.value ? ` — ${qualificationFilter.qualificationLabel.value}` : '' }}</h3>
@@ -118,6 +136,7 @@ const ready = useDeferredReady()
         :user-yos="userYos"
       />
     </UCard>
+    </template>
     </template>
   </div>
 </template>

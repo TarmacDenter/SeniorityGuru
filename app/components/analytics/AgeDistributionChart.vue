@@ -16,6 +16,7 @@ ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend)
 const props = defineProps<{
   buckets: { label: string; count: number }[]
   nullCount: number
+  mandatoryRetirementAge: number
 }>()
 
 const { defaults, colors } = useChartTheme()
@@ -55,7 +56,7 @@ const chartOptions = computed<ChartOptions<'bar'>>(() => ({
 
 <template>
   <div>
-    <ClientOnly>
+    <ClientOnly v-if="buckets.some(bucket => bucket.count > 0)">
       <div class="h-64 relative">
         <Bar :data="chartData" :options="chartOptions" />
       </div>
@@ -63,9 +64,15 @@ const chartOptions = computed<ChartOptions<'bar'>>(() => ({
         <USkeleton class="h-64 w-full" />
       </template>
     </ClientOnly>
+    <UEmpty
+      v-else
+      icon="i-lucide-calendar"
+      title="Age data unavailable"
+      description="No ages are available for the matching pilots."
+    />
     <p v-if="nullCount > 0" class="mt-2 text-xs text-[var(--ui-text-muted)]">
       * {{ nullCount }} pilot{{ nullCount === 1 ? '' : 's' }} excluded (no retirement date on file).
-      Age derived using mandatory retirement age of 65.
+      Age derived using mandatory retirement age of {{ mandatoryRetirementAge }}.
     </p>
   </div>
 </template>

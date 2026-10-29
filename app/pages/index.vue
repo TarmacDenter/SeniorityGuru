@@ -695,7 +695,7 @@ async function enterDemo() {
               <p class="text-sm text-muted">
                 The chart groups pilots by age range.
               </p>
-              <AnalyticsAgeDistributionChart :buckets="demoAgeBuckets" :null-count="0" />
+              <AnalyticsAgeDistributionChart :buckets="demoAgeBuckets" :null-count="0" :mandatory-retirement-age="65" />
             </div>
           </UCard>
 
