@@ -1,20 +1,16 @@
 <script setup lang="ts">
+import type { RankCardData } from '~/composables/seniority'
 import { computeYOS } from '~/utils/date'
 import { todayPlainDate } from '~/utils/temporal'
 
 const props = defineProps<{
-  rank: {
-    seniorityNumber: number
-    activeRank?: number
-    base: string
-    seat: string
-    fleet: string
-    percentile: number
-    hireDate: string
-  }
+  rank: RankCardData
 }>()
 
 const animatedPercentile = ref(0)
+watch(() => props.rank.percentile, (percentile) => {
+  animatedPercentile.value = percentile
+})
 
 const yearsOfService = computed(() => {
   if (!props.rank.hireDate) return null
@@ -39,13 +35,10 @@ onMounted(() => {
         <div class="flex items-center justify-center size-16 rounded-xl bg-primary/10">
           <UIcon name="i-lucide-award" class="size-8 text-primary" />
         </div>
-        <div>
-          <p class="text-sm text-muted">Your Seniority Number</p>
+        <div data-testid="seniority-number">
+          <p class="text-sm text-muted">{{ rank.isSimulated ? 'Simulated Seniority Number' : 'Seniority Number' }}</p>
           <p class="text-4xl font-bold font-mono text-highlighted">
-            #{{ rank.activeRank?.toLocaleString() ?? rank.seniorityNumber.toLocaleString() }}
-          </p>
-          <p v-if="rank.activeRank && rank.activeRank !== rank.seniorityNumber" class="text-xs text-muted">
-            List #{{ rank.seniorityNumber.toLocaleString() }} · adjusted for retirements
+            #{{ rank.seniorityNumber.toLocaleString() }}
           </p>
         </div>
       </div>
@@ -66,9 +59,23 @@ onMounted(() => {
       </div>
     </div>
 
+    <div class="grid grid-cols-2 gap-4 mt-4">
+      <div data-testid="list-rank">
+        <p class="text-xs text-muted">List Rank</p>
+        <p class="font-mono font-semibold text-highlighted">{{ rank.listRank.toLocaleString() }} of {{ rank.listPilotCount.toLocaleString() }}</p>
+      </div>
+      <div data-testid="active-rank">
+        <p class="text-xs text-muted">Active Rank</p>
+        <p class="font-mono font-semibold text-highlighted">{{ rank.activeRank.toLocaleString() }} of {{ rank.activePilotCount.toLocaleString() }}</p>
+      </div>
+    </div>
+    <p v-if="rank.isSimulated" class="text-xs text-muted mt-2">
+      Modeled counts include the simulated pilot.
+    </p>
+
     <div class="mt-4">
       <div class="flex justify-between text-xs text-muted mb-1">
-        <span>Percentile</span>
+        <span>Active Seniority Percentile</span>
         <span class="font-mono">{{ rank.percentile }}%</span>
       </div>
       <UProgress
@@ -80,6 +87,8 @@ onMounted(() => {
         }"
       />
     </div>
+
+    <p class="text-xs text-muted mt-2">Percentile among {{ rank.activePilotCount.toLocaleString() }} active pilots.</p>
 
     <p v-if="yearsOfService !== null" class="text-xs text-muted mt-2">
       {{ yearsOfService }} {{ yearsOfService === 1 ? 'year' : 'years' }} of service
