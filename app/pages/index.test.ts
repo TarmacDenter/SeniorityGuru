@@ -21,10 +21,6 @@ vi.mock('~/components/demo/ComparisonDemo.vue', () => ({
   default: { template: '<div data-testid="comparison-demo" />' },
 }))
 
-vi.mock('~/components/analytics/QualSeniorityScale.vue', () => ({
-  default: { template: '<div data-testid="qual-seniority-scale" />' },
-}))
-
 vi.mock('~/components/analytics/AgeDistributionChart.vue', () => ({
   default: { template: '<div data-testid="age-distribution-chart" />' },
 }))
@@ -34,6 +30,20 @@ vi.mock('~/components/analytics/RetirementWaveChart.vue', () => ({
 }))
 
 describe('index.vue — CTA rendering', () => {
+  it('renders sample Qualification counts and independent scaling disclosure', async () => {
+    const IndexPage = await import('./index.vue')
+    const wrapper = await mountSuspended(IndexPage.default)
+
+    expect(wrapper.findAll('[data-testid="qualification-scale-active-count"]').map(count => count.text())).toEqual([
+      '94 active pilots',
+      '68 active pilots',
+      '198 active pilots',
+      '142 active pilots',
+    ])
+    expect(wrapper.text()).toContain('Heights scale independently for each Qualification')
+    expect(wrapper.findAll('[data-testid="qualification-scale-projected-position"]')).toHaveLength(4)
+  })
+
   it('shows "Get Started" hero CTA linking to /dashboard', async () => {
     const IndexPage = await import('./index.vue')
     const wrapper = await mountSuspended(IndexPage.default)

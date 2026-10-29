@@ -21,6 +21,58 @@ function position(overrides: Partial<PresentedQualificationPosition>): Presented
 }
 
 describe('QualSeniorityScale', () => {
+  it('shows active counts and independent scaling for similarly shaped Qualification distributions', async () => {
+    const Scale = await import('./QualSeniorityScale.vue')
+    const wrapper = await mountSuspended(Scale.default, {
+      props: {
+        positions: [
+          position({
+            qualification: { fleet: '737', seat: 'CA', base: 'JFK' },
+            activePilotCount: 240,
+            percentileDensity: [
+              { minimumPercentile: 40, maximumPercentile: 45, pilotCount: 80 },
+              { minimumPercentile: 45, maximumPercentile: 50, pilotCount: 160 },
+            ],
+          }),
+          position({
+            activePilotCount: 3,
+            percentileDensity: [
+              { minimumPercentile: 40, maximumPercentile: 45, pilotCount: 1 },
+              { minimumPercentile: 45, maximumPercentile: 50, pilotCount: 2 },
+            ],
+          }),
+        ],
+      },
+    })
+
+    const counts = wrapper.findAll('[data-testid="qualification-scale-active-count"]')
+    expect(counts.map(count => count.text())).toEqual(['240 active pilots', '3 active pilots'])
+    expect(wrapper.text()).toContain('Heights scale independently for each Qualification')
+    expect(wrapper.text()).toContain('distribution shape, not comparable pilot counts')
+  })
+
+  it('shows a single active pilot from the supplied count even without density buckets', async () => {
+    const Scale = await import('./QualSeniorityScale.vue')
+    const wrapper = await mountSuspended(Scale.default, {
+      props: { positions: [position({ activePilotCount: 1, percentileDensity: [] })] },
+    })
+
+    expect(wrapper.get('[data-testid="qualification-scale-active-count"]').text()).toBe('1 active pilot')
+    expect(wrapper.find('[data-testid="qualification-scale-current-position"]').exists()).toBe(false)
+    expect(wrapper.get('[data-testid="qualification-scale-projected-position"]').attributes('style')).toContain('left: 50%')
+    expect(wrapper.text()).toContain('Junior')
+    expect(wrapper.text()).toContain('Senior')
+  })
+
+  it('retains the no-data message without count labels when there are no Qualification rows', async () => {
+    const Scale = await import('./QualSeniorityScale.vue')
+    const wrapper = await mountSuspended(Scale.default, { props: { positions: [] } })
+
+    expect(wrapper.text()).toContain('No qual data available.')
+    expect(wrapper.find('[data-testid="qualification-scale-active-count"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="qualification-scale-projected-position"]').exists()).toBe(false)
+  })
+
   it('renders captain qualification scales before first-officer scales', async () => {
     const Scale = await import('./QualSeniorityScale.vue')
     const wrapper = await mountSuspended(Scale.default, {
@@ -61,6 +113,15 @@ describe('QualSeniorityScale', () => {
     expect(projectedMarkers).toHaveLength(2)
     expect(projectedMarkers[0]!.classes()).toContain('bg-[var(--ui-color-success-500)]')
     expect(projectedMarkers[1]!.classes()).toContain('bg-[var(--ui-color-primary-500)]')
-    expect(wrapper.findAll('[data-testid="qualification-scale-current-position"]')).toHaveLength(2)
+    expect(projectedMarkers.map(marker => marker.attributes('style'))).toEqual([
+      expect.stringContaining('left: 70%'),
+      expect.stringContaining('left: 50%'),
+    ])
+    const currentMarkers = wrapper.findAll('[data-testid="qualification-scale-current-position"]')
+    expect(currentMarkers).toHaveLength(2)
+    expect(currentMarkers.map(marker => marker.attributes('style'))).toEqual([
+      expect.stringContaining('left: 60%'),
+      expect.stringContaining('left: 40%'),
+    ])
   })
 })
