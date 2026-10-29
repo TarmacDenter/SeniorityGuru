@@ -8,12 +8,12 @@ const props = defineProps<{
 
 const PAGE_SIZE_OPTIONS = [25, 50, 100, 200]
 
-const showRankChanges = ref(false)
+const showSeniorityNumberChanges = ref(false)
 const page = ref(1)
 const pageSize = ref(50)
 
 const filteredRows = computed(() =>
-  props.rows.filter(r => showRankChanges.value || r.kind !== 'rankChange'),
+  props.rows.filter(r => showSeniorityNumberChanges.value || r.kind !== 'seniorityNumberChange'),
 )
 
 const paginatedRows = computed(() =>
@@ -22,7 +22,7 @@ const paginatedRows = computed(() =>
 
 const isEmpty = computed(() => filteredRows.value.length === 0)
 
-watch(showRankChanges, () => { page.value = 1 })
+watch(showSeniorityNumberChanges, () => { page.value = 1 })
 watch(pageSize, () => { page.value = 1 })
 
 function rowBgClass(row: DiffRow): string {
@@ -37,7 +37,7 @@ function badgeColor(kind: DiffRow['kind']): 'error' | 'warning' | 'info' | 'prim
     case 'retired': return 'error'
     case 'departed': return 'warning'
     case 'qualMove': return 'info'
-    case 'rankChange': return 'primary'
+    case 'seniorityNumberChange': return 'primary'
     case 'newHire': return 'success'
   }
 }
@@ -55,7 +55,7 @@ function badgeLabel(row: DiffRow): string {
     case 'retired': return 'Retired'
     case 'departed': return 'Departed'
     case 'qualMove': return qualMoveBadgeLabel(row)
-    case 'rankChange': return `↑${row.delta}`
+    case 'seniorityNumberChange': return `Seniority Number ${row.delta > 0 ? '+' : ''}${row.delta}`
     case 'newHire': return 'New Hire'
   }
 }
@@ -63,7 +63,7 @@ function badgeLabel(row: DiffRow): string {
 function currentQual(row: DiffRow): string {
   switch (row.kind) {
     case 'qualMove': return `${row.new_seat} / ${row.new_fleet} / ${row.new_base}`
-    case 'rankChange': return `${row.seat} / ${row.fleet} / ${row.base}`
+    case 'seniorityNumberChange': return `${row.seat} / ${row.fleet} / ${row.base}`
     case 'retired':
     case 'departed':
     case 'newHire': return `${row.seat} / ${row.fleet} / ${row.base}`
@@ -76,23 +76,25 @@ function currentQual(row: DiffRow): string {
     <!-- Filter bar -->
     <div class="flex items-center gap-3 mb-3 pb-3 border-b border-(--ui-border)">
       <button
-        data-testid="rank-change-toggle"
+        data-testid="seniority-number-change-toggle"
         type="button"
         class="flex items-center gap-2 text-sm text-(--ui-text-muted) hover:text-(--ui-text) transition-colors cursor-pointer select-none"
-        @click="showRankChanges = !showRankChanges"
+        @click="showSeniorityNumberChanges = !showSeniorityNumberChanges"
       >
         <span
           class="inline-flex items-center justify-center w-8 h-4 rounded-full transition-colors"
-          :class="showRankChanges ? 'bg-primary' : 'bg-(--ui-border)'"
+          :class="showSeniorityNumberChanges ? 'bg-primary' : 'bg-(--ui-border)'"
         >
           <span
             class="w-3 h-3 rounded-full bg-white shadow transition-transform"
-            :class="showRankChanges ? 'translate-x-2' : '-translate-x-2'"
+            :class="showSeniorityNumberChanges ? 'translate-x-2' : '-translate-x-2'"
           />
         </span>
-        Show rank changes
+        Show Seniority Number changes
       </button>
     </div>
+
+    <p class="mb-3 text-xs text-(--ui-text-muted)">Delta = older Seniority Number − newer Seniority Number.</p>
 
     <!-- Empty state -->
     <div v-if="isEmpty" class="flex justify-center items-center py-16 text-(--ui-text-muted)">
@@ -154,9 +156,11 @@ function currentQual(row: DiffRow): string {
                     {{ row.name ?? row.employee_number }}
                   </div>
 
+                  <div class="text-(--ui-text-muted)">Employee #: <span class="text-(--ui-text)">{{ row.employee_number }}</span></div>
+
                   <!-- Retired pilot card -->
                   <template v-if="row.kind === 'retired'">
-                    <div class="text-(--ui-text-muted)">Seniority: <span class="text-(--ui-text)">{{ row.seniority_number }}</span></div>
+                    <div class="text-(--ui-text-muted)">Seniority Number: <span class="text-(--ui-text)">{{ row.seniority_number }}</span></div>
                     <div class="text-(--ui-text-muted)">Seat: <span class="text-(--ui-text)">{{ row.seat }}</span></div>
                     <div class="text-(--ui-text-muted)">Fleet: <span class="text-(--ui-text)">{{ row.fleet }}</span></div>
                     <div class="text-(--ui-text-muted)">Base: <span class="text-(--ui-text)">{{ row.base }}</span></div>
@@ -166,7 +170,7 @@ function currentQual(row: DiffRow): string {
 
                   <!-- Departed pilot card -->
                   <template v-else-if="row.kind === 'departed'">
-                    <div class="text-(--ui-text-muted)">Seniority: <span class="text-(--ui-text)">{{ row.seniority_number }}</span></div>
+                    <div class="text-(--ui-text-muted)">Seniority Number: <span class="text-(--ui-text)">{{ row.seniority_number }}</span></div>
                     <div class="text-(--ui-text-muted)">Seat: <span class="text-(--ui-text)">{{ row.seat }}</span></div>
                     <div class="text-(--ui-text-muted)">Fleet: <span class="text-(--ui-text)">{{ row.fleet }}</span></div>
                     <div class="text-(--ui-text-muted)">Base: <span class="text-(--ui-text)">{{ row.base }}</span></div>
@@ -176,7 +180,7 @@ function currentQual(row: DiffRow): string {
 
                   <!-- Qual move card -->
                   <template v-else-if="row.kind === 'qualMove'">
-                    <div class="text-(--ui-text-muted)">Seniority: <span class="text-(--ui-text)">{{ row.seniority_number }}</span></div>
+                    <div class="text-(--ui-text-muted)">Seniority Number: <span class="text-(--ui-text)">{{ row.seniority_number }}</span></div>
                     <div class="text-(--ui-text-muted)">Seat:
                       <span v-if="row.old_seat !== row.new_seat" class="text-info font-semibold">{{ row.old_seat }}→{{ row.new_seat }}</span>
                       <span v-else class="text-(--ui-text)">{{ row.new_seat }}</span>
@@ -193,9 +197,9 @@ function currentQual(row: DiffRow): string {
                     <div class="text-(--ui-text-muted)">Retire date: <span class="text-(--ui-text)">{{ row.retire_date }}</span></div>
                   </template>
 
-                  <!-- Rank change card -->
-                  <template v-else-if="row.kind === 'rankChange'">
-                    <div class="text-(--ui-text-muted)">Rank: <span class="text-primary font-semibold">{{ row.old_rank }}→{{ row.seniority_number }} (↑{{ row.delta }})</span></div>
+                  <!-- Seniority Number change card -->
+                  <template v-else-if="row.kind === 'seniorityNumberChange'">
+                    <div class="text-(--ui-text-muted)">Seniority Number: <span class="text-primary font-semibold">{{ row.old_seniority_number }}→{{ row.seniority_number }} (delta {{ row.delta > 0 ? '+' : '' }}{{ row.delta }})</span></div>
                     <div class="text-(--ui-text-muted)">Seat: <span class="text-(--ui-text)">{{ row.seat }}</span></div>
                     <div class="text-(--ui-text-muted)">Fleet: <span class="text-(--ui-text)">{{ row.fleet }}</span></div>
                     <div class="text-(--ui-text-muted)">Base: <span class="text-(--ui-text)">{{ row.base }}</span></div>
@@ -205,7 +209,7 @@ function currentQual(row: DiffRow): string {
 
                   <!-- New hire card -->
                   <template v-else-if="row.kind === 'newHire'">
-                    <div class="text-(--ui-text-muted)">Seniority: <span class="text-(--ui-text)">{{ row.seniority_number }}</span></div>
+                    <div class="text-(--ui-text-muted)">Seniority Number: <span class="text-(--ui-text)">{{ row.seniority_number }}</span></div>
                     <div class="text-(--ui-text-muted)">Seat: <span class="text-(--ui-text)">{{ row.seat }}</span></div>
                     <div class="text-(--ui-text-muted)">Fleet: <span class="text-(--ui-text)">{{ row.fleet }}</span></div>
                     <div class="text-(--ui-text-muted)">Base: <span class="text-(--ui-text)">{{ row.base }}</span></div>

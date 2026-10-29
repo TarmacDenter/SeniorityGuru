@@ -1,4 +1,4 @@
-import type { SeniorityEntry } from '~/utils/schemas/seniority-list'
+import { normalizeEmployeeNumber, type SeniorityEntry } from '~/utils/schemas/seniority-list'
 import { Temporal } from '~/utils/temporal'
 
 type Entry = SeniorityEntry
@@ -39,11 +39,11 @@ export interface QualMove {
   retire_date: string
 }
 
-export interface RankChange {
+export interface SeniorityNumberChange {
   employee_number: string
   name: string | undefined
-  old_rank: number
-  new_rank: number
+  old_seniority_number: number
+  new_seniority_number: number
   delta: number
   seat: string
   fleet: string
@@ -67,7 +67,7 @@ export interface CompareResult {
   retired: RetiredPilot[]
   departed: DepartedPilot[]
   qualMoves: QualMove[]
-  rankChanges: RankChange[]
+  seniorityNumberChanges: SeniorityNumberChange[]
   newHires: NewHire[]
 }
 
@@ -77,22 +77,22 @@ export function computeComparison(
   newerEffectiveDate: string,
 ): CompareResult {
   const olderMap = new Map<string, Entry>()
-  for (const e of olderEntries) olderMap.set(e.employee_number, e)
+  for (const e of olderEntries) olderMap.set(normalizeEmployeeNumber(e.employee_number), e)
 
   const newerMap = new Map<string, Entry>()
-  for (const e of newerEntries) newerMap.set(e.employee_number, e)
+  for (const e of newerEntries) newerMap.set(normalizeEmployeeNumber(e.employee_number), e)
 
   const retired: RetiredPilot[] = []
   const departed: DepartedPilot[] = []
   const qualMoves: QualMove[] = []
-  const rankChanges: RankChange[] = []
+  const seniorityNumberChanges: SeniorityNumberChange[] = []
   const newHires: NewHire[] = []
 
   for (const [empNum, old] of olderMap) {
     if (!newerMap.has(empNum)) {
       if (old.retire_date && Temporal.PlainDate.compare(old.retire_date, Temporal.PlainDate.from(newerEffectiveDate)) <= 0) {
         retired.push({
-          employee_number: empNum,
+          employee_number: old.employee_number,
           name: old.name,
           seniority_number: old.seniority_number,
           retire_date: old.retire_date.toString(),
@@ -103,7 +103,7 @@ export function computeComparison(
         })
       } else {
         departed.push({
-          employee_number: empNum,
+          employee_number: old.employee_number,
           name: old.name,
           seniority_number: old.seniority_number,
           retire_date: old.retire_date?.toString(),
@@ -122,7 +122,7 @@ export function computeComparison(
 
     if (older.seat !== newer.seat || older.fleet !== newer.fleet || older.base !== newer.base) {
       qualMoves.push({
-        employee_number: empNum,
+        employee_number: newer.employee_number,
         name: newer.name,
         seniority_number: newer.seniority_number,
         old_seat: older.seat,
@@ -137,11 +137,11 @@ export function computeComparison(
     }
 
     if (older.seniority_number !== newer.seniority_number) {
-      rankChanges.push({
-        employee_number: empNum,
+      seniorityNumberChanges.push({
+        employee_number: newer.employee_number,
         name: newer.name,
-        old_rank: older.seniority_number,
-        new_rank: newer.seniority_number,
+        old_seniority_number: older.seniority_number,
+        new_seniority_number: newer.seniority_number,
         delta: older.seniority_number - newer.seniority_number,
         seat: newer.seat,
         fleet: newer.fleet,
@@ -155,7 +155,7 @@ export function computeComparison(
   for (const [empNum, entry] of newerMap) {
     if (!olderMap.has(empNum)) {
       newHires.push({
-        employee_number: empNum,
+        employee_number: entry.employee_number,
         name: entry.name,
         seniority_number: entry.seniority_number,
         hire_date: entry.hire_date.toString(),
@@ -167,5 +167,5 @@ export function computeComparison(
     }
   }
 
-  return { retired, departed, qualMoves, rankChanges, newHires }
+  return { retired, departed, qualMoves, seniorityNumberChanges, newHires }
 }

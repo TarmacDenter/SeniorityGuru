@@ -26,5 +26,5 @@ to tell what "3/1/65" actually meant
 ## March 25, 2026
 
 - New upload flow with step-by-step progress tracking
-- Compare page now highlights rank changes between two lists
+- Compare page now highlights Seniority Number changes between two lists
 - Improved Delta Air Lines parser accuracy

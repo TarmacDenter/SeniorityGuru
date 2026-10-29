@@ -64,11 +64,11 @@ export const DEMO_DIFF_ROWS: DiffRow[] = [
     retire_date: '2054-09-30',
   },
   {
-    kind: 'rankChange',
+    kind: 'seniorityNumberChange',
     seniority_number: 602,
     employee_number: '53010',
     name: 'S. Petrov',
-    old_rank: 644,
+    old_seniority_number: 644,
     delta: 42,
     seat: 'CA',
     fleet: '777',
