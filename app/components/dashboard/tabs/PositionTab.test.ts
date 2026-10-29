@@ -97,6 +97,12 @@ describe('PositionTab', () => {
     const Tab = await import('./PositionTab.vue')
     const wrapper = await mountSuspended(Tab.default)
 
+    expect(wrapper.findAll('[data-testid="qualification-scale-active-count"]').map(count => count.text())).toEqual([
+      '1 active pilot',
+      '1 active pilot',
+    ])
+    expect(wrapper.text()).toContain('Heights scale independently for each Qualification')
+
     const projectedMarkers = wrapper.findAll('[data-testid="qualification-scale-projected-position"]')
     expect(projectedMarkers).toHaveLength(2)
     expect(projectedMarkers[0]!.classes()).toContain('bg-[var(--ui-color-success-500)]')

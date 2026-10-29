@@ -44,7 +44,7 @@ function isProjecting(position: PresentedQualificationPosition) {
 <template>
   <div class="space-y-1">
     <p class="text-sm text-[var(--ui-text-muted)] mb-3">
-      Each row shows the company-wide seniority distribution of pilots currently in that position. Your dot moves right as retirements improve your projected standing.
+      Each row shows the company-wide seniority distribution of pilots currently in that position. Your dot moves right as retirements improve your projected standing. Heights scale independently for each Qualification to show distribution shape, not comparable pilot counts.
     </p>
 
     <div
@@ -52,9 +52,14 @@ function isProjecting(position: PresentedQualificationPosition) {
       :key="`${position.qualification.fleet} ${position.qualification.seat} ${position.qualification.base}`"
       class="flex items-center gap-3 py-2 border-b border-[var(--ui-border)] last:border-0"
     >
-      <div class="w-24 sm:w-28 shrink-0 text-sm font-medium truncate">
-        <span>{{ position.qualification.fleet }} {{ position.qualification.seat }}</span>
-        <span class="text-[var(--ui-text-muted)] ml-1">{{ position.qualification.base }}</span>
+      <div class="w-24 sm:w-28 shrink-0 text-sm font-medium">
+        <div class="truncate">
+          <span>{{ position.qualification.fleet }} {{ position.qualification.seat }}</span>
+          <span class="text-[var(--ui-text-muted)] ml-1">{{ position.qualification.base }}</span>
+        </div>
+        <div data-testid="qualification-scale-active-count" class="text-xs font-normal text-[var(--ui-text-muted)]">
+          {{ position.activePilotCount.toLocaleString() }} active {{ position.activePilotCount === 1 ? 'pilot' : 'pilots' }}
+        </div>
       </div>
 
       <div class="flex-1 relative h-10 min-w-[200px]">
