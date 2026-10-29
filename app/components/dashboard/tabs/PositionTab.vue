@@ -35,23 +35,31 @@ const positionSliderMax = computed(() => {
   return Math.max(1, years)
 })
 
+function cancelPositionDebounce() {
+  if (positionDebounceTimer) clearTimeout(positionDebounceTimer)
+  positionDebounceTimer = null
+}
+
 watch(usePositionProjection, (on) => {
-  if (!on) {
+  cancelPositionDebounce()
+  if (on) {
+    projectionYears.value = positionYearsInput.value
+  } else {
     positionYearsInput.value = 1
     projectionYears.value = 0
   }
 })
 
 watch(positionYearsInput, (val) => {
-  if (positionDebounceTimer) clearTimeout(positionDebounceTimer)
+  cancelPositionDebounce()
+  if (!usePositionProjection.value) return
   positionDebounceTimer = setTimeout(() => {
     projectionYears.value = val
+    positionDebounceTimer = null
   }, 500)
 })
 
-onUnmounted(() => {
-  if (positionDebounceTimer) clearTimeout(positionDebounceTimer)
-})
+onUnmounted(cancelPositionDebounce)
 </script>
 
 <template>
@@ -93,7 +101,7 @@ onUnmounted(() => {
         </UBadge>
       </template>
       <span v-if="positionSliderMax === 0" class="text-sm text-[var(--ui-text-muted)]">Add a retirement date to project forward.</span>
-      <UBadge v-else color="neutral" variant="subtle" size="sm">As of today</UBadge>
+      <UBadge v-else color="neutral" variant="subtle" size="sm">{{ projectionYears > 0 ? `As of ${projectionDate}` : 'As of today' }}</UBadge>
     </div>
 
     <!-- Growth assumption bar -->
