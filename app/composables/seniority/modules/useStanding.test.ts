@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { useSeniorityCore, _resetCoreSingletons } from './useSeniorityCore'
 import { useStanding } from './useStanding'
+import { parsePlainDate, todayPlainDate } from '~/utils/temporal'
 import { resetMockStores } from '~/test-utils/seniority-mocks'
 
 const mockStore = vi.hoisted(() => ({ entries: [] as any[], lists: [] as any[] }))
@@ -23,7 +24,11 @@ describe('useStanding', () => {
     const { rankCard } = useStanding()
     expect(rankCard.value).toEqual({
       seniorityNumber: 0,
+      listRank: 0,
+      listPilotCount: 0,
       activeRank: 0,
+      activePilotCount: 0,
+      isSimulated: false,
       percentile: 0,
       base: '--',
       seat: '--',
@@ -48,6 +53,116 @@ describe('useStanding', () => {
     expect(rankCard.value.hireDate).toBe('2012-03-01')
     expect(rankCard.value.activeRank).toBe(2)
     expect(rankCard.value.percentile).toBe(Math.round((2 / 3) * 100 * 10) / 10)
+  })
+
+  it('distinguishes Seniority Number, List Rank, and Active Rank for a gapped list', () => {
+    mockStore.entries = [
+      makeEntry({ seniority_number: 10, employee_number: 'E1', retire_date: '2020-01-01' }),
+      makeEntry({ seniority_number: 40, employee_number: 'E2', retire_date: '2040-01-01' }),
+      makeEntry({ seniority_number: 90, employee_number: 'E3', retire_date: '2045-01-01' }),
+      makeEntry({ seniority_number: 120, employee_number: 'E4', retire_date: '2050-01-01' }),
+    ]
+    mockUserStore.employeeNumber = 'E3'
+
+    const { rankCard } = useStanding()
+
+    expect(rankCard.value).toMatchObject({
+      seniorityNumber: 90,
+      listRank: 3,
+      listPilotCount: 4,
+      activeRank: 2,
+      activePilotCount: 3,
+      percentile: 66.7,
+      isSimulated: false,
+    })
+  })
+
+  it.each([null, 'E2'])('uses the simulated Anchor Pilot for every personal summary with real pilot %s', (employeeNumber) => {
+    mockUserStore.employeeNumber = employeeNumber
+    mockStore.entries = [
+      makeEntry({ seniority_number: 10, employee_number: 'E1', retire_date: '2040-01-01' }),
+      makeEntry({ seniority_number: 40, employee_number: 'E2', retire_date: '2045-01-01' }),
+      makeEntry({ seniority_number: 90, employee_number: 'E3', retire_date: '2050-01-01' }),
+    ]
+    const { newHire } = useSeniorityCore()
+    newHire.enabled.value = true
+    newHire.selectedBase.value = 'LAX'
+    newHire.selectedSeat.value = 'FO'
+    newHire.selectedFleet.value = '777'
+    newHire.birthDate.value = parsePlainDate('2000-06-15')
+
+    const { rankCard, statCards, retirementSnapshot } = useStanding()
+
+    expect(rankCard.value).toEqual({
+      seniorityNumber: 91,
+      listRank: 4,
+      listPilotCount: 4,
+      activeRank: 4,
+      activePilotCount: 4,
+      percentile: 25,
+      isSimulated: true,
+      base: 'LAX',
+      seat: 'FO',
+      fleet: '777',
+      hireDate: todayPlainDate().toString(),
+    })
+    expect(statCards.value[2]).toMatchObject({ label: 'FO/777/LAX', value: '1' })
+    expect(retirementSnapshot.value?.retireDate).toBe('2065-06-15')
+    expect(retirementSnapshot.value?.fullTrajectory[0]?.rank).toBe(4)
+  })
+
+  it('switches all personal summaries to the simulated pilot and restores the real pilot on disable', () => {
+    mockStore.entries = [
+      makeEntry({ seniority_number: 10, employee_number: 'E1', retire_date: '2040-01-01' }),
+      makeEntry({ seniority_number: 40, employee_number: 'E2', hire_date: '2012-03-01', retire_date: '2045-01-01' }),
+      makeEntry({ seniority_number: 90, employee_number: 'E3', retire_date: '2050-01-01' }),
+    ]
+    mockUserStore.employeeNumber = 'E2'
+    const { newHire } = useSeniorityCore()
+    const { rankCard, statCards, retirementSnapshot } = useStanding()
+    const realCard = { ...rankCard.value }
+    const realStats = statCards.value
+    const realSnapshot = retirementSnapshot.value
+
+    newHire.selectedBase.value = 'LAX'
+    newHire.selectedSeat.value = 'FO'
+    newHire.selectedFleet.value = '777'
+    newHire.birthDate.value = parsePlainDate('2000-06-15')
+    newHire.enabled.value = true
+
+    expect(rankCard.value).toMatchObject({
+      seniorityNumber: 91, listRank: 4, listPilotCount: 4, activeRank: 4,
+      activePilotCount: 4, isSimulated: true, base: 'LAX', seat: 'FO', fleet: '777',
+      hireDate: todayPlainDate().toString(),
+    })
+    expect(statCards.value[2]).toMatchObject({ label: 'FO/777/LAX', value: '1' })
+    expect(retirementSnapshot.value?.retireDate).toBe('2065-06-15')
+    expect(retirementSnapshot.value?.fullTrajectory[0]?.rank).toBe(4)
+
+    newHire.enabled.value = false
+
+    expect(rankCard.value).toEqual(realCard)
+    expect(rankCard.value).toMatchObject({ listPilotCount: 3, activePilotCount: 3, isSimulated: false })
+    expect(statCards.value).toEqual(realStats)
+    expect(retirementSnapshot.value).toEqual(realSnapshot)
+  })
+
+  it.each([null, 'E1'])('preserves the existing anchor with incomplete new hire settings and real pilot %s', (employeeNumber) => {
+    mockStore.entries = [makeEntry({ seniority_number: 40, employee_number: 'E1', retire_date: '2045-01-01' })]
+    mockUserStore.employeeNumber = employeeNumber
+    const { newHire } = useSeniorityCore()
+    const { rankCard, statCards, retirementSnapshot } = useStanding()
+    const originalCard = rankCard.value
+    const originalStats = statCards.value
+    const originalSnapshot = retirementSnapshot.value
+
+    newHire.enabled.value = true
+    newHire.selectedBase.value = 'LAX'
+
+    expect(rankCard.value).toEqual(originalCard)
+    expect(rankCard.value.isSimulated).toBe(false)
+    expect(statCards.value).toEqual(originalStats)
+    expect(retirementSnapshot.value).toEqual(originalSnapshot)
   })
 
   it('computes baseStatus from cell breakdown', () => {

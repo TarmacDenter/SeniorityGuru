@@ -4,7 +4,11 @@ import { useSeniorityCore } from './useSeniorityCore'
 
 export interface RankCardData {
   seniorityNumber: number
+  listRank: number
+  listPilotCount: number
   activeRank: number
+  activePilotCount: number
+  isSimulated: boolean
   percentile: number
   base: string
   seat: string
@@ -45,19 +49,24 @@ export function useStanding(): {
   statCards: ComputedRef<StatCard[]>
   retirementSnapshot: ComputedRef<RetirementSnapshotData | null>
 } {
-  const { analysis, anchoredAnalysis, userEntry, projectionEndDate } = useSeniorityCore()
+  const { analysis, anchoredAnalysis, newHire, projectionEndDate } = useSeniorityCore()
   const seniorityStore = useSeniorityStore()
 
+  const anchorEntry = computed(() => anchoredAnalysis.value?.anchor)
   const standingOutput = computed(() => anchoredAnalysis.value?.seniorityStanding() ?? null)
   const standingResult = computed(() => standingOutput.value?.domain ?? null)
 
   const rankCard = computed<RankCardData>(() => {
-    const entry = userEntry.value
+    const entry = anchorEntry.value
     const standing = standingResult.value
     if (!entry || !standing) {
       return {
         seniorityNumber: 0,
+        listRank: 0,
+        listPilotCount: 0,
         activeRank: 0,
+        activePilotCount: 0,
+        isSimulated: false,
         percentile: 0,
         base: '--',
         seat: '--',
@@ -67,7 +76,11 @@ export function useStanding(): {
     }
     return {
       seniorityNumber: entry.seniority_number,
+      listRank: standing.listRank,
+      listPilotCount: standing.listPilotCount,
       activeRank: standing.activeRank,
+      activePilotCount: standing.activePilotCount,
+      isSimulated: newHire.syntheticEntry.value?.employee_number === entry.employee_number,
       percentile: standing.activePercentile,
       base: entry.base ?? '--',
       seat: entry.seat ?? '--',
@@ -96,7 +109,7 @@ export function useStanding(): {
   const statCards = computed<StatCard[]>(() => {
     const entries = seniorityStore.entries
     const lists = seniorityStore.lists
-    const entry = userEntry.value
+    const entry = anchorEntry.value
     const standing = standingResult.value
 
     let baseRankValue = '--'
@@ -147,7 +160,7 @@ export function useStanding(): {
     : null)
 
   const retirementSnapshot = computed<RetirementSnapshotData | null>(() => {
-    const entry = userEntry.value
+    const entry = anchorEntry.value
     const traj = trajectoryResult.value
     if (!entry?.retire_date || !traj || traj.points.length === 0) return null
     const fullTrajectory = traj.points.map((point, index, points) => {

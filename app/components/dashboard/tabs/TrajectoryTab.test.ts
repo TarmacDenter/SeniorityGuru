@@ -70,7 +70,7 @@ mockNuxtImport('useSeniorityCore', () => () => ({
 }))
 
 mockNuxtImport('useStanding', () => () => ({
-  rankCard: { value: { base: '--', seat: '--', fleet: '--', percentile: 0, seniorityNumber: 0, activeRank: 0, hireDate: '--' } },
+  rankCard: { value: { base: '--', seat: '--', fleet: '--', percentile: 0, seniorityNumber: 0, listRank: 0, listPilotCount: 0, activeRank: 0, activePilotCount: 0, isSimulated: false, hireDate: '--' } },
   baseStatus: { value: [] },
   statCards: { value: [] },
   retirementSnapshot: { value: null },
