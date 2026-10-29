@@ -9,7 +9,7 @@ import type {
 import type { EntryPredicate } from '~/utils/seniority-analysis/math'
 import { qualificationKey } from './qualification-key'
 import { percentileValue } from './percentile-value'
-import { computeYOSDate } from '~/utils/date'
+import { computeYOSDate, isRetiredBy } from '~/utils/date'
 import type { PlainDate } from '~/utils/temporal'
 
 const AGE_BUCKETS: readonly { minimumAge: number; maximumAge?: number }[] = [
@@ -56,7 +56,7 @@ export function findCaptainQualificationThresholds(
 ): readonly CaptainQualificationThreshold[] {
   const byQualification = new Map<string, SeniorityEntry>()
   for (const entry of entries) {
-    if (entry.seat !== 'CA') continue
+    if (entry.seat !== 'CA' || (entry.retire_date && isRetiredBy(entry.retire_date, asOfDate))) continue
     const key = qualificationKey(entry)
     const existing = byQualification.get(key)
     if (!existing || entry.seniority_number > existing.seniority_number) byQualification.set(key, entry)
