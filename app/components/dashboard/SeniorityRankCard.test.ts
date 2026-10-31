@@ -7,6 +7,7 @@ const rank: RankCardData = {
   seniorityNumber: 90,
   publicationPosition: 3,
   rosterSize: 4,
+  publicationRosterSize: 4,
   rank: 2,
   activePilotCount: 3,
   seniorityPercentile: 75,
@@ -40,17 +41,17 @@ describe('SeniorityRankCard', () => {
     await wrapper.setProps({ rank })
 
     expect(wrapper.get('[role="progressbar"]').attributes('aria-valuenow')).toBe('75')
-    expect(wrapper.text()).not.toContain('Modeled counts include the simulated pilot.')
+    expect(wrapper.text()).not.toContain('Modeled counts include the simulated pilot (3 in publication).')
   })
 
   it('labels simulated numbers and explains that modeled counts include the simulated pilot', async () => {
     const wrapper = await mountSuspended(SeniorityRankCard, {
-      props: { rank: { ...rank, seniorityNumber: 91, publicationPosition: 4, rank: 4, rosterSize: 4, activePilotCount: 4, seniorityPercentile: 25, isSimulated: true } },
+      props: { rank: { ...rank, seniorityNumber: 91, publicationPosition: 4, rank: 4, rosterSize: 4, publicationRosterSize: 3, activePilotCount: 4, seniorityPercentile: 25, isSimulated: true } },
     })
 
     expect(wrapper.get('[data-testid="seniority-number"]').text()).toBe('Simulated Seniority Number #91')
     expect(wrapper.get('[data-testid="publication-position"]').findAll('p').map(item => item.text())).toEqual(['Publication Position', '4 of 4'])
     expect(wrapper.get('[data-testid="rank"]').findAll('p').map(item => item.text())).toEqual(['Rank', '4 of 4'])
-    expect(wrapper.text()).toContain('Modeled counts include the simulated pilot.')
+    expect(wrapper.text()).toContain('Modeled counts include the simulated pilot (3 in publication).')
   })
 })
