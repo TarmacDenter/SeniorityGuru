@@ -13,3 +13,4 @@ Seniority Percentile is a pilot's dynamic Rank measured against the Roster Size:
 - Standing's percentile changes for any list that contains retired pilots.
 - The static retired-inclusive ordinal remains visible as Publication Position, so the original list order is not lost.
 - Active pilot count is still disclosed beside Roster Size, but it is never a percentile denominator.
+- An Anchor Pilot outside the Qualification Scope receives a Hypothetical Placement instead of a no-result. The Anchor Pilot counts as a modeled pilot of that scope (as New Hire Mode's simulated pilot does), so Roster Size is the scope plus one and Rank never exceeds it. Standing, trajectory year zero, and Qualification Position still agree for that scope. Only a retired Anchor Pilot has no result.

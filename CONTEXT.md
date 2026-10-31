@@ -25,7 +25,7 @@ A one-based position in the Seniority List's published order, retired pilots inc
 _Avoid_: List Rank, Raw Rank, Static Rank
 
 **Roster Size**:
-The number of pilots in the Seniority List, retired pilots included. It stays fixed as pilots retire and changes only when Growth Assumptions are applied to a projection.
+The number of pilots in the Seniority List, retired pilots included. It stays fixed as pilots retire and changes only when Growth Assumptions are applied to a projection. The Anchor Pilot counts as a modeled pilot when outside the scope being measured, as in New Hire Mode, so Rank never exceeds Roster Size.
 _Avoid_: Pilot count, Total Pilots, Active count
 
 **Qualification**:
@@ -37,8 +37,12 @@ An optional constraint over Base, Seat, Fleet, or any combination of them. An em
 _Avoid_: Qual Spec, Cell Filter
 
 **Anchor Pilot**:
-The pilot whose relative Standing and projections are being analyzed.
+The pilot whose relative Standing and projections are being analyzed. Only a retired Anchor Pilot has no result (a no-result); an Anchor Pilot outside a Qualification Scope gets a Hypothetical Placement.
 _Avoid_: User Pilot, Subject Pilot
+
+**Hypothetical Placement**:
+Where an Anchor Pilot would slot into a Qualification Scope they are not in, by Seniority Number. Rank, Roster Size, Seniority Percentile, and projections are computed as if the Anchor Pilot were a modeled pilot of that scope, and every such value is labeled "Hypothetical Placement in <scope>".
+_Avoid_: not in scope, synthetic scope
 
 **Seniority Percentile**:
 An inverted position measure: Rank measured against Roster Size. A value of 100 is the most senior end, and 0 is the most junior end.
