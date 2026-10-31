@@ -8,7 +8,7 @@ const props = defineProps<{
   computeComparative: (
     specA: QualificationScope,
     specB: QualificationScope
-  ) => { labels: string[]; baselineData: number[]; comparisonData: number[] }
+  ) => { labels: string[]; baselineData: number[]; comparisonData: number[]; noResultLabel?: string | null }
   userBase?: string
   userSeat?: string
   userFleet?: string
@@ -33,11 +33,14 @@ const defaultScope = computed(() => {
 const currentScope = ref(defaultScope.value)
 const compareScope = ref('')
 
+const comparison = computed(() => props.computeComparative(
+  specForLabel(currentScope.value),
+  specForLabel(compareScope.value || currentScope.value),
+))
+const noResultLabel = computed(() => comparison.value.noResultLabel ?? null)
+
 const chartData = computed<ChartData<'line'>>(() => {
-  const result = props.computeComparative(
-    specForLabel(currentScope.value),
-    specForLabel(compareScope.value || currentScope.value),
-  )
+  const result = comparison.value
 
   const datasets: ChartData<'line'>['datasets'] = [{
     label: currentScope.value || 'Company-wide',
@@ -116,6 +119,7 @@ const chartOptions = {
       </div>
     </template>
 
+    <p v-if="noResultLabel" data-testid="no-result" class="text-sm text-muted mb-2">{{ noResultLabel }}</p>
     <ClientOnly>
       <DashboardChart type="line" :data="chartData" :height="280" :options="chartOptions" />
       <template #fallback>

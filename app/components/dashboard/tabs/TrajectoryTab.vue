@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useSeniorityCore, useQualificationFilter, useStanding, useTrajectory } from '~/composables/seniority'
-import { DEFAULT_SENIORITY_GROWTH_ASSUMPTIONS, type GrowthAssumptions } from '~/utils/seniority'
+import { DEFAULT_SENIORITY_GROWTH_ASSUMPTIONS, isNoResult, type GrowthAssumptions } from '~/utils/seniority'
 
 defineProps<{ loading?: boolean }>()
 
@@ -26,8 +26,18 @@ const qualificationScopeOptions = computed(() => analysis.value?.catalog?.qualif
 const waveTrajectoryOutput = computed(() => projectionEndDate.value
   ? anchoredAnalysis.value?.seniorityTrajectory({ through: projectionEndDate.value, scenario: scopedScenario.value }) ?? null
   : null)
-const waveTrajectory = computed(() => waveTrajectoryOutput.value?.domain.points ?? [])
-const qualificationTrajectoryChanges = computed(() => waveTrajectoryOutput.value?.presentation.changes ?? [])
+const waveTrajectoryNoResult = computed(() => {
+  const domain = waveTrajectoryOutput.value?.domain
+  return domain && isNoResult(domain) ? domain : null
+})
+const waveTrajectory = computed(() => {
+  const domain = waveTrajectoryOutput.value?.domain
+  return domain && !isNoResult(domain) ? domain.points : []
+})
+const qualificationTrajectoryChanges = computed(() => {
+  const presentation = waveTrajectoryOutput.value?.presentation
+  return presentation && !isNoResult(presentation) ? presentation.changes : []
+})
 const targetPercentile = ref(50)
 const targetPercentileMin = computed(() => waveTrajectory.value[0]?.percentile ?? 0)
 const targetPercentileMax = computed(() => {
@@ -40,13 +50,21 @@ watch([targetPercentileMin, targetPercentileMax], ([min, max]) => {
   targetPercentile.value = Math.min(Math.max(targetPercentile.value, min), max)
 }, { immediate: true })
 
-const thresholdResult = computed(() => projectionEndDate.value
+const thresholdOutput = computed(() => projectionEndDate.value
   ? anchoredAnalysis.value?.percentileCrossing({
     targetPercentile: targetPercentile.value,
     through: projectionEndDate.value,
     scenario: scopedScenario.value,
   }).presentation ?? null
   : null)
+const thresholdNoResultLabel = computed(() => {
+  const output = thresholdOutput.value
+  return output && 'kind' in output ? output.label : null
+})
+const thresholdResult = computed(() => {
+  const output = thresholdOutput.value
+  return output && !('kind' in output) ? output : null
+})
 const bannerKey = 'qual-projections-banner-dismissed'
 const isBannerDismissed = ref(typeof localStorage !== 'undefined' && localStorage.getItem(bannerKey) === 'true')
 
@@ -146,6 +164,8 @@ const ready = useDeferredReady()
         @dismiss="dismissBanner"
       />
 
+      <p v-if="waveTrajectoryNoResult" data-testid="no-result" class="text-sm text-muted">{{ waveTrajectoryNoResult.label }}</p>
+
       <!-- Retirement Wave + Percentile Threshold -->
       <div v-if="!ready || !retirementWave.length" class="grid grid-cols-1 sm:grid-cols-11 gap-6">
         <USkeleton class="sm:col-span-6 h-64 rounded-lg" />
@@ -171,6 +191,7 @@ const ready = useDeferredReady()
             </template>
             <AnalyticsPercentileThresholdCalculator
               :result="thresholdResult"
+              :no-result-label="thresholdNoResultLabel"
               :target-percentile="targetPercentile"
               :min-percentile="targetPercentileMin"
               :max-percentile="targetPercentileMax"

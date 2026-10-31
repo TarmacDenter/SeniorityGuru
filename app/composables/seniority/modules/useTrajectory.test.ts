@@ -120,7 +120,7 @@ describe('useTrajectory', () => {
   it('computeComparativeTrajectory returns empty when analysis is null', () => {
     const { computeComparativeTrajectory } = useTrajectory()
     const result = computeComparativeTrajectory({ seat: 'CA' }, { base: 'JFK' })
-    expect(result).toEqual({ labels: [], baselineData: [], comparisonData: [] })
+    expect(result).toEqual({ labels: [], baselineData: [], comparisonData: [], noResultLabel: null })
   })
 
   it('respects custom growthAssumptions when provided', () => {

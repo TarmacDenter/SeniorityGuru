@@ -6,6 +6,7 @@ import { createSeniorityScenario } from '~/utils/seniority-engine/scenario'
 import type {
   AnchoredSeniorityLens,
   DemographicsOptions,
+  NoResult,
   PercentileCrossingResult,
   QualificationPosition,
   RelativeUpcomingRetirement,
@@ -21,6 +22,7 @@ import type {
 } from '~/utils/seniority-engine/types'
 import type { GrowthAssumptions } from '../seniority-analysis/growth'
 import { analyzeSeniorityQualificationViewer, type QualificationViewerAnalysis } from '~/utils/seniority-engine/qual-viewer'
+import { isNoResult } from '~/utils/seniority-engine/types'
 import { enumerateQualificationScopes, type QualificationScope } from '~/utils/seniority-engine/qualification-scope'
 import {
   presentPercentileCrossing,
@@ -101,6 +103,7 @@ export interface PercentileCrossingAnalysisOptions extends SeniorityTrajectoryAn
 
 export interface QualificationPositionAnalysisOptions {
   readonly through: PlainDate
+  readonly qualificationScope?: QualificationScope
   readonly growthAssumptions?: GrowthAssumptions
 }
 
@@ -138,19 +141,19 @@ export interface AnchoredSeniorityAnalysis extends CommonSeniorityAnalysis {
   demographics(
     options: SeniorityDemographicsAnalysisOptions,
   ): SeniorityOutput<SeniorityDemographics, PresentedSeniorityDemographics>
-  seniorityStanding(options?: SeniorityStandingAnalysisOptions): SeniorityOutput<SeniorityStanding, PresentedSeniorityStanding>
+  seniorityStanding(options?: SeniorityStandingAnalysisOptions): SeniorityOutput<SeniorityStanding | NoResult, PresentedSeniorityStanding>
   seniorityTrajectory(
     options: SeniorityTrajectoryAnalysisOptions,
-  ): SeniorityOutput<SeniorityTrajectory, PresentedSeniorityTrajectory>
+  ): SeniorityOutput<SeniorityTrajectory | NoResult, PresentedSeniorityTrajectory>
   seniorityTrajectoryComparison(
     options: SeniorityTrajectoryComparisonAnalysisOptions,
-  ): SeniorityOutput<SeniorityTrajectoryComparison, PresentedSeniorityTrajectoryComparison>
+  ): SeniorityOutput<SeniorityTrajectoryComparison | NoResult, PresentedSeniorityTrajectoryComparison>
   percentileCrossing(
     options: PercentileCrossingAnalysisOptions,
-  ): SeniorityOutput<PercentileCrossingResult | null, PresentedPercentileCrossing>
+  ): SeniorityOutput<PercentileCrossingResult | null | NoResult, PresentedPercentileCrossing>
   qualificationPositions(
     options: QualificationPositionAnalysisOptions,
-  ): SeniorityOutput<readonly QualificationPosition[], readonly PresentedQualificationPosition[]>
+  ): SeniorityOutput<readonly QualificationPosition[] | NoResult, readonly PresentedQualificationPosition[] | NoResult>
   relativeUpcomingRetirements(
     options: RelativeUpcomingRetirementAnalysisOptions,
   ): readonly RelativeUpcomingRetirement[]
@@ -213,10 +216,11 @@ function anchoredSeniorityAnalysis(lens: AnchoredSeniorityLens, asOfDate: PlainD
         mandatoryRetirementAge: options.mandatoryRetirementAge,
         scenario,
       })
-      const positions = lens.qualificationPositions({
+      const found = lens.qualificationPositions({
         through: asOfDate,
         growthAssumptions: scenario.growthAssumptions,
       })
+      const positions = isNoResult(found) ? [] : found
       return seniorityOutput(domain, value => presentAnchoredSeniorityDemographics(value, positions))
     },
     seniorityStanding: options => seniorityOutput(

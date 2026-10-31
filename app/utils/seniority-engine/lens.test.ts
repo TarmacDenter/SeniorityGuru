@@ -1,4 +1,5 @@
 // @vitest-environment node
+import { resultOf } from '~/test-utils/no-result'
 import { describe, expect, it } from 'vitest'
 import { makeDomainEntry as makeEntry } from '~/test-utils/factories'
 import { Temporal } from '~/utils/temporal'
@@ -164,7 +165,7 @@ describe('anchored analysis', () => {
     for (const removed of ['listRank', 'activeRank', 'listPilotCount', 'activePercentile', 'listPercentile']) {
       expect(standing).not.toHaveProperty(removed)
     }
-    expect(standing.qualificationStandings).toContainEqual({
+    expect(resultOf(standing).qualificationStandings).toContainEqual({
       qualification: { base: 'JFK', seat: 'CA', fleet: '737' },
       rank: 2,
       publicationPosition: 3,
@@ -202,31 +203,31 @@ describe('anchored analysis', () => {
   it('reconciles Standing with trajectory year zero and Qualification Position for the same scope', () => {
     for (const qualificationScope of [{}, { seat: 'CA' }, { base: 'JFK', seat: 'CA', fleet: '737' }]) {
       const scenario = createSeniorityScenario({ qualificationScope })
-      const standing = anchored.seniorityStanding({ scenario })
-      const trajectory = anchored.seniorityTrajectory({ through: asOfDate, scenario })
+      const standing = resultOf(anchored.seniorityStanding({ scenario }))
+      const trajectory = resultOf(anchored.seniorityTrajectory({ through: asOfDate, scenario }))
 
       expect(trajectory.points[0]!.percentile).toBe(standing.seniorityPercentile)
       expect(trajectory.points[0]!.rank).toBe(standing.rank)
     }
 
-    const positions = anchored.qualificationPositions({ through: asOfDate })
+    const positions = resultOf(anchored.qualificationPositions({ through: asOfDate }))
     expect(positions.length).toBeGreaterThan(0)
     for (const position of positions) {
-      expect(position.currentPercentile).toBe(anchored.seniorityStanding().seniorityPercentile)
+      expect(position.currentPercentile).toBe(resultOf(anchored.seniorityStanding()).seniorityPercentile)
     }
   })
 
   it('returns trajectories and comparisons without chart-shaped values', () => {
     const scenario = createSeniorityScenario({ qualificationScope: { seat: 'CA' } })
-    const trajectory = anchored.seniorityTrajectory({
+    const trajectory = resultOf(anchored.seniorityTrajectory({
       through: Temporal.PlainDate.from('2028-01-01'),
       scenario,
-    })
-    const comparison = anchored.seniorityTrajectoryComparison({
+    }))
+    const comparison = resultOf(anchored.seniorityTrajectoryComparison({
       through: Temporal.PlainDate.from('2028-01-01'),
       baselineScenario: scenario,
       comparisonScenario: createSeniorityScenario(),
-    })
+    }))
 
     expect(trajectory.points.map(point => point.date.toString())).toEqual(['2026-06-15', '2027-06-15'])
     expect(trajectory).not.toHaveProperty('chartData')
@@ -251,10 +252,10 @@ describe('anchored analysis', () => {
   })
 
   it('returns Qualification Positions through one anchored operation', () => {
-    const positions = anchored.qualificationPositions({
+    const positions = resultOf(anchored.qualificationPositions({
       through: Temporal.PlainDate.from('2030-06-15'),
       growthAssumptions: { enabled: true, annualGrowthRate: 0.03 },
-    })
+    }))
 
     expect(positions[0]).toEqual(expect.objectContaining({
       distribution: expect.objectContaining({

@@ -1,19 +1,18 @@
 import type {
+  NoResult,
   PercentileCrossingResult,
   Qualification,
   QualificationPosition,
   QualificationScope,
   SeniorityDemographics,
   SeniorityStanding,
-} from '~/utils/seniority-engine/types'
-import type { QualificationViewerAnalysis, QualificationViewerEntry } from '~/utils/seniority-engine/qual-viewer'
-import type { PlainDate } from '~/utils/temporal'
-import type {
-  RetirementCountProjection,
   SeniorityTrajectory,
   SeniorityTrajectoryComparison,
-  TrajectoryChange,
-} from './math'
+} from '~/utils/seniority-engine/types'
+import type { QualificationViewerAnalysis, QualificationViewerEntry } from '~/utils/seniority-engine/qual-viewer'
+import { isNoResult } from '~/utils/seniority-engine/types'
+import type { PlainDate } from '~/utils/temporal'
+import type { RetirementCountProjection, TrajectoryChange } from './math'
 import { diffYears, formatMonthYear } from '~/utils/date'
 
 export type QualificationViewerRetirementTimeline = 'past' | 'imminent' | 'soon' | null
@@ -51,16 +50,23 @@ export interface PresentedTrajectoryChange extends TrajectoryChange {
   readonly isPeak: boolean
 }
 
-export interface PresentedSeniorityTrajectory {
+export interface PresentedSeniorityTrajectoryValue {
   chartData: { labels: string[]; data: number[] }
   changes: PresentedTrajectoryChange[]
+  /** Reason the samples stopped early, such as "Anchor Pilot retired". */
+  endedByLabel: string | null
 }
 
-export interface PresentedSeniorityTrajectoryComparison {
+export type PresentedSeniorityTrajectory = PresentedSeniorityTrajectoryValue | NoResult
+
+export interface PresentedSeniorityTrajectoryComparisonValue {
   labels: string[]
   baselineData: number[]
   comparisonData: number[]
+  endedByLabel: string | null
 }
+
+export type PresentedSeniorityTrajectoryComparison = PresentedSeniorityTrajectoryComparisonValue | NoResult
 
 export interface PresentedRetirementCountProjection {
   labels: string[]
@@ -68,7 +74,8 @@ export interface PresentedRetirementCountProjection {
   scopedPilotCount: number
 }
 
-export function presentSeniorityTrajectory(trajectory: SeniorityTrajectory): PresentedSeniorityTrajectory {
+export function presentSeniorityTrajectory(trajectory: SeniorityTrajectory | NoResult): PresentedSeniorityTrajectory {
+  if (isNoResult(trajectory)) return trajectory
   const changes = trajectory.changes.map((change, index, all): PresentedTrajectoryChange => {
     const previous = index > 0 ? all[index - 1]!.percentilePointChange : -Infinity
     const next = index < all.length - 1 ? all[index + 1]!.percentilePointChange : -Infinity
@@ -86,16 +93,19 @@ export function presentSeniorityTrajectory(trajectory: SeniorityTrajectory): Pre
       data: trajectory.points.map(point => point.percentile),
     },
     changes,
+    endedByLabel: trajectory.endedBy?.label ?? null,
   }
 }
 
 export function presentSeniorityTrajectoryComparison(
-  comparison: SeniorityTrajectoryComparison,
+  comparison: SeniorityTrajectoryComparison | NoResult,
 ): PresentedSeniorityTrajectoryComparison {
+  if (isNoResult(comparison)) return comparison
   return {
     labels: comparison.points.map(point => point.date.toString()),
     baselineData: comparison.points.map(point => point.baselinePercentile),
     comparisonData: comparison.points.map(point => point.comparisonPercentile),
+    endedByLabel: comparison.endedBy?.label ?? null,
   }
 }
 
@@ -127,7 +137,8 @@ export function formatSeniorityRankChange(value: number): string {
   return value > 0 ? `+${value}` : String(value)
 }
 
-export function presentSeniorityStanding(standing: SeniorityStanding) {
+export function presentSeniorityStanding(standing: SeniorityStanding | NoResult) {
+  if (isNoResult(standing)) return standing
   return {
     ...standing,
     rollingNext12MonthRetirementsLabel: formatSeniorityCount(standing.rollingNext12MonthRetirements),
@@ -140,7 +151,8 @@ export function presentSeniorityStanding(standing: SeniorityStanding) {
 
 export type PresentedSeniorityStanding = ReturnType<typeof presentSeniorityStanding>
 
-export function presentPercentileCrossing(result: PercentileCrossingResult | null): { year: string } | null {
+export function presentPercentileCrossing(result: PercentileCrossingResult | null | NoResult): { year: string } | NoResult | null {
+  if (isNoResult(result)) return result
   return result ? { year: String(result.crossingYear) } : null
 }
 
@@ -242,8 +254,9 @@ export interface PresentedQualificationPosition {
 }
 
 export function presentQualificationPositions(
-  positions: readonly QualificationPosition[],
-): PresentedQualificationPosition[] {
+  positions: readonly QualificationPosition[] | NoResult,
+): PresentedQualificationPosition[] | NoResult {
+  if (isNoResult(positions)) return positions
   return positions.map(position => ({
     ...position.distribution,
     currentPercentile: position.currentPercentile,

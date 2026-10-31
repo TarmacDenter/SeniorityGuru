@@ -1,4 +1,5 @@
 // @vitest-environment node
+import { resultOf } from '~/test-utils/no-result'
 import { describe, expect, it } from 'vitest'
 import { makeDomainEntry as makeEntry } from '~/test-utils/factories'
 import { Temporal } from '~/utils/temporal'
@@ -44,6 +45,7 @@ describe('public Seniority Analysis interface', () => {
       'AnchorNotFoundError',
       'DEFAULT_SENIORITY_GROWTH_ASSUMPTIONS',
       'InvalidSenioritySnapshotDataError',
+      'isNoResult',
       'createSeniorityAnalysis',
     ].sort())
   })
@@ -117,7 +119,7 @@ describe('public Seniority Analysis interface', () => {
       },
     })
 
-    expect(output.domain.points.map(point => ({
+    expect(resultOf(output.domain).points.map(point => ({
       baseline: point.baselinePercentile,
       comparison: point.comparisonPercentile,
     }))).toEqual([
@@ -128,6 +130,7 @@ describe('public Seniority Analysis interface', () => {
       labels: ['2026-06-15', '2027-06-15'],
       baselineData: [60, 80],
       comparisonData: [60, 90],
+      endedByLabel: null,
     })
   })
 

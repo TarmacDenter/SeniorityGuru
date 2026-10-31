@@ -1,23 +1,30 @@
 import type { ComputedRef, Ref } from 'vue'
-import { DEFAULT_SENIORITY_GROWTH_ASSUMPTIONS } from '~/utils/seniority'
+import { DEFAULT_SENIORITY_GROWTH_ASSUMPTIONS, isNoResult } from '~/utils/seniority'
 import type {
   AnchoredSeniorityAnalysis,
   GrowthAssumptions,
   PresentedRetirementCountProjection,
-  PresentedSeniorityTrajectoryComparison,
   PresentedTrajectoryChange,
   QualificationScope,
 } from '~/utils/seniority'
 import { useSeniorityCore } from './useSeniorityCore'
 
-type SeniorityTrajectoryPoint = ReturnType<AnchoredSeniorityAnalysis['seniorityTrajectory']>['domain']['points'][number]
+type SeniorityTrajectoryPoint = Exclude<ReturnType<AnchoredSeniorityAnalysis['seniorityTrajectory']>['domain'], { kind: 'no-result' }>['points'][number]
+
+export interface ComparativeTrajectory {
+  labels: string[]
+  baselineData: number[]
+  comparisonData: number[]
+  /** Why no comparison exists (e.g. "Anchor Pilot not in scope"), or why it stopped early. */
+  noResultLabel: string | null
+}
 
 export function useTrajectory(growthAssumptions?: Ref<GrowthAssumptions>): {
   chartData: ComputedRef<{ labels: string[]; data: number[] }>
   changes: ComputedRef<PresentedTrajectoryChange[]>
   fullTrajectory: ComputedRef<readonly SeniorityTrajectoryPoint[]>
   computeRetirementProjection: (scope?: QualificationScope) => PresentedRetirementCountProjection
-  computeComparativeTrajectory: (baseline: QualificationScope, comparison: QualificationScope) => PresentedSeniorityTrajectoryComparison
+  computeComparativeTrajectory: (baseline: QualificationScope, comparison: QualificationScope) => ComparativeTrajectory
 } {
   const { analysis, anchoredAnalysis, projectionEndDate } = useSeniorityCore()
   const effectiveAssumptions = growthAssumptions
@@ -32,9 +39,17 @@ export function useTrajectory(growthAssumptions?: Ref<GrowthAssumptions>): {
         }) ?? null
       : null
   })
-  const chartData = computed(() => trajectory.value?.presentation.chartData ?? { labels: [], data: [] })
-  const fullTrajectory = computed(() => trajectory.value?.domain.points ?? [])
-  const changes = computed(() => trajectory.value?.presentation.changes ?? [])
+  const presented = computed(() => {
+    const value = trajectory.value?.presentation
+    return value && !isNoResult(value) ? value : null
+  })
+  const domain = computed(() => {
+    const value = trajectory.value?.domain
+    return value && !isNoResult(value) ? value : null
+  })
+  const chartData = computed(() => presented.value?.chartData ?? { labels: [], data: [] })
+  const fullTrajectory = computed(() => domain.value?.points ?? [])
+  const changes = computed(() => presented.value?.changes ?? [])
 
   function computeRetirementProjection(scope: QualificationScope = {}): PresentedRetirementCountProjection {
     const through = projectionEndDate.value
@@ -48,10 +63,10 @@ export function useTrajectory(growthAssumptions?: Ref<GrowthAssumptions>): {
   function computeComparativeTrajectory(
     baseline: QualificationScope,
     comparison: QualificationScope,
-  ): PresentedSeniorityTrajectoryComparison {
+  ): ComparativeTrajectory {
     const through = projectionEndDate.value
-    if (!anchoredAnalysis.value || !through) return { labels: [], baselineData: [], comparisonData: [] }
-    return anchoredAnalysis.value.seniorityTrajectoryComparison({
+    if (!anchoredAnalysis.value || !through) return { labels: [], baselineData: [], comparisonData: [], noResultLabel: null }
+    const { presentation } = anchoredAnalysis.value.seniorityTrajectoryComparison({
       through,
       baselineScenario: {
         qualificationScope: baseline,
@@ -61,7 +76,9 @@ export function useTrajectory(growthAssumptions?: Ref<GrowthAssumptions>): {
         qualificationScope: comparison,
         growthAssumptions: effectiveAssumptions.value,
       },
-    }).presentation
+    })
+    if (isNoResult(presentation)) return { labels: [], baselineData: [], comparisonData: [], noResultLabel: presentation.label }
+    return { ...presentation, noResultLabel: presentation.endedByLabel }
   }
 
   return {

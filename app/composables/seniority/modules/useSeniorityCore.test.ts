@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { resultOf } from '~/test-utils/no-result'
 import { useSeniorityCore, _resetCoreSingletons } from './useSeniorityCore'
 import { resetMockStores } from '~/test-utils/seniority-mocks'
 import { parsePlainDate } from '~/utils/temporal'
@@ -170,7 +171,7 @@ describe('useSeniorityCore', () => {
     newHire.birthDate.value = parsePlainDate('1990-06-15')
     expect(anchoredAnalysis.value).not.toBeNull()
     expect(anchoredAnalysis.value!.anchor.employee_number).toBe('_new_hire')
-    expect(anchoredAnalysis.value!.seniorityStanding().domain.rosterSize).toBe(2)
+    expect(resultOf(anchoredAnalysis.value!.seniorityStanding().domain).rosterSize).toBe(2)
   })
 
   it('new-hire mode: analysis re-anchors to synthetic entry when active', () => {

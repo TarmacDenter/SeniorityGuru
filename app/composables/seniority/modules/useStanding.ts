@@ -1,4 +1,5 @@
 import type { ComputedRef } from 'vue'
+import { isNoResult } from '~/utils/seniority'
 import { useSeniorityStore } from '~/stores/seniority'
 import { useSeniorityCore } from './useSeniorityCore'
 
@@ -14,6 +15,8 @@ export interface RankCardData {
   seat: string
   fleet: string
   hireDate: string
+  /** Why no Rank is available, e.g. "Anchor Pilot retired"; null when a Rank exists. */
+  noResultLabel: string | null
 }
 
 export interface BaseStatusRow {
@@ -52,12 +55,37 @@ export function useStanding(): {
   const seniorityStore = useSeniorityStore()
 
   const anchorEntry = computed(() => anchoredAnalysis.value?.anchor)
-  const standingOutput = computed(() => anchoredAnalysis.value?.seniorityStanding() ?? null)
+  const rawStandingOutput = computed(() => anchoredAnalysis.value?.seniorityStanding() ?? null)
+  const standingNoResult = computed(() => {
+    const domain = rawStandingOutput.value?.domain
+    return domain && isNoResult(domain) ? domain : null
+  })
+  const standingOutput = computed(() => {
+    const output = rawStandingOutput.value
+    if (!output || isNoResult(output.domain) || isNoResult(output.presentation)) return null
+    return { domain: output.domain, presentation: output.presentation }
+  })
   const standingResult = computed(() => standingOutput.value?.domain ?? null)
 
   const rankCard = computed<RankCardData>(() => {
     const entry = anchorEntry.value
     const standing = standingResult.value
+    if (entry && !standing && standingNoResult.value) {
+      return {
+        seniorityNumber: entry.seniority_number,
+        rank: 0,
+        publicationPosition: 0,
+        rosterSize: 0,
+        activePilotCount: 0,
+        isSimulated: false,
+        seniorityPercentile: 0,
+        base: entry.base ?? '--',
+        seat: entry.seat ?? '--',
+        fleet: entry.fleet ?? '--',
+        hireDate: entry.hire_date.toString(),
+        noResultLabel: standingNoResult.value.label,
+      }
+    }
     if (!entry || !standing) {
       return {
         seniorityNumber: 0,
@@ -71,6 +99,7 @@ export function useStanding(): {
         seat: '--',
         fleet: '--',
         hireDate: '--',
+        noResultLabel: null,
       }
     }
     return {
@@ -85,6 +114,7 @@ export function useStanding(): {
       seat: entry.seat ?? '--',
       fleet: entry.fleet ?? '--',
       hireDate: entry.hire_date.toString(),
+      noResultLabel: null,
     }
   })
 
@@ -156,12 +186,16 @@ export function useStanding(): {
   const trajectoryResult = computed(() => projectionEndDate.value
     ? anchoredAnalysis.value?.seniorityTrajectory({ through: projectionEndDate.value }).domain ?? null
     : null)
+  const trajectoryPoints = computed(() => {
+    const trajectory = trajectoryResult.value
+    return trajectory && !isNoResult(trajectory) ? trajectory.points : null
+  })
 
   const retirementSnapshot = computed<RetirementSnapshotData | null>(() => {
     const entry = anchorEntry.value
-    const traj = trajectoryResult.value
-    if (!entry?.retire_date || !traj || traj.points.length === 0) return null
-    const fullTrajectory = traj.points.map((point, index, points) => {
+    const trajectoryPointList = trajectoryPoints.value
+    if (!entry?.retire_date || !trajectoryPointList || trajectoryPointList.length === 0) return null
+    const fullTrajectory = trajectoryPointList.map((point, index, points) => {
       const previous = points[index - 1]
       const delta = previous ? point.rank - previous.rank : 0
       return {
