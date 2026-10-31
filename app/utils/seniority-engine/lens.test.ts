@@ -147,31 +147,73 @@ describe('organization analysis', () => {
 describe('anchored analysis', () => {
   const anchored = createOrganizationLens().withAnchor('E125')
 
-  it('distinguishes Seniority Number, list Rank, and active Rank when numbers have gaps', () => {
+  it('measures Rank against Roster Size, retired pilots included', () => {
     const standing = anchored.seniorityStanding()
 
     expect(anchored.anchor.seniority_number).toBe(125)
     expect(standing).toMatchObject({
-      listRank: 4,
-      activeRank: 3,
-      listPilotCount: 5,
+      rank: 3,
+      publicationPosition: 4,
+      rosterSize: 5,
       activePilotCount: 4,
-      listPercentile: 40,
-      activePercentile: 50,
+      seniorityPercentile: 60,
       retiredPilotsSeniorToAnchor: 1,
       rollingNext12MonthRetirements: 1,
       rollingNext12MonthRetirementsSeniorToAnchor: 1,
     })
+    for (const removed of ['listRank', 'activeRank', 'listPilotCount', 'activePercentile', 'listPercentile']) {
+      expect(standing).not.toHaveProperty(removed)
+    }
     expect(standing.qualificationStandings).toContainEqual({
       qualification: { base: 'JFK', seat: 'CA', fleet: '737' },
-      listRank: 3,
-      activeRank: 2,
-      listPilotCount: 3,
+      rank: 2,
+      publicationPosition: 3,
+      rosterSize: 3,
       activePilotCount: 2,
-      listPercentile: 33.3,
-      activePercentile: 50,
+      seniorityPercentile: 66.7,
       isAnchorCurrentQualification: true,
     })
+  })
+
+  it('computes Standing for a single Qualification scope', () => {
+    const scenario = createSeniorityScenario({ qualificationScope: { base: 'JFK', seat: 'CA', fleet: '737' } })
+
+    expect(anchored.seniorityStanding({ scenario })).toMatchObject({
+      rank: 2,
+      publicationPosition: 3,
+      rosterSize: 3,
+      activePilotCount: 2,
+      seniorityPercentile: 66.7,
+    })
+  })
+
+  it('computes Standing for several Qualifications with dynamic Rank inside the scope', () => {
+    const scenario = createSeniorityScenario({ qualificationScope: { seat: 'CA' } })
+
+    expect(anchored.seniorityStanding({ scenario })).toMatchObject({
+      rank: 2,
+      publicationPosition: 3,
+      rosterSize: 3,
+      activePilotCount: 2,
+      seniorityPercentile: 66.7,
+    })
+  })
+
+  it('reconciles Standing with trajectory year zero and Qualification Position for the same scope', () => {
+    for (const qualificationScope of [{}, { seat: 'CA' }, { base: 'JFK', seat: 'CA', fleet: '737' }]) {
+      const scenario = createSeniorityScenario({ qualificationScope })
+      const standing = anchored.seniorityStanding({ scenario })
+      const trajectory = anchored.seniorityTrajectory({ through: asOfDate, scenario })
+
+      expect(trajectory.points[0]!.percentile).toBe(standing.seniorityPercentile)
+      expect(trajectory.points[0]!.rank).toBe(standing.rank)
+    }
+
+    const positions = anchored.qualificationPositions({ through: asOfDate })
+    expect(positions.length).toBeGreaterThan(0)
+    for (const position of positions) {
+      expect(position.currentPercentile).toBe(anchored.seniorityStanding().seniorityPercentile)
+    }
   })
 
   it('returns trajectories and comparisons without chart-shaped values', () => {

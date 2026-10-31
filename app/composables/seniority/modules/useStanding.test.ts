@@ -24,12 +24,12 @@ describe('useStanding', () => {
     const { rankCard } = useStanding()
     expect(rankCard.value).toEqual({
       seniorityNumber: 0,
-      listRank: 0,
-      listPilotCount: 0,
-      activeRank: 0,
+      rank: 0,
+      publicationPosition: 0,
+      rosterSize: 0,
       activePilotCount: 0,
       isSimulated: false,
-      percentile: 0,
+      seniorityPercentile: 0,
       base: '--',
       seat: '--',
       fleet: '--',
@@ -51,11 +51,11 @@ describe('useStanding', () => {
     expect(rankCard.value.seat).toBe('FO')
     expect(rankCard.value.fleet).toBe('777')
     expect(rankCard.value.hireDate).toBe('2012-03-01')
-    expect(rankCard.value.activeRank).toBe(2)
-    expect(rankCard.value.percentile).toBe(Math.round((2 / 3) * 100 * 10) / 10)
+    expect(rankCard.value.rank).toBe(2)
+    expect(rankCard.value.seniorityPercentile).toBe(Math.round((2 / 3) * 100 * 10) / 10)
   })
 
-  it('distinguishes Seniority Number, List Rank, and Active Rank for a gapped list', () => {
+  it('distinguishes Seniority Number, Rank, and Publication Position for a gapped list', () => {
     mockStore.entries = [
       makeEntry({ seniority_number: 10, employee_number: 'E1', retire_date: '2020-01-01' }),
       makeEntry({ seniority_number: 40, employee_number: 'E2', retire_date: '2040-01-01' }),
@@ -68,11 +68,11 @@ describe('useStanding', () => {
 
     expect(rankCard.value).toMatchObject({
       seniorityNumber: 90,
-      listRank: 3,
-      listPilotCount: 4,
-      activeRank: 2,
+      publicationPosition: 3,
+      rosterSize: 4,
+      rank: 2,
       activePilotCount: 3,
-      percentile: 66.7,
+      seniorityPercentile: 75,
       isSimulated: false,
     })
   })
@@ -95,11 +95,11 @@ describe('useStanding', () => {
 
     expect(rankCard.value).toEqual({
       seniorityNumber: 91,
-      listRank: 4,
-      listPilotCount: 4,
-      activeRank: 4,
+      publicationPosition: 4,
+      rosterSize: 4,
+      rank: 4,
       activePilotCount: 4,
-      percentile: 25,
+      seniorityPercentile: 25,
       isSimulated: true,
       base: 'LAX',
       seat: 'FO',
@@ -131,7 +131,7 @@ describe('useStanding', () => {
     newHire.enabled.value = true
 
     expect(rankCard.value).toMatchObject({
-      seniorityNumber: 91, listRank: 4, listPilotCount: 4, activeRank: 4,
+      seniorityNumber: 91, publicationPosition: 4, rosterSize: 4, rank: 4,
       activePilotCount: 4, isSimulated: true, base: 'LAX', seat: 'FO', fleet: '777',
       hireDate: todayPlainDate().toString(),
     })
@@ -142,7 +142,7 @@ describe('useStanding', () => {
     newHire.enabled.value = false
 
     expect(rankCard.value).toEqual(realCard)
-    expect(rankCard.value).toMatchObject({ listPilotCount: 3, activePilotCount: 3, isSimulated: false })
+    expect(rankCard.value).toMatchObject({ rosterSize: 3, activePilotCount: 3, isSimulated: false })
     expect(statCards.value).toEqual(realStats)
     expect(retirementSnapshot.value).toEqual(realSnapshot)
   })
@@ -184,8 +184,8 @@ describe('useStanding', () => {
     expect(jfkCell.seat).toBe('CA')
     expect(jfkCell.fleet).toBe('737')
     expect(jfkCell.isAnchorCurrentQualification).toBe(true)
-    expect(jfkCell.listPilotCount).toBe(2)
-    expect(jfkCell.listRank).toBe(2)
+    expect(jfkCell.rosterSize).toBe(2)
+    expect(jfkCell.rank).toBe(2)
 
     const laxCell = baseStatus.value.find(r => r.base === 'LAX')!
     expect(laxCell).toBeDefined()
@@ -252,9 +252,9 @@ describe('useStanding', () => {
 
     const { rankCard } = useStanding()
     // percentile should always be a finite number, never NaN or Infinity
-    expect(Number.isFinite(rankCard.value.percentile)).toBe(true)
-    expect(rankCard.value.percentile).toBeGreaterThanOrEqual(0)
-    expect(rankCard.value.percentile).toBeLessThanOrEqual(100)
+    expect(Number.isFinite(rankCard.value.seniorityPercentile)).toBe(true)
+    expect(rankCard.value.seniorityPercentile).toBeGreaterThanOrEqual(0)
+    expect(rankCard.value.seniorityPercentile).toBeLessThanOrEqual(100)
   })
 
   it('returns null retirementSnapshot when no user entry (no anchor)', () => {

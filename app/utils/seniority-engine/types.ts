@@ -53,22 +53,20 @@ export interface SenioritySnapshot {
 
 export interface QualificationStanding {
   readonly qualification: Qualification
-  readonly listRank: number
-  readonly activeRank: number
-  readonly listPilotCount: number
+  readonly rank: number
+  readonly publicationPosition: number
+  readonly rosterSize: number
   readonly activePilotCount: number
-  readonly listPercentile: number
-  readonly activePercentile: number
+  readonly seniorityPercentile: number
   readonly isAnchorCurrentQualification: boolean
 }
 
 export interface SeniorityStanding {
-  readonly listRank: number
-  readonly activeRank: number
-  readonly listPilotCount: number
+  readonly rank: number
+  readonly publicationPosition: number
+  readonly rosterSize: number
   readonly activePilotCount: number
-  readonly listPercentile: number
-  readonly activePercentile: number
+  readonly seniorityPercentile: number
   readonly retiredPilotsSeniorToAnchor: number
   readonly rollingNext12MonthRetirements: number
   readonly rollingNext12MonthRetirementsSeniorToAnchor: number
@@ -191,6 +189,10 @@ export interface RelativeUpcomingRetirement extends UpcomingRetirement {
   readonly positionsSeniorToAnchor: number
 }
 
+export interface SeniorityStandingOptions {
+  readonly scenario?: Scenario
+}
+
 export interface SeniorityTrajectoryOptions {
   readonly through: PlainDate
   readonly scenario?: Scenario
@@ -226,7 +228,7 @@ export interface SeniorityLens extends CommonSeniorityLens {
 
 export interface AnchoredSeniorityLens extends CommonSeniorityLens {
   readonly anchor: Readonly<SeniorityEntry>
-  seniorityStanding(): SeniorityStanding
+  seniorityStanding(options?: SeniorityStandingOptions): SeniorityStanding
   seniorityTrajectory(options: SeniorityTrajectoryOptions): SeniorityTrajectory
   seniorityTrajectoryComparison(options: SeniorityTrajectoryComparisonOptions): SeniorityTrajectoryComparison
   percentileCrossing(options: PercentileCrossingOptions): PercentileCrossingResult | null

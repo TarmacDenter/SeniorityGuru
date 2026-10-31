@@ -8,7 +8,7 @@ const props = defineProps<{
 }>()
 
 const animatedPercentile = ref(0)
-watch(() => props.rank.percentile, (percentile) => {
+watch(() => props.rank.seniorityPercentile, (percentile) => {
   animatedPercentile.value = percentile
 })
 
@@ -23,7 +23,7 @@ const accentVariant = 'accent' as 'solid'
 
 onMounted(() => {
   requestAnimationFrame(() => {
-    animatedPercentile.value = props.rank.percentile
+    animatedPercentile.value = props.rank.seniorityPercentile
   })
 })
 </script>
@@ -60,13 +60,13 @@ onMounted(() => {
     </div>
 
     <div class="grid grid-cols-2 gap-4 mt-4">
-      <div data-testid="list-rank">
-        <p class="text-xs text-muted">List Rank</p>
-        <p class="font-mono font-semibold text-highlighted">{{ rank.listRank.toLocaleString() }} of {{ rank.listPilotCount.toLocaleString() }}</p>
+      <div data-testid="publication-position">
+        <p class="text-xs text-muted">Publication Position</p>
+        <p class="font-mono font-semibold text-highlighted">{{ rank.publicationPosition.toLocaleString() }} of {{ rank.rosterSize.toLocaleString() }}</p>
       </div>
-      <div data-testid="active-rank">
-        <p class="text-xs text-muted">Active Rank</p>
-        <p class="font-mono font-semibold text-highlighted">{{ rank.activeRank.toLocaleString() }} of {{ rank.activePilotCount.toLocaleString() }}</p>
+      <div data-testid="rank">
+        <p class="text-xs text-muted">Rank</p>
+        <p class="font-mono font-semibold text-highlighted">{{ rank.rank.toLocaleString() }} of {{ rank.rosterSize.toLocaleString() }}</p>
       </div>
     </div>
     <p v-if="rank.isSimulated" class="text-xs text-muted mt-2">
@@ -75,8 +75,8 @@ onMounted(() => {
 
     <div class="mt-4">
       <div class="flex justify-between text-xs text-muted mb-1">
-        <span>Active Seniority Percentile</span>
-        <span class="font-mono">{{ rank.percentile }}%</span>
+        <span>Seniority Percentile</span>
+        <span class="font-mono">{{ rank.seniorityPercentile }}%</span>
       </div>
       <UProgress
         :model-value="animatedPercentile"
@@ -88,7 +88,7 @@ onMounted(() => {
       />
     </div>
 
-    <p class="text-xs text-muted mt-2">Percentile among {{ rank.activePilotCount.toLocaleString() }} active pilots.</p>
+    <p class="text-xs text-muted mt-2">Percentile of Rank among {{ rank.rosterSize.toLocaleString() }} pilots ({{ rank.activePilotCount.toLocaleString() }} active).</p>
 
     <p v-if="yearsOfService !== null" class="text-xs text-muted mt-2">
       {{ yearsOfService }} {{ yearsOfService === 1 ? 'year' : 'years' }} of service

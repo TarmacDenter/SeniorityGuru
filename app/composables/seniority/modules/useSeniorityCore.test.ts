@@ -170,7 +170,7 @@ describe('useSeniorityCore', () => {
     newHire.birthDate.value = parsePlainDate('1990-06-15')
     expect(anchoredAnalysis.value).not.toBeNull()
     expect(anchoredAnalysis.value!.anchor.employee_number).toBe('_new_hire')
-    expect(anchoredAnalysis.value!.seniorityStanding().domain.listPilotCount).toBe(2)
+    expect(anchoredAnalysis.value!.seniorityStanding().domain.rosterSize).toBe(2)
   })
 
   it('new-hire mode: analysis re-anchors to synthetic entry when active', () => {

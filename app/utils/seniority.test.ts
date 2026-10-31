@@ -96,10 +96,11 @@ describe('public Seniority Analysis interface', () => {
 
     expect(anchored.anchor).toBe(entries[3])
     expect(anchored.seniorityStanding().domain).toMatchObject({
-      listRank: 4,
-      activeRank: 3,
-      listPilotCount: 5,
+      rank: 3,
+      publicationPosition: 4,
+      rosterSize: 5,
       activePilotCount: 4,
+      seniorityPercentile: 60,
     })
     expect(organization).not.toHaveProperty('anchor')
     expect(organization).not.toHaveProperty('seniorityStanding')

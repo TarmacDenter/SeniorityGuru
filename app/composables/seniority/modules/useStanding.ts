@@ -4,12 +4,12 @@ import { useSeniorityCore } from './useSeniorityCore'
 
 export interface RankCardData {
   seniorityNumber: number
-  listRank: number
-  listPilotCount: number
-  activeRank: number
+  rank: number
+  publicationPosition: number
+  rosterSize: number
   activePilotCount: number
   isSimulated: boolean
-  percentile: number
+  seniorityPercentile: number
   base: string
   seat: string
   fleet: string
@@ -20,12 +20,11 @@ export interface BaseStatusRow {
   base: string
   seat: string
   fleet: string
-  listRank: number
-  activeRank: number
-  listPilotCount: number
+  rank: number
+  publicationPosition: number
+  rosterSize: number
   activePilotCount: number
-  listPercentile: number
-  activePercentile: number
+  seniorityPercentile: number
   isAnchorCurrentQualification: boolean
 }
 
@@ -62,12 +61,12 @@ export function useStanding(): {
     if (!entry || !standing) {
       return {
         seniorityNumber: 0,
-        listRank: 0,
-        listPilotCount: 0,
-        activeRank: 0,
+        rank: 0,
+        publicationPosition: 0,
+        rosterSize: 0,
         activePilotCount: 0,
         isSimulated: false,
-        percentile: 0,
+        seniorityPercentile: 0,
         base: '--',
         seat: '--',
         fleet: '--',
@@ -76,12 +75,12 @@ export function useStanding(): {
     }
     return {
       seniorityNumber: entry.seniority_number,
-      listRank: standing.listRank,
-      listPilotCount: standing.listPilotCount,
-      activeRank: standing.activeRank,
+      rank: standing.rank,
+      publicationPosition: standing.publicationPosition,
+      rosterSize: standing.rosterSize,
       activePilotCount: standing.activePilotCount,
       isSimulated: newHire.syntheticEntry.value?.employee_number === entry.employee_number,
-      percentile: standing.activePercentile,
+      seniorityPercentile: standing.seniorityPercentile,
       base: entry.base ?? '--',
       seat: entry.seat ?? '--',
       fleet: entry.fleet ?? '--',
@@ -96,12 +95,11 @@ export function useStanding(): {
       base: row.qualification.base,
       seat: row.qualification.seat,
       fleet: row.qualification.fleet,
-      listRank: row.listRank,
-      activeRank: row.activeRank,
-      listPilotCount: row.listPilotCount,
+      rank: row.rank,
+      publicationPosition: row.publicationPosition,
+      rosterSize: row.rosterSize,
       activePilotCount: row.activePilotCount,
-      listPercentile: row.listPercentile,
-      activePercentile: row.activePercentile,
+      seniorityPercentile: row.seniorityPercentile,
       isAnchorCurrentQualification: row.isAnchorCurrentQualification,
     }))
   })
@@ -121,7 +119,7 @@ export function useStanding(): {
           && item.qualification.fleet === entry.fleet,
       )
       if (userQualification) {
-        baseRankValue = userQualification.activeRank.toLocaleString()
+        baseRankValue = userQualification.rank.toLocaleString()
         baseRankLabel = userQualification.qualificationLabel
       }
     }

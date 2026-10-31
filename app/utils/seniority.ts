@@ -16,6 +16,7 @@ export type {
   SeniorityOutput,
   SeniorityQualificationScopeOption,
   SeniorityQualificationViewerOptions,
+  SeniorityStandingAnalysisOptions,
   SeniorityTrajectoryAnalysisOptions,
   SeniorityTrajectoryComparisonAnalysisOptions,
   UpcomingRetirementAnalysisOptions,

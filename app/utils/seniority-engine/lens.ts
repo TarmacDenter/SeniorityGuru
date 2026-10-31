@@ -20,6 +20,7 @@ import type {
   SeniorityTrajectory,
   SeniorityTrajectoryComparison,
   SeniorityTrajectoryComparisonOptions,
+  SeniorityStandingOptions,
   SeniorityTrajectoryOptions,
   UpcomingRetirement,
   UpcomingRetirementFilter,
@@ -35,7 +36,7 @@ import {
   countRetiredPilotsSeniorTo,
 } from '~/utils/seniority-analysis/math'
 import { createSeniorityScenario } from './scenario'
-import { memoizeLast } from './memoize'
+import { memoizeLast, stableStringify } from './memoize'
 import { qualificationScopeToEntryPredicate } from './qualification-scope'
 import {
   analyzeAgeDistribution,
@@ -179,7 +180,7 @@ class SeniorityLensImplementation implements SeniorityLens {
 
 class AnchoredSeniorityLensImplementation implements AnchoredSeniorityLens {
   private readonly common: Omit<CommonSeniorityLens, 'snapshot'>
-  readonly seniorityStanding: () => SeniorityStanding
+  readonly seniorityStanding: (options?: SeniorityStandingOptions) => SeniorityStanding
   readonly seniorityTrajectory: (options: SeniorityTrajectoryOptions) => SeniorityTrajectory
   readonly seniorityTrajectoryComparison: (options: SeniorityTrajectoryComparisonOptions) => SeniorityTrajectoryComparison
   readonly percentileCrossing: (options: PercentileCrossingOptions) => PercentileCrossingResult | null
@@ -192,41 +193,42 @@ class AnchoredSeniorityLensImplementation implements AnchoredSeniorityLens {
     const seniorityNumber = anchor.seniority_number
     const anchorListRank = calculateSeniorityRank(entries, seniorityNumber)
 
-    this.seniorityStanding = memoizeLast(() => {
+    this.seniorityStanding = memoizeLast((options) => {
       const today = asOfDate(context)
-      const listRank = calculateSeniorityRank(entries, seniorityNumber)
-      const retiredPilotsSeniorToAnchor = countRetiredPilotsSeniorTo(entries, seniorityNumber, today)
+      const scenario = options?.scenario ?? createSeniorityScenario()
+      const scopedEntries = entries.filter(qualificationScopeToEntryPredicate(scenario.qualificationScope))
+      const publicationPosition = calculateSeniorityRank(scopedEntries, seniorityNumber)
+      const retiredPilotsSeniorToAnchor = countRetiredPilotsSeniorTo(scopedEntries, seniorityNumber, today)
       const qualificationStandings: QualificationStanding[] = []
 
       for (const qualificationEntries of context.snapshot.entriesByQualification.values()) {
         const first = qualificationEntries[0]!
-        const listPilotCount = qualificationEntries.length
+        const rosterSize = qualificationEntries.length
         const retiredPilotCount = qualificationEntries.filter(entry =>
           entry.retire_date && isRetiredBy(entry.retire_date, today),
         ).length
-        const activePilotCount = listPilotCount - retiredPilotCount
-        const qualificationListRank = calculateSeniorityRank(qualificationEntries, seniorityNumber)
-        const retiredQualificationPilotsSeniorToAnchor = countRetiredPilotsSeniorTo(
+        const qualificationPublicationPosition = calculateSeniorityRank(qualificationEntries, seniorityNumber)
+        const rank = qualificationPublicationPosition - countRetiredPilotsSeniorTo(
           qualificationEntries,
           seniorityNumber,
           today,
         )
-        const activeRank = qualificationListRank - retiredQualificationPilotsSeniorToAnchor
         qualificationStandings.push({
           qualification: { base: first.base, seat: first.seat, fleet: first.fleet },
-          listRank: qualificationListRank,
-          activeRank,
-          listPilotCount,
-          activePilotCount,
-          listPercentile: calculateSeniorityPercentile(qualificationListRank, listPilotCount),
-          activePercentile: calculateSeniorityPercentile(activeRank, activePilotCount),
+          rank,
+          publicationPosition: qualificationPublicationPosition,
+          rosterSize,
+          activePilotCount: rosterSize - retiredPilotCount,
+          seniorityPercentile: calculateSeniorityPercentile(rank, rosterSize),
           isAnchorCurrentQualification:
             anchor.base === first.base && anchor.seat === first.seat && anchor.fleet === first.fleet,
         })
       }
 
-      const activePilotCount = qualificationStandings.reduce((sum, standing) => sum + standing.activePilotCount, 0)
-      const activeRank = listRank - retiredPilotsSeniorToAnchor
+      const scopedRetiredCount = scopedEntries.filter(entry =>
+        entry.retire_date && isRetiredBy(entry.retire_date, today),
+      ).length
+      const rank = publicationPosition - retiredPilotsSeniorToAnchor
       const rollingNext12MonthRetirementsSeniorToAnchor = entries.filter(entry =>
         entry.seniority_number < seniorityNumber
         && !!entry.retire_date
@@ -234,18 +236,17 @@ class AnchoredSeniorityLensImplementation implements AnchoredSeniorityLens {
       ).length
 
       return {
-        listRank,
-        activeRank,
-        listPilotCount: entries.length,
-        activePilotCount,
-        listPercentile: calculateSeniorityPercentile(listRank, entries.length),
-        activePercentile: calculateSeniorityPercentile(activeRank, activePilotCount),
+        rank,
+        publicationPosition,
+        rosterSize: scopedEntries.length,
+        activePilotCount: scopedEntries.length - scopedRetiredCount,
+        seniorityPercentile: calculateSeniorityPercentile(rank, scopedEntries.length),
         retiredPilotsSeniorToAnchor,
         rollingNext12MonthRetirements: context.retirementsNext12Months(),
         rollingNext12MonthRetirementsSeniorToAnchor,
         qualificationStandings,
       }
-    }, () => 'seniority-standing')
+    }, options => `seniority-standing:${stableStringify(options?.scenario?.qualificationScope ?? {})}`)
 
     this.seniorityTrajectory = memoizeLast((options) => {
       const scenario = options.scenario ?? createSeniorityScenario()

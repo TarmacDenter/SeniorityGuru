@@ -80,6 +80,10 @@ export interface SeniorityDemographicsAnalysisOptions extends Omit<DemographicsO
   readonly scenario?: ScenarioOptions
 }
 
+export interface SeniorityStandingAnalysisOptions {
+  readonly scenario?: ScenarioOptions
+}
+
 export interface SeniorityTrajectoryAnalysisOptions {
   readonly through: PlainDate
   readonly scenario?: ScenarioOptions
@@ -134,7 +138,7 @@ export interface AnchoredSeniorityAnalysis extends CommonSeniorityAnalysis {
   demographics(
     options: SeniorityDemographicsAnalysisOptions,
   ): SeniorityOutput<SeniorityDemographics, PresentedSeniorityDemographics>
-  seniorityStanding(): SeniorityOutput<SeniorityStanding, PresentedSeniorityStanding>
+  seniorityStanding(options?: SeniorityStandingAnalysisOptions): SeniorityOutput<SeniorityStanding, PresentedSeniorityStanding>
   seniorityTrajectory(
     options: SeniorityTrajectoryAnalysisOptions,
   ): SeniorityOutput<SeniorityTrajectory, PresentedSeniorityTrajectory>
@@ -215,7 +219,10 @@ function anchoredSeniorityAnalysis(lens: AnchoredSeniorityLens, asOfDate: PlainD
       })
       return seniorityOutput(domain, value => presentAnchoredSeniorityDemographics(value, positions))
     },
-    seniorityStanding: () => seniorityOutput(lens.seniorityStanding(), presentSeniorityStanding),
+    seniorityStanding: options => seniorityOutput(
+      lens.seniorityStanding({ scenario: createSeniorityScenario(options?.scenario) }),
+      presentSeniorityStanding,
+    ),
     seniorityTrajectory: (options) => {
       const domain = lens.seniorityTrajectory({
         through: options.through,
