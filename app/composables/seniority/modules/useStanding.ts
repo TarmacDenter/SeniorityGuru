@@ -22,6 +22,34 @@ export interface RankCardData {
   noResultLabel: string | null
   /** "Hypothetical Placement in <scope>" when you are not in the selected scope; null otherwise. */
   hypotheticalLabel: string | null
+  /** "Roster Size N · Active pilots M"; null when no Rank exists, so the view shows a placeholder. */
+  rosterSummaryLabel: string | null
+  /** "Percentile measured against Roster Size N · Active pilots M"; null when no Rank exists. */
+  percentileScaleLabel: string | null
+}
+
+const PLACEHOLDER = '--'
+
+function emptyRankCard(overrides: Partial<RankCardData> = {}): RankCardData {
+  return {
+    seniorityNumber: 0,
+    rank: null,
+    publicationPosition: null,
+    rosterSize: null,
+    publicationPilotCount: null,
+    activePilotCount: null,
+    isSimulated: false,
+    seniorityPercentile: null,
+    base: PLACEHOLDER,
+    seat: PLACEHOLDER,
+    fleet: PLACEHOLDER,
+    hireDate: PLACEHOLDER,
+    noResultLabel: null,
+    hypotheticalLabel: null,
+    rosterSummaryLabel: null,
+    percentileScaleLabel: null,
+    ...overrides,
+  }
 }
 
 export interface BaseStatusRow {
@@ -65,7 +93,7 @@ export function useStanding(qualificationScope?: Ref<QualificationScope> | Compu
   statCards: ComputedRef<StatCard[]>
   retirementSnapshot: ComputedRef<RetirementSnapshotData | null>
 } {
-  const { analysis, anchoredAnalysis, projectionEndDate } = useSeniorityCore()
+  const { anchoredAnalysis, projectionEndDate } = useSeniorityCore()
   const seniorityStore = useSeniorityStore()
 
   const anchorEntry = computed(() => anchoredAnalysis.value?.anchor)
@@ -87,41 +115,16 @@ export function useStanding(qualificationScope?: Ref<QualificationScope> | Compu
     const entry = anchorEntry.value
     const standing = standingResult.value
     if (entry && !standing && standingNoResult.value) {
-      return {
+      return emptyRankCard({
         seniorityNumber: entry.seniority_number,
-        rank: null,
-        publicationPosition: null,
-        rosterSize: null,
-        publicationPilotCount: null,
-        activePilotCount: null,
-        isSimulated: false,
-        seniorityPercentile: null,
-        base: entry.base ?? '--',
-        seat: entry.seat ?? '--',
-        fleet: entry.fleet ?? '--',
+        base: entry.base ?? PLACEHOLDER,
+        seat: entry.seat ?? PLACEHOLDER,
+        fleet: entry.fleet ?? PLACEHOLDER,
         hireDate: entry.hire_date.toString(),
         noResultLabel: standingNoResult.value.label,
-        hypotheticalLabel: null,
-      }
+      })
     }
-    if (!entry || !standing) {
-      return {
-        seniorityNumber: 0,
-        rank: null,
-        publicationPosition: null,
-        rosterSize: null,
-        publicationPilotCount: null,
-        activePilotCount: null,
-        isSimulated: false,
-        seniorityPercentile: null,
-        base: '--',
-        seat: '--',
-        fleet: '--',
-        hireDate: '--',
-        noResultLabel: null,
-        hypotheticalLabel: null,
-      }
-    }
+    if (!entry || !standing) return emptyRankCard()
     return {
       seniorityNumber: entry.seniority_number,
       rank: standing.rank,
@@ -131,12 +134,14 @@ export function useStanding(qualificationScope?: Ref<QualificationScope> | Compu
       activePilotCount: standing.activePilotCount,
       isSimulated: standing.isModeled,
       seniorityPercentile: standing.seniorityPercentile,
-      base: entry.base ?? '--',
-      seat: entry.seat ?? '--',
-      fleet: entry.fleet ?? '--',
+      base: entry.base ?? PLACEHOLDER,
+      seat: entry.seat ?? PLACEHOLDER,
+      fleet: entry.fleet ?? PLACEHOLDER,
       hireDate: entry.hire_date.toString(),
       noResultLabel: null,
       hypotheticalLabel: standingOutput.value?.presentation.hypotheticalLabel ?? null,
+      rosterSummaryLabel: standingOutput.value?.presentation.rosterSummaryLabel ?? null,
+      percentileScaleLabel: standingOutput.value?.presentation.percentileScaleLabel ?? null,
     }
   })
 
@@ -163,7 +168,7 @@ export function useStanding(qualificationScope?: Ref<QualificationScope> | Compu
     const standing = standingResult.value
     const presented = standingOutput.value?.presentation
 
-    let baseRankValue = '--'
+    let baseRankValue = PLACEHOLDER
     let baseRankTrend: string | undefined
     if (standing && entry?.base && entry?.seat && entry?.fleet) {
       const userQualification = presented?.qualificationStandings.find(
@@ -172,7 +177,7 @@ export function useStanding(qualificationScope?: Ref<QualificationScope> | Compu
           && item.qualification.fleet === entry.fleet,
       )
       if (userQualification) {
-        baseRankValue = userQualification.rank.toLocaleString()
+        baseRankValue = userQualification.rankLabel
         baseRankTrend = userQualification.rosterTrendLabel
       }
     }
@@ -181,13 +186,12 @@ export function useStanding(qualificationScope?: Ref<QualificationScope> | Compu
       {
         label: presented?.rosterSizeLabel ?? 'Roster Size',
         ...(presented?.rosterSizeTrend ? { trend: presented.rosterSizeTrend } : {}),
-        value: rankCard.value.rosterSize?.toLocaleString() ?? '--',
+        value: presented?.rosterSizeValueLabel ?? PLACEHOLDER,
         icon: 'i-lucide-users',
       },
       {
         label: 'Retirements (Next 12 mo.)',
-        value: presented?.rollingNext12MonthRetirementsLabel
-          ?? (analysis.value?.retirementsNext12Months() ?? 0).toLocaleString(),
+        value: presented?.rollingNext12MonthRetirementsLabel ?? PLACEHOLDER,
         trend: entry ? presented?.retirementsSeniorToAnchorLabel : undefined,
         trendUp: (standing?.rollingNext12MonthRetirementsSeniorToAnchor ?? 0) > 0 || undefined,
         icon: 'i-lucide-calendar-clock',

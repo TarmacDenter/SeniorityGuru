@@ -43,8 +43,12 @@ mockNuxtImport('useSeniorityCore', () => () => ({
   projectionEndDate: mockProjectionEndDate,
 }))
 
+const rankCardMode = vi.hoisted(() => ({ noResult: false }))
+
 mockNuxtImport('useStanding', () => () => ({
-  rankCard: require('vue').ref({ rosterSize: 260, activePilotCount: 240 }),
+  rankCard: require('vue').ref(rankCardMode.noResult
+    ? { rosterSummaryLabel: null }
+    : { rosterSummaryLabel: 'Roster Size 260 · Active pilots 240' }),
 }))
 
 mockNuxtImport('useUser', () => () => ({ employeeNumber: { value: null } }))
@@ -59,6 +63,7 @@ describe('PositionTab', () => {
   })
 
   afterEach(() => {
+    rankCardMode.noResult = false
     wrappers.splice(0).forEach(wrapper => wrapper.unmount())
     vi.useRealTimers()
     vi.restoreAllMocks()
@@ -79,6 +84,12 @@ describe('PositionTab', () => {
   it('discloses Roster Size and active pilots as separate figures', async () => {
     const { wrapper } = await mountProjection()
     expect(wrapper.get('[data-testid="position-roster-size"]').text()).toBe('Roster Size 260 · Active pilots 240')
+  })
+
+  it('shows the placeholder for a retired Anchor Pilot instead of 0 or nothing', async () => {
+    rankCardMode.noResult = true
+    const { wrapper } = await mountProjection()
+    expect(wrapper.get('[data-testid="position-roster-size"]').text()).toBe('--')
   })
 
   it('applies the initial projection immediately when Project forward is enabled', async () => {

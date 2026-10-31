@@ -79,9 +79,9 @@ mockNuxtImport('useSeniorityCore', () => () => ({
   projectionEndDate: { value: '2030-06-15' },
 }))
 
-const unscopedRankCard: Record<string, unknown> = { base: '--', seat: '--', fleet: '--', seniorityPercentile: 0, seniorityNumber: 0, publicationPosition: 0, rosterSize: 260, rank: 0, activePilotCount: 240, isSimulated: false, hireDate: '--' }
-const scopedRankCard: Record<string, unknown> = { ...unscopedRankCard, rosterSize: 90, activePilotCount: 80 }
-const noResultRankCard = { ...unscopedRankCard, rosterSize: null, activePilotCount: null }
+const unscopedRankCard: Record<string, unknown> = { base: '--', seat: '--', fleet: '--', seniorityPercentile: 0, seniorityNumber: 0, publicationPosition: 0, rosterSize: 260, rank: 0, activePilotCount: 240, isSimulated: false, hireDate: '--', rosterSummaryLabel: 'Roster Size 260 · Active pilots 240', percentileScaleLabel: 'Percentile measured against Roster Size 260 · Active pilots 240' }
+const scopedRankCard: Record<string, unknown> = { ...unscopedRankCard, rosterSize: 90, activePilotCount: 80, rosterSummaryLabel: 'Roster Size 90 · Active pilots 80', percentileScaleLabel: 'Percentile measured against Roster Size 90 · Active pilots 80' }
+const noResultRankCard = { ...unscopedRankCard, rosterSize: null, activePilotCount: null, rosterSummaryLabel: null, percentileScaleLabel: null }
 const rankCardMode = vi.hoisted(() => ({ noResult: false }))
 
 mockNuxtImport('useStanding', () => (qualificationScope?: unknown) => ({
@@ -138,15 +138,15 @@ describe('TrajectoryTab', () => {
     expect(wrapper.get('[data-testid="scoped-roster-size"]').text()).toContain('Roster Size 90 · Active pilots 80')
   })
 
-  it('omits the Roster Size lines for a retired Anchor Pilot instead of showing 0', async () => {
+  it('shows the placeholder on the Roster Size lines for a retired Anchor Pilot instead of 0', async () => {
     rankCardMode.noResult = true
     mockHasData.value = true
     mockAnalysis.value = { retirementYearAnalysis: vi.fn(() => []) }
     const Tab = await import('./TrajectoryTab.vue')
     const wrapper = await mountSuspended(Tab.default)
 
-    expect(wrapper.find('[data-testid="trajectory-roster-size"]').exists()).toBe(false)
-    expect(wrapper.find('[data-testid="scoped-roster-size"]').exists()).toBe(false)
+    expect(wrapper.get('[data-testid="trajectory-roster-size"]').text()).toBe('--')
+    expect(wrapper.get('[data-testid="scoped-roster-size"]').text()).toBe('--')
   })
 
   it('badges a Hypothetical Placement trajectory with its scope label', async () => {

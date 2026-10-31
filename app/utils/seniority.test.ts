@@ -262,3 +262,49 @@ describe('presented Standing labels', () => {
     expect(own.rosterTrendLabel).toBe('CA/737/JFK · of 3 on roster · 2 active')
   })
 })
+
+describe('Standing for a scope with no real pilots', () => {
+  it('reports a publication count of zero and places the Anchor Pilot hypothetically', () => {
+    const output = createAnalysis().withAnchor('125').seniorityStanding({ scenario: { qualificationScope: { base: 'LAX' } } })
+    const standing = resultOf(output.domain)
+
+    expect(standing).toMatchObject({ publicationPilotCount: 0, rosterSize: 1, rank: 1, isHypothetical: true })
+    expect(resultOf(output.presentation).hypotheticalLabel).toBe('Hypothetical Placement in LAX')
+  })
+})
+
+describe('Standing retirement counts by scope', () => {
+  const standingFor = (qualificationScope = {}) =>
+    resultOf(createAnalysis().withAnchor('125').seniorityStanding({ scenario: { qualificationScope } }).domain)
+
+  it('equals the company-wide values with no scope', () => {
+    const standing = standingFor()
+
+    expect(standing.rollingNext12MonthRetirements).toBe(createAnalysis().retirementsNext12Months())
+    expect(standing).toMatchObject({ rollingNext12MonthRetirements: 1, rollingNext12MonthRetirementsSeniorToAnchor: 1 })
+  })
+
+  it('narrows both counts to the scope', () => {
+    expect(standingFor({ base: 'JFK' })).toMatchObject({ rollingNext12MonthRetirements: 1, rollingNext12MonthRetirementsSeniorToAnchor: 1 })
+    expect(standingFor({ base: 'ATL' })).toMatchObject({ rollingNext12MonthRetirements: 0, rollingNext12MonthRetirementsSeniorToAnchor: 0 })
+  })
+})
+
+describe('presented Standing display values', () => {
+  it('formats Roster Size, summaries, and each Qualification Rank as pilot-readable text', () => {
+    const presentation = resultOf(createAnalysis().withAnchor('125').seniorityStanding().presentation)
+    const own = presentation.qualificationStandings.find(row => row.isAnchorCurrentQualification)!
+
+    expect(presentation.rosterSizeValueLabel).toBe('5')
+    expect(presentation.rosterSummaryLabel).toBe('Roster Size 5 · Active pilots 4')
+    expect(presentation.percentileScaleLabel).toBe('Percentile measured against Roster Size 5 · Active pilots 4')
+    expect(own.rankLabel).toBe('2')
+  })
+
+  it('follows the scope in the summaries', () => {
+    const presentation = resultOf(createAnalysis().withAnchor('125')
+      .seniorityStanding({ scenario: { qualificationScope: { base: 'ATL' } } }).presentation)
+
+    expect(presentation.rosterSummaryLabel).toBe('Roster Size 3 · Active pilots 3')
+  })
+})

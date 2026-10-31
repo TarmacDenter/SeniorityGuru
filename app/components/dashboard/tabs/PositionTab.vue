@@ -182,9 +182,7 @@ onUnmounted(cancelPositionDebounce)
         </template>
       </UCollapsible>
 
-      <p v-if="rankCard.rosterSize !== null" data-testid="position-roster-size" class="text-xs text-muted">
-        Roster Size {{ rankCard.rosterSize.toLocaleString() }} · Active pilots {{ rankCard.activePilotCount?.toLocaleString() }}
-      </p>
+      <p data-testid="position-roster-size" class="text-xs text-muted">{{ rankCard.rosterSummaryLabel ?? '--' }}</p>
 
       <!-- Qual Seniority Scale -->
       <UCard v-if="qualificationPositions.length > 0">

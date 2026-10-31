@@ -38,6 +38,8 @@ describe('useStanding', () => {
       hireDate: '--',
       noResultLabel: null,
       hypotheticalLabel: null,
+      rosterSummaryLabel: null,
+      percentileScaleLabel: null,
     })
   })
 
@@ -112,6 +114,8 @@ describe('useStanding', () => {
       hireDate: todayPlainDate().toString(),
       noResultLabel: null,
       hypotheticalLabel: null,
+      rosterSummaryLabel: 'Roster Size 4 · Active pilots 4',
+      percentileScaleLabel: 'Percentile measured against Roster Size 4 · Active pilots 4',
     })
     expect(statCards.value[2]).toMatchObject({ label: 'Your Base Rank', value: '1', trend: 'FO/777/LAX · of 1 on roster · 1 active' })
     expect(retirementSnapshot.value?.retireDate).toBe('2065-06-15')
@@ -176,7 +180,13 @@ describe('useStanding', () => {
 
       const { rankCard, statCards } = useStanding()
 
-      expect(rankCard.value).toMatchObject({ rosterSize: 3, publicationPilotCount: 3, isSimulated: false })
+      expect(rankCard.value).toMatchObject({
+        rosterSize: 3,
+        publicationPilotCount: 3,
+        isSimulated: false,
+        rosterSummaryLabel: 'Roster Size 3 · Active pilots 2',
+        percentileScaleLabel: 'Percentile measured against Roster Size 3 · Active pilots 2',
+      })
       expect(statCards.value[0]).toEqual({ label: 'Roster Size', value: '3', icon: 'i-lucide-users' })
     })
 
@@ -227,6 +237,22 @@ describe('useStanding', () => {
     scope.value = { base: 'LAX' }
 
     expect(rankCard.value).toMatchObject({ rank: 2, publicationPosition: 2, rosterSize: 2 })
+  })
+
+  it('returns a different rank card for each Qualification Scope', () => {
+    mockStore.entries = [
+      makeEntry({ seniority_number: 10, employee_number: 'E1', base: 'JFK', retire_date: '2050-01-01' }),
+      makeEntry({ seniority_number: 40, employee_number: 'E2', base: 'LAX', retire_date: '2045-01-01' }),
+      makeEntry({ seniority_number: 90, employee_number: 'E3', base: 'LAX', retire_date: '2050-01-01' }),
+    ]
+    mockUserStore.employeeNumber = 'E3'
+
+    const companyWide = useStanding().rankCard.value
+    const lax = useStanding(ref<QualificationScope>({ base: 'LAX' })).rankCard.value
+
+    expect(companyWide).toMatchObject({ rank: 3, rosterSize: 3, rosterSummaryLabel: 'Roster Size 3 · Active pilots 3' })
+    expect(lax).toMatchObject({ rank: 2, rosterSize: 2, rosterSummaryLabel: 'Roster Size 2 · Active pilots 2' })
+    expect(lax).not.toEqual(companyWide)
   })
 
   describe('Hypothetical Placement outside the selected scope', () => {
@@ -331,7 +357,10 @@ describe('useStanding', () => {
       noResultLabel: 'Anchor Pilot retired',
     })
     expect(statCards.value[0]).toEqual({ label: 'Roster Size', value: '--', icon: 'i-lucide-users' })
+    expect(statCards.value[1]).toMatchObject({ label: 'Retirements (Next 12 mo.)', value: '--' })
+    expect(statCards.value[1]!.trend).toBeUndefined()
     expect(statCards.value[2]).toMatchObject({ label: 'Your Base Rank', value: '--' })
+    expect(rankCard.value).toMatchObject({ rosterSummaryLabel: null, percentileScaleLabel: null })
   })
 
   it('still reports a retired Anchor Pilot outside the scope as the only no-result', () => {

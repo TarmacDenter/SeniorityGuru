@@ -124,9 +124,7 @@ const ready = useDeferredReady()
         </template>
       </UCollapsible>
 
-      <p v-if="rankCard.rosterSize !== null" data-testid="trajectory-roster-size" class="text-xs text-muted">
-        Roster Size {{ rankCard.rosterSize.toLocaleString() }} · Active pilots {{ rankCard.activePilotCount?.toLocaleString() }}
-      </p>
+      <p data-testid="trajectory-roster-size" class="text-xs text-muted">{{ rankCard.rosterSummaryLabel ?? '--' }}</p>
 
       <!-- Full Trajectory Chart -->
       <USkeleton v-if="hasAnchor && (!ready || !trajectoryChartData?.labels?.length)" class="h-64 rounded-lg" />
@@ -172,9 +170,7 @@ const ready = useDeferredReady()
         @dismiss="dismissBanner"
       />
 
-      <p v-if="scopedRankCard.rosterSize !== null" data-testid="scoped-roster-size" class="text-xs text-muted">
-        Percentile measured against Roster Size {{ scopedRankCard.rosterSize.toLocaleString() }} · Active pilots {{ scopedRankCard.activePilotCount?.toLocaleString() }}
-      </p>
+      <p data-testid="scoped-roster-size" class="text-xs text-muted">{{ scopedRankCard.percentileScaleLabel ?? '--' }}</p>
 
       <p v-if="waveTrajectoryNoResult" data-testid="no-result" class="text-sm text-muted">{{ waveTrajectoryNoResult.label }}</p>
       <UBadge v-else-if="waveTrajectoryHypotheticalLabel" data-testid="hypothetical-placement" color="warning" variant="subtle" size="sm">
