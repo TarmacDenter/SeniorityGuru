@@ -27,6 +27,7 @@ describe('useStanding', () => {
       rank: 0,
       publicationPosition: 0,
       rosterSize: 0,
+      publicationRosterSize: 0,
       activePilotCount: 0,
       isSimulated: false,
       seniorityPercentile: 0,
@@ -97,6 +98,7 @@ describe('useStanding', () => {
       seniorityNumber: 91,
       publicationPosition: 4,
       rosterSize: 4,
+      publicationRosterSize: 3,
       rank: 4,
       activePilotCount: 4,
       seniorityPercentile: 25,
@@ -145,6 +147,61 @@ describe('useStanding', () => {
     expect(rankCard.value).toMatchObject({ rosterSize: 3, activePilotCount: 3, isSimulated: false })
     expect(statCards.value).toEqual(realStats)
     expect(retirementSnapshot.value).toEqual(realSnapshot)
+  })
+
+  describe('Roster Size agreement', () => {
+    function enableNewHire() {
+      const { newHire } = useSeniorityCore()
+      newHire.selectedBase.value = 'LAX'
+      newHire.selectedSeat.value = 'FO'
+      newHire.selectedFleet.value = '777'
+      newHire.birthDate.value = parsePlainDate('2000-06-15')
+      newHire.enabled.value = true
+    }
+
+    it('real Anchor Pilot: Total Pilots agrees with Roster Size and is not modeled', () => {
+      mockStore.entries = [
+        makeEntry({ seniority_number: 10, employee_number: 'E1', retire_date: '2020-01-01' }),
+        makeEntry({ seniority_number: 40, employee_number: 'E2', retire_date: '2045-01-01' }),
+        makeEntry({ seniority_number: 90, employee_number: 'E3', retire_date: '2050-01-01' }),
+      ]
+      mockUserStore.employeeNumber = 'E2'
+
+      const { rankCard, statCards } = useStanding()
+
+      expect(rankCard.value).toMatchObject({ rosterSize: 3, publicationRosterSize: 3, isSimulated: false })
+      expect(statCards.value[0]).toEqual({ label: 'Total Pilots', value: '3', icon: 'i-lucide-users' })
+    })
+
+    it.each([
+      ['retirements before the hire date', '2020-01-01', 3, 5],
+      ['retirements after the hire date', '2060-01-01', 4, 5],
+    ])('New Hire Mode with %s: every count includes the simulated pilot', (_name, retire, active, roster) => {
+      mockStore.entries = [
+        makeEntry({ seniority_number: 10, employee_number: 'E1', retire_date: retire }),
+        makeEntry({ seniority_number: 40, employee_number: 'E2', retire_date: '2045-01-01' }),
+        makeEntry({ seniority_number: 90, employee_number: 'E3', retire_date: '2050-01-01' }),
+        makeEntry({ seniority_number: 95, employee_number: 'E4', retire_date: '2055-01-01' }),
+      ]
+      mockUserStore.employeeNumber = 'E2'
+      enableNewHire()
+
+      const { rankCard, statCards } = useStanding()
+
+      expect(rankCard.value).toMatchObject({
+        isSimulated: true,
+        rosterSize: roster,
+        publicationRosterSize: 4,
+        publicationPosition: roster,
+        activePilotCount: active + 1,
+      })
+      expect(statCards.value[0]).toMatchObject({
+        label: 'Total Pilots (modeled)',
+        value: roster.toLocaleString(),
+        trend: '4 in publication',
+      })
+      expect(statCards.value[0]!.value).toBe(rankCard.value.rosterSize.toLocaleString())
+    })
   })
 
   it.each([null, 'E1'])('preserves the existing anchor with incomplete new hire settings and real pilot %s', (employeeNumber) => {

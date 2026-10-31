@@ -7,6 +7,7 @@ export interface RankCardData {
   rank: number
   publicationPosition: number
   rosterSize: number
+  publicationRosterSize: number
   activePilotCount: number
   isSimulated: boolean
   seniorityPercentile: number
@@ -64,6 +65,7 @@ export function useStanding(): {
         rank: 0,
         publicationPosition: 0,
         rosterSize: 0,
+        publicationRosterSize: 0,
         activePilotCount: 0,
         isSimulated: false,
         seniorityPercentile: 0,
@@ -78,6 +80,7 @@ export function useStanding(): {
       rank: standing.rank,
       publicationPosition: standing.publicationPosition,
       rosterSize: standing.rosterSize,
+      publicationRosterSize: seniorityStore.entries.length,
       activePilotCount: standing.activePilotCount,
       isSimulated: newHire.syntheticEntry.value?.employee_number === entry.employee_number,
       seniorityPercentile: standing.seniorityPercentile,
@@ -105,7 +108,6 @@ export function useStanding(): {
   })
 
   const statCards = computed<StatCard[]>(() => {
-    const entries = seniorityStore.entries
     const lists = seniorityStore.lists
     const entry = anchorEntry.value
     const standing = standingResult.value
@@ -126,8 +128,13 @@ export function useStanding(): {
 
     return [
       {
-        label: 'Total Pilots',
-        value: entries.length.toLocaleString(),
+        ...(rankCard.value.isSimulated
+          ? {
+              label: 'Total Pilots (modeled)',
+              trend: `${rankCard.value.publicationRosterSize.toLocaleString()} in publication`,
+            }
+          : { label: 'Total Pilots' }),
+        value: rankCard.value.rosterSize.toLocaleString(),
         icon: 'i-lucide-users',
       },
       {
