@@ -9,6 +9,8 @@ const props = defineProps<{
 }>()
 
 const sortedPositions = computed(() => sortQualificationPositions(props.positions))
+/** Qualification Positions are company-wide, so every row shares one Roster Size. */
+const rosterSize = computed(() => props.positions[0]?.rosterSize ?? null)
 
 const rowMaxCounts = computed(() => {
   const map = new Map<string, number>()
@@ -46,6 +48,9 @@ function isProjecting(position: PresentedQualificationPosition) {
     <p class="text-sm text-muted mb-3">
       Each row shows the company-wide seniority distribution of pilots currently in that position. Your dot moves right as retirements improve your projected standing. Heights scale independently for each Qualification to show distribution shape, not comparable pilot counts. Each threshold is the active incumbent's Rank against Roster Size, fixed at the As-of Date.
     </p>
+    <p v-if="rosterSize !== null" data-testid="qualification-scale-roster-size" class="text-sm text-muted mb-3">
+      Percentiles measured against {{ rosterSize.toLocaleString() }} on roster
+    </p>
 
     <div
       v-for="position in sortedPositions"
@@ -58,7 +63,7 @@ function isProjecting(position: PresentedQualificationPosition) {
           <span class="text-muted ml-1">{{ position.qualification.base }}</span>
         </div>
         <div data-testid="qualification-scale-active-count" class="text-xs font-normal text-muted">
-          Percentiles measured against {{ position.rosterSize.toLocaleString() }} on roster · {{ position.activePilotCount.toLocaleString() }} active
+          {{ position.activePilotCount.toLocaleString() }} active in this qualification
         </div>
       </div>
 

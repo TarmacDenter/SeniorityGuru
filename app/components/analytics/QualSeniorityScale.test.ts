@@ -17,7 +17,6 @@ function position(overrides: Partial<PresentedQualificationPosition>): Presented
     projectedPercentile: 50,
     currentPercentile: 50,
     modeledHoldable: true,
-    hypotheticalLabel: null,
     ...overrides,
   }
 }
@@ -50,10 +49,26 @@ describe('QualSeniorityScale', () => {
     })
 
     const counts = wrapper.findAll('[data-testid="qualification-scale-active-count"]')
-    expect(counts.map(count => count.text())).toEqual(['Percentiles measured against 260 on roster · 240 active', 'Percentiles measured against 4 on roster · 3 active'])
+    expect(counts.map(count => count.text())).toEqual(['240 active in this qualification', '3 active in this qualification'])
     expect(wrapper.text()).toContain('Heights scale independently for each Qualification')
     expect(wrapper.text()).toContain('distribution shape, not comparable pilot counts')
     expect(wrapper.text()).toContain("active incumbent's Rank against Roster Size")
+  })
+
+  it('states the company Roster Size once as the scale of the percentiles', async () => {
+    const Scale = await import('./QualSeniorityScale.vue')
+    const wrapper = await mountSuspended(Scale.default, {
+      props: {
+        positions: [
+          position({ qualification: { fleet: '737', seat: 'CA', base: 'JFK' }, activePilotCount: 240, rosterSize: 260 }),
+          position({ activePilotCount: 3, rosterSize: 260 }),
+        ],
+      },
+    })
+
+    expect(wrapper.findAll('[data-testid="qualification-scale-roster-size"]').map(item => item.text()))
+      .toEqual(['Percentiles measured against 260 on roster'])
+    expect(wrapper.text().match(/on roster/g)).toHaveLength(1)
   })
 
   it('shows a single active pilot from the supplied count even without density buckets', async () => {
@@ -62,7 +77,7 @@ describe('QualSeniorityScale', () => {
       props: { positions: [position({ activePilotCount: 1, percentileDensity: [] })] },
     })
 
-    expect(wrapper.get('[data-testid="qualification-scale-active-count"]').text()).toBe('Percentiles measured against 1 on roster · 1 active')
+    expect(wrapper.get('[data-testid="qualification-scale-active-count"]').text()).toBe('1 active in this qualification')
     expect(wrapper.find('[data-testid="qualification-scale-current-position"]').exists()).toBe(false)
     expect(wrapper.get('[data-testid="qualification-scale-projected-position"]').attributes('style')).toContain('left: 50%')
     expect(wrapper.text()).toContain('Junior')
@@ -75,6 +90,7 @@ describe('QualSeniorityScale', () => {
 
     expect(wrapper.text()).toContain('No qual data available.')
     expect(wrapper.find('[data-testid="qualification-scale-active-count"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="qualification-scale-roster-size"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="qualification-scale-projected-position"]').exists()).toBe(false)
   })
 

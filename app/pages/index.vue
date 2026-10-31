@@ -121,6 +121,8 @@ const BASE_QUAL_SCALES = [
 ]
 
 const DEMO_CURRENT_PCT = 35
+/** Company Roster Size shared by every demo row; matches the "My Status" card, not derived from a qualification. */
+const DEMO_ROSTER_SIZE = 4892
 const demoProjection = useState('landing-demo-projection', () => false)
 const demoProjectionYears = useState('landing-demo-projection-years', () => 5)
 
@@ -130,7 +132,7 @@ const demoQualScales = computed<PresentedQualificationPosition[]>(() => {
   return BASE_QUAL_SCALES.map(scale => ({
     qualification: { fleet: scale.fleet, seat: scale.seat, base: scale.base },
     activePilotCount: scale.activeCount,
-    rosterSize: Math.ceil(scale.activeCount * 1.05),
+    rosterSize: DEMO_ROSTER_SIZE,
     thresholdPercentile: scale.plugPercentile,
     thresholdSeniorityNumber: scale.plugSenNum,
     percentile25: scale.p25,
@@ -145,7 +147,6 @@ const demoQualScales = computed<PresentedQualificationPosition[]>(() => {
     projectedPercentile: projectedPct,
     currentPercentile: DEMO_CURRENT_PCT,
     modeledHoldable: projectedPct >= scale.plugPercentile,
-    hypotheticalLabel: null,
   }))
 })
 
