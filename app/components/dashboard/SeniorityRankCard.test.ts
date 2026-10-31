@@ -88,13 +88,27 @@ describe('SeniorityRankCard', () => {
     expect(wrapper.find('[data-testid="hypothetical-placement"]').exists()).toBe(false)
   })
 
-  it('shows the no-result reason in place of Rank and Seniority Percentile', async () => {
+  it('shows the no-result reason with an empty placeholder in place of every figure that needs a Rank', async () => {
     const wrapper = await mountSuspended(SeniorityRankCard, {
-      props: { rank: { ...rank, rank: 0, publicationPosition: 0, rosterSize: 0, noResultLabel: 'Anchor Pilot retired' } },
+      props: {
+        rank: {
+          ...rank,
+          rank: null,
+          publicationPosition: null,
+          rosterSize: null,
+          publicationPilotCount: null,
+          activePilotCount: null,
+          seniorityPercentile: null,
+          noResultLabel: 'Anchor Pilot retired',
+        },
+      },
     })
 
     expect(wrapper.get('[data-testid="no-result"]').text()).toBe('Anchor Pilot retired')
-    expect(wrapper.find('[data-testid="rank"]').exists()).toBe(false)
+    expect(wrapper.get('[data-testid="rank"]').findAll('p').map(item => item.text())).toEqual(['Rank', '--'])
+    expect(wrapper.get('[data-testid="roster-size"]').findAll('p').map(item => item.text())).toEqual(['Roster Size', '--'])
+    expect(wrapper.get('[data-testid="active-pilots"]').findAll('p').map(item => item.text())).toEqual(['Active pilots', '--'])
     expect(wrapper.text()).not.toContain('Seniority Percentile')
+    expect(wrapper.text()).not.toMatch(/Roster Size\s*0/)
   })
 })

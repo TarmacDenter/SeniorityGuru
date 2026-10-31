@@ -25,13 +25,13 @@ describe('useStanding', () => {
     const { rankCard } = useStanding()
     expect(rankCard.value).toEqual({
       seniorityNumber: 0,
-      rank: 0,
-      publicationPosition: 0,
-      rosterSize: 0,
-      publicationPilotCount: 0,
-      activePilotCount: 0,
+      rank: null,
+      publicationPosition: null,
+      rosterSize: null,
+      publicationPilotCount: null,
+      activePilotCount: null,
       isSimulated: false,
-      seniorityPercentile: 0,
+      seniorityPercentile: null,
       base: '--',
       seat: '--',
       fleet: '--',
@@ -207,7 +207,7 @@ describe('useStanding', () => {
         value: roster.toLocaleString(),
         trend: '4 in publication',
       })
-      expect(statCards.value[0]!.value).toBe(rankCard.value.rosterSize.toLocaleString())
+      expect(statCards.value[0]!.value).toBe(rankCard.value.rosterSize?.toLocaleString())
     })
   })
 
@@ -258,7 +258,7 @@ describe('useStanding', () => {
 
       expect(statCards.value[0]).toMatchObject({
         label: 'Roster Size (hypothetical)',
-        value: rankCard.value.rosterSize.toLocaleString(),
+        value: rankCard.value.rosterSize?.toLocaleString(),
         trend: 'includes you',
       })
     })
@@ -311,7 +311,30 @@ describe('useStanding', () => {
       expect(rankCard.value.hypotheticalLabel).toBeNull()
     })
 
-    it('still reports a retired Anchor Pilot outside the scope as the only no-result', () => {
+    it('carries no zero-filled figures for a retired Anchor Pilot and keeps the reason', () => {
+    mockStore.entries = [
+      makeEntry({ seniority_number: 10, employee_number: 'E1', retire_date: '2050-01-01' }),
+      makeEntry({ seniority_number: 40, employee_number: 'E2', retire_date: '2020-01-01' }),
+    ]
+    mockUserStore.employeeNumber = 'E2'
+
+    const { rankCard, statCards } = useStanding()
+
+    expect(rankCard.value).toMatchObject({
+      seniorityNumber: 40,
+      rank: null,
+      publicationPosition: null,
+      rosterSize: null,
+      publicationPilotCount: null,
+      activePilotCount: null,
+      seniorityPercentile: null,
+      noResultLabel: 'Anchor Pilot retired',
+    })
+    expect(statCards.value[0]).toEqual({ label: 'Roster Size', value: '--', icon: 'i-lucide-users' })
+    expect(statCards.value[2]).toMatchObject({ label: 'Your Base Rank', value: '--' })
+  })
+
+  it('still reports a retired Anchor Pilot outside the scope as the only no-result', () => {
       outsideScopeRoster()
       mockStore.entries[1] = makeEntry({ seniority_number: 40, employee_number: 'E2', base: 'LAX', retire_date: '2020-01-01' })
       const { rankCard } = useStanding(ref<QualificationScope>({ base: 'JFK' }))

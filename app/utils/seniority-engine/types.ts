@@ -97,6 +97,8 @@ export interface SeniorityStanding {
   readonly qualificationStandings: readonly QualificationStanding[]
   /** True when the Anchor Pilot is outside the Qualification Scope and is placed there by Seniority Number. */
   readonly isHypothetical: boolean
+  /** True when the Anchor Pilot is the modeled New Hire pilot rather than a pilot in the publication. */
+  readonly isModeled: boolean
 }
 
 export interface AgeBucket {

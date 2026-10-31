@@ -124,8 +124,8 @@ const ready = useDeferredReady()
         </template>
       </UCollapsible>
 
-      <p v-if="rankCard.rosterSize > 0" data-testid="trajectory-roster-size" class="text-xs text-muted">
-        Roster Size {{ rankCard.rosterSize.toLocaleString() }} · Active pilots {{ rankCard.activePilotCount.toLocaleString() }}
+      <p v-if="rankCard.rosterSize !== null" data-testid="trajectory-roster-size" class="text-xs text-muted">
+        Roster Size {{ rankCard.rosterSize.toLocaleString() }} · Active pilots {{ rankCard.activePilotCount?.toLocaleString() }}
       </p>
 
       <!-- Full Trajectory Chart -->
@@ -172,8 +172,8 @@ const ready = useDeferredReady()
         @dismiss="dismissBanner"
       />
 
-      <p v-if="scopedRankCard.rosterSize > 0" data-testid="scoped-roster-size" class="text-xs text-muted">
-        Percentile measured against Roster Size {{ scopedRankCard.rosterSize.toLocaleString() }} · Active pilots {{ scopedRankCard.activePilotCount.toLocaleString() }}
+      <p v-if="scopedRankCard.rosterSize !== null" data-testid="scoped-roster-size" class="text-xs text-muted">
+        Percentile measured against Roster Size {{ scopedRankCard.rosterSize.toLocaleString() }} · Active pilots {{ scopedRankCard.activePilotCount?.toLocaleString() }}
       </p>
 
       <p v-if="waveTrajectoryNoResult" data-testid="no-result" class="text-sm text-muted">{{ waveTrajectoryNoResult.label }}</p>

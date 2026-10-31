@@ -9,7 +9,7 @@ const props = defineProps<{
 
 const animatedPercentile = ref(0)
 watch(() => props.rank.seniorityPercentile, (percentile) => {
-  animatedPercentile.value = percentile
+  animatedPercentile.value = percentile ?? 0
 })
 
 const yearsOfService = computed(() => {
@@ -18,12 +18,18 @@ const yearsOfService = computed(() => {
   return years >= 0 ? years : null
 })
 
+const PLACEHOLDER = '--'
+
+function formatCount(value: number | null): string {
+  return value === null ? PLACEHOLDER : value.toLocaleString()
+}
+
 // 'accent' is a custom UCard variant defined in app.config.ts — not in Nuxt UI types
 const accentVariant = 'accent' as 'solid'
 
 onMounted(() => {
   requestAnimationFrame(() => {
-    animatedPercentile.value = props.rank.seniorityPercentile
+    animatedPercentile.value = props.rank.seniorityPercentile ?? 0
   })
 })
 </script>
@@ -60,31 +66,31 @@ onMounted(() => {
     </div>
 
     <p v-if="rank.noResultLabel" data-testid="no-result" class="font-mono font-semibold text-highlighted mt-4">{{ rank.noResultLabel }}</p>
-    <template v-else>
-      <div v-if="rank.hypotheticalLabel" data-testid="hypothetical-placement" class="mt-4">
-        <p class="text-sm font-semibold text-warning">{{ rank.hypotheticalLabel }}</p>
-        <p class="text-xs text-muted">You are not in this scope. Rank and Roster Size place you in it by Seniority Number and count you as a modeled pilot.</p>
+    <div v-else-if="rank.hypotheticalLabel" data-testid="hypothetical-placement" class="mt-4">
+      <p class="text-sm font-semibold text-warning">{{ rank.hypotheticalLabel }}</p>
+      <p class="text-xs text-muted">You are not in this scope. Rank and Roster Size place you in it by Seniority Number and count you as a modeled pilot.</p>
+    </div>
+    <div class="mt-4" data-testid="rank">
+      <p class="text-xs text-muted">Rank</p>
+      <p class="text-3xl font-bold font-mono text-highlighted">{{ formatCount(rank.rank) }}</p>
+    </div>
+    <div class="grid grid-cols-3 gap-4 mt-3">
+      <div data-testid="publication-position">
+        <p class="text-xs text-muted">Publication Position</p>
+        <p class="font-mono font-semibold text-highlighted">{{ formatCount(rank.publicationPosition) }}</p>
       </div>
-      <div class="mt-4" data-testid="rank">
-        <p class="text-xs text-muted">Rank</p>
-        <p class="text-3xl font-bold font-mono text-highlighted">{{ rank.rank.toLocaleString() }}</p>
+      <div data-testid="roster-size">
+        <p class="text-xs text-muted">Roster Size</p>
+        <p class="font-mono font-semibold text-highlighted">{{ formatCount(rank.rosterSize) }}</p>
       </div>
-      <div class="grid grid-cols-3 gap-4 mt-3">
-        <div data-testid="publication-position">
-          <p class="text-xs text-muted">Publication Position</p>
-          <p class="font-mono font-semibold text-highlighted">{{ rank.publicationPosition.toLocaleString() }}</p>
-        </div>
-        <div data-testid="roster-size">
-          <p class="text-xs text-muted">Roster Size</p>
-          <p class="font-mono font-semibold text-highlighted">{{ rank.rosterSize.toLocaleString() }}</p>
-        </div>
-        <div data-testid="active-pilots">
-          <p class="text-xs text-muted">Active pilots</p>
-          <p class="font-mono font-semibold text-highlighted">{{ rank.activePilotCount.toLocaleString() }}</p>
-        </div>
+      <div data-testid="active-pilots">
+        <p class="text-xs text-muted">Active pilots</p>
+        <p class="font-mono font-semibold text-highlighted">{{ formatCount(rank.activePilotCount) }}</p>
       </div>
+    </div>
+    <template v-if="!rank.noResultLabel">
       <p v-if="rank.isSimulated" class="text-xs text-muted mt-2">
-        Modeled counts include the simulated pilot ({{ rank.publicationPilotCount.toLocaleString() }} in publication).
+        Modeled counts include the simulated pilot ({{ formatCount(rank.publicationPilotCount) }} in publication).
       </p>
 
       <div class="mt-4">
@@ -102,7 +108,7 @@ onMounted(() => {
         />
       </div>
 
-      <p data-testid="rank-summary" class="text-xs text-muted mt-2">Rank {{ rank.rank.toLocaleString() }} of {{ rank.rosterSize.toLocaleString() }} on roster · {{ rank.activePilotCount.toLocaleString() }} active · Publication Position {{ rank.publicationPosition.toLocaleString() }} · Seniority Number {{ rank.seniorityNumber.toLocaleString() }}</p>
+      <p data-testid="rank-summary" class="text-xs text-muted mt-2">Rank {{ formatCount(rank.rank) }} of {{ formatCount(rank.rosterSize) }} on roster · {{ formatCount(rank.activePilotCount) }} active · Publication Position {{ formatCount(rank.publicationPosition) }} · Seniority Number {{ rank.seniorityNumber.toLocaleString() }}</p>
     </template>
 
     <p v-if="yearsOfService !== null" class="text-xs text-muted mt-2">

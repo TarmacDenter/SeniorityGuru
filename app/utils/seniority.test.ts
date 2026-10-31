@@ -214,3 +214,51 @@ describe('publication pilot count', () => {
       .toMatchObject({ seniorityPercentile: resultOf(merged.withAnchor('_new_hire').seniorityStanding().domain).seniorityPercentile })
   })
 })
+
+describe('presented Standing labels', () => {
+  const modeled = makeEntry({ seniority_number: 141, employee_number: '_new_hire', base: 'JFK', seat: 'CA', fleet: '737', retire_date: '2060-01-01' })
+
+  it('labels Roster Size plainly for a real Anchor Pilot in scope', () => {
+    const output = createAnalysis().withAnchor('125').seniorityStanding()
+    const presentation = resultOf(output.presentation)
+
+    expect(resultOf(output.domain).isModeled).toBe(false)
+    expect(presentation.rosterSizeLabel).toBe('Roster Size')
+    expect(presentation.rosterSizeTrend).toBeNull()
+    expect(presentation.retirementsSeniorToAnchorLabel).toBe('1 senior to you')
+  })
+
+  it('labels a modeled New Hire pilot with the real publication count', () => {
+    const analysis = seniority.createSeniorityAnalysis({ entries, modeledEntry: modeled, asOfDate })
+    const output = analysis.withAnchor('_new_hire').seniorityStanding()
+    const presentation = resultOf(output.presentation)
+
+    expect(resultOf(output.domain).isModeled).toBe(true)
+    expect(presentation.rosterSizeLabel).toBe('Roster Size (modeled)')
+    expect(presentation.rosterSizeTrend).toBe('5 in publication')
+  })
+
+  it('labels a modeled pilot placed hypothetically in a scope', () => {
+    const analysis = seniority.createSeniorityAnalysis({ entries, modeledEntry: modeled, asOfDate })
+    const presentation = resultOf(analysis.withAnchor('_new_hire')
+      .seniorityStanding({ scenario: { qualificationScope: { base: 'ATL' } } }).presentation)
+
+    expect(presentation.rosterSizeLabel).toBe('Roster Size (modeled, hypothetical)')
+    expect(presentation.rosterSizeTrend).toBe('2 in publication · includes you')
+  })
+
+  it('labels a hypothetical real pilot', () => {
+    const presentation = resultOf(createAnalysis().withAnchor('125')
+      .seniorityStanding({ scenario: { qualificationScope: { base: 'ATL' } } }).presentation)
+
+    expect(presentation.rosterSizeLabel).toBe('Roster Size (hypothetical)')
+    expect(presentation.rosterSizeTrend).toBe('includes you')
+  })
+
+  it('describes each Qualification row with its own roster and active counts', () => {
+    const rows = resultOf(createAnalysis().withAnchor('125').seniorityStanding().presentation).qualificationStandings
+    const own = rows.find(row => row.isAnchorCurrentQualification)!
+
+    expect(own.rosterTrendLabel).toBe('CA/737/JFK · of 3 on roster · 2 active')
+  })
+})

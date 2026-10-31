@@ -154,15 +154,33 @@ export function formatSeniorityRankChange(value: number): string {
   return value > 0 ? `+${value}` : String(value)
 }
 
+/** "Roster Size (modeled, hypothetical)": names why the count is not purely the published list. */
+function rosterSizeQualifiers(standing: SeniorityStanding): string[] {
+  return [standing.isModeled && 'modeled', standing.isHypothetical && 'hypothetical'].filter((item): item is string => !!item)
+}
+
+function rosterSizeTrend(standing: SeniorityStanding): string | null {
+  const parts = [
+    standing.isModeled && `${formatSeniorityCount(standing.publicationPilotCount)} in publication`,
+    standing.isHypothetical && 'includes you',
+  ].filter((item): item is string => !!item)
+  return parts.length > 0 ? parts.join(' · ') : null
+}
+
 export function presentSeniorityStanding(standing: SeniorityStanding | NoResult, scope: QualificationScope = {}) {
   if (isNoResult(standing)) return standing
+  const qualifiers = rosterSizeQualifiers(standing)
   return {
     ...standing,
     rollingNext12MonthRetirementsLabel: formatSeniorityCount(standing.rollingNext12MonthRetirements),
+    retirementsSeniorToAnchorLabel: `${formatSeniorityCount(standing.rollingNext12MonthRetirementsSeniorToAnchor)} senior to you`,
+    rosterSizeLabel: qualifiers.length > 0 ? `Roster Size (${qualifiers.join(', ')})` : 'Roster Size',
+    rosterSizeTrend: rosterSizeTrend(standing),
     hypotheticalLabel: hypotheticalPlacementLabel(standing.isHypothetical, scope),
     qualificationStandings: standing.qualificationStandings.map(item => ({
       ...item,
       qualificationLabel: formatQualification(item.qualification),
+      rosterTrendLabel: `${formatQualification(item.qualification)} · of ${formatSeniorityCount(item.rosterSize)} on roster · ${formatSeniorityCount(item.activePilotCount)} active`,
       hypotheticalLabel: hypotheticalPlacementLabel(item.isHypothetical, item.qualification),
     })),
   }

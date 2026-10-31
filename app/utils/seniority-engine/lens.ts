@@ -277,6 +277,7 @@ class AnchoredSeniorityLensImplementation implements AnchoredSeniorityLens {
         rollingNext12MonthRetirementsSeniorToAnchor,
         qualificationStandings,
         isHypothetical: isHypothetical(scenario.qualificationScope),
+        isModeled: normalizeEmployeeNumber(anchor.employee_number) === context.modeledEmployeeNumber,
       }
     }, options => `seniority-standing:${stableStringify(options?.scenario?.qualificationScope ?? {})}`)
 
