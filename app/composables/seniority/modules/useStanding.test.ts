@@ -457,16 +457,6 @@ describe('useStanding', () => {
     expect(cards[3]!.value).toBe((2).toLocaleString())
   })
 
-  it('carries the end reason onto the retirement snapshot', () => {
-    mockStore.entries = [
-      makeEntry({ seniority_number: 1, employee_number: 'E1', retire_date: '2035-06-15' }),
-      makeEntry({ seniority_number: 2, employee_number: 'E2', retire_date: '2040-06-15' }),
-    ]
-    mockUserStore.employeeNumber = 'E2'
-
-    expect(useStanding().retirementSnapshot.value?.endedByLabel).toBe('Anchor Pilot retired')
-  })
-
   it('returns retirementSnapshot when trajectory data exists', () => {
     mockStore.entries = [
       makeEntry({ seniority_number: 1, employee_number: 'E1', base: 'JFK', seat: 'CA', fleet: '737', retire_date: '2035-06-15' }),

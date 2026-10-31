@@ -17,6 +17,8 @@ defineProps<{
   trajectoryChanges: PresentedTrajectoryChange[]
   baseStatusData: BaseStatusRow[]
   trajectoryChartData: { labels: string[]; data: number[] }
+  /** Why the plotted trajectory stops early, e.g. "Anchor Pilot retired"; null when it runs its full window. */
+  trajectoryEndedByLabel: string | null
 }>()
 </script>
 
@@ -80,7 +82,7 @@ defineProps<{
 
       <!-- Career Trajectory -->
       <div v-if="userFound" class="mt-6">
-        <DashboardTrajectoryChart :data="trajectoryChartData" :ended-by-label="retirementSnapshot?.endedByLabel" />
+        <DashboardTrajectoryChart :data="trajectoryChartData" :ended-by-label="trajectoryEndedByLabel" />
       </div>
     </template>
   </div>

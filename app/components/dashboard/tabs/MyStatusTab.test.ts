@@ -4,6 +4,7 @@ import { defineComponent, h, ref } from 'vue'
 import { UApp } from '#components'
 import { _resetCoreSingletons, useSeniorityCore } from '~/composables/seniority/modules/useSeniorityCore'
 import { useStanding } from '~/composables/seniority/modules/useStanding'
+import { useTrajectory } from '~/composables/seniority/modules/useTrajectory'
 import { resetMockStores } from '~/test-utils/seniority-mocks'
 import type { QualificationScope } from '~/utils/seniority'
 import DashboardStatCard from '../DashboardStatCard.vue'
@@ -15,8 +16,6 @@ vi.mock('~/stores/seniority', () => ({ useSeniorityStore: () => mockStore }))
 vi.mock('~/stores/user', () => ({ useUserStore: () => mockUserStore }))
 vi.mock('~/utils/db', () => ({ db: { preferences: { get: vi.fn().mockResolvedValue(undefined), put: vi.fn().mockResolvedValue('key') } } }))
 
-vi.mock('~/components/dashboard/TrajectoryChart.vue', () => ({ default: { template: '<div />' } }))
-
 const { makeEntry } = await import('~/test-utils/factories')
 
 /** Feeds MyStatusTab from the real useStanding, the way the dashboard page does. */
@@ -24,6 +23,7 @@ function harness(scope: ReturnType<typeof ref<QualificationScope>>) {
   return defineComponent({
     setup() {
       const { rankCard, statCards, retirementSnapshot, baseStatus } = useStanding(scope as any)
+      const { chartData, endedByLabel } = useTrajectory()
       return () => h(UApp, null, () => h(MyStatusTab, {
         loading: false,
         hasData: true,
@@ -36,7 +36,8 @@ function harness(scope: ReturnType<typeof ref<QualificationScope>>) {
         retirementSnapshot: retirementSnapshot.value,
         trajectoryChanges: [],
         baseStatusData: baseStatus.value,
-        trajectoryChartData: { labels: [], data: [] },
+        trajectoryChartData: chartData.value,
+        trajectoryEndedByLabel: endedByLabel.value,
       }))
     },
   })
@@ -59,7 +60,7 @@ describe('MyStatusTab Roster Size', () => {
     ]
     mockUserStore.employeeNumber = 'E3'
     const scope = ref<QualificationScope>({})
-    const wrapper = await mountSuspended(harness(scope))
+    const wrapper = await mountSuspended(harness(scope), { global: { stubs: { DashboardChart: true } } })
     const companyWide = wrapper.get('[data-testid="roster-size"]').findAll('p')[1]!.text()
     expect(companyWide).toBe('5')
 
@@ -76,5 +77,18 @@ describe('MyStatusTab Roster Size', () => {
     scope.value = { base: 'JFK', seat: 'FO', fleet: '320' }
     await wrapper.vm.$nextTick()
     expect(wrapper.get('[data-testid="roster-size"]').findAll('p')[1]!.text()).toBe('3')
+  })
+})
+
+describe('MyStatusTab end-of-trajectory message', () => {
+  it('says once that the trajectory ends at the Anchor Pilot retirement', async () => {
+    mockStore.entries = [
+      makeEntry({ seniority_number: 1, employee_number: 'E1', retire_date: '2035-06-15' }),
+      makeEntry({ seniority_number: 2, employee_number: 'E2', retire_date: '2040-06-15' }),
+    ]
+    mockUserStore.employeeNumber = 'E2'
+    const wrapper = await mountSuspended(harness(ref<QualificationScope>({})), { global: { stubs: { DashboardChart: true } } })
+
+    expect(wrapper.findAll('[data-testid="trajectory-ended-by"]').map(item => item.text())).toEqual(['Anchor Pilot retired'])
   })
 })

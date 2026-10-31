@@ -75,7 +75,7 @@ const { scopeOptions: scopeLabels, specForLabel } = useScopeFilter(scopeOptionLi
 const selectedScopeLabel = ref('Company-wide')
 const standingScope = computed(() => specForLabel(selectedScopeLabel.value))
 const { rankCard, statCards: stats, retirementSnapshot, baseStatus: baseStatusData } = useStanding(standingScope)
-const { chartData: trajectoryChartData, changes: trajectoryChanges } = useTrajectory()
+const { chartData: trajectoryChartData, changes: trajectoryChanges, endedByLabel: trajectoryEndedByLabel } = useTrajectory()
 const isCompactViewport = useMediaQuery('(max-width: 639px), (max-height: 499px)')
 const dashboardControlsOpen = ref(false)
 const compactNoticeDismissed = ref<string | null>(null)
@@ -217,6 +217,7 @@ const panelUi = computed(() => ({
         :trajectory-changes="trajectoryChanges"
         :base-status-data="baseStatusData"
         :trajectory-chart-data="trajectoryChartData"
+        :trajectory-ended-by-label="trajectoryEndedByLabel"
       />
 
       <!-- Demographics tab -->
