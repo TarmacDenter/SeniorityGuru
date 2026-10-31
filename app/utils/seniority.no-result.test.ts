@@ -91,34 +91,18 @@ describe('Anchor Pilot retires during the projection window', () => {
 describe('Anchor Pilot outside the Qualification Scope', () => {
   const scenario = { qualificationScope: { base: 'ATL' } }
 
-  it('returns no-result Standing, trajectory, and Qualification Position', () => {
+  it('still returns results, marked as a Hypothetical Placement, instead of a no-result', () => {
     const anchored = analysis().withAnchor('MID-WINDOW')
-    const expected = { kind: 'no-result', reason: 'anchor-not-in-scope', label: 'Anchor Pilot not in scope' }
 
-    expect(anchored.seniorityStanding({ scenario }).domain).toEqual(expected)
-    expect(anchored.seniorityStanding({ scenario }).presentation).toEqual(expected)
-    expect(anchored.seniorityTrajectory({ through, scenario }).domain).toEqual(expected)
-    expect(anchored.percentileCrossing({ through, scenario, targetPercentile: 50 }).domain).toEqual(expected)
-    expect(anchored.qualificationPositions({ through, qualificationScope: scenario.qualificationScope }).domain).toEqual(expected)
-    expect(anchored.seniorityTrajectoryComparison({ through, comparisonScenario: scenario }).domain).toEqual(expected)
+    expect(isNoResult(anchored.seniorityStanding({ scenario }).domain)).toBe(false)
+    expect(isNoResult(anchored.seniorityTrajectory({ through, scenario }).domain)).toBe(false)
+    expect(isNoResult(anchored.percentileCrossing({ through, scenario, targetPercentile: 50 }).domain)).toBe(false)
+    expect(isNoResult(anchored.qualificationPositions({ through, qualificationScope: scenario.qualificationScope }).domain)).toBe(false)
+    expect(isNoResult(anchored.seniorityTrajectoryComparison({ through, comparisonScenario: scenario }).domain)).toBe(false)
   })
 
-  it('judges scope across multiple qualification dimensions', () => {
-    const anchored = analysis().withAnchor('MID-WINDOW')
-    const inScope = { qualificationScope: { base: 'JFK', seat: 'CA', fleet: '737' } }
-    const outOfScope = { qualificationScope: { base: 'JFK', seat: 'FO', fleet: '737' } }
-
-    expect(isNoResult(anchored.seniorityStanding({ scenario: inScope }).domain)).toBe(false)
-    expect(anchored.seniorityStanding({ scenario: outOfScope }).domain).toMatchObject({ reason: 'anchor-not-in-scope' })
-  })
-
-  it('treats an empty scope as company-wide', () => {
-    const anchored = analysis().withAnchor('MID-WINDOW')
-    expect(isNoResult(anchored.seniorityStanding({ scenario: { qualificationScope: {} } }).domain)).toBe(false)
-    expect(isNoResult(anchored.qualificationPositions({ through, qualificationScope: {} }).domain)).toBe(false)
-  })
-
-  it('reports out-of-scope before retired when both apply', () => {
-    expect(analysis().withAnchor('RETIRED').seniorityStanding({ scenario }).domain).toMatchObject({ reason: 'anchor-not-in-scope' })
+  it('reports a retired Anchor Pilot as retired even when outside the scope', () => {
+    const expected = { kind: 'no-result', reason: 'anchor-retired', label: 'Anchor Pilot retired' }
+    expect(analysis().withAnchor('RETIRED').seniorityStanding({ scenario }).domain).toEqual(expected)
   })
 })

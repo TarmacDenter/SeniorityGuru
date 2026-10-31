@@ -173,6 +173,7 @@ describe('anchored analysis', () => {
       activePilotCount: 2,
       seniorityPercentile: 66.7,
       isAnchorCurrentQualification: true,
+      isHypothetical: false,
     })
   })
 

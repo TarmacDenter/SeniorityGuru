@@ -223,24 +223,26 @@ function anchoredSeniorityAnalysis(lens: AnchoredSeniorityLens, asOfDate: PlainD
       const positions = isNoResult(found) ? [] : found
       return seniorityOutput(domain, value => presentAnchoredSeniorityDemographics(value, positions))
     },
-    seniorityStanding: options => seniorityOutput(
-      lens.seniorityStanding({ scenario: createSeniorityScenario(options?.scenario) }),
-      presentSeniorityStanding,
-    ),
+    seniorityStanding: (options) => {
+      const scenario = createSeniorityScenario(options?.scenario)
+      return seniorityOutput(
+        lens.seniorityStanding({ scenario }),
+        value => presentSeniorityStanding(value, scenario.qualificationScope),
+      )
+    },
     seniorityTrajectory: (options) => {
-      const domain = lens.seniorityTrajectory({
-        through: options.through,
-        scenario: createSeniorityScenario(options.scenario),
-      })
-      return seniorityOutput(domain, presentSeniorityTrajectory)
+      const scenario = createSeniorityScenario(options.scenario)
+      const domain = lens.seniorityTrajectory({ through: options.through, scenario })
+      return seniorityOutput(domain, value => presentSeniorityTrajectory(value, scenario.qualificationScope))
     },
     seniorityTrajectoryComparison: (options) => {
-      const domain = lens.seniorityTrajectoryComparison({
-        through: options.through,
-        baselineScenario: createSeniorityScenario(options.baselineScenario),
-        comparisonScenario: createSeniorityScenario(options.comparisonScenario),
-      })
-      return seniorityOutput(domain, presentSeniorityTrajectoryComparison)
+      const baselineScenario = createSeniorityScenario(options.baselineScenario)
+      const comparisonScenario = createSeniorityScenario(options.comparisonScenario)
+      const domain = lens.seniorityTrajectoryComparison({ through: options.through, baselineScenario, comparisonScenario })
+      return seniorityOutput(
+        domain,
+        value => presentSeniorityTrajectoryComparison(value, baselineScenario.qualificationScope, comparisonScenario.qualificationScope),
+      )
     },
     percentileCrossing: (options) => {
       const domain = lens.percentileCrossing({
@@ -252,7 +254,7 @@ function anchoredSeniorityAnalysis(lens: AnchoredSeniorityLens, asOfDate: PlainD
     },
     qualificationPositions: (options) => {
       const domain = lens.qualificationPositions(options)
-      return seniorityOutput(domain, presentQualificationPositions)
+      return seniorityOutput(domain, value => presentQualificationPositions(value, options.qualificationScope ?? {}))
     },
     relativeUpcomingRetirements: options => lens.relativeUpcomingRetirements(options),
   }

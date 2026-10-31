@@ -42,6 +42,7 @@ describe('seniority presentation', () => {
         { date: date('2028-01-01'), percentile: 19, percentilePointChange: 7 },
         { date: date('2029-01-01'), percentile: 22, percentilePointChange: 3 },
       ],
+      isHypothetical: false,
     }
 
     expect(presentSeniorityTrajectory(trajectory)).toEqual({
@@ -55,7 +56,19 @@ describe('seniority presentation', () => {
         { date: date('2029-01-01'), percentile: 22, percentilePointChange: 3, isPeak: false },
       ],
       endedByLabel: null,
+      hypotheticalLabel: null,
     })
+  })
+
+  it('names the scope in the Hypothetical Placement label', () => {
+    const trajectory: SeniorityTrajectory = {
+      points: [{ date: date('2026-01-01'), rank: 9, percentile: 10 }],
+      changes: [],
+      isHypothetical: true,
+    }
+
+    expect(presentSeniorityTrajectory(trajectory, { base: 'BOS', seat: 'CA', fleet: '220' }))
+      .toMatchObject({ hypotheticalLabel: 'Hypothetical Placement in BOS CA 220' })
   })
 
   it('maps a constructed comparison without recalculating either series', () => {
@@ -64,13 +77,17 @@ describe('seniority presentation', () => {
         { date: date('2026-03-15'), baselinePercentile: 17.2, comparisonPercentile: 88.4 },
         { date: date('2027-03-15'), baselinePercentile: 91.1, comparisonPercentile: 6.3 },
       ],
+      baselineIsHypothetical: false,
+      comparisonIsHypothetical: true,
     }
 
-    expect(presentSeniorityTrajectoryComparison(comparison)).toEqual({
+    expect(presentSeniorityTrajectoryComparison(comparison, {}, { base: 'BOS' })).toEqual({
       labels: ['2026-03-15', '2027-03-15'],
       baselineData: [17.2, 91.1],
       comparisonData: [88.4, 6.3],
       endedByLabel: null,
+      baselineHypotheticalLabel: null,
+      comparisonHypotheticalLabel: 'Hypothetical Placement in BOS',
     })
   })
 
@@ -201,9 +218,10 @@ describe('seniority presentation', () => {
       currentPercentile: 42,
       projectedPercentile: 61,
       modeledHoldable: true,
+      isHypothetical: true,
     }]
 
-    expect(presentQualificationPositions(positions)).toEqual([{
+    expect(presentQualificationPositions(positions, { seat: 'CA' })).toEqual([{
       qualification: { base: 'JFK', seat: 'CA', fleet: '737' },
       activePilotCount: 12,
       rosterSize: 15,
@@ -217,6 +235,7 @@ describe('seniority presentation', () => {
       currentPercentile: 42,
       projectedPercentile: 61,
       modeledHoldable: true,
+      hypotheticalLabel: 'Hypothetical Placement in CA',
     }])
   })
 
@@ -249,6 +268,7 @@ describe('seniority presentation', () => {
       currentPercentile: 42,
       projectedPercentile: 61,
       modeledHoldable: true,
+      isHypothetical: false,
     }]
 
     expect(presentAnchoredSeniorityDemographics(demographics, positions)

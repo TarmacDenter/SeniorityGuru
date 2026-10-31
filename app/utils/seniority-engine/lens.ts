@@ -1,5 +1,6 @@
 import type {
   AnchoredSeniorityLens,
+  EntryPredicate,
   CommonSeniorityLens,
   DemographicsOptions,
   NoResult,
@@ -56,7 +57,6 @@ export class AnchorNotFoundError extends Error {
 }
 
 const ANCHOR_RETIRED: NoResult = { kind: 'no-result', reason: 'anchor-retired', label: 'Anchor Pilot retired' }
-const ANCHOR_NOT_IN_SCOPE: NoResult = { kind: 'no-result', reason: 'anchor-not-in-scope', label: 'Anchor Pilot not in scope' }
 
 interface LensContext {
   readonly snapshot: SenioritySnapshot
@@ -192,11 +192,15 @@ class AnchoredSeniorityLensImplementation implements AnchoredSeniorityLens {
       calculateSeniorityRank(entries, number) - countRetiredPilotsSeniorTo(entries, number, asOfDate(context))
     const anchorDynamicRank = dynamicRank(seniorityNumber)
 
-    /** Scope is judged before retirement: an out-of-scope Anchor Pilot has no Rank in the scope at all. */
-    const noResultFor = (scope: QualificationScope, date: Temporal.PlainDate): NoResult | null => {
-      if (!qualificationScopeToEntryPredicate(scope)(anchor)) return ANCHOR_NOT_IN_SCOPE
-      if (anchor.retire_date && isRetiredBy(anchor.retire_date, date)) return ANCHOR_RETIRED
-      return null
+    /** Only a retired Anchor Pilot has no result; an out-of-scope Anchor Pilot gets a Hypothetical Placement. */
+    const noResultFor = (date: Temporal.PlainDate): NoResult | null =>
+      anchor.retire_date && isRetiredBy(anchor.retire_date, date) ? ANCHOR_RETIRED : null
+    /** Hypothetical Placement: the Anchor Pilot is outside the scope and is slotted in by Seniority Number. */
+    const isHypothetical = (scope: QualificationScope): boolean => !qualificationScopeToEntryPredicate(scope)(anchor)
+    /** The scope's members plus the Anchor Pilot, so Rank, Roster Size and growth share one population. */
+    const scopePredicateIncludingAnchor = (scope: QualificationScope): EntryPredicate => {
+      const inScope = qualificationScopeToEntryPredicate(scope)
+      return entry => entry.seniority_number === seniorityNumber || inScope(entry)
     }
     const endedBy = (through: Temporal.PlainDate): NoResult | undefined =>
       anchor.retire_date && isRetiredBy(anchor.retire_date, through) ? ANCHOR_RETIRED : undefined
@@ -204,16 +208,19 @@ class AnchoredSeniorityLensImplementation implements AnchoredSeniorityLens {
     this.seniorityStanding = memoizeLast((options) => {
       const today = asOfDate(context)
       const scenario = options?.scenario ?? createSeniorityScenario()
-      const unavailable = noResultFor(scenario.qualificationScope, today)
+      const unavailable = noResultFor(today)
       if (unavailable) return unavailable
-      const scopedEntries = entries.filter(qualificationScopeToEntryPredicate(scenario.qualificationScope))
+      const scopedEntries = entries.filter(scopePredicateIncludingAnchor(scenario.qualificationScope))
       const publicationPosition = calculateSeniorityRank(scopedEntries, seniorityNumber)
       const retiredPilotsSeniorToAnchor = countRetiredPilotsSeniorTo(scopedEntries, seniorityNumber, today)
       const qualificationStandings: QualificationStanding[] = []
 
       for (const qualificationEntries of context.snapshot.entriesByQualification.values()) {
         const first = qualificationEntries[0]!
-        const rosterSize = qualificationEntries.length
+        const isAnchorCurrentQualification =
+          anchor.base === first.base && anchor.seat === first.seat && anchor.fleet === first.fleet
+        const modeledAnchorCount = isAnchorCurrentQualification ? 0 : 1
+        const rosterSize = qualificationEntries.length + modeledAnchorCount
         const retiredPilotCount = qualificationEntries.filter(entry =>
           entry.retire_date && isRetiredBy(entry.retire_date, today),
         ).length
@@ -230,8 +237,8 @@ class AnchoredSeniorityLensImplementation implements AnchoredSeniorityLens {
           rosterSize,
           activePilotCount: rosterSize - retiredPilotCount,
           seniorityPercentile: calculateSeniorityPercentile(rank, rosterSize),
-          isAnchorCurrentQualification:
-            anchor.base === first.base && anchor.seat === first.seat && anchor.fleet === first.fleet,
+          isAnchorCurrentQualification,
+          isHypothetical: !isAnchorCurrentQualification,
         })
       }
 
@@ -255,41 +262,46 @@ class AnchoredSeniorityLensImplementation implements AnchoredSeniorityLens {
         rollingNext12MonthRetirements: context.retirementsNext12Months(),
         rollingNext12MonthRetirementsSeniorToAnchor,
         qualificationStandings,
+        isHypothetical: isHypothetical(scenario.qualificationScope),
       }
     }, options => `seniority-standing:${stableStringify(options?.scenario?.qualificationScope ?? {})}`)
 
     this.seniorityTrajectory = memoizeLast((options) => {
       const scenario = options.scenario ?? createSeniorityScenario()
-      const unavailable = noResultFor(scenario.qualificationScope, asOfDate(context))
+      const unavailable = noResultFor(asOfDate(context))
       if (unavailable) return unavailable
       const trajectory = calculateSeniorityTrajectory({
         entries,
         seniorityNumber,
         from: asOfDate(context),
         through: options.through,
-        predicate: qualificationScopeToEntryPredicate(scenario.qualificationScope),
+        predicate: scopePredicateIncludingAnchor(scenario.qualificationScope),
         growthAssumptions: scenario.growthAssumptions,
         anchorRetireDate: anchor.retire_date ?? undefined,
       })
-      return { ...trajectory, endedBy: endedBy(options.through) }
+      return { ...trajectory, endedBy: endedBy(options.through), isHypothetical: isHypothetical(scenario.qualificationScope) }
     })
 
     this.seniorityTrajectoryComparison = memoizeLast((options) => {
-      const unavailable = noResultFor(options.baselineScenario.qualificationScope, asOfDate(context))
-        ?? noResultFor(options.comparisonScenario.qualificationScope, asOfDate(context))
+      const unavailable = noResultFor(asOfDate(context))
       if (unavailable) return unavailable
       const comparison = calculateSeniorityTrajectoryComparison({
         entries,
         seniorityNumber,
         from: asOfDate(context),
         through: options.through,
-        baselinePredicate: qualificationScopeToEntryPredicate(options.baselineScenario.qualificationScope),
-        comparisonPredicate: qualificationScopeToEntryPredicate(options.comparisonScenario.qualificationScope),
+        baselinePredicate: scopePredicateIncludingAnchor(options.baselineScenario.qualificationScope),
+        comparisonPredicate: scopePredicateIncludingAnchor(options.comparisonScenario.qualificationScope),
         baselineGrowthAssumptions: options.baselineScenario.growthAssumptions,
         comparisonGrowthAssumptions: options.comparisonScenario.growthAssumptions,
         anchorRetireDate: anchor.retire_date ?? undefined,
       })
-      return { ...comparison, endedBy: endedBy(options.through) }
+      return {
+        ...comparison,
+        endedBy: endedBy(options.through),
+        baselineIsHypothetical: isHypothetical(options.baselineScenario.qualificationScope),
+        comparisonIsHypothetical: isHypothetical(options.comparisonScenario.qualificationScope),
+      }
     })
 
     this.percentileCrossing = memoizeLast((options) => {
@@ -299,16 +311,18 @@ class AnchoredSeniorityLensImplementation implements AnchoredSeniorityLens {
     })
 
     this.qualificationPositions = memoizeLast((options) => {
-      const unavailable = noResultFor(options.qualificationScope ?? {}, asOfDate(context))
+      const unavailable = noResultFor(asOfDate(context))
       if (unavailable) return unavailable
+      const scope = options.qualificationScope ?? {}
+      const hypothetical = isHypothetical(scope)
       return analyzeQualificationPositions(
         entries,
         seniorityNumber,
         asOfDate(context),
         options.through,
         options.growthAssumptions,
-        entries.filter(qualificationScopeToEntryPredicate(options.qualificationScope ?? {})),
-      )
+        entries.filter(scopePredicateIncludingAnchor(scope)),
+      ).map(position => ({ ...position, isHypothetical: hypothetical }))
     })
 
     this.relativeUpcomingRetirements = memoizeLast(filter => context.upcomingRetirements(filter)

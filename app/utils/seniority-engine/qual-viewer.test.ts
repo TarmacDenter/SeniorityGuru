@@ -107,10 +107,19 @@ describe('analyzeSeniorityQualificationViewer', () => {
       qualificationPercentile: row.qualificationPercentile,
     }))).toEqual([
       { employeeNumber: 'Q1', publicationPosition: 1, companyRank: 1, companyPercentile: 100, qualificationRank: 1, qualificationPercentile: 100 },
-      { employeeNumber: 'USER', publicationPosition: 2, companyRank: 2, companyPercentile: 75, qualificationRank: 2, qualificationPercentile: 66.7 },
+      { employeeNumber: 'USER', publicationPosition: 2, companyRank: 2, companyPercentile: 75, qualificationRank: 2, qualificationPercentile: 75 },
       { employeeNumber: 'Q2', publicationPosition: 3, companyRank: 3, companyPercentile: 50, qualificationRank: 2, qualificationPercentile: 66.7 },
       { employeeNumber: 'Q3', publicationPosition: 4, companyRank: 4, companyPercentile: 25, qualificationRank: 3, qualificationPercentile: 33.3 },
     ])
+  })
+
+  it('measures the inserted marker against Roster Size plus the marker while other rows keep Roster Size', () => {
+    const scope = { base: 'JFK', fleet: '737', seat: 'FO' }
+    const result = analyzeSeniorityQualificationViewer({ entries, qualificationScope: scope, employeeNumber: 'D', insertSelf: true, asOfDate: asOf('2026-06-15') })
+    // One FO/737/JFK pilot (C): the marker slots in junior to C at Rank 2 of 2 modeled pilots, percentile 50.
+    expect(result.rosterSize).toBe(1)
+    expect(result.entries.find(row => row.isMarker)).toMatchObject({ qualificationRank: 2, qualificationPercentile: 50 })
+    expect(result.entries.find(row => row.employeeNumber === 'C')).toMatchObject({ qualificationRank: 1, qualificationPercentile: 100 })
   })
 
   it('keeps a retired inserted employee visible without current ranks', () => {

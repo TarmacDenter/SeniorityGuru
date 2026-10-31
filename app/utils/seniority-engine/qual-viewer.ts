@@ -83,11 +83,11 @@ export function analyzeSeniorityQualificationViewer(options: AnalyzeQualificatio
   const qualRankByEmployee = new Map<string, number>()
   activeQualEntries.forEach((e, index) => qualRankByEmployee.set(normalizeEmployeeNumber(e.employee_number), index + 1))
 
-  const rankFields = (companyRank: number | null, qualificationRank: number | null) => ({
+  const rankFields = (companyRank: number | null, qualificationRank: number | null, qualificationRosterSize = qualRosterSize) => ({
     companyRank,
     companyPercentile: companyRank === null ? null : calculateSeniorityPercentile(companyRank, companyRosterSize),
     qualificationRank,
-    qualificationPercentile: qualificationRank === null ? null : calculateSeniorityPercentile(qualificationRank, qualRosterSize),
+    qualificationPercentile: qualificationRank === null ? null : calculateSeniorityPercentile(qualificationRank, qualificationRosterSize),
   })
 
   const rows = matches.map((entry): QualificationViewerEntry => {
@@ -132,7 +132,8 @@ export function analyzeSeniorityQualificationViewer(options: AnalyzeQualificatio
       isAnchor: true,
       isMarker: true,
       publicationPosition: publicationPositionByEmployee.get(anchorKey)!,
-      ...rankFields(markerCompanyRank, markerQualRank),
+      // Hypothetical Placement: the marker's percentile counts the Anchor Pilot as a modeled pilot of the Qualification.
+      ...rankFields(markerCompanyRank, markerQualRank, qualRosterSize + 1),
     }
     rows.splice(markerIndex < 0 ? rows.length : markerIndex, 0, marker)
   }

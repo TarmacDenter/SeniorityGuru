@@ -55,6 +55,8 @@ export interface PresentedSeniorityTrajectoryValue {
   changes: PresentedTrajectoryChange[]
   /** Reason the samples stopped early, such as "Anchor Pilot retired". */
   endedByLabel: string | null
+  /** "Hypothetical Placement in <scope>" when the Anchor Pilot is outside the scope; otherwise null. */
+  hypotheticalLabel: string | null
 }
 
 export type PresentedSeniorityTrajectory = PresentedSeniorityTrajectoryValue | NoResult
@@ -64,6 +66,8 @@ export interface PresentedSeniorityTrajectoryComparisonValue {
   baselineData: number[]
   comparisonData: number[]
   endedByLabel: string | null
+  baselineHypotheticalLabel: string | null
+  comparisonHypotheticalLabel: string | null
 }
 
 export type PresentedSeniorityTrajectoryComparison = PresentedSeniorityTrajectoryComparisonValue | NoResult
@@ -74,7 +78,15 @@ export interface PresentedRetirementCountProjection {
   scopedPilotCount: number
 }
 
-export function presentSeniorityTrajectory(trajectory: SeniorityTrajectory | NoResult): PresentedSeniorityTrajectory {
+/** Names the scope the Anchor Pilot is placed into when outside it; null for a member. */
+export function hypotheticalPlacementLabel(isHypothetical: boolean, scope: QualificationScope): string | null {
+  return isHypothetical ? `Hypothetical Placement in ${formatQualificationScope(scope)}` : null
+}
+
+export function presentSeniorityTrajectory(
+  trajectory: SeniorityTrajectory | NoResult,
+  scope: QualificationScope = {},
+): PresentedSeniorityTrajectory {
   if (isNoResult(trajectory)) return trajectory
   const changes = trajectory.changes.map((change, index, all): PresentedTrajectoryChange => {
     const previous = index > 0 ? all[index - 1]!.percentilePointChange : -Infinity
@@ -94,11 +106,14 @@ export function presentSeniorityTrajectory(trajectory: SeniorityTrajectory | NoR
     },
     changes,
     endedByLabel: trajectory.endedBy?.label ?? null,
+    hypotheticalLabel: hypotheticalPlacementLabel(trajectory.isHypothetical, scope),
   }
 }
 
 export function presentSeniorityTrajectoryComparison(
   comparison: SeniorityTrajectoryComparison | NoResult,
+  baselineScope: QualificationScope = {},
+  comparisonScope: QualificationScope = {},
 ): PresentedSeniorityTrajectoryComparison {
   if (isNoResult(comparison)) return comparison
   return {
@@ -106,6 +121,8 @@ export function presentSeniorityTrajectoryComparison(
     baselineData: comparison.points.map(point => point.baselinePercentile),
     comparisonData: comparison.points.map(point => point.comparisonPercentile),
     endedByLabel: comparison.endedBy?.label ?? null,
+    baselineHypotheticalLabel: hypotheticalPlacementLabel(comparison.baselineIsHypothetical, baselineScope),
+    comparisonHypotheticalLabel: hypotheticalPlacementLabel(comparison.comparisonIsHypothetical, comparisonScope),
   }
 }
 
@@ -137,14 +154,16 @@ export function formatSeniorityRankChange(value: number): string {
   return value > 0 ? `+${value}` : String(value)
 }
 
-export function presentSeniorityStanding(standing: SeniorityStanding | NoResult) {
+export function presentSeniorityStanding(standing: SeniorityStanding | NoResult, scope: QualificationScope = {}) {
   if (isNoResult(standing)) return standing
   return {
     ...standing,
     rollingNext12MonthRetirementsLabel: formatSeniorityCount(standing.rollingNext12MonthRetirements),
+    hypotheticalLabel: hypotheticalPlacementLabel(standing.isHypothetical, scope),
     qualificationStandings: standing.qualificationStandings.map(item => ({
       ...item,
       qualificationLabel: formatQualification(item.qualification),
+      hypotheticalLabel: hypotheticalPlacementLabel(item.isHypothetical, item.qualification),
     })),
   }
 }
@@ -252,10 +271,12 @@ export interface PresentedQualificationPosition {
   readonly currentPercentile: number
   readonly projectedPercentile: number
   readonly modeledHoldable: boolean
+  readonly hypotheticalLabel: string | null
 }
 
 export function presentQualificationPositions(
   positions: readonly QualificationPosition[] | NoResult,
+  scope: QualificationScope = {},
 ): PresentedQualificationPosition[] | NoResult {
   if (isNoResult(positions)) return positions
   return positions.map(position => ({
@@ -263,5 +284,6 @@ export function presentQualificationPositions(
     currentPercentile: position.currentPercentile,
     projectedPercentile: position.projectedPercentile,
     modeledHoldable: position.modeledHoldable,
+    hypotheticalLabel: hypotheticalPlacementLabel(position.isHypothetical, scope),
   }))
 }

@@ -132,6 +132,8 @@ describe('public Seniority Analysis interface', () => {
       baselineData: [60, 80],
       comparisonData: [60, 90],
       endedByLabel: null,
+      baselineHypotheticalLabel: null,
+      comparisonHypotheticalLabel: null,
     })
   })
 

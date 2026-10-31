@@ -49,9 +49,9 @@ export interface SenioritySnapshot {
   readonly qualifications: readonly Qualification[]
 }
 
-export type NoResultReason = 'anchor-retired' | 'anchor-not-in-scope'
+export type NoResultReason = 'anchor-retired'
 
-/** Explicit absence of a result, with the reason an Anchor Pilot has no Rank or projection. */
+/** Explicit absence of a result: a retired Anchor Pilot has no Rank or projection. */
 export interface NoResult {
   readonly kind: 'no-result'
   readonly reason: NoResultReason
@@ -61,10 +61,14 @@ export interface NoResult {
 /** A trajectory whose samples stopped because the Anchor Pilot retired inside the projection window. */
 export interface SeniorityTrajectory extends CalculatedSeniorityTrajectory {
   readonly endedBy?: NoResult
+  /** True when the Anchor Pilot is outside the Qualification Scope and is placed there by Seniority Number. */
+  readonly isHypothetical: boolean
 }
 
 export interface SeniorityTrajectoryComparison extends CalculatedSeniorityTrajectoryComparison {
   readonly endedBy?: NoResult
+  readonly baselineIsHypothetical: boolean
+  readonly comparisonIsHypothetical: boolean
 }
 
 export interface QualificationStanding {
@@ -75,6 +79,8 @@ export interface QualificationStanding {
   readonly activePilotCount: number
   readonly seniorityPercentile: number
   readonly isAnchorCurrentQualification: boolean
+  /** True when the Anchor Pilot is not in this Qualification and is counted in its Roster Size as a modeled pilot. */
+  readonly isHypothetical: boolean
 }
 
 export interface SeniorityStanding {
@@ -87,6 +93,8 @@ export interface SeniorityStanding {
   readonly rollingNext12MonthRetirements: number
   readonly rollingNext12MonthRetirementsSeniorToAnchor: number
   readonly qualificationStandings: readonly QualificationStanding[]
+  /** True when the Anchor Pilot is outside the Qualification Scope and is placed there by Seniority Number. */
+  readonly isHypothetical: boolean
 }
 
 export interface AgeBucket {
@@ -159,6 +167,8 @@ export interface QualificationPosition {
   readonly currentPercentile: number
   readonly projectedPercentile: number
   readonly modeledHoldable: boolean
+  /** True when the Anchor Pilot is outside the Qualification Scope the percentiles are measured in. */
+  readonly isHypothetical: boolean
 }
 
 export interface PercentileCrossingResult {
