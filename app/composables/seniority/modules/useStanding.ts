@@ -1,5 +1,5 @@
-import type { ComputedRef } from 'vue'
-import { isNoResult } from '~/utils/seniority'
+import type { ComputedRef, Ref } from 'vue'
+import { isNoResult, type QualificationScope } from '~/utils/seniority'
 import { useSeniorityStore } from '~/stores/seniority'
 import { useSeniorityCore } from './useSeniorityCore'
 
@@ -41,12 +41,15 @@ export interface StatCard {
 }
 
 export interface RetirementSnapshotData {
+  /** Roster Size and active count today; the trajectory points carry only Rank and Seniority Percentile. */
+  rosterSize: number
+  activePilotCount: number
   atRetirement: { date: string; rank: number; percentile: number; rankDelta: string }
   fullTrajectory: { date: string; rank: number; percentile: number; rankDelta: string }[]
   retireDate: string
 }
 
-export function useStanding(): {
+export function useStanding(qualificationScope?: Ref<QualificationScope> | ComputedRef<QualificationScope>): {
   rankCard: ComputedRef<RankCardData>
   baseStatus: ComputedRef<BaseStatusRow[]>
   statCards: ComputedRef<StatCard[]>
@@ -56,7 +59,9 @@ export function useStanding(): {
   const seniorityStore = useSeniorityStore()
 
   const anchorEntry = computed(() => anchoredAnalysis.value?.anchor)
-  const rawStandingOutput = computed(() => anchoredAnalysis.value?.seniorityStanding() ?? null)
+  const rawStandingOutput = computed(() => anchoredAnalysis.value?.seniorityStanding({
+    scenario: { qualificationScope: qualificationScope?.value ?? {} },
+  }) ?? null)
   const standingNoResult = computed(() => {
     const domain = rawStandingOutput.value?.domain
     return domain && isNoResult(domain) ? domain : null
@@ -144,7 +149,7 @@ export function useStanding(): {
     const standing = standingResult.value
 
     let baseRankValue = '--'
-    let baseRankLabel = 'Your Base Rank'
+    let baseRankTrend: string | undefined
     if (standing && entry?.base && entry?.seat && entry?.fleet) {
       const userQualification = standingOutput.value?.presentation.qualificationStandings.find(
         item => item.qualification.base === entry.base
@@ -153,7 +158,7 @@ export function useStanding(): {
       )
       if (userQualification) {
         baseRankValue = userQualification.rank.toLocaleString()
-        baseRankLabel = userQualification.qualificationLabel
+        baseRankTrend = `${userQualification.qualificationLabel} · of ${userQualification.rosterSize.toLocaleString()} on roster · ${userQualification.activePilotCount.toLocaleString()} active`
       }
     }
 
@@ -179,8 +184,9 @@ export function useStanding(): {
         icon: 'i-lucide-calendar-clock',
       },
       {
-        label: baseRankLabel,
+        label: 'Your Base Rank',
         value: baseRankValue,
+        trend: baseRankTrend,
         icon: 'i-lucide-map-pin',
       },
       {
@@ -192,7 +198,10 @@ export function useStanding(): {
   })
 
   const trajectoryResult = computed(() => projectionEndDate.value
-    ? anchoredAnalysis.value?.seniorityTrajectory({ through: projectionEndDate.value }).domain ?? null
+    ? anchoredAnalysis.value?.seniorityTrajectory({
+      through: projectionEndDate.value,
+      scenario: { qualificationScope: qualificationScope?.value ?? {} },
+    }).domain ?? null
     : null)
   const trajectoryPoints = computed(() => {
     const trajectory = trajectoryResult.value
@@ -213,6 +222,8 @@ export function useStanding(): {
       }
     })
     return {
+      rosterSize: standingResult.value?.rosterSize ?? 0,
+      activePilotCount: standingResult.value?.activePilotCount ?? 0,
       atRetirement: fullTrajectory[fullTrajectory.length - 1]!,
       fullTrajectory,
       retireDate: entry.retire_date.toString(),

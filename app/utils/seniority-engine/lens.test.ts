@@ -271,7 +271,7 @@ describe('anchored analysis', () => {
     }))
   })
 
-  it('calculates relative retirement positions from company-list Rank', () => {
+  it('calculates relative retirement positions in dynamic Rank', () => {
     const all = anchored.relativeUpcomingRetirements({ through, seniorOnly: false })
     const senior = anchored.relativeUpcomingRetirements({ through, seniorOnly: true })
 
@@ -279,5 +279,19 @@ describe('anchored analysis', () => {
     expect(all.find(row => row.employeeNumber === 'E125')?.positionsSeniorToAnchor).toBe(0)
     expect(all.find(row => row.employeeNumber === 'E140')?.positionsSeniorToAnchor).toBe(-1)
     expect(senior.map(row => row.employeeNumber)).toEqual(['E105', 'E110'])
+  })
+
+  it('measures relative retirement positions in dynamic Rank, not counting already-retired pilots between', () => {
+    const gapped = createSenioritySnapshot([
+      makeEntry({ seniority_number: 100, employee_number: 'G100', hire_date: '2000-01-01', retire_date: '2050-01-01' }),
+      makeEntry({ seniority_number: 105, employee_number: 'G105', hire_date: '2001-01-01', retire_date: '2026-12-01' }),
+      makeEntry({ seniority_number: 110, employee_number: 'G110', hire_date: '2002-01-01', retire_date: '2020-01-01' }),
+      makeEntry({ seniority_number: 120, employee_number: 'G120', hire_date: '2003-01-01', retire_date: '2055-01-01' }),
+    ])
+    const lens = createSeniorityLens(gapped, { asOfDate }).withAnchor('G120')
+
+    const rows = lens.relativeUpcomingRetirements({ through, seniorOnly: false })
+
+    expect(rows.find(row => row.employeeNumber === 'G105')?.positionsSeniorToAnchor).toBe(1)
   })
 })

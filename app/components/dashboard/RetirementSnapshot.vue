@@ -16,6 +16,8 @@ interface PresentedSeniorityTrajectoryPoint extends SeniorityTrajectoryPoint {
 const props = defineProps<{
   snapshot: {
     atRetirement: SeniorityTrajectoryPoint
+    rosterSize: number
+    activePilotCount: number
     fullTrajectory: PresentedSeniorityTrajectoryPoint[]
     retireDate: string
   }
@@ -69,11 +71,11 @@ const columns: TableColumn<TableRow>[] = [
   {
     accessorKey: 'rank',
     header: 'Rank',
-    cell: ({ row }) => h('span', { class: 'font-mono' }, `#${row.original.rank.toLocaleString()}`),
+    cell: ({ row }) => h('span', { class: 'font-mono' }, row.original.rank.toLocaleString()),
   },
   {
     accessorKey: 'percentile',
-    header: 'Percentile',
+    header: 'Seniority Percentile',
     cell: ({ row }) => h('span', { class: 'font-mono' }, `${row.original.percentile}%`),
   },
   {
@@ -104,22 +106,30 @@ function formatDate(dateStr: string): string {
       </div>
     </template>
 
-    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 mb-4 sm:mb-6 px-3 pt-3 sm:px-0 sm:pt-0">
+    <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-4 mb-4 sm:mb-6 px-3 pt-3 sm:px-0 sm:pt-0">
       <div class="text-center">
         <p class="text-xs text-[var(--ui-text-muted)]">Retire Date</p>
         <p class="text-sm sm:text-lg font-semibold font-mono text-highlighted">{{ formatDate(snapshot.retireDate) }}</p>
       </div>
       <div class="text-center">
         <p class="text-xs text-[var(--ui-text-muted)]">Projected Rank</p>
-        <p class="text-sm sm:text-lg font-semibold font-mono text-highlighted">#{{ snapshot.atRetirement.rank.toLocaleString() }}</p>
+        <p class="text-sm sm:text-lg font-semibold font-mono text-highlighted">{{ snapshot.atRetirement.rank.toLocaleString() }}</p>
       </div>
       <div class="text-center">
-        <p class="text-xs text-[var(--ui-text-muted)]">Percentile</p>
+        <p class="text-xs text-[var(--ui-text-muted)]">Seniority Percentile</p>
         <p class="text-sm sm:text-lg font-semibold font-mono text-highlighted">{{ snapshot.atRetirement.percentile }}%</p>
       </div>
       <div class="text-center">
         <p class="text-xs text-[var(--ui-text-muted)]">Pilots Ahead</p>
         <p class="text-sm sm:text-lg font-semibold font-mono text-highlighted">{{ (snapshot.atRetirement.rank - 1).toLocaleString() }}</p>
+      </div>
+      <div class="text-center">
+        <p class="text-xs text-[var(--ui-text-muted)]">Roster Size today</p>
+        <p class="text-sm sm:text-lg font-semibold font-mono text-highlighted">{{ snapshot.rosterSize.toLocaleString() }}</p>
+      </div>
+      <div class="text-center">
+        <p class="text-xs text-[var(--ui-text-muted)]">Active Pilots today</p>
+        <p class="text-sm sm:text-lg font-semibold font-mono text-highlighted">{{ snapshot.activePilotCount.toLocaleString() }}</p>
       </div>
     </div>
 

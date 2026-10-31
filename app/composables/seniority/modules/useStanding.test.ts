@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { useSeniorityCore, _resetCoreSingletons } from './useSeniorityCore'
 import { useStanding } from './useStanding'
 import { parsePlainDate, todayPlainDate } from '~/utils/temporal'
+import type { QualificationScope } from '~/utils/seniority'
 import { resetMockStores } from '~/test-utils/seniority-mocks'
 
 const mockStore = vi.hoisted(() => ({ entries: [] as any[], lists: [] as any[] }))
@@ -110,7 +111,7 @@ describe('useStanding', () => {
       hireDate: todayPlainDate().toString(),
       noResultLabel: null,
     })
-    expect(statCards.value[2]).toMatchObject({ label: 'FO/777/LAX', value: '1' })
+    expect(statCards.value[2]).toMatchObject({ label: 'Your Base Rank', value: '1', trend: 'FO/777/LAX · of 1 on roster · 1 active' })
     expect(retirementSnapshot.value?.retireDate).toBe('2065-06-15')
     expect(retirementSnapshot.value?.fullTrajectory[0]?.rank).toBe(4)
   })
@@ -140,7 +141,7 @@ describe('useStanding', () => {
       hireDate: todayPlainDate().toString(),
       noResultLabel: null,
     })
-    expect(statCards.value[2]).toMatchObject({ label: 'FO/777/LAX', value: '1' })
+    expect(statCards.value[2]).toMatchObject({ label: 'Your Base Rank', value: '1', trend: 'FO/777/LAX · of 1 on roster · 1 active' })
     expect(retirementSnapshot.value?.retireDate).toBe('2065-06-15')
     expect(retirementSnapshot.value?.fullTrajectory[0]?.rank).toBe(4)
 
@@ -205,6 +206,35 @@ describe('useStanding', () => {
       })
       expect(statCards.value[0]!.value).toBe(rankCard.value.rosterSize.toLocaleString())
     })
+  })
+
+  it('follows the selected Qualification Scope: Roster Size is the pilots in that scope', () => {
+    mockStore.entries = [
+      makeEntry({ seniority_number: 10, employee_number: 'E1', base: 'JFK', seat: 'CA', fleet: '737', retire_date: '2050-01-01' }),
+      makeEntry({ seniority_number: 40, employee_number: 'E2', base: 'LAX', seat: 'FO', fleet: '777', retire_date: '2045-01-01' }),
+      makeEntry({ seniority_number: 90, employee_number: 'E3', base: 'LAX', seat: 'FO', fleet: '777', retire_date: '2050-01-01' }),
+      makeEntry({ seniority_number: 95, employee_number: 'E4', base: 'JFK', seat: 'CA', fleet: '737', retire_date: '2050-01-01' }),
+    ]
+    mockUserStore.employeeNumber = 'E3'
+    const scope = ref<QualificationScope>({})
+    const { rankCard } = useStanding(scope)
+
+    expect(rankCard.value).toMatchObject({ rank: 3, rosterSize: 4 })
+
+    scope.value = { base: 'LAX' }
+
+    expect(rankCard.value).toMatchObject({ rank: 2, publicationPosition: 2, rosterSize: 2 })
+  })
+
+  it('shows the no-result reason when the Anchor Pilot is outside the selected scope', () => {
+    mockStore.entries = [
+      makeEntry({ seniority_number: 10, employee_number: 'E1', base: 'JFK', retire_date: '2050-01-01' }),
+      makeEntry({ seniority_number: 40, employee_number: 'E2', base: 'LAX', retire_date: '2050-01-01' }),
+    ]
+    mockUserStore.employeeNumber = 'E2'
+    const { rankCard } = useStanding(ref<QualificationScope>({ base: 'JFK' }))
+
+    expect(rankCard.value.noResultLabel).toBeTruthy()
   })
 
   it.each([null, 'E1'])('preserves the existing anchor with incomplete new hire settings and real pilot %s', (employeeNumber) => {
@@ -280,9 +310,11 @@ describe('useStanding', () => {
     expect(cards[1]!.trendUp).toBe(true)
 
     // Base rank label shows user's cell: CA/737/JFK
-    expect(cards[2]!.label).toBe('CA/737/JFK')
-    // adjustedRank within JFK|CA|737: rank=2, retiredAbove=0 (E1 retires this year but hasn't yet passed)
-    expect(cards[2]!.value).toBeTruthy()
+    expect(cards[2]).toMatchObject({
+      label: 'Your Base Rank',
+      value: '2',
+      trend: 'CA/737/JFK · of 2 on roster · 2 active',
+    })
 
     // Lists Uploaded
     expect(cards[3]!.label).toBe('Lists Uploaded')

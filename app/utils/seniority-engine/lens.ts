@@ -187,7 +187,10 @@ class AnchoredSeniorityLensImplementation implements AnchoredSeniorityLens {
     this.common = commonLensMethods(context)
     const entries = context.snapshot.entries
     const seniorityNumber = anchor.seniority_number
-    const anchorListRank = calculateSeniorityRank(entries, seniorityNumber)
+    /** Dynamic Rank: Publication Position minus pilots senior to the given number who have already retired. */
+    const dynamicRank = (number: number): number =>
+      calculateSeniorityRank(entries, number) - countRetiredPilotsSeniorTo(entries, number, asOfDate(context))
+    const anchorDynamicRank = dynamicRank(seniorityNumber)
 
     /** Scope is judged before retirement: an out-of-scope Anchor Pilot has no Rank in the scope at all. */
     const noResultFor = (scope: QualificationScope, date: Temporal.PlainDate): NoResult | null => {
@@ -311,7 +314,7 @@ class AnchoredSeniorityLensImplementation implements AnchoredSeniorityLens {
       .map(row => ({
         ...row,
         positionsSeniorToAnchor:
-          anchorListRank - calculateSeniorityRank(entries, row.seniorityNumber),
+          anchorDynamicRank - dynamicRank(row.seniorityNumber),
       }))
       .filter(row => !filter.seniorOnly || row.positionsSeniorToAnchor > 0))
   }

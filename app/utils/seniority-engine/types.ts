@@ -203,7 +203,7 @@ export interface RelativeUpcomingRetirementFilter extends UpcomingRetirementFilt
 }
 
 export interface RelativeUpcomingRetirement extends UpcomingRetirement {
-  /** Positive is senior to the anchor; zero is the anchor; negative is junior. */
+  /** Difference in dynamic Rank (retired pilots are not counted). Positive is senior to the anchor; zero is the anchor; negative is junior. */
   readonly positionsSeniorToAnchor: number
 }
 

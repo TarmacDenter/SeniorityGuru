@@ -17,6 +17,8 @@ type BaseStatusRow = {
 
 const props = defineProps<{
   data: BaseStatusRow[];
+  /** Why no Rank exists (e.g. "Anchor Pilot retired"); replaces the table when set. */
+  noResultLabel?: string | null;
 }>();
 
 const isMobile = useMediaQuery('(max-width: 639px)');
@@ -39,14 +41,7 @@ const displayData = computed<BaseStatusRow[]>(() => {
   return base;
 });
 
-const userCanHold = (row: BaseStatusRow): boolean => {
-  return row.rank <= row.activePilotCount;
-};
-
 function highlightClass(row: BaseStatusRow): string {
-  if (!userCanHold(row)) {
-    return 'text-past';
-  }
   return row.isAnchorCurrentQualification ? 'font-bold text-primary' : '';
 }
 
@@ -56,15 +51,15 @@ const columns: TableColumn<BaseStatusRow>[] = [
   { accessorKey: 'fleet', header: 'Fleet', cell: ({ row }) => h('span', { class: highlightClass(row.original) }, row.original.fleet) },
   { accessorKey: 'rank', header: 'Rank', cell: ({ row }) => h('span', { class: highlightClass(row.original) }, row.original.rank) },
   { accessorKey: 'rosterSize', header: 'Roster Size', cell: ({ row }) => h('span', { class: highlightClass(row.original) }, row.original.rosterSize) },
-  { accessorKey: 'seniorityPercentile', header: 'Base %ile', cell: ({ row }) => h('span', { class: highlightClass(row.original) }, `${row.original.seniorityPercentile}%`) },
+  { accessorKey: 'seniorityPercentile', header: 'Seniority Percentile', cell: ({ row }) => h('span', { class: highlightClass(row.original) }, `${row.original.seniorityPercentile}%`) },
 ];
 
-// 4 columns on mobile — Total dropped (Rank + Base %ile convey the same standing)
+// 4 columns on mobile — Roster Size dropped (Rank + Seniority Percentile convey the same standing)
 const mobileColumns: TableColumn<BaseStatusRow>[] = [
   { accessorKey: 'base', header: 'Base', cell: ({ row }) => h('span', { class: highlightClass(row.original) }, row.original.base) },
   { accessorKey: 'fleet', header: 'Fleet', cell: ({ row }) => h('span', { class: highlightClass(row.original) }, row.original.fleet) },
   { accessorKey: 'rank', header: 'Rank', cell: ({ row }) => h('span', { class: `font-mono ${highlightClass(row.original)}` }, row.original.rank) },
-  { accessorKey: 'seniorityPercentile', header: 'Base %ile', cell: ({ row }) => h('span', { class: `font-mono ${highlightClass(row.original)}` }, `${row.original.seniorityPercentile}%`) },
+  { accessorKey: 'seniorityPercentile', header: 'Seniority Percentile', cell: ({ row }) => h('span', { class: `font-mono ${highlightClass(row.original)}` }, `${row.original.seniorityPercentile}%`) },
 ];
 </script>
 
@@ -75,6 +70,12 @@ const mobileColumns: TableColumn<BaseStatusRow>[] = [
         <h3 class="font-semibold text-highlighted">Status by Base / Seat / Fleet</h3>
       </div>
     </template>
+
+    <p v-if="noResultLabel" data-testid="no-result" class="px-3 py-4 font-mono font-semibold text-highlighted">{{ noResultLabel }}</p>
+    <template v-else>
+    <p class="px-3 pt-3 sm:px-0 sm:pt-0 pb-2 text-xs text-muted">
+      Rank is your position among active pilots; Roster Size includes retired pilots.
+    </p>
 
     <!-- Mobile: seat filter dropdown -->
     <div v-if="isMobile && availableSeats.length > 1" class="flex gap-2 px-3 pt-3 pb-2">
@@ -102,5 +103,6 @@ const mobileColumns: TableColumn<BaseStatusRow>[] = [
       :columns="mobileColumns"
       :ui="{ th: 'px-2 py-2 text-xs font-semibold', td: 'px-2 py-2 text-xs whitespace-nowrap' }"
     />
+    </template>
   </UCard>
 </template>

@@ -24,11 +24,16 @@ describe('SeniorityRankCard', () => {
     const wrapper = await mountSuspended(SeniorityRankCard, { props: { rank } })
 
     expect(wrapper.get('[data-testid="seniority-number"]').text()).toBe('Seniority Number #90')
-    expect(wrapper.get('[data-testid="publication-position"]').findAll('p').map(item => item.text())).toEqual(['Publication Position', '3 of 4'])
-    expect(wrapper.get('[data-testid="rank"]').findAll('p').map(item => item.text())).toEqual(['Rank', '2 of 4'])
+    expect(wrapper.get('[data-testid="publication-position"]').findAll('p').map(item => item.text())).toEqual(['Publication Position', '3'])
+    expect(wrapper.get('[data-testid="rank"]').findAll('p').map(item => item.text())).toEqual(['Rank', '2'])
     expect(wrapper.text()).toContain('Seniority Percentile')
     expect(wrapper.text()).toContain('75%')
-    expect(wrapper.text()).toContain('Percentile of Rank among 4 pilots (3 active).')
+    expect(wrapper.get('[data-testid="rank-summary"]').text()).toBe(
+      'Rank 2 of 4 on roster · 3 active · Publication Position 3 · Seniority Number 90',
+    )
+    expect(wrapper.get('[data-testid="roster-size"]').findAll('p').map(item => item.text())).toEqual(['Roster Size', '4'])
+    expect(wrapper.get('[data-testid="active-pilots"]').findAll('p').map(item => item.text())).toEqual(['Active Pilots', '3'])
+    expect(wrapper.text().match(/Seniority Percentile/g)).toHaveLength(1)
   })
 
   it('updates the percentile bar when switching Anchor Pilots', async () => {
@@ -51,8 +56,8 @@ describe('SeniorityRankCard', () => {
     })
 
     expect(wrapper.get('[data-testid="seniority-number"]').text()).toBe('Simulated Seniority Number #91')
-    expect(wrapper.get('[data-testid="publication-position"]').findAll('p').map(item => item.text())).toEqual(['Publication Position', '4 of 4'])
-    expect(wrapper.get('[data-testid="rank"]').findAll('p').map(item => item.text())).toEqual(['Rank', '4 of 4'])
+    expect(wrapper.get('[data-testid="publication-position"]').findAll('p').map(item => item.text())).toEqual(['Publication Position', '4'])
+    expect(wrapper.get('[data-testid="rank"]').findAll('p').map(item => item.text())).toEqual(['Rank', '4'])
     expect(wrapper.text()).toContain('Modeled counts include the simulated pilot (3 in publication).')
   })
 

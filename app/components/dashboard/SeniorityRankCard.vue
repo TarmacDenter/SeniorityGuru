@@ -61,14 +61,22 @@ onMounted(() => {
 
     <p v-if="rank.noResultLabel" data-testid="no-result" class="font-mono font-semibold text-highlighted mt-4">{{ rank.noResultLabel }}</p>
     <template v-else>
-      <div class="grid grid-cols-2 gap-4 mt-4">
+      <div class="mt-4" data-testid="rank">
+        <p class="text-xs text-muted">Rank</p>
+        <p class="text-3xl font-bold font-mono text-highlighted">{{ rank.rank.toLocaleString() }}</p>
+      </div>
+      <div class="grid grid-cols-3 gap-4 mt-3">
         <div data-testid="publication-position">
           <p class="text-xs text-muted">Publication Position</p>
-          <p class="font-mono font-semibold text-highlighted">{{ rank.publicationPosition.toLocaleString() }} of {{ rank.rosterSize.toLocaleString() }}</p>
+          <p class="font-mono font-semibold text-highlighted">{{ rank.publicationPosition.toLocaleString() }}</p>
         </div>
-        <div data-testid="rank">
-          <p class="text-xs text-muted">Rank</p>
-          <p class="font-mono font-semibold text-highlighted">{{ rank.rank.toLocaleString() }} of {{ rank.rosterSize.toLocaleString() }}</p>
+        <div data-testid="roster-size">
+          <p class="text-xs text-muted">Roster Size</p>
+          <p class="font-mono font-semibold text-highlighted">{{ rank.rosterSize.toLocaleString() }}</p>
+        </div>
+        <div data-testid="active-pilots">
+          <p class="text-xs text-muted">Active Pilots</p>
+          <p class="font-mono font-semibold text-highlighted">{{ rank.activePilotCount.toLocaleString() }}</p>
         </div>
       </div>
       <p v-if="rank.isSimulated" class="text-xs text-muted mt-2">
@@ -90,7 +98,7 @@ onMounted(() => {
         />
       </div>
 
-      <p class="text-xs text-muted mt-2">Percentile of Rank among {{ rank.rosterSize.toLocaleString() }} pilots ({{ rank.activePilotCount.toLocaleString() }} active).</p>
+      <p data-testid="rank-summary" class="text-xs text-muted mt-2">Rank {{ rank.rank.toLocaleString() }} of {{ rank.rosterSize.toLocaleString() }} on roster · {{ rank.activePilotCount.toLocaleString() }} active · Publication Position {{ rank.publicationPosition.toLocaleString() }} · Seniority Number {{ rank.seniorityNumber.toLocaleString() }}</p>
     </template>
 
     <p v-if="yearsOfService !== null" class="text-xs text-muted mt-2">
