@@ -50,8 +50,8 @@ const qualificationOutput = computed(() => listAnalysis.value?.qualificationView
 }) ?? null)
 const projected = computed<PresentedQualificationViewerAnalysis>(() => qualificationOutput.value?.presentation ?? {
   entries: [],
-  totalEntryCount: 0,
-  activeEntryCount: 0,
+  rosterSize: 0,
+  activePilotCount: 0,
   qualificationScope: {},
   canInsert: false,
   anchorFound: false,
@@ -83,7 +83,9 @@ const columnVisibility = computed(() => ({
   expand: isCompact.value,
   qualificationRank: isQualMode.value,
   qualificationPercentile: isQualMode.value,
+  seniorityNumber: true,
   companyRank: true,
+  publicationPosition: !isCompact.value,
   name: true,
   employeeNumber: !isCompact.value,
   companyPercentile: !isCompact.value,
@@ -104,11 +106,10 @@ const columns: TableColumn<SeniorityRow>[] = [
   },
   { accessorKey: 'qualificationRank', header: 'Qualification Rank', cell: ({ row }) => h('span', { class: 'font-mono font-semibold' }, row.original.qualificationRank ?? '—') },
   { accessorKey: 'qualificationPercentile', header: 'Qualification percentile', cell: ({ row }) => row.original.qualificationPercentile === null ? '—' : `${row.original.qualificationPercentile}%` },
-  { accessorKey: 'companyRank', header: 'Company Rank', cell: ({ row }) => h('span', { class: 'font-mono' }, row.original.companyRank ?? row.original.listRank) },
-  { accessorKey: 'companyPercentile', header: 'Company %', cell: ({ row }) => {
-    const percentile = row.original.companyPercentile ?? (row.original.status === 'retired' ? row.original.listPercentile : null)
-    return percentile === null ? '—' : `${percentile}%`
-  } },
+  { accessorKey: 'seniorityNumber', header: 'Seniority Number', cell: ({ row }) => h('span', { class: 'font-mono' }, row.original.seniorityNumber) },
+  { accessorKey: 'companyRank', header: 'Company Rank', cell: ({ row }) => h('span', { class: 'font-mono' }, row.original.companyRank ?? '—') },
+  { accessorKey: 'companyPercentile', header: 'Company %', cell: ({ row }) => row.original.companyPercentile === null ? '—' : `${row.original.companyPercentile}%` },
+  { accessorKey: 'publicationPosition', header: 'Publication Position', cell: ({ row }) => h('span', { class: 'font-mono' }, row.original.publicationPosition) },
   { accessorKey: 'name', header: 'Name' },
   { accessorKey: 'employeeNumber', header: 'Emp #' },
   { accessorKey: 'seat', header: 'Seat' },
@@ -198,7 +199,7 @@ function scrollToUserRow() {
       <div :class="isCompact ? 'h-full min-h-0 p-0 flex flex-col' : 'h-full min-h-0 sm:p-6 flex flex-col'">
         <UEmpty v-if="!latestList && !isLoading" icon="i-lucide-list-ordered" title="No Seniority List Yet" description="Upload your airline's seniority list to view your position." :actions="[{ label: 'Upload Seniority List', icon: 'i-lucide-upload', to: '/seniority/upload', size: 'lg' as const }]" class="py-24" />
         <template v-else>
-          <p v-if="latestList && !isCompact" class="shrink-0 text-sm text-muted mb-4">{{ isQualMode ? `${qualificationScope.base}-${qualificationScope.fleet}-${qualificationScope.seat}` : 'Company-wide' }} · {{ projected.totalEntryCount }} pilots</p>
+          <p v-if="latestList && !isCompact" class="shrink-0 text-sm text-muted mb-4">{{ isQualMode ? `${qualificationScope.base}-${qualificationScope.fleet}-${qualificationScope.seat}` : 'Company-wide' }} · {{ projected.rosterSize }} on roster · {{ projected.activePilotCount }} active</p>
           <div class="flex-1 min-h-0 overflow-auto overscroll-contain">
             <UTable ref="table" v-model:global-filter="globalFilter" v-model:pagination="pagination" v-model:expanded="expanded" v-model:column-visibility="columnVisibility" :data="tableData" :columns="columns" :loading="isLoading" :pagination-options="{ getPaginationRowModel: getPaginationRowModel() }" sticky :meta="tableMeta" :expanded-options="{ getRowCanExpand: () => true }" :ui="isCompact ? { th: 'px-2 py-2 text-xs', td: 'px-2 py-1.5 text-xs' } : {}" class="w-full text-xs sm:text-base">
               <template #expanded="{ row }">

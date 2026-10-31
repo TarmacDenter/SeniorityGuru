@@ -59,7 +59,12 @@ const stubs = {
         setGlobalFilter: vi.fn(),
         setPageIndex: vi.fn(),
       }
-      return { tableApi }
+      const cellText = (column: any, row: any) => {
+        const value = column.cell ? column.cell({ row: { original: row } }) : row[column.accessorKey]
+        const text = value && typeof value === 'object' ? value.children : value
+        return text === null || text === undefined ? '' : String(text)
+      }
+      return { tableApi, cellText }
     },
     template: `<div data-testid="table">
       <span v-if="loading" data-testid="loading">loading</span>
@@ -67,6 +72,9 @@ const stubs = {
         <span v-if="columnVisibility[column.accessorKey ?? column.id] !== false" data-testid="visible-column">{{ column.header }}</span>
       </template>
       <div v-for="row in data" :key="row.employeeNumber + row.status">
+        <template v-for="column in columns" :key="column.accessorKey ?? column.id">
+          <span v-if="column.accessorKey && columnVisibility[column.accessorKey] !== false" :data-testid="'cell-' + row.employeeNumber + '-' + column.accessorKey">{{ cellText(column, row) }}</span>
+        </template>
         {{ row.name }}|{{ row.employeeNumber }}|{{ row.qualificationRank }}|{{ row.companyRank }}|{{ row.status }}|{{ row.isAnchor ? "anchor" : "" }}
         <div data-testid="expanded-row"><slot name="expanded" :row="{ original: row }" /></div>
       </div>
@@ -111,7 +119,7 @@ describe('SeniorityListViewer', () => {
 
     await wrapper.find('select').setValue('["JFK","CA","737"]')
 
-    expect(wrapper.text()).toContain('JFK-737-CA · 2 pilots')
+    expect(wrapper.text()).toContain('JFK-737-CA · 2 on roster · 2 active')
     expect(wrapper.text()).toContain('First|E1|1|1|active')
     expect(wrapper.findAll('[data-testid="visible-column"]').map(column => column.text())).toEqual(expect.arrayContaining([
       'Qualification Rank',
@@ -123,12 +131,33 @@ describe('SeniorityListViewer', () => {
 
     await wrapper.find('select').setValue('__company_wide__')
 
-    expect(wrapper.text()).toContain('Company-wide · 3 pilots')
+    expect(wrapper.text()).toContain('Company-wide · 3 on roster · 3 active')
     expect(wrapper.text()).toContain('First|E1|1|1|active|anchor')
     expect(wrapper.findAll('[data-testid="visible-column"]').map(column => column.text())).not.toEqual(expect.arrayContaining([
       'Qualification Rank',
       'Qualification percentile',
     ]))
+  })
+
+  it('shows no Rank for retired pilots, their Publication Position in its own column, and Seniority Number beside Rank', async () => {
+    state.lists.value = [makeList()]
+    state.entries.value = [
+      makeDomainEntry({ seniority_number: 1, employee_number: 'R1', name: 'Retired', retire_date: '2026-01-01' }),
+      makeDomainEntry({ seniority_number: 2, employee_number: 'A1', name: 'Active', retire_date: '2040-01-01' }),
+    ]
+    const Component = (await import('./SeniorityListViewer.vue')).default
+    const wrapper = await mountSuspended(Component, { global: { stubs } })
+    const cell = (employee: string, column: string) => wrapper.get(`[data-testid="cell-${employee}-${column}"]`).text()
+
+    expect(wrapper.text()).toContain('2 on roster · 1 active')
+    const headers = wrapper.findAll('[data-testid="visible-column"]').map(column => column.text())
+    expect(headers.indexOf('Seniority Number')).toBe(headers.indexOf('Company Rank') - 1)
+    expect(headers).toContain('Publication Position')
+    expect(cell('R1', 'companyRank')).toBe('—')
+    expect(cell('R1', 'companyPercentile')).toBe('—')
+    expect(cell('R1', 'publicationPosition')).toBe('1')
+    expect(cell('A1', 'companyRank')).toBe('1')
+    expect(cell('A1', 'companyPercentile')).toBe('100%')
   })
 
   it('shows pilot details instead of duplicate ranks in the expanded row', async () => {
