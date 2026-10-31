@@ -7,26 +7,22 @@ type BaseStatusRow = {
   base: string;
   seat: string;
   fleet: string;
-  listRank: number;
-  activeRank: number;
-  listPilotCount: number;
+  rank: number;
+  publicationPosition: number;
+  rosterSize: number;
   activePilotCount: number;
-  listPercentile: number;
-  activePercentile: number;
+  seniorityPercentile: number;
   isAnchorCurrentQualification: boolean;
-};
-
-type DisplayRow = BaseStatusRow & {
-  displayRank: number;
-  displayTotal: number;
-  displayPercentile: number;
+  /** Set for qualifications you are not in; Rank and Roster Size count you as a modeled pilot there. */
+  hypotheticalLabel?: string | null;
 };
 
 const props = defineProps<{
   data: BaseStatusRow[];
+  /** Why no Rank exists (e.g. "Anchor Pilot retired"); replaces the table when set. */
+  noResultLabel?: string | null;
 }>();
 
-const adjusted = ref(true);
 const isMobile = useMediaQuery('(max-width: 639px)');
 
 // Mobile seat filter — default to first available seat
@@ -38,13 +34,8 @@ watch(availableSeats, (seats) => {
   if (seats.length && !mobileSeat.value) mobileSeat.value = seats[0];
 }, { immediate: true });
 
-const displayData = computed<DisplayRow[]>(() => {
-  const base = props.data.map((row) => ({
-    ...row,
-    displayRank: adjusted.value ? row.activeRank : row.listRank,
-    displayTotal: adjusted.value ? row.activePilotCount : row.listPilotCount,
-    displayPercentile: adjusted.value ? row.activePercentile : row.listPercentile,
-  }));
+const displayData = computed<BaseStatusRow[]>(() => {
+  const base = props.data;
   // On mobile, filter by selected seat to reduce rows
   if (isMobile.value && mobileSeat.value) {
     return base.filter(r => r.seat === mobileSeat.value);
@@ -52,32 +43,31 @@ const displayData = computed<DisplayRow[]>(() => {
   return base;
 });
 
-const userCanHold = (row: DisplayRow): boolean => {
-  return row.displayRank <= row.displayTotal;
-};
+function hypotheticalMark(row: BaseStatusRow) {
+  return row.hypotheticalLabel
+    ? h('span', { class: 'ml-1 text-xs font-normal text-warning', title: row.hypotheticalLabel, 'data-testid': 'hypothetical-row' }, '(hypothetical)')
+    : null;
+}
 
-function highlightClass(row: DisplayRow): string {
-  if (!userCanHold(row)) {
-    return 'text-past';
-  }
+function highlightClass(row: BaseStatusRow): string {
   return row.isAnchorCurrentQualification ? 'font-bold text-primary' : '';
 }
 
-const columns: TableColumn<DisplayRow>[] = [
+const columns: TableColumn<BaseStatusRow>[] = [
   { accessorKey: 'base', header: 'Base', cell: ({ row }) => h('span', { class: highlightClass(row.original) }, row.original.base) },
   { accessorKey: 'seat', header: 'Seat', cell: ({ row }) => h('span', { class: highlightClass(row.original) }, row.original.seat) },
   { accessorKey: 'fleet', header: 'Fleet', cell: ({ row }) => h('span', { class: highlightClass(row.original) }, row.original.fleet) },
-  { accessorKey: 'displayRank', header: 'Rank', cell: ({ row }) => h('span', { class: highlightClass(row.original) }, row.original.displayRank) },
-  { accessorKey: 'displayTotal', header: 'Total', cell: ({ row }) => h('span', { class: highlightClass(row.original) }, row.original.displayTotal) },
-  { accessorKey: 'displayPercentile', header: 'Base %ile', cell: ({ row }) => h('span', { class: highlightClass(row.original) }, `${row.original.displayPercentile}%`) },
+  { accessorKey: 'rank', header: 'Rank', cell: ({ row }) => h('span', { class: highlightClass(row.original) }, [row.original.rank, hypotheticalMark(row.original)]) },
+  { accessorKey: 'rosterSize', header: 'Roster Size', cell: ({ row }) => h('span', { class: highlightClass(row.original) }, row.original.rosterSize) },
+  { accessorKey: 'seniorityPercentile', header: 'Seniority Percentile', cell: ({ row }) => h('span', { class: highlightClass(row.original) }, `${row.original.seniorityPercentile}%`) },
 ];
 
-// 4 columns on mobile — Total dropped (Rank + Base %ile convey the same standing)
-const mobileColumns: TableColumn<DisplayRow>[] = [
+// 4 columns on mobile — Roster Size dropped (Rank + Seniority Percentile convey the same standing)
+const mobileColumns: TableColumn<BaseStatusRow>[] = [
   { accessorKey: 'base', header: 'Base', cell: ({ row }) => h('span', { class: highlightClass(row.original) }, row.original.base) },
   { accessorKey: 'fleet', header: 'Fleet', cell: ({ row }) => h('span', { class: highlightClass(row.original) }, row.original.fleet) },
-  { accessorKey: 'displayRank', header: 'Rank', cell: ({ row }) => h('span', { class: `font-mono ${highlightClass(row.original)}` }, row.original.displayRank) },
-  { accessorKey: 'displayPercentile', header: 'Base %ile', cell: ({ row }) => h('span', { class: `font-mono ${highlightClass(row.original)}` }, `${row.original.displayPercentile}%`) },
+  { accessorKey: 'rank', header: 'Rank', cell: ({ row }) => h('span', { class: `font-mono ${highlightClass(row.original)}` }, [row.original.rank, hypotheticalMark(row.original)]) },
+  { accessorKey: 'seniorityPercentile', header: 'Seniority Percentile', cell: ({ row }) => h('span', { class: `font-mono ${highlightClass(row.original)}` }, `${row.original.seniorityPercentile}%`) },
 ];
 </script>
 
@@ -86,13 +76,15 @@ const mobileColumns: TableColumn<DisplayRow>[] = [
     <template #header>
       <div class="flex items-center justify-between gap-2 flex-wrap">
         <h3 class="font-semibold text-highlighted">Status by Base / Seat / Fleet</h3>
-        <div class="flex items-center gap-2">
-          <span class="text-xs text-muted">Adjusted</span>
-          <InfoIcon text="Adjusted rank and total exclude retired pilots. Raw rank includes everyone on the original list." size="xs" />
-          <USwitch v-model="adjusted" size="xs" />
-        </div>
       </div>
     </template>
+
+    <p v-if="noResultLabel" data-testid="no-result" class="px-3 py-4 font-mono font-semibold text-highlighted">{{ noResultLabel }}</p>
+    <template v-else>
+    <p class="px-3 pt-3 sm:px-0 sm:pt-0 pb-2 text-xs text-muted">
+      Rank is your position among active pilots; Roster Size includes retired pilots.
+      Rows marked hypothetical place you in a qualification you are not in and count you in its Roster Size.
+    </p>
 
     <!-- Mobile: seat filter dropdown -->
     <div v-if="isMobile && availableSeats.length > 1" class="flex gap-2 px-3 pt-3 pb-2">
@@ -120,5 +112,6 @@ const mobileColumns: TableColumn<DisplayRow>[] = [
       :columns="mobileColumns"
       :ui="{ th: 'px-2 py-2 text-xs font-semibold', td: 'px-2 py-2 text-xs whitespace-nowrap' }"
     />
+    </template>
   </UCard>
 </template>

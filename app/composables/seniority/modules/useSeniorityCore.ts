@@ -207,7 +207,8 @@ export function useSeniorityCore() {
       if (!synthetic) return _baseAnalysis!.value
       if (seniorityStore.entries.length === 0) return null
       return createSeniorityAnalysis({
-        entries: [...seniorityStore.entries, synthetic],
+        entries: seniorityStore.entries,
+        modeledEntry: synthetic,
         asOfDate: todayPlainDate(),
       })
     })

@@ -1,12 +1,13 @@
 <script setup lang="ts">
-import { useSeniorityCore } from '~/composables/seniority'
+import { useSeniorityCore, useStanding } from '~/composables/seniority'
 import { addYearsDate, diffDateYears } from '~/utils/date'
 import { todayPlainDate } from '~/utils/temporal'
-import { DEFAULT_SENIORITY_GROWTH_ASSUMPTIONS, type GrowthAssumptions } from '~/utils/seniority'
+import { DEFAULT_SENIORITY_GROWTH_ASSUMPTIONS, isNoResult, resultOrNull, type GrowthAssumptions } from '~/utils/seniority'
 
 defineProps<{ loading?: boolean }>()
 
 const { hasData, newHire, anchoredAnalysis, projectionEndDate } = useSeniorityCore()
+const { rankCard } = useStanding()
 const { employeeNumber } = useUser()
 const hasEmployeeNumber = computed(() => !!employeeNumber.value || !!newHire.syntheticEntry.value)
 
@@ -15,12 +16,18 @@ const usePositionProjection = ref(false)
 const positionYearsInput = ref(1)
 const projectionYears = ref(0)
 const projectionDate = computed(() => addYearsDate(todayPlainDate(), projectionYears.value))
-const qualificationPositions = computed(() =>
-  [...(anchoredAnalysis.value?.qualificationPositions({
-    through: projectionDate.value,
-    growthAssumptions: growthAssumptions.value,
-  }).presentation ?? [])],
-)
+const qualificationPositionsOutput = computed(() => anchoredAnalysis.value?.qualificationPositions({
+  through: projectionDate.value,
+  growthAssumptions: growthAssumptions.value,
+}).presentation ?? null)
+const qualificationPositionsNoResult = computed(() => {
+  const output = qualificationPositionsOutput.value
+  return output && isNoResult(output) ? output : null
+})
+const qualificationPositions = computed(() => {
+  const output = resultOrNull(qualificationPositionsOutput.value)
+  return output ? [...output] : []
+})
 
 const hasProjection = computed(() =>
   qualificationPositions.value.some(
@@ -122,7 +129,7 @@ onUnmounted(cancelPositionDebounce)
         <template #content>
           <div class="rounded-lg border border-[var(--ui-border)] bg-[var(--ui-bg-muted)] p-4 space-y-2 text-sm text-[var(--ui-text-muted)]">
             <p>The Position view compares your company Seniority Percentile across Qualifications (Base, Seat, and Fleet combinations).</p>
-            <p>Holdable is a modeled outcome: your projected company Seniority Percentile meets or exceeds the unchanged current Qualification Threshold percentile. The Qualification Threshold represents the most junior active position in that Qualification. This is a projection based on scheduled retirements, not a vacancy. Growth Assumptions also affect your projected percentile.</p>
+            <p>Holdable is a modeled outcome: your projected company Seniority Percentile meets or exceeds the unchanged current Qualification Threshold percentile. The Qualification Threshold represents the most junior active position in that Qualification: the active incumbent's Rank against Roster Size, fixed at the As-of Date. This is a projection based on scheduled retirements, not a vacancy. Growth Assumptions also affect your projected percentile.</p>
             <p>Future Qualification occupancy is not projected. Vacancies, bids, transfers, and awards are not modeled. Holdable does not guarantee a position.</p>
             <NuxtLink to="/how-it-works#holdability" class="text-primary text-sm underline">Learn more about Holdable and Qualification Thresholds →</NuxtLink>
           </div>
@@ -156,7 +163,7 @@ onUnmounted(cancelPositionDebounce)
                   <div class="w-0.5 h-4 border-l-2 border-dashed border-[var(--ui-color-error-500)]" />
                 </div>
                 <span>Qualification Threshold — most junior active position</span>
-                <InfoIcon text="The Qualification Threshold is the current company Seniority Percentile of the most junior active position in this Qualification. It stays unchanged in projections; future occupancy is not projected. Holdable does not guarantee a position." size="xs" />
+                <InfoIcon text="The Qualification Threshold is the company Seniority Percentile of the most junior active position in this Qualification: the active incumbent's Rank against Roster Size, fixed at the As-of Date. It stays unchanged in projections; future occupancy is not projected. Holdable does not guarantee a position." size="xs" />
               </div>
               <div v-if="hasProjection" class="flex items-center gap-1.5">
                 <div class="w-3 h-3 rounded-full bg-[var(--ui-text-muted)] opacity-40" />
@@ -175,6 +182,8 @@ onUnmounted(cancelPositionDebounce)
         </template>
       </UCollapsible>
 
+      <p data-testid="position-roster-size" class="text-xs text-muted">{{ rankCard.rosterSummaryLabel ?? '--' }}</p>
+
       <!-- Qual Seniority Scale -->
       <UCard v-if="qualificationPositions.length > 0">
         <template #header>
@@ -182,6 +191,10 @@ onUnmounted(cancelPositionDebounce)
         </template>
         <AnalyticsQualSeniorityScale :positions="qualificationPositions" />
       </UCard>
+
+      <p v-else-if="qualificationPositionsNoResult" data-testid="no-result" class="text-sm text-muted">
+        {{ qualificationPositionsNoResult.label }}
+      </p>
 
       <UAlert
         v-else-if="!hasEmployeeNumber"

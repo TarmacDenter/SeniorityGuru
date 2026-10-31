@@ -1,4 +1,5 @@
 // @vitest-environment node
+import { resultOf } from '~/test-utils/no-result'
 import { describe, expect, it } from 'vitest'
 import { makeDomainEntry as makeEntry } from '~/test-utils/factories'
 import { Temporal } from '~/utils/temporal'
@@ -115,9 +116,9 @@ describe('public demographic Qualification Thresholds', () => {
   it('keeps anchored captain thresholds consistent with active Qualification Positions and their personal overlay', () => {
     const anchored = createSeniorityAnalysis({ entries, asOfDate }).withAnchor('200')
     const output = anchored.demographics(options)
-    const positions = anchored.qualificationPositions({ through: asOfDate }).domain
+    const positions = resultOf(anchored.qualificationPositions({ through: asOfDate }).domain)
 
-    expect(anchored.seniorityStanding().domain.activePilotCount).toBe(5)
+    expect(resultOf(anchored.seniorityStanding().domain).activePilotCount).toBe(5)
     expect(output.domain.captainQualificationThresholds.map(row => row.seniorityNumber)).toEqual([200, 500, 800])
     for (const threshold of output.domain.captainQualificationThresholds) {
       const position = positions.find(row =>

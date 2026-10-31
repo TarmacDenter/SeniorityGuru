@@ -5,8 +5,8 @@ import type { GrowthAssumptions } from '~/utils/seniority-analysis/growth'
 import type {
   EntryPredicate,
   RetirementCountProjection,
-  SeniorityTrajectory,
-  SeniorityTrajectoryComparison,
+  SeniorityTrajectory as CalculatedSeniorityTrajectory,
+  SeniorityTrajectoryComparison as CalculatedSeniorityTrajectoryComparison,
   SeniorityTrajectoryPoint,
   TrajectoryChange,
 } from '~/utils/seniority-analysis/math'
@@ -16,8 +16,6 @@ export type {
   GrowthAssumptions,
   QualificationScope,
   RetirementCountProjection,
-  SeniorityTrajectory,
-  SeniorityTrajectoryComparison,
   SeniorityTrajectoryPoint,
   TrajectoryChange,
 }
@@ -51,28 +49,56 @@ export interface SenioritySnapshot {
   readonly qualifications: readonly Qualification[]
 }
 
+export type NoResultReason = 'anchor-retired'
+
+/** Explicit absence of a result: a retired Anchor Pilot has no Rank or projection. */
+export interface NoResult {
+  readonly kind: 'no-result'
+  readonly reason: NoResultReason
+  readonly label: string
+}
+
+/** A trajectory whose samples stopped because the Anchor Pilot retired inside the projection window. */
+export interface SeniorityTrajectory extends CalculatedSeniorityTrajectory {
+  readonly endedBy?: NoResult
+  /** True when the Anchor Pilot is outside the Qualification Scope and is placed there by Seniority Number. */
+  readonly isHypothetical: boolean
+}
+
+export interface SeniorityTrajectoryComparison extends CalculatedSeniorityTrajectoryComparison {
+  readonly endedBy?: NoResult
+  readonly baselineIsHypothetical: boolean
+  readonly comparisonIsHypothetical: boolean
+}
+
 export interface QualificationStanding {
   readonly qualification: Qualification
-  readonly listRank: number
-  readonly activeRank: number
-  readonly listPilotCount: number
+  readonly rank: number
+  readonly publicationPosition: number
+  readonly rosterSize: number
   readonly activePilotCount: number
-  readonly listPercentile: number
-  readonly activePercentile: number
+  readonly seniorityPercentile: number
   readonly isAnchorCurrentQualification: boolean
+  /** True when the Anchor Pilot is not in this Qualification and is counted in its Roster Size as a modeled pilot. */
+  readonly isHypothetical: boolean
 }
 
 export interface SeniorityStanding {
-  readonly listRank: number
-  readonly activeRank: number
-  readonly listPilotCount: number
+  readonly rank: number
+  readonly publicationPosition: number
+  readonly rosterSize: number
+  /** Real pilots in the Qualification Scope in the publication. Excludes a modeled New Hire pilot and a Hypothetical Placement. */
+  readonly publicationPilotCount: number
   readonly activePilotCount: number
-  readonly listPercentile: number
-  readonly activePercentile: number
+  readonly seniorityPercentile: number
   readonly retiredPilotsSeniorToAnchor: number
   readonly rollingNext12MonthRetirements: number
   readonly rollingNext12MonthRetirementsSeniorToAnchor: number
   readonly qualificationStandings: readonly QualificationStanding[]
+  /** True when the Anchor Pilot is outside the Qualification Scope and is placed there by Seniority Number. */
+  readonly isHypothetical: boolean
+  /** True when the Anchor Pilot is the modeled New Hire pilot rather than a pilot in the publication. */
+  readonly isModeled: boolean
 }
 
 export interface AgeBucket {
@@ -129,6 +155,8 @@ export interface PercentileDensityBucket {
 export interface QualificationDistribution {
   readonly qualification: Qualification
   readonly activePilotCount: number
+  /** Pilots in the analyzed set in the publication, retired included. */
+  readonly rosterSize: number
   readonly thresholdPercentile: number
   readonly thresholdSeniorityNumber: number
   readonly percentile25: number
@@ -187,8 +215,21 @@ export interface RelativeUpcomingRetirementFilter extends UpcomingRetirementFilt
 }
 
 export interface RelativeUpcomingRetirement extends UpcomingRetirement {
-  /** Positive is senior to the anchor; zero is the anchor; negative is junior. */
+  /** Difference in dynamic Rank (retired pilots are not counted). Positive is senior to the anchor; zero is the anchor; negative is junior. */
   readonly positionsSeniorToAnchor: number
+}
+
+export function isNoResult(value: unknown): value is NoResult {
+  return typeof value === 'object' && value !== null && (value as { kind?: unknown }).kind === 'no-result'
+}
+
+/** The result itself, or null when it is absent or a no-result. */
+export function resultOrNull<T>(value: T | NoResult | null | undefined): T | null {
+  return value && !isNoResult(value) ? value : null
+}
+
+export interface SeniorityStandingOptions {
+  readonly scenario?: Scenario
 }
 
 export interface SeniorityTrajectoryOptions {
@@ -206,6 +247,7 @@ export interface PercentileCrossingOptions extends SeniorityTrajectoryOptions {
   readonly targetPercentile: number
 }
 
+/** Qualification Position is company-wide so the percentile and the Qualification Thresholds share one scale. */
 export interface QualificationPositionOptions {
   readonly through: PlainDate
   readonly growthAssumptions?: GrowthAssumptions
@@ -226,10 +268,10 @@ export interface SeniorityLens extends CommonSeniorityLens {
 
 export interface AnchoredSeniorityLens extends CommonSeniorityLens {
   readonly anchor: Readonly<SeniorityEntry>
-  seniorityStanding(): SeniorityStanding
-  seniorityTrajectory(options: SeniorityTrajectoryOptions): SeniorityTrajectory
-  seniorityTrajectoryComparison(options: SeniorityTrajectoryComparisonOptions): SeniorityTrajectoryComparison
-  percentileCrossing(options: PercentileCrossingOptions): PercentileCrossingResult | null
-  qualificationPositions(options: QualificationPositionOptions): readonly QualificationPosition[]
+  seniorityStanding(options?: SeniorityStandingOptions): SeniorityStanding | NoResult
+  seniorityTrajectory(options: SeniorityTrajectoryOptions): SeniorityTrajectory | NoResult
+  seniorityTrajectoryComparison(options: SeniorityTrajectoryComparisonOptions): SeniorityTrajectoryComparison | NoResult
+  percentileCrossing(options: PercentileCrossingOptions): PercentileCrossingResult | null | NoResult
+  qualificationPositions(options: QualificationPositionOptions): readonly QualificationPosition[] | NoResult
   relativeUpcomingRetirements(filter: RelativeUpcomingRetirementFilter): readonly RelativeUpcomingRetirement[]
 }

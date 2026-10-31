@@ -1,6 +1,7 @@
 <script setup lang="ts">
 const props = defineProps<{
   result: { year: string } | null
+  noResultLabel?: string | null
   targetPercentile: number
   minPercentile: number
   maxPercentile: number
@@ -68,7 +69,11 @@ onUnmounted(() => {
       </div>
 
       <!-- Result card -->
-      <UCard v-if="result">
+      <UCard v-if="noResultLabel">
+        <p data-testid="no-result" class="text-sm text-muted">{{ noResultLabel }}</p>
+      </UCard>
+
+      <UCard v-else-if="result">
         <div class="flex items-center gap-2">
           <UIcon name="i-lucide-calendar-check" class="size-4 text-primary" />
           <p class="text-sm">

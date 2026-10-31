@@ -1,19 +1,18 @@
 import type {
+  NoResult,
   PercentileCrossingResult,
   Qualification,
   QualificationPosition,
   QualificationScope,
   SeniorityDemographics,
   SeniorityStanding,
-} from '~/utils/seniority-engine/types'
-import type { QualificationViewerAnalysis, QualificationViewerEntry } from '~/utils/seniority-engine/qual-viewer'
-import type { PlainDate } from '~/utils/temporal'
-import type {
-  RetirementCountProjection,
   SeniorityTrajectory,
   SeniorityTrajectoryComparison,
-  TrajectoryChange,
-} from './math'
+} from '~/utils/seniority-engine/types'
+import type { QualificationViewerAnalysis, QualificationViewerEntry } from '~/utils/seniority-engine/qual-viewer'
+import { isNoResult } from '~/utils/seniority-engine/types'
+import type { PlainDate } from '~/utils/temporal'
+import type { RetirementCountProjection, TrajectoryChange } from './math'
 import { diffYears, formatMonthYear } from '~/utils/date'
 
 export type QualificationViewerRetirementTimeline = 'past' | 'imminent' | 'soon' | null
@@ -51,16 +50,27 @@ export interface PresentedTrajectoryChange extends TrajectoryChange {
   readonly isPeak: boolean
 }
 
-export interface PresentedSeniorityTrajectory {
+export interface PresentedSeniorityTrajectoryValue {
   chartData: { labels: string[]; data: number[] }
   changes: PresentedTrajectoryChange[]
+  /** Reason the samples stopped early, such as "Anchor Pilot retired". */
+  endedByLabel: string | null
+  /** "Hypothetical Placement in <scope>" when the Anchor Pilot is outside the scope; otherwise null. */
+  hypotheticalLabel: string | null
 }
 
-export interface PresentedSeniorityTrajectoryComparison {
+export type PresentedSeniorityTrajectory = PresentedSeniorityTrajectoryValue | NoResult
+
+export interface PresentedSeniorityTrajectoryComparisonValue {
   labels: string[]
   baselineData: number[]
   comparisonData: number[]
+  endedByLabel: string | null
+  baselineHypotheticalLabel: string | null
+  comparisonHypotheticalLabel: string | null
 }
+
+export type PresentedSeniorityTrajectoryComparison = PresentedSeniorityTrajectoryComparisonValue | NoResult
 
 export interface PresentedRetirementCountProjection {
   labels: string[]
@@ -68,7 +78,16 @@ export interface PresentedRetirementCountProjection {
   scopedPilotCount: number
 }
 
-export function presentSeniorityTrajectory(trajectory: SeniorityTrajectory): PresentedSeniorityTrajectory {
+/** Names the scope the Anchor Pilot is placed into when outside it; null for a member. */
+export function hypotheticalPlacementLabel(isHypothetical: boolean, scope: QualificationScope): string | null {
+  return isHypothetical ? `Hypothetical Placement in ${formatQualificationScope(scope)}` : null
+}
+
+export function presentSeniorityTrajectory(
+  trajectory: SeniorityTrajectory | NoResult,
+  scope: QualificationScope = {},
+): PresentedSeniorityTrajectory {
+  if (isNoResult(trajectory)) return trajectory
   const changes = trajectory.changes.map((change, index, all): PresentedTrajectoryChange => {
     const previous = index > 0 ? all[index - 1]!.percentilePointChange : -Infinity
     const next = index < all.length - 1 ? all[index + 1]!.percentilePointChange : -Infinity
@@ -86,16 +105,24 @@ export function presentSeniorityTrajectory(trajectory: SeniorityTrajectory): Pre
       data: trajectory.points.map(point => point.percentile),
     },
     changes,
+    endedByLabel: trajectory.endedBy?.label ?? null,
+    hypotheticalLabel: hypotheticalPlacementLabel(trajectory.isHypothetical, scope),
   }
 }
 
 export function presentSeniorityTrajectoryComparison(
-  comparison: SeniorityTrajectoryComparison,
+  comparison: SeniorityTrajectoryComparison | NoResult,
+  baselineScope: QualificationScope = {},
+  comparisonScope: QualificationScope = {},
 ): PresentedSeniorityTrajectoryComparison {
+  if (isNoResult(comparison)) return comparison
   return {
     labels: comparison.points.map(point => point.date.toString()),
     baselineData: comparison.points.map(point => point.baselinePercentile),
     comparisonData: comparison.points.map(point => point.comparisonPercentile),
+    endedByLabel: comparison.endedBy?.label ?? null,
+    baselineHypotheticalLabel: hypotheticalPlacementLabel(comparison.baselineIsHypothetical, baselineScope),
+    comparisonHypotheticalLabel: hypotheticalPlacementLabel(comparison.comparisonIsHypothetical, comparisonScope),
   }
 }
 
@@ -127,20 +154,44 @@ export function formatSeniorityRankChange(value: number): string {
   return value > 0 ? `+${value}` : String(value)
 }
 
-export function presentSeniorityStanding(standing: SeniorityStanding) {
+/** The notes that explain why a count is not purely the published list, in "modeled, hypothetical" order. */
+function rosterSizeNotes(standing: SeniorityStanding, modeled: string, hypothetical: string): string[] {
+  return [standing.isModeled && modeled, standing.isHypothetical && hypothetical].filter((item): item is string => !!item)
+}
+
+function rosterSizeTrend(standing: SeniorityStanding): string | null {
+  const parts = rosterSizeNotes(standing, `${formatSeniorityCount(standing.publicationPilotCount)} in publication`, 'includes you')
+  return parts.length > 0 ? parts.join(' · ') : null
+}
+
+export function presentSeniorityStanding(standing: SeniorityStanding | NoResult, scope: QualificationScope = {}) {
+  if (isNoResult(standing)) return standing
+  const qualifiers = rosterSizeNotes(standing, 'modeled', 'hypothetical')
+  const rosterSummary = `Roster Size ${formatSeniorityCount(standing.rosterSize)} · Active pilots ${formatSeniorityCount(standing.activePilotCount)}`
   return {
     ...standing,
     rollingNext12MonthRetirementsLabel: formatSeniorityCount(standing.rollingNext12MonthRetirements),
+    retirementsSeniorToAnchorLabel: `${formatSeniorityCount(standing.rollingNext12MonthRetirementsSeniorToAnchor)} senior to you`,
+    rosterSizeLabel: qualifiers.length > 0 ? `Roster Size (${qualifiers.join(', ')})` : 'Roster Size',
+    rosterSizeTrend: rosterSizeTrend(standing),
+    rosterSizeValueLabel: formatSeniorityCount(standing.rosterSize),
+    rosterSummaryLabel: rosterSummary,
+    percentileScaleLabel: `Percentile measured against ${rosterSummary}`,
+    hypotheticalLabel: hypotheticalPlacementLabel(standing.isHypothetical, scope),
     qualificationStandings: standing.qualificationStandings.map(item => ({
       ...item,
       qualificationLabel: formatQualification(item.qualification),
+      rankLabel: formatSeniorityCount(item.rank),
+      rosterTrendLabel: `${formatQualification(item.qualification)} · of ${formatSeniorityCount(item.rosterSize)} on roster · ${formatSeniorityCount(item.activePilotCount)} active`,
+      hypotheticalLabel: hypotheticalPlacementLabel(item.isHypothetical, item.qualification),
     })),
   }
 }
 
 export type PresentedSeniorityStanding = ReturnType<typeof presentSeniorityStanding>
 
-export function presentPercentileCrossing(result: PercentileCrossingResult | null): { year: string } | null {
+export function presentPercentileCrossing(result: PercentileCrossingResult | null | NoResult): { year: string } | NoResult | null {
+  if (isNoResult(result)) return result
   return result ? { year: String(result.crossingYear) } : null
 }
 
@@ -225,6 +276,8 @@ export function presentAnchoredSeniorityDemographics(
 export interface PresentedQualificationPosition {
   readonly qualification: Qualification
   readonly activePilotCount: number
+  /** Company Roster Size, the scale of the percentiles; absent for sample data that carries none. */
+  readonly rosterSize?: number
   readonly thresholdPercentile: number
   readonly thresholdSeniorityNumber: number
   readonly percentile25: number
@@ -242,8 +295,9 @@ export interface PresentedQualificationPosition {
 }
 
 export function presentQualificationPositions(
-  positions: readonly QualificationPosition[],
-): PresentedQualificationPosition[] {
+  positions: readonly QualificationPosition[] | NoResult,
+): PresentedQualificationPosition[] | NoResult {
+  if (isNoResult(positions)) return positions
   return positions.map(position => ({
     ...position.distribution,
     currentPercentile: position.currentPercentile,

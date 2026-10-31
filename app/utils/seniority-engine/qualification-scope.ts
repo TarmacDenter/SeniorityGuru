@@ -66,7 +66,7 @@ export function enumerateQualificationScopes(entries: readonly SeniorityEntry[])
     ...scopes.slice(1).sort((a, b) => {
       const dimensionsA = Number(!!a.base) + Number(!!a.seat) + Number(!!a.fleet)
       const dimensionsB = Number(!!b.base) + Number(!!b.seat) + Number(!!b.fleet)
-      return dimensionsA - dimensionsB || scopeSortKey(a).localeCompare(scopeSortKey(b))
+      return dimensionsB - dimensionsA || scopeSortKey(a).localeCompare(scopeSortKey(b))
     }),
   ]
 }

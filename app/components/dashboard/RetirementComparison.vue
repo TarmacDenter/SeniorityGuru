@@ -61,7 +61,7 @@ const chartData = computed<ChartData<'bar'>>(() => {
 const chartOptions = computed(() => ({
   scales: {
     y: showPercentage.value
-      ? { title: { display: true, text: '% of remaining pilots' }, ticks: { callback: (v: string | number) => `${v}%` } }
+      ? { title: { display: true, text: 'Retirement rate (% of remaining pilots)' }, ticks: { callback: (v: string | number) => `${v}%` } }
       : {},
   },
 }))
@@ -74,7 +74,7 @@ const chartOptions = computed(() => ({
         <div class="flex items-center gap-3">
           <h3 class="font-semibold text-highlighted">Retirement Projections</h3>
           <div class="flex items-center gap-2">
-            <span class="text-xs text-muted">% of remaining</span>
+            <span class="text-xs text-muted">Retirement rate</span>
             <USwitch v-model="showPercentage" size="xs" />
           </div>
         </div>

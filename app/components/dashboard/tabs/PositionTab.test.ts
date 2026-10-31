@@ -43,6 +43,14 @@ mockNuxtImport('useSeniorityCore', () => () => ({
   projectionEndDate: mockProjectionEndDate,
 }))
 
+const rankCardMode = vi.hoisted(() => ({ noResult: false }))
+
+mockNuxtImport('useStanding', () => () => ({
+  rankCard: require('vue').ref(rankCardMode.noResult
+    ? { rosterSummaryLabel: null }
+    : { rosterSummaryLabel: 'Roster Size 260 · Active pilots 240' }),
+}))
+
 mockNuxtImport('useUser', () => () => ({ employeeNumber: { value: null } }))
 
 describe('PositionTab', () => {
@@ -55,6 +63,7 @@ describe('PositionTab', () => {
   })
 
   afterEach(() => {
+    rankCardMode.noResult = false
     wrappers.splice(0).forEach(wrapper => wrapper.unmount())
     vi.useRealTimers()
     vi.restoreAllMocks()
@@ -71,6 +80,17 @@ describe('PositionTab', () => {
     wrappers.push(wrapper)
     return { wrapper, qualificationPositions }
   }
+
+  it('discloses Roster Size and active pilots as separate figures', async () => {
+    const { wrapper } = await mountProjection()
+    expect(wrapper.get('[data-testid="position-roster-size"]').text()).toBe('Roster Size 260 · Active pilots 240')
+  })
+
+  it('shows the placeholder for a retired Anchor Pilot instead of 0 or nothing', async () => {
+    rankCardMode.noResult = true
+    const { wrapper } = await mountProjection()
+    expect(wrapper.get('[data-testid="position-roster-size"]').text()).toBe('--')
+  })
 
   it('applies the initial projection immediately when Project forward is enabled', async () => {
     const { wrapper, qualificationPositions } = await mountProjection()
@@ -203,6 +223,7 @@ describe('PositionTab', () => {
           {
             qualification: { fleet: '737', seat: 'CA', base: 'JFK' },
             activePilotCount: 1,
+            rosterSize: 2,
             thresholdPercentile: 60,
             thresholdSeniorityNumber: 100,
             percentile25: 25,
@@ -217,6 +238,7 @@ describe('PositionTab', () => {
           {
             qualification: { fleet: '737', seat: 'FO', base: 'JFK' },
             activePilotCount: 1,
+            rosterSize: 2,
             thresholdPercentile: 60,
             thresholdSeniorityNumber: 100,
             percentile25: 25,
@@ -236,9 +258,10 @@ describe('PositionTab', () => {
     wrappers.push(wrapper)
 
     expect(wrapper.findAll('[data-testid="qualification-scale-active-count"]').map(count => count.text())).toEqual([
-      '1 active pilot',
-      '1 active pilot',
+      '1 active in this qualification',
+      '1 active in this qualification',
     ])
+    expect(wrapper.get('[data-testid="qualification-scale-roster-size"]').text()).toBe('Percentiles measured against 2 on roster')
     expect(wrapper.text()).toContain('Heights scale independently for each Qualification')
 
     const projectedMarkers = wrapper.findAll('[data-testid="qualification-scale-projected-position"]')

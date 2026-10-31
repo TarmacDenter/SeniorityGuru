@@ -2,18 +2,23 @@
 import type { RankCardData, BaseStatusRow, StatCard, RetirementSnapshotData } from '~/composables/seniority'
 import type { PresentedTrajectoryChange } from '~/utils/seniority'
 
+const scopeLabel = defineModel<string>('scopeLabel', { default: 'Company-wide' })
+
 defineProps<{
   loading: boolean
   hasData: boolean
   hasEmployeeNumber: boolean
   userFound: boolean
   isNewHireMode: boolean
+  scopeLabels: string[]
   rankCard: RankCardData
   stats: StatCard[]
   retirementSnapshot: RetirementSnapshotData | null
   trajectoryChanges: PresentedTrajectoryChange[]
   baseStatusData: BaseStatusRow[]
   trajectoryChartData: { labels: string[]; data: number[] }
+  /** Why the plotted trajectory stops early, e.g. "Anchor Pilot retired"; null when it runs its full window. */
+  trajectoryEndedByLabel: string | null
 }>()
 </script>
 
@@ -43,6 +48,11 @@ defineProps<{
       />
 
       <div class="grid grid-cols-1 lg:grid-cols-4 gap-4 lg:gap-6">
+        <div v-if="userFound && scopeLabels.length > 1" class="lg:[grid-column:1/-1] flex items-center gap-2">
+          <span class="text-sm text-muted">Qualification Scope</span>
+          <USelect v-model="scopeLabel" :items="scopeLabels" size="sm" class="min-w-40" />
+        </div>
+
         <!-- Rank card -->
         <DashboardSeniorityRankCard v-if="userFound" :rank="rankCard"
           class="lg:[grid-column:1/-1] dashboard-enter" />
@@ -67,12 +77,12 @@ defineProps<{
       <!-- Base/Seat/Fleet Status -->
       <div v-if="userFound" class="mt-6">
         <h2 class="text-sm font-semibold text-[var(--ui-text-muted)] uppercase tracking-wide mb-3">How Do I Look Today?</h2>
-        <DashboardBaseStatusTable :data="baseStatusData" />
+        <DashboardBaseStatusTable :data="baseStatusData" :no-result-label="rankCard.noResultLabel" />
       </div>
 
       <!-- Career Trajectory -->
       <div v-if="userFound" class="mt-6">
-        <DashboardTrajectoryChart :data="trajectoryChartData" />
+        <DashboardTrajectoryChart :data="trajectoryChartData" :ended-by-label="trajectoryEndedByLabel" />
       </div>
     </template>
   </div>

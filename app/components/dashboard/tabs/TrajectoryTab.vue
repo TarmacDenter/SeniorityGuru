@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useSeniorityCore, useQualificationFilter, useStanding, useTrajectory } from '~/composables/seniority'
-import { DEFAULT_SENIORITY_GROWTH_ASSUMPTIONS, type GrowthAssumptions } from '~/utils/seniority'
+import { DEFAULT_SENIORITY_GROWTH_ASSUMPTIONS, isNoResult, resultOrNull, type GrowthAssumptions } from '~/utils/seniority'
 
 defineProps<{ loading?: boolean }>()
 
@@ -12,11 +12,13 @@ const { rankCard } = useStanding()
 
 const {
   chartData: trajectoryChartData,
+  endedByLabel: trajectoryEndedByLabel,
   computeComparativeTrajectory,
   computeRetirementProjection,
 } = useTrajectory(growthAssumptions)
 
 const qualificationFilter = useQualificationFilter()
+const { rankCard: scopedRankCard } = useStanding(qualificationFilter.qualificationScope)
 const scopedScenario = computed(() => ({
   growthAssumptions: growthAssumptions.value,
   qualificationScope: qualificationFilter.qualificationScope.value,
@@ -26,8 +28,22 @@ const qualificationScopeOptions = computed(() => analysis.value?.catalog?.qualif
 const waveTrajectoryOutput = computed(() => projectionEndDate.value
   ? anchoredAnalysis.value?.seniorityTrajectory({ through: projectionEndDate.value, scenario: scopedScenario.value }) ?? null
   : null)
-const waveTrajectory = computed(() => waveTrajectoryOutput.value?.domain.points ?? [])
-const qualificationTrajectoryChanges = computed(() => waveTrajectoryOutput.value?.presentation.changes ?? [])
+const waveTrajectoryNoResult = computed(() => {
+  const domain = waveTrajectoryOutput.value?.domain
+  return domain && isNoResult(domain) ? domain : null
+})
+const waveTrajectoryHypotheticalLabel = computed(() => {
+  return resultOrNull(waveTrajectoryOutput.value?.presentation)?.hypotheticalLabel ?? null
+})
+const waveTrajectoryEndedByLabel = computed(() => {
+  return resultOrNull(waveTrajectoryOutput.value?.presentation)?.endedByLabel ?? null
+})
+const waveTrajectory = computed(() => {
+  return resultOrNull(waveTrajectoryOutput.value?.domain)?.points ?? []
+})
+const qualificationTrajectoryChanges = computed(() => {
+  return resultOrNull(waveTrajectoryOutput.value?.presentation)?.changes ?? []
+})
 const targetPercentile = ref(50)
 const targetPercentileMin = computed(() => waveTrajectory.value[0]?.percentile ?? 0)
 const targetPercentileMax = computed(() => {
@@ -40,13 +56,18 @@ watch([targetPercentileMin, targetPercentileMax], ([min, max]) => {
   targetPercentile.value = Math.min(Math.max(targetPercentile.value, min), max)
 }, { immediate: true })
 
-const thresholdResult = computed(() => projectionEndDate.value
+const thresholdOutput = computed(() => projectionEndDate.value
   ? anchoredAnalysis.value?.percentileCrossing({
     targetPercentile: targetPercentile.value,
     through: projectionEndDate.value,
     scenario: scopedScenario.value,
   }).presentation ?? null
   : null)
+const thresholdNoResultLabel = computed(() => {
+  const output = thresholdOutput.value
+  return isNoResult(output) ? output.label : null
+})
+const thresholdResult = computed(() => resultOrNull(thresholdOutput.value))
 const bannerKey = 'qual-projections-banner-dismissed'
 const isBannerDismissed = ref(typeof localStorage !== 'undefined' && localStorage.getItem(bannerKey) === 'true')
 
@@ -103,11 +124,14 @@ const ready = useDeferredReady()
         </template>
       </UCollapsible>
 
+      <p data-testid="trajectory-roster-size" class="text-xs text-muted">{{ rankCard.rosterSummaryLabel ?? '--' }}</p>
+
       <!-- Full Trajectory Chart -->
       <USkeleton v-if="hasAnchor && (!ready || !trajectoryChartData?.labels?.length)" class="h-64 rounded-lg" />
       <DashboardTrajectoryChart
         v-else-if="hasAnchor"
         :data="trajectoryChartData"
+        :ended-by-label="trajectoryEndedByLabel"
       >
         <template v-if="growthAssumptions.enabled" #badge>
           <UBadge color="primary" variant="subtle" size="xs" class="ml-2">
@@ -146,6 +170,14 @@ const ready = useDeferredReady()
         @dismiss="dismissBanner"
       />
 
+      <p data-testid="scoped-roster-size" class="text-xs text-muted">{{ scopedRankCard.percentileScaleLabel ?? '--' }}</p>
+
+      <p v-if="waveTrajectoryNoResult" data-testid="no-result" class="text-sm text-muted">{{ waveTrajectoryNoResult.label }}</p>
+      <UBadge v-else-if="waveTrajectoryHypotheticalLabel" data-testid="hypothetical-placement" color="warning" variant="subtle" size="sm">
+        {{ waveTrajectoryHypotheticalLabel }}
+      </UBadge>
+      <p v-if="waveTrajectoryEndedByLabel" data-testid="scoped-trajectory-ended-by" class="text-xs text-muted">{{ waveTrajectoryEndedByLabel }}</p>
+
       <!-- Retirement Wave + Percentile Threshold -->
       <div v-if="!ready || !retirementWave.length" class="grid grid-cols-1 sm:grid-cols-11 gap-6">
         <USkeleton class="sm:col-span-6 h-64 rounded-lg" />
@@ -171,6 +203,7 @@ const ready = useDeferredReady()
             </template>
             <AnalyticsPercentileThresholdCalculator
               :result="thresholdResult"
+              :no-result-label="thresholdNoResultLabel"
               :target-percentile="targetPercentile"
               :min-percentile="targetPercentileMin"
               :max-percentile="targetPercentileMax"

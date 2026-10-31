@@ -6,6 +6,7 @@ function position(overrides: Partial<PresentedQualificationPosition>): Presented
   return {
     qualification: { fleet: '737', seat: 'FO', base: 'JFK' },
     activePilotCount: 1,
+    rosterSize: 1,
     thresholdPercentile: 50,
     thresholdSeniorityNumber: 100,
     percentile25: 25,
@@ -29,6 +30,7 @@ describe('QualSeniorityScale', () => {
           position({
             qualification: { fleet: '737', seat: 'CA', base: 'JFK' },
             activePilotCount: 240,
+            rosterSize: 260,
             percentileDensity: [
               { minimumPercentile: 40, maximumPercentile: 45, pilotCount: 80 },
               { minimumPercentile: 45, maximumPercentile: 50, pilotCount: 160 },
@@ -36,6 +38,7 @@ describe('QualSeniorityScale', () => {
           }),
           position({
             activePilotCount: 3,
+            rosterSize: 4,
             percentileDensity: [
               { minimumPercentile: 40, maximumPercentile: 45, pilotCount: 1 },
               { minimumPercentile: 45, maximumPercentile: 50, pilotCount: 2 },
@@ -46,9 +49,36 @@ describe('QualSeniorityScale', () => {
     })
 
     const counts = wrapper.findAll('[data-testid="qualification-scale-active-count"]')
-    expect(counts.map(count => count.text())).toEqual(['240 active pilots', '3 active pilots'])
+    expect(counts.map(count => count.text())).toEqual(['240 active in this qualification', '3 active in this qualification'])
     expect(wrapper.text()).toContain('Heights scale independently for each Qualification')
     expect(wrapper.text()).toContain('distribution shape, not comparable pilot counts')
+    expect(wrapper.text()).toContain("active incumbent's Rank against Roster Size")
+  })
+
+  it('states the company Roster Size once as the scale of the percentiles', async () => {
+    const Scale = await import('./QualSeniorityScale.vue')
+    const wrapper = await mountSuspended(Scale.default, {
+      props: {
+        positions: [
+          position({ qualification: { fleet: '737', seat: 'CA', base: 'JFK' }, activePilotCount: 240, rosterSize: 260 }),
+          position({ activePilotCount: 3, rosterSize: 260 }),
+        ],
+      },
+    })
+
+    expect(wrapper.findAll('[data-testid="qualification-scale-roster-size"]').map(item => item.text()))
+      .toEqual(['Percentiles measured against 260 on roster'])
+    expect(wrapper.text().match(/on roster/g)).toHaveLength(1)
+  })
+
+  it('omits the Roster Size line when no position carries a Roster Size', async () => {
+    const Scale = await import('./QualSeniorityScale.vue')
+    const wrapper = await mountSuspended(Scale.default, {
+      props: { positions: [position({ activePilotCount: 94, rosterSize: undefined })] },
+    })
+
+    expect(wrapper.find('[data-testid="qualification-scale-roster-size"]').exists()).toBe(false)
+    expect(wrapper.get('[data-testid="qualification-scale-active-count"]').text()).toBe('94 active in this qualification')
   })
 
   it('shows a single active pilot from the supplied count even without density buckets', async () => {
@@ -57,7 +87,7 @@ describe('QualSeniorityScale', () => {
       props: { positions: [position({ activePilotCount: 1, percentileDensity: [] })] },
     })
 
-    expect(wrapper.get('[data-testid="qualification-scale-active-count"]').text()).toBe('1 active pilot')
+    expect(wrapper.get('[data-testid="qualification-scale-active-count"]').text()).toBe('1 active in this qualification')
     expect(wrapper.find('[data-testid="qualification-scale-current-position"]').exists()).toBe(false)
     expect(wrapper.get('[data-testid="qualification-scale-projected-position"]').attributes('style')).toContain('left: 50%')
     expect(wrapper.text()).toContain('Junior')
@@ -70,6 +100,7 @@ describe('QualSeniorityScale', () => {
 
     expect(wrapper.text()).toContain('No qual data available.')
     expect(wrapper.find('[data-testid="qualification-scale-active-count"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="qualification-scale-roster-size"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="qualification-scale-projected-position"]').exists()).toBe(false)
   })
 

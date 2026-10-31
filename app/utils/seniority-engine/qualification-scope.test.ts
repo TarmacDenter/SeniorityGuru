@@ -50,12 +50,20 @@ describe('Qualification Scope', () => {
     expect(new Set(scopes.map(scope => JSON.stringify(scope))).size).toBe(scopes.length)
   })
 
-  it('orders scopes by dimension count after company-wide', () => {
+  it('keeps company-wide first, then lists fully qualified scopes before partial ones', () => {
     const scopes = enumerateQualificationScopes(entries)
     const dimensionCount = (scope: QualificationScope) =>
       Number(!!scope.base) + Number(!!scope.seat) + Number(!!scope.fleet)
+    const counts = scopes.slice(1).map(dimensionCount)
 
-    expect(scopes.map(dimensionCount)).toEqual([...scopes.map(dimensionCount)].sort((a, b) => a - b))
+    expect(scopes[0]).toEqual({})
+    expect(counts).toEqual([...counts].sort((a, b) => b - a))
+    expect(counts[0]).toBe(3)
+    expect(counts.at(-1)).toBe(1)
     expect(enumerateQualificationScopes([])).toEqual([{}])
+  })
+
+  it('orders scopes deterministically regardless of entry order', () => {
+    expect(enumerateQualificationScopes([...entries].reverse())).toEqual(enumerateQualificationScopes(entries))
   })
 })

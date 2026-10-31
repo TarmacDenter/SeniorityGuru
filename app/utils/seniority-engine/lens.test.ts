@@ -1,4 +1,5 @@
 // @vitest-environment node
+import { resultOf } from '~/test-utils/no-result'
 import { describe, expect, it } from 'vitest'
 import { makeDomainEntry as makeEntry } from '~/test-utils/factories'
 import { Temporal } from '~/utils/temporal'
@@ -147,44 +148,104 @@ describe('organization analysis', () => {
 describe('anchored analysis', () => {
   const anchored = createOrganizationLens().withAnchor('E125')
 
-  it('distinguishes Seniority Number, list Rank, and active Rank when numbers have gaps', () => {
+  it('measures Rank against Roster Size, retired pilots included', () => {
     const standing = anchored.seniorityStanding()
 
     expect(anchored.anchor.seniority_number).toBe(125)
     expect(standing).toMatchObject({
-      listRank: 4,
-      activeRank: 3,
-      listPilotCount: 5,
+      rank: 3,
+      publicationPosition: 4,
+      rosterSize: 5,
       activePilotCount: 4,
-      listPercentile: 40,
-      activePercentile: 50,
+      seniorityPercentile: 60,
       retiredPilotsSeniorToAnchor: 1,
       rollingNext12MonthRetirements: 1,
       rollingNext12MonthRetirementsSeniorToAnchor: 1,
     })
-    expect(standing.qualificationStandings).toContainEqual({
+    for (const removed of ['listRank', 'activeRank', 'listPilotCount', 'activePercentile', 'listPercentile']) {
+      expect(standing).not.toHaveProperty(removed)
+    }
+    expect(resultOf(standing).qualificationStandings).toContainEqual({
       qualification: { base: 'JFK', seat: 'CA', fleet: '737' },
-      listRank: 3,
-      activeRank: 2,
-      listPilotCount: 3,
+      rank: 2,
+      publicationPosition: 3,
+      rosterSize: 3,
       activePilotCount: 2,
-      listPercentile: 33.3,
-      activePercentile: 50,
+      seniorityPercentile: 66.7,
       isAnchorCurrentQualification: true,
+      isHypothetical: false,
     })
+  })
+
+  it('computes Standing for a single Qualification scope', () => {
+    const scenario = createSeniorityScenario({ qualificationScope: { base: 'JFK', seat: 'CA', fleet: '737' } })
+
+    expect(anchored.seniorityStanding({ scenario })).toMatchObject({
+      rank: 2,
+      publicationPosition: 3,
+      rosterSize: 3,
+      activePilotCount: 2,
+      seniorityPercentile: 66.7,
+    })
+  })
+
+  it('computes Standing for several Qualifications with dynamic Rank inside the scope', () => {
+    const scenario = createSeniorityScenario({ qualificationScope: { seat: 'CA' } })
+
+    expect(anchored.seniorityStanding({ scenario })).toMatchObject({
+      rank: 2,
+      publicationPosition: 3,
+      rosterSize: 3,
+      activePilotCount: 2,
+      seniorityPercentile: 66.7,
+    })
+  })
+
+  it('counts rolling next-12-month retirements within the selected Qualification Scope', () => {
+    const company = resultOf(anchored.seniorityStanding())
+    expect(company).toMatchObject({ rollingNext12MonthRetirements: 1, rollingNext12MonthRetirementsSeniorToAnchor: 1 })
+
+    const inScope = resultOf(anchored.seniorityStanding({ scenario: createSeniorityScenario({ qualificationScope: { seat: 'CA' } }) }))
+    expect(inScope).toMatchObject({ rollingNext12MonthRetirements: 1, rollingNext12MonthRetirementsSeniorToAnchor: 1 })
+
+    const outOfScope = resultOf(anchored.seniorityStanding({ scenario: createSeniorityScenario({ qualificationScope: { seat: 'FO' } }) }))
+    expect(outOfScope).toMatchObject({ rollingNext12MonthRetirements: 0, rollingNext12MonthRetirementsSeniorToAnchor: 0 })
+  })
+
+  it('reconciles Standing with trajectory year zero for the same scope', () => {
+    for (const qualificationScope of [{}, { seat: 'CA' }, { base: 'JFK', seat: 'CA', fleet: '737' }]) {
+      const scenario = createSeniorityScenario({ qualificationScope })
+      const standing = resultOf(anchored.seniorityStanding({ scenario }))
+      const trajectory = resultOf(anchored.seniorityTrajectory({ through: asOfDate, scenario }))
+
+      expect(trajectory.points[0]!.percentile).toBe(standing.seniorityPercentile)
+      expect(trajectory.points[0]!.rank).toBe(standing.rank)
+    }
+  })
+
+  it('reconciles company-wide Standing with trajectory year zero and Qualification Position', () => {
+    const standing = resultOf(anchored.seniorityStanding())
+    const trajectory = resultOf(anchored.seniorityTrajectory({ through: asOfDate }))
+    const positions = resultOf(anchored.qualificationPositions({ through: asOfDate }))
+
+    expect(positions.length).toBeGreaterThan(0)
+    for (const position of positions) {
+      expect(position.currentPercentile).toBe(standing.seniorityPercentile)
+      expect(position.projectedPercentile).toBe(trajectory.points[0]!.percentile)
+    }
   })
 
   it('returns trajectories and comparisons without chart-shaped values', () => {
     const scenario = createSeniorityScenario({ qualificationScope: { seat: 'CA' } })
-    const trajectory = anchored.seniorityTrajectory({
+    const trajectory = resultOf(anchored.seniorityTrajectory({
       through: Temporal.PlainDate.from('2028-01-01'),
       scenario,
-    })
-    const comparison = anchored.seniorityTrajectoryComparison({
+    }))
+    const comparison = resultOf(anchored.seniorityTrajectoryComparison({
       through: Temporal.PlainDate.from('2028-01-01'),
       baselineScenario: scenario,
       comparisonScenario: createSeniorityScenario(),
-    })
+    }))
 
     expect(trajectory.points.map(point => point.date.toString())).toEqual(['2026-06-15', '2027-06-15'])
     expect(trajectory).not.toHaveProperty('chartData')
@@ -209,10 +270,10 @@ describe('anchored analysis', () => {
   })
 
   it('returns Qualification Positions through one anchored operation', () => {
-    const positions = anchored.qualificationPositions({
+    const positions = resultOf(anchored.qualificationPositions({
       through: Temporal.PlainDate.from('2030-06-15'),
       growthAssumptions: { enabled: true, annualGrowthRate: 0.03 },
-    })
+    }))
 
     expect(positions[0]).toEqual(expect.objectContaining({
       distribution: expect.objectContaining({
@@ -228,7 +289,7 @@ describe('anchored analysis', () => {
     }))
   })
 
-  it('calculates relative retirement positions from company-list Rank', () => {
+  it('calculates relative retirement positions in dynamic Rank', () => {
     const all = anchored.relativeUpcomingRetirements({ through, seniorOnly: false })
     const senior = anchored.relativeUpcomingRetirements({ through, seniorOnly: true })
 
@@ -236,5 +297,19 @@ describe('anchored analysis', () => {
     expect(all.find(row => row.employeeNumber === 'E125')?.positionsSeniorToAnchor).toBe(0)
     expect(all.find(row => row.employeeNumber === 'E140')?.positionsSeniorToAnchor).toBe(-1)
     expect(senior.map(row => row.employeeNumber)).toEqual(['E105', 'E110'])
+  })
+
+  it('measures relative retirement positions in dynamic Rank, not counting already-retired pilots between', () => {
+    const gapped = createSenioritySnapshot([
+      makeEntry({ seniority_number: 100, employee_number: 'G100', hire_date: '2000-01-01', retire_date: '2050-01-01' }),
+      makeEntry({ seniority_number: 105, employee_number: 'G105', hire_date: '2001-01-01', retire_date: '2026-12-01' }),
+      makeEntry({ seniority_number: 110, employee_number: 'G110', hire_date: '2002-01-01', retire_date: '2020-01-01' }),
+      makeEntry({ seniority_number: 120, employee_number: 'G120', hire_date: '2003-01-01', retire_date: '2055-01-01' }),
+    ])
+    const lens = createSeniorityLens(gapped, { asOfDate }).withAnchor('G120')
+
+    const rows = lens.relativeUpcomingRetirements({ through, seniorOnly: false })
+
+    expect(rows.find(row => row.employeeNumber === 'G105')?.positionsSeniorToAnchor).toBe(1)
   })
 })

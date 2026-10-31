@@ -77,6 +77,7 @@ vi.mock('~/composables/usePwaInstall', () => ({
 vi.mock('~/composables/seniority/modules/useSeniorityCore', () => ({
   useSeniorityCore: () => ({
     hasData: ref(false),
+    listAnalysis: ref(null),
     hasAnchor: ref(false),
     isNewHireMode: ref(false),
     newHire: { syntheticEntry: ref(null) },

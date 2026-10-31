@@ -7,6 +7,7 @@ function position(overrides: Partial<PresentedQualificationPosition>): Presented
   return {
     qualification: { fleet: '737', seat: 'FO', base: 'JFK' },
     activePilotCount: 1,
+    rosterSize: 1,
     thresholdPercentile: 50,
     thresholdSeniorityNumber: 100,
     percentile25: 25,

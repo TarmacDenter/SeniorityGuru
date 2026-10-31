@@ -16,8 +16,11 @@ interface PresentedSeniorityTrajectoryPoint extends SeniorityTrajectoryPoint {
 const props = defineProps<{
   snapshot: {
     atRetirement: SeniorityTrajectoryPoint
+    rosterSize: number
+    activePilotCount: number
     fullTrajectory: PresentedSeniorityTrajectoryPoint[]
     retireDate: string
+    hypotheticalLabel?: string | null
   }
 }>()
 
@@ -61,7 +64,7 @@ const tableData = computed<TableRow[]>(() => {
 function rankDeltaColorClass(rankDelta: string): string {
   if (rankDelta.startsWith('-')) return 'text-[var(--ui-color-success-500)]'
   if (rankDelta.startsWith('+')) return 'text-[var(--ui-color-error-500)]'
-  return 'text-[var(--ui-text-muted)]'
+  return 'text-muted'
 }
 
 const columns: TableColumn<TableRow>[] = [
@@ -69,11 +72,11 @@ const columns: TableColumn<TableRow>[] = [
   {
     accessorKey: 'rank',
     header: 'Rank',
-    cell: ({ row }) => h('span', { class: 'font-mono' }, `#${row.original.rank.toLocaleString()}`),
+    cell: ({ row }) => h('span', { class: 'font-mono' }, row.original.rank.toLocaleString()),
   },
   {
     accessorKey: 'percentile',
-    header: 'Percentile',
+    header: 'Seniority Percentile',
     cell: ({ row }) => h('span', { class: 'font-mono' }, `${row.original.percentile}%`),
   },
   {
@@ -104,29 +107,41 @@ function formatDate(dateStr: string): string {
       </div>
     </template>
 
-    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 mb-4 sm:mb-6 px-3 pt-3 sm:px-0 sm:pt-0">
+    <p v-if="snapshot.hypotheticalLabel" data-testid="hypothetical-placement" class="px-3 pt-3 sm:px-0 sm:pt-0 text-xs font-semibold text-warning">
+      {{ snapshot.hypotheticalLabel }}
+    </p>
+
+    <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-4 mb-4 sm:mb-6 px-3 pt-3 sm:px-0 sm:pt-0">
       <div class="text-center">
-        <p class="text-xs text-[var(--ui-text-muted)]">Retire Date</p>
+        <p class="text-xs text-muted">Retire Date</p>
         <p class="text-sm sm:text-lg font-semibold font-mono text-highlighted">{{ formatDate(snapshot.retireDate) }}</p>
       </div>
       <div class="text-center">
-        <p class="text-xs text-[var(--ui-text-muted)]">Projected Rank</p>
-        <p class="text-sm sm:text-lg font-semibold font-mono text-highlighted">#{{ snapshot.atRetirement.rank.toLocaleString() }}</p>
+        <p class="text-xs text-muted">Projected Rank</p>
+        <p class="text-sm sm:text-lg font-semibold font-mono text-highlighted">{{ snapshot.atRetirement.rank.toLocaleString() }}</p>
       </div>
       <div class="text-center">
-        <p class="text-xs text-[var(--ui-text-muted)]">Percentile</p>
+        <p class="text-xs text-muted">Seniority Percentile</p>
         <p class="text-sm sm:text-lg font-semibold font-mono text-highlighted">{{ snapshot.atRetirement.percentile }}%</p>
       </div>
       <div class="text-center">
-        <p class="text-xs text-[var(--ui-text-muted)]">Pilots Ahead</p>
+        <p class="text-xs text-muted">Pilots Ahead</p>
         <p class="text-sm sm:text-lg font-semibold font-mono text-highlighted">{{ (snapshot.atRetirement.rank - 1).toLocaleString() }}</p>
+      </div>
+      <div class="text-center">
+        <p class="text-xs text-muted">Roster Size today</p>
+        <p class="text-sm sm:text-lg font-semibold font-mono text-highlighted">{{ snapshot.rosterSize.toLocaleString() }}</p>
+      </div>
+      <div class="text-center">
+        <p class="text-xs text-muted">Active pilots</p>
+        <p class="text-sm sm:text-lg font-semibold font-mono text-highlighted">{{ snapshot.activePilotCount.toLocaleString() }}</p>
       </div>
     </div>
 
     <USeparator class="mb-3 sm:mb-4" />
 
     <div class="flex items-center gap-3 sm:gap-4 mb-3 sm:mb-4 px-3 sm:px-0">
-      <label class="text-xs sm:text-sm text-[var(--ui-text-muted)] whitespace-nowrap">Final years</label>
+      <label class="text-xs sm:text-sm text-muted whitespace-nowrap">Final years</label>
       <USlider v-model="yearsToShow" :min="3" :max="maxYears" :step="1" size="sm" class="flex-1" />
       <span class="text-xs sm:text-sm font-mono font-semibold text-highlighted w-5 sm:w-6 text-right">{{ yearsToShow }}</span>
     </div>

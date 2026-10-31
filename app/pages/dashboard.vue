@@ -68,10 +68,14 @@ const { employeeNumber } = useUser()
 const { showBadge: showDemoBadge } = useDemoBanner()
 const { showBanner: showInstallBanner } = usePwaInstall()
 const { showBanner: showDemoNotice } = useDemoBanner()
-const { hasData, hasAnchor: userFound, isNewHireMode, newHire } = useSeniorityCore()
+const { hasData, hasAnchor: userFound, isNewHireMode, newHire, listAnalysis } = useSeniorityCore()
 const hasEmployeeNumber = computed(() => !!employeeNumber.value || !!newHire.syntheticEntry.value)
-const { rankCard, statCards: stats, retirementSnapshot, baseStatus: baseStatusData } = useStanding()
-const { chartData: trajectoryChartData, changes: trajectoryChanges } = useTrajectory()
+const scopeOptionList = computed(() => listAnalysis.value?.catalog.qualificationScopeOptions ?? [])
+const { scopeOptions: scopeLabels, specForLabel } = useScopeFilter(scopeOptionList)
+const selectedScopeLabel = ref('Company-wide')
+const standingScope = computed(() => specForLabel(selectedScopeLabel.value))
+const { rankCard, statCards: stats, retirementSnapshot, baseStatus: baseStatusData } = useStanding(standingScope)
+const { chartData: trajectoryChartData, changes: trajectoryChanges, endedByLabel: trajectoryEndedByLabel } = useTrajectory()
 const isCompactViewport = useMediaQuery('(max-width: 639px), (max-height: 499px)')
 const dashboardControlsOpen = ref(false)
 const compactNoticeDismissed = ref<string | null>(null)
@@ -200,17 +204,20 @@ const panelUi = computed(() => ({
       <!-- My Status tab (quick hits) -->
       <DashboardTabsMyStatusTab
         v-else-if="activeTab === 'status'"
+        v-model:scope-label="selectedScopeLabel"
         :loading="loading"
         :has-data="hasData"
         :has-employee-number="hasEmployeeNumber"
         :user-found="userFound"
         :is-new-hire-mode="isNewHireMode"
+        :scope-labels="scopeLabels"
         :rank-card="rankCard"
         :stats="stats"
         :retirement-snapshot="retirementSnapshot"
         :trajectory-changes="trajectoryChanges"
         :base-status-data="baseStatusData"
         :trajectory-chart-data="trajectoryChartData"
+        :trajectory-ended-by-label="trajectoryEndedByLabel"
       />
 
       <!-- Demographics tab -->

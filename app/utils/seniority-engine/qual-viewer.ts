@@ -23,8 +23,8 @@ export interface QualificationViewerEntry {
   status: QualificationViewerStatus
   isAnchor: boolean
   isMarker: boolean
-  listRank: number
-  listPercentile: number
+  /** Static one-based position in the published order, retired pilots included. */
+  publicationPosition: number
   companyRank: number | null
   companyPercentile: number | null
   qualificationRank: number | null
@@ -34,8 +34,10 @@ export interface QualificationViewerEntry {
 /** Entries and capabilities for one Qualification view. */
 export interface QualificationViewerAnalysis {
   entries: readonly QualificationViewerEntry[]
-  totalEntryCount: number
-  activeEntryCount: number
+  /** Pilots in the selected set in the publication, retired included. Excludes the inserted marker. */
+  rosterSize: number
+  /** Pilots in the selected set still active at the As-of Date. Excludes the inserted marker. */
+  activePilotCount: number
   qualificationScope: QualificationScope
   canInsert: boolean
   anchorFound: boolean
@@ -72,25 +74,27 @@ export function analyzeSeniorityQualificationViewer(options: AnalyzeQualificatio
   const activeEntries = ordered.filter(e => !e.retire_date || !isRetiredBy(e.retire_date, asOfDate))
   const activeCompanyRank = new Map<string, number>()
   activeEntries.forEach((e, index) => activeCompanyRank.set(normalizeEmployeeNumber(e.employee_number), index + 1))
-  const activeCompanyTotal = activeEntries.length
-  const selectedListTotal = ordered.length
-  const listRankByEmployee = new Map<string, number>()
-  ordered.forEach((entry, index) => listRankByEmployee.set(normalizeEmployeeNumber(entry.employee_number), index + 1))
-
-  const selectedListMetrics = (entry: SeniorityEntry) => ({
-    rank: listRankByEmployee.get(normalizeEmployeeNumber(entry.employee_number))!,
-    percentile: calculateSeniorityPercentile(listRankByEmployee.get(normalizeEmployeeNumber(entry.employee_number))!, selectedListTotal),
-  })
+  const companyRosterSize = ordered.length
+  const publicationPositionByEmployee = new Map<string, number>()
+  ordered.forEach((entry, index) => publicationPositionByEmployee.set(normalizeEmployeeNumber(entry.employee_number), index + 1))
 
   const activeQualEntries = matches.filter(e => !e.retire_date || !isRetiredBy(e.retire_date, asOfDate))
+  const qualRosterSize = matches.length
   const qualRankByEmployee = new Map<string, number>()
   activeQualEntries.forEach((e, index) => qualRankByEmployee.set(normalizeEmployeeNumber(e.employee_number), index + 1))
 
+  const rankFields = (companyRank: number | null, qualificationRank: number | null, qualificationRosterSize = qualRosterSize) => ({
+    companyRank,
+    companyPercentile: companyRank === null ? null : calculateSeniorityPercentile(companyRank, companyRosterSize),
+    qualificationRank,
+    qualificationPercentile: qualificationRank === null ? null : calculateSeniorityPercentile(qualificationRank, qualificationRosterSize),
+  })
+
   const rows = matches.map((entry): QualificationViewerEntry => {
     const retired = !!entry.retire_date && isRetiredBy(entry.retire_date, asOfDate)
-    const selected = selectedListMetrics(entry)
     const employeeKey = normalizeEmployeeNumber(entry.employee_number)
     const companyRank = retired ? null : activeCompanyRank.get(employeeKey) ?? null
+    const qualificationRank = retired ? null : qualRankByEmployee.get(employeeKey) ?? null
     return {
       entry,
       seniorityNumber: entry.seniority_number,
@@ -104,17 +108,16 @@ export function analyzeSeniorityQualificationViewer(options: AnalyzeQualificatio
       status: retired ? 'retired' : 'active',
       isAnchor: !!userEmployeeKey && normalizeEmployeeNumber(entry.employee_number) === userEmployeeKey,
       isMarker: false,
-      listRank: selected.rank,
-      listPercentile: selected.percentile,
-      companyRank,
-      companyPercentile: companyRank === null ? null : calculateSeniorityPercentile(companyRank, activeCompanyTotal),
-      qualificationRank: retired ? null : qualRankByEmployee.get(employeeKey) ?? null,
-      qualificationPercentile: null,
+      publicationPosition: publicationPositionByEmployee.get(employeeKey)!,
+      ...rankFields(companyRank, qualificationRank),
     }
   })
 
   if (markerEnabled && anchor) {
     const markerIndex = rows.findIndex(row => row.seniorityNumber > anchor.seniority_number)
+    const anchorKey = normalizeEmployeeNumber(anchor.employee_number)
+    const markerCompanyRank = markerRetired ? null : activeCompanyRank.get(anchorKey) ?? null
+    const markerQualRank = markerRetired ? null : activeQualEntries.filter(e => e.seniority_number < anchor.seniority_number).length + 1
     const marker: QualificationViewerEntry = {
       entry: null,
       seniorityNumber: anchor.seniority_number,
@@ -128,35 +131,17 @@ export function analyzeSeniorityQualificationViewer(options: AnalyzeQualificatio
       status: markerRetired ? 'retired' : 'inserted',
       isAnchor: true,
       isMarker: true,
-      listRank: listRankByEmployee.get(normalizeEmployeeNumber(anchor.employee_number))!,
-      listPercentile: calculateSeniorityPercentile(listRankByEmployee.get(normalizeEmployeeNumber(anchor.employee_number))!, selectedListTotal),
-      companyRank: markerRetired ? null : activeCompanyRank.get(normalizeEmployeeNumber(anchor.employee_number)) ?? null,
-      companyPercentile: markerRetired ? null : calculateSeniorityPercentile(activeCompanyRank.get(normalizeEmployeeNumber(anchor.employee_number)) ?? 0, activeCompanyTotal),
-      qualificationRank: markerRetired ? null : activeQualEntries.filter(e => e.seniority_number < anchor.seniority_number).length + 1,
-      qualificationPercentile: null,
+      publicationPosition: publicationPositionByEmployee.get(anchorKey)!,
+      // Hypothetical Placement: the marker's percentile counts the Anchor Pilot as a modeled pilot of the Qualification.
+      ...rankFields(markerCompanyRank, markerQualRank, qualRosterSize + 1),
     }
     rows.splice(markerIndex < 0 ? rows.length : markerIndex, 0, marker)
-    const markerQualRank = marker.qualificationRank
-    if (markerQualRank !== null) {
-      for (const row of rows) {
-        if (!row.isMarker && row.status === 'active' && row.seniorityNumber >= anchor.seniority_number) {
-          row.qualificationRank = (row.qualificationRank ?? 0) + 1
-        }
-      }
-    }
-  }
-
-  const activeQualTotal = rows.filter(row => row.status !== 'retired').length
-  for (const row of rows) {
-    if (row.qualificationRank !== null) {
-      row.qualificationPercentile = calculateSeniorityPercentile(row.qualificationRank, activeQualTotal)
-    }
   }
 
   return {
     entries: rows,
-    totalEntryCount: rows.length,
-    activeEntryCount: rows.filter(row => row.status !== 'retired').length,
+    rosterSize: qualRosterSize,
+    activePilotCount: activeQualEntries.length,
     qualificationScope,
     canInsert,
     anchorFound: canInsert,

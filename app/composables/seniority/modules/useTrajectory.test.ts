@@ -37,6 +37,22 @@ describe('useTrajectory', () => {
     expect(chartData.value.labels.length).toBe(chartData.value.data.length)
   })
 
+  it('exposes why the trajectory ends at the Anchor Pilot retirement', () => {
+    mockStore.entries = [
+      makeEntry({ seniority_number: 1, employee_number: 'E1', base: 'JFK', seat: 'CA', fleet: '737', retire_date: '2035-06-15' }),
+      makeEntry({ seniority_number: 2, employee_number: 'E2', base: 'JFK', seat: 'CA', fleet: '737', retire_date: '2040-06-15' }),
+    ]
+    mockUserStore.employeeNumber = 'E2'
+
+    const { endedByLabel } = useTrajectory()
+    expect(endedByLabel.value).toBe('Anchor Pilot retired')
+  })
+
+  it('has no end reason without an Anchor Pilot', () => {
+    const { endedByLabel } = useTrajectory()
+    expect(endedByLabel.value).toBeNull()
+  })
+
   it('computes fullTrajectory points', () => {
     mockStore.entries = [
       makeEntry({ seniority_number: 1, employee_number: 'E1', base: 'JFK', seat: 'CA', fleet: '737', retire_date: '2035-06-15' }),
@@ -110,17 +126,28 @@ describe('useTrajectory', () => {
       { seat: 'CA' },
       { base: 'JFK' },
     )
-    expect(result).toHaveProperty('labels')
-    expect(result).toHaveProperty('baselineData')
-    expect(result).toHaveProperty('comparisonData')
+    // E3 is a LAX CA pilot: a member of the CA baseline, outside the JFK comparison.
+    expect(result.labels.length).toBeGreaterThan(0)
     expect(result.labels.length).toBe(result.baselineData.length)
     expect(result.labels.length).toBe(result.comparisonData.length)
+    expect(result.baselineHypotheticalLabel).toBeNull()
+    expect(result.comparisonHypotheticalLabel).toBe('Hypothetical Placement in JFK')
+    // Baseline CA = E1, E3: Rank 2 of 2 -> 50. Comparison JFK = E1, E2 plus E3 modeled: Rank 3 of 3 -> 33.3.
+    expect(result.baselineData[0]).toBe(50)
+    expect(result.comparisonData[0]).toBe(33.3)
   })
 
   it('computeComparativeTrajectory returns empty when analysis is null', () => {
     const { computeComparativeTrajectory } = useTrajectory()
     const result = computeComparativeTrajectory({ seat: 'CA' }, { base: 'JFK' })
-    expect(result).toEqual({ labels: [], baselineData: [], comparisonData: [] })
+    expect(result).toEqual({
+      labels: [],
+      baselineData: [],
+      comparisonData: [],
+      noResultLabel: null,
+      baselineHypotheticalLabel: null,
+      comparisonHypotheticalLabel: null,
+    })
   })
 
   it('respects custom growthAssumptions when provided', () => {

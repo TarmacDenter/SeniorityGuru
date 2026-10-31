@@ -16,6 +16,7 @@ export type {
   SeniorityOutput,
   SeniorityQualificationScopeOption,
   SeniorityQualificationViewerOptions,
+  SeniorityStandingAnalysisOptions,
   SeniorityTrajectoryAnalysisOptions,
   SeniorityTrajectoryComparisonAnalysisOptions,
   UpcomingRetirementAnalysisOptions,
@@ -24,6 +25,7 @@ export type {
 export { DEFAULT_SENIORITY_GROWTH_ASSUMPTIONS } from './seniority-analysis/growth'
 export type { GrowthAssumptions } from './seniority-analysis/growth'
 
+export { isNoResult, resultOrNull } from './seniority-engine/types'
 export { AnchorNotFoundError } from './seniority-engine/lens'
 export { InvalidSenioritySnapshotDataError } from './seniority-engine/snapshot'
 export type {
@@ -32,6 +34,8 @@ export type {
   QualificationViewerStatus,
 } from './seniority-engine/qual-viewer'
 export type {
+  NoResult,
+  NoResultReason,
   QualificationScope,
   RelativeUpcomingRetirement,
   UpcomingRetirement,

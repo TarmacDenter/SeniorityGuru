@@ -6,6 +6,7 @@ import { createSeniorityScenario } from '~/utils/seniority-engine/scenario'
 import type {
   AnchoredSeniorityLens,
   DemographicsOptions,
+  NoResult,
   PercentileCrossingResult,
   QualificationPosition,
   RelativeUpcomingRetirement,
@@ -21,6 +22,7 @@ import type {
 } from '~/utils/seniority-engine/types'
 import type { GrowthAssumptions } from '../seniority-analysis/growth'
 import { analyzeSeniorityQualificationViewer, type QualificationViewerAnalysis } from '~/utils/seniority-engine/qual-viewer'
+import { isNoResult } from '~/utils/seniority-engine/types'
 import { enumerateQualificationScopes, type QualificationScope } from '~/utils/seniority-engine/qualification-scope'
 import {
   presentPercentileCrossing,
@@ -44,7 +46,10 @@ import {
 } from '../seniority-analysis/presentation'
 
 export interface CreateSeniorityAnalysisOptions {
+  /** Real pilots from the publication. */
   readonly entries: readonly SeniorityEntry[]
+  /** A modeled New Hire pilot. Counted in Roster Size and Standing, excluded from the publication pilot count. */
+  readonly modeledEntry?: SeniorityEntry | null
   readonly asOfDate: PlainDate
 }
 
@@ -80,6 +85,10 @@ export interface SeniorityDemographicsAnalysisOptions extends Omit<DemographicsO
   readonly scenario?: ScenarioOptions
 }
 
+export interface SeniorityStandingAnalysisOptions {
+  readonly scenario?: ScenarioOptions
+}
+
 export interface SeniorityTrajectoryAnalysisOptions {
   readonly through: PlainDate
   readonly scenario?: ScenarioOptions
@@ -95,6 +104,7 @@ export interface PercentileCrossingAnalysisOptions extends SeniorityTrajectoryAn
   readonly targetPercentile: number
 }
 
+/** Company-wide: there is no Qualification Scope option. */
 export interface QualificationPositionAnalysisOptions {
   readonly through: PlainDate
   readonly growthAssumptions?: GrowthAssumptions
@@ -134,19 +144,19 @@ export interface AnchoredSeniorityAnalysis extends CommonSeniorityAnalysis {
   demographics(
     options: SeniorityDemographicsAnalysisOptions,
   ): SeniorityOutput<SeniorityDemographics, PresentedSeniorityDemographics>
-  seniorityStanding(): SeniorityOutput<SeniorityStanding, PresentedSeniorityStanding>
+  seniorityStanding(options?: SeniorityStandingAnalysisOptions): SeniorityOutput<SeniorityStanding | NoResult, PresentedSeniorityStanding>
   seniorityTrajectory(
     options: SeniorityTrajectoryAnalysisOptions,
-  ): SeniorityOutput<SeniorityTrajectory, PresentedSeniorityTrajectory>
+  ): SeniorityOutput<SeniorityTrajectory | NoResult, PresentedSeniorityTrajectory>
   seniorityTrajectoryComparison(
     options: SeniorityTrajectoryComparisonAnalysisOptions,
-  ): SeniorityOutput<SeniorityTrajectoryComparison, PresentedSeniorityTrajectoryComparison>
+  ): SeniorityOutput<SeniorityTrajectoryComparison | NoResult, PresentedSeniorityTrajectoryComparison>
   percentileCrossing(
     options: PercentileCrossingAnalysisOptions,
-  ): SeniorityOutput<PercentileCrossingResult | null, PresentedPercentileCrossing>
+  ): SeniorityOutput<PercentileCrossingResult | null | NoResult, PresentedPercentileCrossing>
   qualificationPositions(
     options: QualificationPositionAnalysisOptions,
-  ): SeniorityOutput<readonly QualificationPosition[], readonly PresentedQualificationPosition[]>
+  ): SeniorityOutput<readonly QualificationPosition[] | NoResult, readonly PresentedQualificationPosition[] | NoResult>
   relativeUpcomingRetirements(
     options: RelativeUpcomingRetirementAnalysisOptions,
   ): readonly RelativeUpcomingRetirement[]
@@ -209,27 +219,33 @@ function anchoredSeniorityAnalysis(lens: AnchoredSeniorityLens, asOfDate: PlainD
         mandatoryRetirementAge: options.mandatoryRetirementAge,
         scenario,
       })
-      const positions = lens.qualificationPositions({
+      const found = lens.qualificationPositions({
         through: asOfDate,
         growthAssumptions: scenario.growthAssumptions,
       })
+      const positions = isNoResult(found) ? [] : found
       return seniorityOutput(domain, value => presentAnchoredSeniorityDemographics(value, positions))
     },
-    seniorityStanding: () => seniorityOutput(lens.seniorityStanding(), presentSeniorityStanding),
+    seniorityStanding: (options) => {
+      const scenario = createSeniorityScenario(options?.scenario)
+      return seniorityOutput(
+        lens.seniorityStanding({ scenario }),
+        value => presentSeniorityStanding(value, scenario.qualificationScope),
+      )
+    },
     seniorityTrajectory: (options) => {
-      const domain = lens.seniorityTrajectory({
-        through: options.through,
-        scenario: createSeniorityScenario(options.scenario),
-      })
-      return seniorityOutput(domain, presentSeniorityTrajectory)
+      const scenario = createSeniorityScenario(options.scenario)
+      const domain = lens.seniorityTrajectory({ through: options.through, scenario })
+      return seniorityOutput(domain, value => presentSeniorityTrajectory(value, scenario.qualificationScope))
     },
     seniorityTrajectoryComparison: (options) => {
-      const domain = lens.seniorityTrajectoryComparison({
-        through: options.through,
-        baselineScenario: createSeniorityScenario(options.baselineScenario),
-        comparisonScenario: createSeniorityScenario(options.comparisonScenario),
-      })
-      return seniorityOutput(domain, presentSeniorityTrajectoryComparison)
+      const baselineScenario = createSeniorityScenario(options.baselineScenario)
+      const comparisonScenario = createSeniorityScenario(options.comparisonScenario)
+      const domain = lens.seniorityTrajectoryComparison({ through: options.through, baselineScenario, comparisonScenario })
+      return seniorityOutput(
+        domain,
+        value => presentSeniorityTrajectoryComparison(value, baselineScenario.qualificationScope, comparisonScenario.qualificationScope),
+      )
     },
     percentileCrossing: (options) => {
       const domain = lens.percentileCrossing({
@@ -249,7 +265,11 @@ function anchoredSeniorityAnalysis(lens: AnchoredSeniorityLens, asOfDate: PlainD
 
 /** Creates one deep Seniority Analysis module for an immutable entry set and As-of Date. */
 export function createSeniorityAnalysis(options: CreateSeniorityAnalysisOptions): SeniorityAnalysis {
-  const lens = createSeniorityLens(createSenioritySnapshot(options.entries), { asOfDate: options.asOfDate })
+  const modeled = options.modeledEntry ?? null
+  const lens = createSeniorityLens(
+    createSenioritySnapshot(modeled ? [...options.entries, modeled] : options.entries),
+    { asOfDate: options.asOfDate, modeledEmployeeNumber: modeled?.employee_number },
+  )
   return {
     ...commonSeniorityAnalysis(lens, options.asOfDate),
     withAnchor: employeeNumber => anchoredSeniorityAnalysis(lens.withAnchor(employeeNumber), options.asOfDate),

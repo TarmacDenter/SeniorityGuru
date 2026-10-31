@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { useSeniorityCore, _resetCoreSingletons } from './useSeniorityCore'
 import { useStanding } from './useStanding'
 import { parsePlainDate, todayPlainDate } from '~/utils/temporal'
+import type { QualificationScope } from '~/utils/seniority'
 import { resetMockStores } from '~/test-utils/seniority-mocks'
 
 const mockStore = vi.hoisted(() => ({ entries: [] as any[], lists: [] as any[] }))
@@ -24,16 +25,21 @@ describe('useStanding', () => {
     const { rankCard } = useStanding()
     expect(rankCard.value).toEqual({
       seniorityNumber: 0,
-      listRank: 0,
-      listPilotCount: 0,
-      activeRank: 0,
-      activePilotCount: 0,
+      rank: null,
+      publicationPosition: null,
+      rosterSize: null,
+      publicationPilotCount: null,
+      activePilotCount: null,
       isSimulated: false,
-      percentile: 0,
+      seniorityPercentile: null,
       base: '--',
       seat: '--',
       fleet: '--',
       hireDate: '--',
+      noResultLabel: null,
+      hypotheticalLabel: null,
+      rosterSummaryLabel: null,
+      percentileScaleLabel: null,
     })
   })
 
@@ -51,11 +57,11 @@ describe('useStanding', () => {
     expect(rankCard.value.seat).toBe('FO')
     expect(rankCard.value.fleet).toBe('777')
     expect(rankCard.value.hireDate).toBe('2012-03-01')
-    expect(rankCard.value.activeRank).toBe(2)
-    expect(rankCard.value.percentile).toBe(Math.round((2 / 3) * 100 * 10) / 10)
+    expect(rankCard.value.rank).toBe(2)
+    expect(rankCard.value.seniorityPercentile).toBe(Math.round((2 / 3) * 100 * 10) / 10)
   })
 
-  it('distinguishes Seniority Number, List Rank, and Active Rank for a gapped list', () => {
+  it('distinguishes Seniority Number, Rank, and Publication Position for a gapped list', () => {
     mockStore.entries = [
       makeEntry({ seniority_number: 10, employee_number: 'E1', retire_date: '2020-01-01' }),
       makeEntry({ seniority_number: 40, employee_number: 'E2', retire_date: '2040-01-01' }),
@@ -68,11 +74,11 @@ describe('useStanding', () => {
 
     expect(rankCard.value).toMatchObject({
       seniorityNumber: 90,
-      listRank: 3,
-      listPilotCount: 4,
-      activeRank: 2,
+      publicationPosition: 3,
+      rosterSize: 4,
+      rank: 2,
       activePilotCount: 3,
-      percentile: 66.7,
+      seniorityPercentile: 75,
       isSimulated: false,
     })
   })
@@ -95,18 +101,23 @@ describe('useStanding', () => {
 
     expect(rankCard.value).toEqual({
       seniorityNumber: 91,
-      listRank: 4,
-      listPilotCount: 4,
-      activeRank: 4,
+      publicationPosition: 4,
+      rosterSize: 4,
+      publicationPilotCount: 3,
+      rank: 4,
       activePilotCount: 4,
-      percentile: 25,
+      seniorityPercentile: 25,
       isSimulated: true,
       base: 'LAX',
       seat: 'FO',
       fleet: '777',
       hireDate: todayPlainDate().toString(),
+      noResultLabel: null,
+      hypotheticalLabel: null,
+      rosterSummaryLabel: 'Roster Size 4 · Active pilots 4',
+      percentileScaleLabel: 'Percentile measured against Roster Size 4 · Active pilots 4',
     })
-    expect(statCards.value[2]).toMatchObject({ label: 'FO/777/LAX', value: '1' })
+    expect(statCards.value[2]).toMatchObject({ label: 'Your Base Rank', value: '1', trend: 'FO/777/LAX · of 1 on roster · 1 active' })
     expect(retirementSnapshot.value?.retireDate).toBe('2065-06-15')
     expect(retirementSnapshot.value?.fullTrajectory[0]?.rank).toBe(4)
   })
@@ -131,20 +142,235 @@ describe('useStanding', () => {
     newHire.enabled.value = true
 
     expect(rankCard.value).toMatchObject({
-      seniorityNumber: 91, listRank: 4, listPilotCount: 4, activeRank: 4,
+      seniorityNumber: 91, publicationPosition: 4, rosterSize: 4, rank: 4,
       activePilotCount: 4, isSimulated: true, base: 'LAX', seat: 'FO', fleet: '777',
       hireDate: todayPlainDate().toString(),
+      noResultLabel: null,
+      hypotheticalLabel: null,
     })
-    expect(statCards.value[2]).toMatchObject({ label: 'FO/777/LAX', value: '1' })
+    expect(statCards.value[2]).toMatchObject({ label: 'Your Base Rank', value: '1', trend: 'FO/777/LAX · of 1 on roster · 1 active' })
     expect(retirementSnapshot.value?.retireDate).toBe('2065-06-15')
     expect(retirementSnapshot.value?.fullTrajectory[0]?.rank).toBe(4)
 
     newHire.enabled.value = false
 
     expect(rankCard.value).toEqual(realCard)
-    expect(rankCard.value).toMatchObject({ listPilotCount: 3, activePilotCount: 3, isSimulated: false })
+    expect(rankCard.value).toMatchObject({ rosterSize: 3, activePilotCount: 3, isSimulated: false })
     expect(statCards.value).toEqual(realStats)
     expect(retirementSnapshot.value).toEqual(realSnapshot)
+  })
+
+  describe('Roster Size agreement', () => {
+    function enableNewHire() {
+      const { newHire } = useSeniorityCore()
+      newHire.selectedBase.value = 'LAX'
+      newHire.selectedSeat.value = 'FO'
+      newHire.selectedFleet.value = '777'
+      newHire.birthDate.value = parsePlainDate('2000-06-15')
+      newHire.enabled.value = true
+    }
+
+    it('real Anchor Pilot: Roster Size agrees with Roster Size and is not modeled', () => {
+      mockStore.entries = [
+        makeEntry({ seniority_number: 10, employee_number: 'E1', retire_date: '2020-01-01' }),
+        makeEntry({ seniority_number: 40, employee_number: 'E2', retire_date: '2045-01-01' }),
+        makeEntry({ seniority_number: 90, employee_number: 'E3', retire_date: '2050-01-01' }),
+      ]
+      mockUserStore.employeeNumber = 'E2'
+
+      const { rankCard, statCards } = useStanding()
+
+      expect(rankCard.value).toMatchObject({
+        rosterSize: 3,
+        publicationPilotCount: 3,
+        isSimulated: false,
+        rosterSummaryLabel: 'Roster Size 3 · Active pilots 2',
+        percentileScaleLabel: 'Percentile measured against Roster Size 3 · Active pilots 2',
+      })
+      expect(statCards.value[0]).toEqual({ label: 'Roster Size', value: '3', icon: 'i-lucide-users' })
+    })
+
+    it.each([
+      ['retirements before the hire date', '2020-01-01', 3, 5],
+      ['retirements after the hire date', '2060-01-01', 4, 5],
+    ])('New Hire Mode with %s: every count includes the simulated pilot', (_name, retire, active, roster) => {
+      mockStore.entries = [
+        makeEntry({ seniority_number: 10, employee_number: 'E1', retire_date: retire }),
+        makeEntry({ seniority_number: 40, employee_number: 'E2', retire_date: '2045-01-01' }),
+        makeEntry({ seniority_number: 90, employee_number: 'E3', retire_date: '2050-01-01' }),
+        makeEntry({ seniority_number: 95, employee_number: 'E4', retire_date: '2055-01-01' }),
+      ]
+      mockUserStore.employeeNumber = 'E2'
+      enableNewHire()
+
+      const { rankCard, statCards } = useStanding()
+
+      expect(rankCard.value).toMatchObject({
+        isSimulated: true,
+        rosterSize: roster,
+        publicationPilotCount: 4,
+        publicationPosition: roster,
+        activePilotCount: active + 1,
+      })
+      expect(statCards.value[0]).toMatchObject({
+        label: 'Roster Size (modeled)',
+        value: roster.toLocaleString(),
+        trend: '4 in publication',
+      })
+      expect(statCards.value[0]!.value).toBe(rankCard.value.rosterSize?.toLocaleString())
+    })
+  })
+
+  it('follows the selected Qualification Scope: Roster Size is the pilots in that scope', () => {
+    mockStore.entries = [
+      makeEntry({ seniority_number: 10, employee_number: 'E1', base: 'JFK', seat: 'CA', fleet: '737', retire_date: '2050-01-01' }),
+      makeEntry({ seniority_number: 40, employee_number: 'E2', base: 'LAX', seat: 'FO', fleet: '777', retire_date: '2045-01-01' }),
+      makeEntry({ seniority_number: 90, employee_number: 'E3', base: 'LAX', seat: 'FO', fleet: '777', retire_date: '2050-01-01' }),
+      makeEntry({ seniority_number: 95, employee_number: 'E4', base: 'JFK', seat: 'CA', fleet: '737', retire_date: '2050-01-01' }),
+    ]
+    mockUserStore.employeeNumber = 'E3'
+    const scope = ref<QualificationScope>({})
+    const { rankCard } = useStanding(scope)
+
+    expect(rankCard.value).toMatchObject({ rank: 3, rosterSize: 4 })
+
+    scope.value = { base: 'LAX' }
+
+    expect(rankCard.value).toMatchObject({ rank: 2, publicationPosition: 2, rosterSize: 2 })
+  })
+
+  it('returns a different rank card for each Qualification Scope', () => {
+    mockStore.entries = [
+      makeEntry({ seniority_number: 10, employee_number: 'E1', base: 'JFK', retire_date: '2050-01-01' }),
+      makeEntry({ seniority_number: 40, employee_number: 'E2', base: 'LAX', retire_date: '2045-01-01' }),
+      makeEntry({ seniority_number: 90, employee_number: 'E3', base: 'LAX', retire_date: '2050-01-01' }),
+    ]
+    mockUserStore.employeeNumber = 'E3'
+
+    const companyWide = useStanding().rankCard.value
+    const lax = useStanding(ref<QualificationScope>({ base: 'LAX' })).rankCard.value
+
+    expect(companyWide).toMatchObject({ rank: 3, rosterSize: 3, rosterSummaryLabel: 'Roster Size 3 · Active pilots 3' })
+    expect(lax).toMatchObject({ rank: 2, rosterSize: 2, rosterSummaryLabel: 'Roster Size 2 · Active pilots 2' })
+    expect(lax).not.toEqual(companyWide)
+  })
+
+  describe('Hypothetical Placement outside the selected scope', () => {
+    function outsideScopeRoster() {
+      mockStore.entries = [
+        makeEntry({ seniority_number: 10, employee_number: 'E1', base: 'JFK', retire_date: '2050-01-01' }),
+        makeEntry({ seniority_number: 40, employee_number: 'E2', base: 'LAX', retire_date: '2050-01-01' }),
+        makeEntry({ seniority_number: 50, employee_number: 'E3', base: 'JFK', retire_date: '2050-01-01' }),
+      ]
+      mockUserStore.employeeNumber = 'E2'
+    }
+
+    it('places the Anchor Pilot in the scope, names it, and keeps Rank within Roster Size', () => {
+      outsideScopeRoster()
+      const { rankCard } = useStanding(ref<QualificationScope>({ base: 'JFK' }))
+
+      expect(rankCard.value).toMatchObject({
+        noResultLabel: null,
+        hypotheticalLabel: 'Hypothetical Placement in JFK',
+        publicationPosition: 2,
+        rank: 2,
+        rosterSize: 3,
+      })
+    })
+
+    it('labels the Roster Size stat card hypothetical and keeps it equal to the Rank card', () => {
+      outsideScopeRoster()
+      const { rankCard, statCards } = useStanding(ref<QualificationScope>({ base: 'JFK' }))
+
+      expect(statCards.value[0]).toMatchObject({
+        label: 'Roster Size (hypothetical)',
+        value: rankCard.value.rosterSize?.toLocaleString(),
+        trend: 'includes you',
+      })
+    })
+
+    it('shows both modeled and hypothetical labels in New Hire Mode', () => {
+      outsideScopeRoster()
+      const { newHire } = useSeniorityCore()
+      newHire.selectedBase.value = 'LAX'
+      newHire.selectedSeat.value = 'FO'
+      newHire.selectedFleet.value = '777'
+      newHire.birthDate.value = parsePlainDate('2000-06-15')
+      newHire.enabled.value = true
+      const { rankCard, statCards } = useStanding(ref<QualificationScope>({ base: 'JFK' }))
+
+      expect(rankCard.value).toMatchObject({
+        isSimulated: true,
+        hypotheticalLabel: 'Hypothetical Placement in JFK',
+        rosterSize: 3,
+        publicationPilotCount: 2,
+      })
+      expect(statCards.value[0]).toMatchObject({
+        label: 'Roster Size (modeled, hypothetical)',
+        trend: '2 in publication · includes you',
+      })
+    })
+
+    it('marks only the qualifications the Anchor Pilot is not in, each with Rank within Roster Size', () => {
+      outsideScopeRoster()
+      const { baseStatus } = useStanding()
+
+      const own = baseStatus.value.find(row => row.base === 'LAX')!
+      const other = baseStatus.value.find(row => row.base === 'JFK')!
+      expect(own).toMatchObject({ hypotheticalLabel: null, isAnchorCurrentQualification: true })
+      expect(other).toMatchObject({ hypotheticalLabel: 'Hypothetical Placement in JFK CA 737', rank: 2, rosterSize: 3 })
+      for (const row of baseStatus.value) expect(row.rank).toBeLessThanOrEqual(row.rosterSize)
+    })
+
+    it('carries the label onto the retirement snapshot', () => {
+      outsideScopeRoster()
+      const { retirementSnapshot } = useStanding(ref<QualificationScope>({ base: 'JFK' }))
+
+      expect(retirementSnapshot.value?.hypotheticalLabel).toBe('Hypothetical Placement in JFK')
+      expect(retirementSnapshot.value?.rosterSize).toBe(3)
+    })
+
+    it('has no label for a member of the scope', () => {
+      outsideScopeRoster()
+      const { rankCard } = useStanding(ref<QualificationScope>({ base: 'LAX' }))
+
+      expect(rankCard.value.hypotheticalLabel).toBeNull()
+    })
+
+    it('carries no zero-filled figures for a retired Anchor Pilot and keeps the reason', () => {
+    mockStore.entries = [
+      makeEntry({ seniority_number: 10, employee_number: 'E1', retire_date: '2050-01-01' }),
+      makeEntry({ seniority_number: 40, employee_number: 'E2', retire_date: '2020-01-01' }),
+    ]
+    mockUserStore.employeeNumber = 'E2'
+
+    const { rankCard, statCards } = useStanding()
+
+    expect(rankCard.value).toMatchObject({
+      seniorityNumber: 40,
+      rank: null,
+      publicationPosition: null,
+      rosterSize: null,
+      publicationPilotCount: null,
+      activePilotCount: null,
+      seniorityPercentile: null,
+      noResultLabel: 'Anchor Pilot retired',
+    })
+    expect(statCards.value[0]).toEqual({ label: 'Roster Size', value: '--', icon: 'i-lucide-users' })
+    expect(statCards.value[1]).toMatchObject({ label: 'Retirements (Next 12 mo.)', value: '--' })
+    expect(statCards.value[1]!.trend).toBeUndefined()
+    expect(statCards.value[2]).toMatchObject({ label: 'Your Base Rank', value: '--' })
+    expect(rankCard.value).toMatchObject({ rosterSummaryLabel: null, percentileScaleLabel: null })
+  })
+
+  it('still reports a retired Anchor Pilot outside the scope as the only no-result', () => {
+      outsideScopeRoster()
+      mockStore.entries[1] = makeEntry({ seniority_number: 40, employee_number: 'E2', base: 'LAX', retire_date: '2020-01-01' })
+      const { rankCard } = useStanding(ref<QualificationScope>({ base: 'JFK' }))
+
+      expect(rankCard.value.noResultLabel).toBe('Anchor Pilot retired')
+      expect(rankCard.value.hypotheticalLabel).toBeNull()
+    })
   })
 
   it.each([null, 'E1'])('preserves the existing anchor with incomplete new hire settings and real pilot %s', (employeeNumber) => {
@@ -184,8 +410,8 @@ describe('useStanding', () => {
     expect(jfkCell.seat).toBe('CA')
     expect(jfkCell.fleet).toBe('737')
     expect(jfkCell.isAnchorCurrentQualification).toBe(true)
-    expect(jfkCell.listPilotCount).toBe(2)
-    expect(jfkCell.listRank).toBe(2)
+    expect(jfkCell.rosterSize).toBe(2)
+    expect(jfkCell.rank).toBe(2)
 
     const laxCell = baseStatus.value.find(r => r.base === 'LAX')!
     expect(laxCell).toBeDefined()
@@ -208,8 +434,8 @@ describe('useStanding', () => {
 
     expect(cards).toHaveLength(4)
 
-    // Total Pilots
-    expect(cards[0]!.label).toBe('Total Pilots')
+    // Roster Size
+    expect(cards[0]!.label).toBe('Roster Size')
     expect(cards[0]!.value).toBe((3).toLocaleString())
 
     // Retirements This Year — E1 retires within next 12 months
@@ -220,9 +446,11 @@ describe('useStanding', () => {
     expect(cards[1]!.trendUp).toBe(true)
 
     // Base rank label shows user's cell: CA/737/JFK
-    expect(cards[2]!.label).toBe('CA/737/JFK')
-    // adjustedRank within JFK|CA|737: rank=2, retiredAbove=0 (E1 retires this year but hasn't yet passed)
-    expect(cards[2]!.value).toBeTruthy()
+    expect(cards[2]).toMatchObject({
+      label: 'Your Base Rank',
+      value: '2',
+      trend: 'CA/737/JFK · of 2 on roster · 2 active',
+    })
 
     // Lists Uploaded
     expect(cards[3]!.label).toBe('Lists Uploaded')
@@ -252,9 +480,9 @@ describe('useStanding', () => {
 
     const { rankCard } = useStanding()
     // percentile should always be a finite number, never NaN or Infinity
-    expect(Number.isFinite(rankCard.value.percentile)).toBe(true)
-    expect(rankCard.value.percentile).toBeGreaterThanOrEqual(0)
-    expect(rankCard.value.percentile).toBeLessThanOrEqual(100)
+    expect(Number.isFinite(rankCard.value.seniorityPercentile)).toBe(true)
+    expect(rankCard.value.seniorityPercentile).toBeGreaterThanOrEqual(0)
+    expect(rankCard.value.seniorityPercentile).toBeLessThanOrEqual(100)
   })
 
   it('returns null retirementSnapshot when no user entry (no anchor)', () => {
