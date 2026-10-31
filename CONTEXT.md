@@ -17,7 +17,16 @@ One validated pilot record in a Seniority List.
 The company-assigned ordering number for a pilot. A smaller number means greater company seniority, but numeric gaps do not represent positional distance.
 
 **Rank**:
-A one-based position calculated from membership in a defined pilot set. Rank, not Seniority Number, measures positional distance.
+A one-based position in publication order after removing the pilots who have retired by the As-of Date. It changes as the As-of Date moves, and it is shown beside the Seniority Number wherever a pilot's position appears. Rank, not Seniority Number, measures positional distance.
+_Avoid_: List Rank, Raw Rank, Adjusted Rank
+
+**Publication Position**:
+A one-based position in the Seniority List's published order, retired pilots included. It is static and is shown beside Rank, never in place of it.
+_Avoid_: List Rank, Raw Rank, Static Rank
+
+**Roster Size**:
+The number of pilots in the Seniority List, retired pilots included. It stays fixed as pilots retire and changes only when Growth Assumptions are applied to a projection.
+_Avoid_: Pilot count, Total Pilots, Active count
 
 **Qualification**:
 One Base, Seat, and Fleet combination.
@@ -32,10 +41,10 @@ The pilot whose relative Standing and projections are being analyzed.
 _Avoid_: User Pilot, Subject Pilot
 
 **Seniority Percentile**:
-An inverted position measure within a defined pilot set. A value of 100 is the most senior end, and 0 is the most junior end.
+An inverted position measure: Rank measured against Roster Size. A value of 100 is the most senior end, and 0 is the most junior end.
 
 **Standing**:
-A pilot's Rank, pilot count, and Seniority Percentile within defined list and active-pilot sets.
+A pilot's Rank, Roster Size, active pilot count, and Seniority Percentile at the As-of Date.
 
 **As-of Date**:
 The date that determines current active status, age, Rank, and years of service.
