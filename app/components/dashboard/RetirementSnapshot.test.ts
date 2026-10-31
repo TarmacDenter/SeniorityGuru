@@ -31,6 +31,16 @@ describe('RetirementSnapshot', () => {
     expect(member.find('[data-testid="hypothetical-placement"]').exists()).toBe(false)
   })
 
+  it('says why the trajectory ends when it stops at the Anchor Pilot\'s retirement', async () => {
+    const ended = await mountSuspended(RetirementSnapshot, {
+      props: { snapshot: { ...snapshot, endedByLabel: 'Anchor Pilot retired' } },
+    })
+    const open = await mountSuspended(RetirementSnapshot, { props: { snapshot } })
+
+    expect(ended.get('[data-testid="trajectory-ended-by"]').text()).toBe('Anchor Pilot retired')
+    expect(open.find('[data-testid="trajectory-ended-by"]').exists()).toBe(false)
+  })
+
   it('labels Roster Size and active pilot count', async () => {
     const wrapper = await mountSuspended(RetirementSnapshot, { props: { snapshot } })
 

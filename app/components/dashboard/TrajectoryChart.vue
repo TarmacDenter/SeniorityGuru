@@ -4,6 +4,8 @@ import { formatMonthYear, formatYear } from '~/utils/date'
 
 const props = defineProps<{
   data: { labels: string[]; data: number[] }
+  /** Why the samples stop early, e.g. "Anchor Pilot retired". */
+  endedByLabel?: string | null
 }>()
 
 const { colors } = useChartTheme()
@@ -77,5 +79,7 @@ const chartOptions = {
         <USkeleton class="h-[280px] w-full" />
       </template>
     </ClientOnly>
+
+    <p v-if="endedByLabel" data-testid="trajectory-ended-by" class="mt-2 text-xs text-muted">{{ endedByLabel }}</p>
   </UCard>
 </template>

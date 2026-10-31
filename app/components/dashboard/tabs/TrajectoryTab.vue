@@ -12,6 +12,7 @@ const { rankCard } = useStanding()
 
 const {
   chartData: trajectoryChartData,
+  endedByLabel: trajectoryEndedByLabel,
   computeComparativeTrajectory,
   computeRetirementProjection,
 } = useTrajectory(growthAssumptions)
@@ -33,6 +34,9 @@ const waveTrajectoryNoResult = computed(() => {
 })
 const waveTrajectoryHypotheticalLabel = computed(() => {
   return resultOrNull(waveTrajectoryOutput.value?.presentation)?.hypotheticalLabel ?? null
+})
+const waveTrajectoryEndedByLabel = computed(() => {
+  return resultOrNull(waveTrajectoryOutput.value?.presentation)?.endedByLabel ?? null
 })
 const waveTrajectory = computed(() => {
   return resultOrNull(waveTrajectoryOutput.value?.domain)?.points ?? []
@@ -61,12 +65,9 @@ const thresholdOutput = computed(() => projectionEndDate.value
   : null)
 const thresholdNoResultLabel = computed(() => {
   const output = thresholdOutput.value
-  return output && 'kind' in output ? output.label : null
+  return isNoResult(output) ? output.label : null
 })
-const thresholdResult = computed(() => {
-  const output = thresholdOutput.value
-  return output && !('kind' in output) ? output : null
-})
+const thresholdResult = computed(() => resultOrNull(thresholdOutput.value))
 const bannerKey = 'qual-projections-banner-dismissed'
 const isBannerDismissed = ref(typeof localStorage !== 'undefined' && localStorage.getItem(bannerKey) === 'true')
 
@@ -132,6 +133,7 @@ const ready = useDeferredReady()
       <DashboardTrajectoryChart
         v-else-if="hasAnchor"
         :data="trajectoryChartData"
+        :ended-by-label="trajectoryEndedByLabel"
       >
         <template v-if="growthAssumptions.enabled" #badge>
           <UBadge color="primary" variant="subtle" size="xs" class="ml-2">
@@ -178,6 +180,7 @@ const ready = useDeferredReady()
       <UBadge v-else-if="waveTrajectoryHypotheticalLabel" data-testid="hypothetical-placement" color="warning" variant="subtle" size="sm">
         {{ waveTrajectoryHypotheticalLabel }}
       </UBadge>
+      <p v-if="waveTrajectoryEndedByLabel" data-testid="scoped-trajectory-ended-by" class="text-xs text-muted">{{ waveTrajectoryEndedByLabel }}</p>
 
       <!-- Retirement Wave + Percentile Threshold -->
       <div v-if="!ready || !retirementWave.length" class="grid grid-cols-1 sm:grid-cols-11 gap-6">

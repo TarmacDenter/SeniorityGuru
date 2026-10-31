@@ -1,9 +1,11 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, afterEach } from 'vitest'
 import { mountSuspended, mockNuxtImport } from '@nuxt/test-utils/runtime'
 
-const { mockAnalysis, mockHasData, mockAnchored } = vi.hoisted(() => {
+const { mockAnalysis, mockHasData, mockHasAnchor, mockEndedByLabel, mockAnchored } = vi.hoisted(() => {
   const { ref: vRef } = require('vue')
   return {
+    mockHasAnchor: vRef(false) as { value: boolean },
+    mockEndedByLabel: vRef(null) as { value: string | null },
     mockAnchored: vRef(null) as { value: { seniorityTrajectory: ReturnType<typeof vi.fn>, percentileCrossing: ReturnType<typeof vi.fn> } | null },
     mockAnalysis: vRef(null) as { value: { retirementYearAnalysis: ReturnType<typeof vi.fn> } | null },
     mockHasData: vRef(false) as { value: boolean },
@@ -14,6 +16,13 @@ vi.mock('~/components/analytics/RetirementWaveChart.vue', () => ({
   default: {
     props: ['waveBuckets'],
     template: '<div data-testid="retirement-wave-buckets">{{ waveBuckets[0]?.year }}</div>',
+  },
+}))
+
+vi.mock('~/components/dashboard/TrajectoryChart.vue', () => ({
+  default: {
+    props: ['data', 'endedByLabel'],
+    template: '<div data-testid="trajectory-chart">{{ endedByLabel }}</div>',
   },
 }))
 
@@ -65,20 +74,24 @@ mockNuxtImport('useSeniorityCore', () => () => ({
   analysis: mockAnalysis,
   anchoredAnalysis: mockAnchored,
   userEntry: { value: undefined },
-  hasAnchor: { value: false },
+  hasAnchor: mockHasAnchor,
   isNewHireMode: { value: false },
   projectionEndDate: { value: '2030-06-15' },
 }))
 
-mockNuxtImport('useStanding', () => () => ({
-  rankCard: require('vue').ref({ base: '--', seat: '--', fleet: '--', seniorityPercentile: 0, seniorityNumber: 0, publicationPosition: 0, rosterSize: 260, rank: 0, activePilotCount: 240, isSimulated: false, hireDate: '--' }),
+const unscopedRankCard = { base: '--', seat: '--', fleet: '--', seniorityPercentile: 0, seniorityNumber: 0, publicationPosition: 0, rosterSize: 260, rank: 0, activePilotCount: 240, isSimulated: false, hireDate: '--' }
+const scopedRankCard = { ...unscopedRankCard, rosterSize: 90, activePilotCount: 80 }
+
+mockNuxtImport('useStanding', () => (qualificationScope?: unknown) => ({
+  rankCard: require('vue').ref(qualificationScope ? scopedRankCard : unscopedRankCard),
   baseStatus: { value: [] },
   statCards: { value: [] },
   retirementSnapshot: { value: null },
 }))
 
 mockNuxtImport('useTrajectory', () => () => ({
-  chartData: { value: { labels: [], data: [] } },
+  chartData: require('vue').ref({ labels: ['2026-06-15'], data: [50] }),
+  endedByLabel: mockEndedByLabel,
   changes: { value: [] },
   computeComparativeTrajectory: vi.fn(),
   computeRetirementProjection: vi.fn(),
@@ -86,6 +99,12 @@ mockNuxtImport('useTrajectory', () => () => ({
 
 mockNuxtImport('useQualificationFilter', () => () => mockQualFilter)
 mockNuxtImport('useDeferredReady', () => () => ({ value: true }))
+
+afterEach(() => {
+  mockAnchored.value = null
+  mockHasAnchor.value = false
+  mockEndedByLabel.value = null
+})
 
 describe('TrajectoryTab', () => {
   it('shows empty state when no seniority data', async () => {
@@ -113,7 +132,7 @@ describe('TrajectoryTab', () => {
     const wrapper = await mountSuspended(Tab.default)
 
     expect(wrapper.get('[data-testid="trajectory-roster-size"]').text()).toBe('Roster Size 260 · Active pilots 240')
-    expect(wrapper.get('[data-testid="scoped-roster-size"]').text()).toContain('Roster Size 260 · Active pilots 240')
+    expect(wrapper.get('[data-testid="scoped-roster-size"]').text()).toContain('Roster Size 90 · Active pilots 80')
   })
 
   it('badges a Hypothetical Placement trajectory with its scope label', async () => {
@@ -130,7 +149,33 @@ describe('TrajectoryTab', () => {
     const wrapper = await mountSuspended(Tab.default)
 
     expect(wrapper.get('[data-testid="hypothetical-placement"]').text()).toBe('Hypothetical Placement in BOS')
-    mockAnchored.value = null
+  })
+
+  it('says why the scoped trajectory ends when it stops at the Anchor Pilot retirement', async () => {
+    mockHasData.value = true
+    mockAnalysis.value = { retirementYearAnalysis: vi.fn(() => []) }
+    mockAnchored.value = {
+      seniorityTrajectory: vi.fn(() => ({
+        domain: { points: [], changes: [], isHypothetical: false },
+        presentation: { chartData: { labels: [], data: [] }, changes: [], endedByLabel: 'Anchor Pilot retired', hypotheticalLabel: null },
+      })),
+      percentileCrossing: vi.fn(() => ({ domain: null, presentation: null })),
+    }
+    const Tab = await import('./TrajectoryTab.vue')
+    const wrapper = await mountSuspended(Tab.default)
+
+    expect(wrapper.get('[data-testid="scoped-trajectory-ended-by"]').text()).toBe('Anchor Pilot retired')
+  })
+
+  it('passes the end reason to the trajectory chart', async () => {
+    mockHasData.value = true
+    mockHasAnchor.value = true
+    mockEndedByLabel.value = 'Anchor Pilot retired'
+    mockAnalysis.value = { retirementYearAnalysis: vi.fn(() => []) }
+    const Tab = await import('./TrajectoryTab.vue')
+    const wrapper = await mountSuspended(Tab.default)
+
+    expect(wrapper.get('[data-testid="trajectory-chart"]').text()).toBe('Anchor Pilot retired')
   })
 
   it('renders scoped retirement-wave buckets supplied by Seniority Analysis', async () => {

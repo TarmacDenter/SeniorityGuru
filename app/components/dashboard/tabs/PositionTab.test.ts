@@ -247,9 +247,10 @@ describe('PositionTab', () => {
     wrappers.push(wrapper)
 
     expect(wrapper.findAll('[data-testid="qualification-scale-active-count"]').map(count => count.text())).toEqual([
-      'Percentiles measured against 2 on roster · 1 active',
-      'Percentiles measured against 2 on roster · 1 active',
+      '1 active in this qualification',
+      '1 active in this qualification',
     ])
+    expect(wrapper.get('[data-testid="qualification-scale-roster-size"]').text()).toBe('Percentiles measured against 2 on roster')
     expect(wrapper.text()).toContain('Heights scale independently for each Qualification')
 
     const projectedMarkers = wrapper.findAll('[data-testid="qualification-scale-projected-position"]')

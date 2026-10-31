@@ -37,6 +37,22 @@ describe('useTrajectory', () => {
     expect(chartData.value.labels.length).toBe(chartData.value.data.length)
   })
 
+  it('exposes why the trajectory ends at the Anchor Pilot retirement', () => {
+    mockStore.entries = [
+      makeEntry({ seniority_number: 1, employee_number: 'E1', base: 'JFK', seat: 'CA', fleet: '737', retire_date: '2035-06-15' }),
+      makeEntry({ seniority_number: 2, employee_number: 'E2', base: 'JFK', seat: 'CA', fleet: '737', retire_date: '2040-06-15' }),
+    ]
+    mockUserStore.employeeNumber = 'E2'
+
+    const { endedByLabel } = useTrajectory()
+    expect(endedByLabel.value).toBe('Anchor Pilot retired')
+  })
+
+  it('has no end reason without an Anchor Pilot', () => {
+    const { endedByLabel } = useTrajectory()
+    expect(endedByLabel.value).toBeNull()
+  })
+
   it('computes fullTrajectory points', () => {
     mockStore.entries = [
       makeEntry({ seniority_number: 1, employee_number: 'E1', base: 'JFK', seat: 'CA', fleet: '737', retire_date: '2035-06-15' }),

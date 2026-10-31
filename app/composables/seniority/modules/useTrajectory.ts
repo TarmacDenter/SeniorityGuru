@@ -36,6 +36,8 @@ function emptyComparison(noResultLabel: string | null): ComparativeTrajectory {
 export function useTrajectory(growthAssumptions?: Ref<GrowthAssumptions>): {
   chartData: ComputedRef<{ labels: string[]; data: number[] }>
   changes: ComputedRef<PresentedTrajectoryChange[]>
+  /** Why the samples stop early, e.g. "Anchor Pilot retired"; null when the window completes. */
+  endedByLabel: ComputedRef<string | null>
   fullTrajectory: ComputedRef<readonly SeniorityTrajectoryPoint[]>
   computeRetirementProjection: (scope?: QualificationScope) => PresentedRetirementCountProjection
   computeComparativeTrajectory: (baseline: QualificationScope, comparison: QualificationScope) => ComparativeTrajectory
@@ -58,6 +60,7 @@ export function useTrajectory(growthAssumptions?: Ref<GrowthAssumptions>): {
   const chartData = computed(() => presented.value?.chartData ?? { labels: [], data: [] })
   const fullTrajectory = computed(() => domain.value?.points ?? [])
   const changes = computed(() => presented.value?.changes ?? [])
+  const endedByLabel = computed(() => presented.value?.endedByLabel ?? null)
 
   function computeRetirementProjection(scope: QualificationScope = {}): PresentedRetirementCountProjection {
     const through = projectionEndDate.value
@@ -92,6 +95,7 @@ export function useTrajectory(growthAssumptions?: Ref<GrowthAssumptions>): {
   return {
     chartData,
     changes,
+    endedByLabel,
     fullTrajectory,
     computeRetirementProjection,
     computeComparativeTrajectory,

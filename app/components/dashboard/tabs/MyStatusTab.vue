@@ -80,7 +80,7 @@ defineProps<{
 
       <!-- Career Trajectory -->
       <div v-if="userFound" class="mt-6">
-        <DashboardTrajectoryChart :data="trajectoryChartData" />
+        <DashboardTrajectoryChart :data="trajectoryChartData" :ended-by-label="retirementSnapshot?.endedByLabel" />
       </div>
     </template>
   </div>

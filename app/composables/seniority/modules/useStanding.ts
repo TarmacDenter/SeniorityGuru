@@ -53,6 +53,8 @@ export interface RetirementSnapshotData {
   retireDate: string
   /** Set when the trajectory is a Hypothetical Placement in the selected scope. */
   hypotheticalLabel: string | null
+  /** Why the trajectory stops early, e.g. "Anchor Pilot retired"; null when it runs its full window. */
+  endedByLabel: string | null
 }
 
 export function useStanding(qualificationScope?: Ref<QualificationScope> | ComputedRef<QualificationScope>): {
@@ -211,15 +213,16 @@ export function useStanding(qualificationScope?: Ref<QualificationScope> | Compu
     ]
   })
 
-  const trajectoryResult = computed(() => projectionEndDate.value
+  const trajectoryOutput = computed(() => projectionEndDate.value
     ? anchoredAnalysis.value?.seniorityTrajectory({
       through: projectionEndDate.value,
       scenario: { qualificationScope: qualificationScope?.value ?? {} },
-    }).domain ?? null
+    }) ?? null
     : null)
   const trajectoryPoints = computed(() => {
-    return resultOrNull(trajectoryResult.value)?.points ?? null
+    return resultOrNull(trajectoryOutput.value?.domain)?.points ?? null
   })
+  const trajectoryEndedByLabel = computed(() => resultOrNull(trajectoryOutput.value?.presentation)?.endedByLabel ?? null)
 
   const retirementSnapshot = computed<RetirementSnapshotData | null>(() => {
     const entry = anchorEntry.value
@@ -241,6 +244,7 @@ export function useStanding(qualificationScope?: Ref<QualificationScope> | Compu
       fullTrajectory,
       retireDate: entry.retire_date.toString(),
       hypotheticalLabel: standingOutput.value?.presentation.hypotheticalLabel ?? null,
+      endedByLabel: trajectoryEndedByLabel.value,
     }
   })
 
