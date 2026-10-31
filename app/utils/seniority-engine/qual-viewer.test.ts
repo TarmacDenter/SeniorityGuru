@@ -17,8 +17,24 @@ describe('analyzeSeniorityQualificationViewer', () => {
   it('projects the company-wide selected list in company order', () => {
     const result = analyzeSeniorityQualificationViewer({ entries, asOfDate: asOf('2026-06-15') })
     expect(result.entries.map(row => row.employeeNumber)).toEqual(['A', 'B', 'C', 'D'])
-    expect(result.entries[0]).toMatchObject({ status: 'retired', companyRank: null, qualificationRank: null, listRank: 1 })
+    expect(result.entries[0]).toMatchObject({ status: 'retired', companyRank: null, companyPercentile: null, qualificationRank: null, publicationPosition: 1 })
     expect(result.entries[1]).toMatchObject({ status: 'active', companyRank: 1, companyPercentile: 100, qualificationRank: 1, qualificationPercentile: 100 })
+  })
+
+  it('measures percentiles against Roster Size, retired pilots included, and reports both counts', () => {
+    const result = analyzeSeniorityQualificationViewer({ entries, asOfDate: asOf('2026-06-15') })
+    expect(result).toMatchObject({ rosterSize: 4, activePilotCount: 3 })
+    expect(result.entries[3]).toMatchObject({ employeeNumber: 'D', companyRank: 3, companyPercentile: 50, qualificationRank: 3, qualificationPercentile: 50 })
+    const bos = analyzeSeniorityQualificationViewer({ entries, qualificationScope: { base: 'BOS', fleet: '220', seat: 'CA' }, asOfDate: asOf('2026-06-15') })
+    expect(bos).toMatchObject({ rosterSize: 3, activePilotCount: 2 })
+    expect(bos.entries[2]).toMatchObject({ employeeNumber: 'D', companyRank: 3, companyPercentile: 50, qualificationRank: 2, qualificationPercentile: 66.7 })
+  })
+
+  it('exposes Publication Position on its own field and no list rank or percentile', () => {
+    const result = analyzeSeniorityQualificationViewer({ entries, asOfDate: asOf('2026-06-15') })
+    expect(result.entries.map(row => row.publicationPosition)).toEqual([1, 2, 3, 4])
+    expect(result.entries[0]).not.toHaveProperty('listRank')
+    expect(result.entries[0]).not.toHaveProperty('listPercentile')
   })
 
   it('filters only exact full qualifications', () => {
@@ -43,11 +59,15 @@ describe('analyzeSeniorityQualificationViewer', () => {
     }
   })
 
-  it('inserts a marker into another Qualification and shifts affected active Ranks', () => {
-    const result = analyzeSeniorityQualificationViewer({ entries, qualificationScope: { base: 'JFK', fleet: '737', seat: 'FO' }, employeeNumber: 'B', insertSelf: true, asOfDate: asOf('2026-06-16') })
+  it('inserts a hypothetical marker without changing Roster Size or any other pilot', () => {
+    const scope = { base: 'JFK', fleet: '737', seat: 'FO' }
+    const without = analyzeSeniorityQualificationViewer({ entries, qualificationScope: scope, employeeNumber: 'B', asOfDate: asOf('2026-06-16') })
+    const result = analyzeSeniorityQualificationViewer({ entries, qualificationScope: scope, employeeNumber: 'B', insertSelf: true, asOfDate: asOf('2026-06-16') })
     expect(result.entries).toHaveLength(2)
-    expect(result.entries[0]).toMatchObject({ employeeNumber: 'B', status: 'inserted', isMarker: true, qualificationRank: 1, qualificationPercentile: 100 })
-    expect(result.entries[1]).toMatchObject({ employeeNumber: 'C', qualificationRank: 2, qualificationPercentile: 50 })
+    expect(result.rosterSize).toBe(without.rosterSize)
+    expect(result.activePilotCount).toBe(without.activePilotCount)
+    expect(result.entries[0]).toMatchObject({ employeeNumber: 'B', status: 'inserted', isMarker: true, qualificationRank: 1, qualificationPercentile: 100, companyRank: 1, publicationPosition: 2 })
+    expect(result.entries[1]).toEqual(without.entries[0])
   })
 
   it('places the marker between matching pilots at the employee company seniority position', () => {
@@ -80,17 +100,16 @@ describe('analyzeSeniorityQualificationViewer', () => {
 
     expect(result.entries.map(row => ({
       employeeNumber: row.employeeNumber,
-      listRank: row.listRank,
-      listPercentile: row.listPercentile,
+      publicationPosition: row.publicationPosition,
       companyRank: row.companyRank,
       companyPercentile: row.companyPercentile,
       qualificationRank: row.qualificationRank,
       qualificationPercentile: row.qualificationPercentile,
     }))).toEqual([
-      { employeeNumber: 'Q1', listRank: 1, listPercentile: 100, companyRank: 1, companyPercentile: 100, qualificationRank: 1, qualificationPercentile: 100 },
-      { employeeNumber: 'USER', listRank: 2, listPercentile: 75, companyRank: 2, companyPercentile: 75, qualificationRank: 2, qualificationPercentile: 75 },
-      { employeeNumber: 'Q2', listRank: 3, listPercentile: 50, companyRank: 3, companyPercentile: 50, qualificationRank: 3, qualificationPercentile: 50 },
-      { employeeNumber: 'Q3', listRank: 4, listPercentile: 25, companyRank: 4, companyPercentile: 25, qualificationRank: 4, qualificationPercentile: 25 },
+      { employeeNumber: 'Q1', publicationPosition: 1, companyRank: 1, companyPercentile: 100, qualificationRank: 1, qualificationPercentile: 100 },
+      { employeeNumber: 'USER', publicationPosition: 2, companyRank: 2, companyPercentile: 75, qualificationRank: 2, qualificationPercentile: 66.7 },
+      { employeeNumber: 'Q2', publicationPosition: 3, companyRank: 3, companyPercentile: 50, qualificationRank: 2, qualificationPercentile: 66.7 },
+      { employeeNumber: 'Q3', publicationPosition: 4, companyRank: 4, companyPercentile: 25, qualificationRank: 3, qualificationPercentile: 33.3 },
     ])
   })
 

@@ -143,6 +143,8 @@ export interface PercentileDensityBucket {
 export interface QualificationDistribution {
   readonly qualification: Qualification
   readonly activePilotCount: number
+  /** Pilots in the analyzed set in the publication, retired included. */
+  readonly rosterSize: number
   readonly thresholdPercentile: number
   readonly thresholdSeniorityNumber: number
   readonly percentile25: number

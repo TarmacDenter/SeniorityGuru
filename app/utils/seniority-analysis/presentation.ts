@@ -237,6 +237,7 @@ export function presentAnchoredSeniorityDemographics(
 export interface PresentedQualificationPosition {
   readonly qualification: Qualification
   readonly activePilotCount: number
+  readonly rosterSize: number
   readonly thresholdPercentile: number
   readonly thresholdSeniorityNumber: number
   readonly percentile25: number

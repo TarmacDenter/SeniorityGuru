@@ -189,6 +189,7 @@ describe('seniority presentation', () => {
       distribution: {
         qualification: { base: 'JFK', seat: 'CA', fleet: '737' },
         activePilotCount: 12,
+        rosterSize: 15,
         thresholdPercentile: 36,
         thresholdSeniorityNumber: 105,
         percentile25: 25,
@@ -205,6 +206,7 @@ describe('seniority presentation', () => {
     expect(presentQualificationPositions(positions)).toEqual([{
       qualification: { base: 'JFK', seat: 'CA', fleet: '737' },
       activePilotCount: 12,
+      rosterSize: 15,
       thresholdPercentile: 36,
       thresholdSeniorityNumber: 105,
       percentile25: 25,
@@ -235,6 +237,7 @@ describe('seniority presentation', () => {
       distribution: {
         qualification: { base: 'JFK', seat: 'CA', fleet: '737' },
         activePilotCount: 12,
+        rosterSize: 15,
         thresholdPercentile: 36,
         thresholdSeniorityNumber: 125,
         percentile25: 25,

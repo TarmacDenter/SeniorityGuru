@@ -72,7 +72,7 @@ onMounted(() => {
         </div>
       </div>
       <p v-if="rank.isSimulated" class="text-xs text-muted mt-2">
-        Modeled counts include the simulated pilot.
+        Modeled counts include the simulated pilot ({{ rank.publicationRosterSize.toLocaleString() }} in publication).
       </p>
 
       <div class="mt-4">
