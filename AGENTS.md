@@ -39,7 +39,7 @@ Component → composable → store → Dexie
 - Use Nuxt UI components and semantic UI tokens for interface primitives and theme-aware styling.
 
 ## References
-
+- **Domain Knowledge** Read ['CONTEXT.md']('CONTEXT.md') for a shared domain language.
 - **Import plugin work:** Read [docs/import-plugins.md](docs/import-plugins.md) before adding or changing an airline upload type.
 - **Contribution workflow:** Read [WORKFLOW.md](WORKFLOW.md) before creating a branch or opening a pull request.
 - **Tests:** Keep tests next to the code they cover. Run `pnpm lint`, `pnpm typecheck`, and `pnpm test` after code changes.
