@@ -216,10 +216,9 @@ describe('seniority presentation', () => {
       currentPercentile: 42,
       projectedPercentile: 61,
       modeledHoldable: true,
-      isHypothetical: true,
     }]
 
-    expect(presentQualificationPositions(positions, { seat: 'CA' })).toEqual([{
+    expect(presentQualificationPositions(positions)).toEqual([{
       qualification: { base: 'JFK', seat: 'CA', fleet: '737' },
       activePilotCount: 12,
       rosterSize: 15,
@@ -233,7 +232,6 @@ describe('seniority presentation', () => {
       currentPercentile: 42,
       projectedPercentile: 61,
       modeledHoldable: true,
-      hypotheticalLabel: 'Hypothetical Placement in CA',
     }])
   })
 
@@ -266,7 +264,6 @@ describe('seniority presentation', () => {
       currentPercentile: 42,
       projectedPercentile: 61,
       modeledHoldable: true,
-      isHypothetical: false,
     }]
 
     expect(presentAnchoredSeniorityDemographics(demographics, positions)

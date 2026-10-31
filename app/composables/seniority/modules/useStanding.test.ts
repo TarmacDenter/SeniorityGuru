@@ -273,10 +273,15 @@ describe('useStanding', () => {
       newHire.enabled.value = true
       const { rankCard, statCards } = useStanding(ref<QualificationScope>({ base: 'JFK' }))
 
-      expect(rankCard.value).toMatchObject({ isSimulated: true, hypotheticalLabel: 'Hypothetical Placement in JFK' })
+      expect(rankCard.value).toMatchObject({
+        isSimulated: true,
+        hypotheticalLabel: 'Hypothetical Placement in JFK',
+        rosterSize: 3,
+        publicationPilotCount: 2,
+      })
       expect(statCards.value[0]).toMatchObject({
         label: 'Roster Size (modeled, hypothetical)',
-        trend: '3 in publication · includes you',
+        trend: '2 in publication · includes you',
       })
     })
 

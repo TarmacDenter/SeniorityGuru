@@ -87,6 +87,8 @@ export interface SeniorityStanding {
   readonly rank: number
   readonly publicationPosition: number
   readonly rosterSize: number
+  /** Real pilots in the Qualification Scope in the publication. Excludes a modeled New Hire pilot and a Hypothetical Placement. */
+  readonly publicationPilotCount: number
   readonly activePilotCount: number
   readonly seniorityPercentile: number
   readonly retiredPilotsSeniorToAnchor: number
@@ -167,8 +169,6 @@ export interface QualificationPosition {
   readonly currentPercentile: number
   readonly projectedPercentile: number
   readonly modeledHoldable: boolean
-  /** True when the Anchor Pilot is outside the Qualification Scope the percentiles are measured in. */
-  readonly isHypothetical: boolean
 }
 
 export interface PercentileCrossingResult {
@@ -245,9 +245,9 @@ export interface PercentileCrossingOptions extends SeniorityTrajectoryOptions {
   readonly targetPercentile: number
 }
 
+/** Qualification Position is company-wide so the percentile and the Qualification Thresholds share one scale. */
 export interface QualificationPositionOptions {
   readonly through: PlainDate
-  readonly qualificationScope?: QualificationScope
   readonly growthAssumptions?: GrowthAssumptions
 }
 

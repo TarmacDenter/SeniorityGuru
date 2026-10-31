@@ -74,13 +74,11 @@ export function analyzeQualificationPositions(
   asOfDate: PlainDate,
   through: PlainDate,
   growthAssumptions?: GrowthAssumptions,
-  /** Pilots in the Qualification Scope; the Anchor Pilot's Rank and Roster Size are measured here. Thresholds always use `entries`. */
-  scopeEntries: readonly SeniorityEntry[] = entries,
-): readonly Omit<QualificationPosition, 'isHypothetical'>[] {
+): readonly QualificationPosition[] {
   const distributions = analyzeQualificationDistributions(entries, asOfDate)
   if (distributions.length === 0) return []
 
-  const pilotsSeniorToAnchor = scopeEntries.filter(entry => entry.seniority_number < anchorSeniorityNumber)
+  const pilotsSeniorToAnchor = entries.filter(entry => entry.seniority_number < anchorSeniorityNumber)
   const initialRank = pilotsSeniorToAnchor.length + 1
   const currentRank = initialRank - pilotsSeniorToAnchor.filter(entry =>
     entry.retire_date && isRetiredBy(entry.retire_date, asOfDate),
@@ -89,10 +87,10 @@ export function analyzeQualificationPositions(
     entry.retire_date && isRetiredBy(entry.retire_date, through),
   ).length
   const addedPilots = growthAssumptions?.enabled
-    ? calculateAdditionalSeniorityPilots(scopeEntries.length, growthAssumptions.annualGrowthRate, asOfDate, through)
+    ? calculateAdditionalSeniorityPilots(entries.length, growthAssumptions.annualGrowthRate, asOfDate, through)
     : 0
-  const currentPercentile = calculateSeniorityPercentile(currentRank, scopeEntries.length)
-  const projectedPercentile = calculateSeniorityPercentile(projectedRank, scopeEntries.length + addedPilots)
+  const currentPercentile = calculateSeniorityPercentile(currentRank, entries.length)
+  const projectedPercentile = calculateSeniorityPercentile(projectedRank, entries.length + addedPilots)
 
   return distributions.map(distribution => ({
     distribution,

@@ -97,7 +97,7 @@ describe('Anchor Pilot outside the Qualification Scope', () => {
     expect(isNoResult(anchored.seniorityStanding({ scenario }).domain)).toBe(false)
     expect(isNoResult(anchored.seniorityTrajectory({ through, scenario }).domain)).toBe(false)
     expect(isNoResult(anchored.percentileCrossing({ through, scenario, targetPercentile: 50 }).domain)).toBe(false)
-    expect(isNoResult(anchored.qualificationPositions({ through, qualificationScope: scenario.qualificationScope }).domain)).toBe(false)
+    expect(isNoResult(anchored.qualificationPositions({ through }).domain)).toBe(false)
     expect(isNoResult(anchored.seniorityTrajectoryComparison({ through, comparisonScenario: scenario }).domain)).toBe(false)
   })
 

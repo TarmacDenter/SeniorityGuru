@@ -201,7 +201,18 @@ describe('anchored analysis', () => {
     })
   })
 
-  it('reconciles Standing with trajectory year zero and Qualification Position for the same scope', () => {
+  it('counts rolling next-12-month retirements within the selected Qualification Scope', () => {
+    const company = resultOf(anchored.seniorityStanding())
+    expect(company).toMatchObject({ rollingNext12MonthRetirements: 1, rollingNext12MonthRetirementsSeniorToAnchor: 1 })
+
+    const inScope = resultOf(anchored.seniorityStanding({ scenario: createSeniorityScenario({ qualificationScope: { seat: 'CA' } }) }))
+    expect(inScope).toMatchObject({ rollingNext12MonthRetirements: 1, rollingNext12MonthRetirementsSeniorToAnchor: 1 })
+
+    const outOfScope = resultOf(anchored.seniorityStanding({ scenario: createSeniorityScenario({ qualificationScope: { seat: 'FO' } }) }))
+    expect(outOfScope).toMatchObject({ rollingNext12MonthRetirements: 0, rollingNext12MonthRetirementsSeniorToAnchor: 0 })
+  })
+
+  it('reconciles Standing with trajectory year zero for the same scope', () => {
     for (const qualificationScope of [{}, { seat: 'CA' }, { base: 'JFK', seat: 'CA', fleet: '737' }]) {
       const scenario = createSeniorityScenario({ qualificationScope })
       const standing = resultOf(anchored.seniorityStanding({ scenario }))
@@ -209,13 +220,18 @@ describe('anchored analysis', () => {
 
       expect(trajectory.points[0]!.percentile).toBe(standing.seniorityPercentile)
       expect(trajectory.points[0]!.rank).toBe(standing.rank)
+    }
+  })
 
-      const positions = resultOf(anchored.qualificationPositions({ through: asOfDate, qualificationScope }))
-      expect(positions.length).toBeGreaterThan(0)
-      for (const position of positions) {
-        expect(position.currentPercentile).toBe(standing.seniorityPercentile)
-        expect(position.projectedPercentile).toBe(trajectory.points[0]!.percentile)
-      }
+  it('reconciles company-wide Standing with trajectory year zero and Qualification Position', () => {
+    const standing = resultOf(anchored.seniorityStanding())
+    const trajectory = resultOf(anchored.seniorityTrajectory({ through: asOfDate }))
+    const positions = resultOf(anchored.qualificationPositions({ through: asOfDate }))
+
+    expect(positions.length).toBeGreaterThan(0)
+    for (const position of positions) {
+      expect(position.currentPercentile).toBe(standing.seniorityPercentile)
+      expect(position.projectedPercentile).toBe(trajectory.points[0]!.percentile)
     }
   })
 

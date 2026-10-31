@@ -47,6 +47,8 @@ import { Temporal } from '~/utils/temporal'
 
 export interface CreateSeniorityLensOptions {
   readonly asOfDate: Temporal.PlainDate
+  /** Employee number of a modeled New Hire entry in the snapshot; counted in Roster Size, not in the publication count. */
+  readonly modeledEmployeeNumber?: string
 }
 
 export class AnchorNotFoundError extends Error {
@@ -60,6 +62,7 @@ const ANCHOR_RETIRED: NoResult = { kind: 'no-result', reason: 'anchor-retired', 
 
 interface LensContext {
   readonly snapshot: SenioritySnapshot
+  readonly modeledEmployeeNumber: string | null
   readonly asOfDateISO: string
   readonly retirementsNext12Months: () => number
   readonly retirementYearAnalysis: (scenario?: Scenario) => readonly RetirementYearAnalysis[]
@@ -72,7 +75,11 @@ function asOfDate(context: LensContext): Temporal.PlainDate {
   return Temporal.PlainDate.from(context.asOfDateISO)
 }
 
-function createLensContext(snapshot: SenioritySnapshot, date: Temporal.PlainDate): LensContext {
+function createLensContext(
+  snapshot: SenioritySnapshot,
+  date: Temporal.PlainDate,
+  modeledEmployeeNumber: string | null,
+): LensContext {
   const entries = snapshot.entries
   const dateISO = date.toString()
   const currentDate = () => Temporal.PlainDate.from(dateISO)
@@ -131,6 +138,7 @@ function createLensContext(snapshot: SenioritySnapshot, date: Temporal.PlainDate
 
   return {
     snapshot,
+    modeledEmployeeNumber,
     asOfDateISO: dateISO,
     retirementsNext12Months: memoizeLast(retirementsNext12Months, () => 'retirements-next-12-months'),
     retirementYearAnalysis: memoizeLast(retirementYearAnalysis),
@@ -213,6 +221,10 @@ class AnchoredSeniorityLensImplementation implements AnchoredSeniorityLens {
       const scopedEntries = entries.filter(scopePredicateIncludingAnchor(scenario.qualificationScope))
       const publicationPosition = calculateSeniorityRank(scopedEntries, seniorityNumber)
       const retiredPilotsSeniorToAnchor = countRetiredPilotsSeniorTo(scopedEntries, seniorityNumber, today)
+      const inScope = qualificationScopeToEntryPredicate(scenario.qualificationScope)
+      const publicationPilotCount = entries.filter(entry =>
+        inScope(entry) && normalizeEmployeeNumber(entry.employee_number) !== context.modeledEmployeeNumber,
+      ).length
       const qualificationStandings: QualificationStanding[] = []
 
       for (const qualificationEntries of context.snapshot.entriesByQualification.values()) {
@@ -246,20 +258,22 @@ class AnchoredSeniorityLensImplementation implements AnchoredSeniorityLens {
         entry.retire_date && isRetiredBy(entry.retire_date, today),
       ).length
       const rank = publicationPosition - retiredPilotsSeniorToAnchor
-      const rollingNext12MonthRetirementsSeniorToAnchor = entries.filter(entry =>
-        entry.seniority_number < seniorityNumber
-        && !!entry.retire_date
-        && retiresWithinNextYear(entry.retire_date.toString(), today.toString()),
+      const retiringWithinNextYear = entries.filter(entry =>
+        inScope(entry) && !!entry.retire_date && retiresWithinNextYear(entry.retire_date.toString(), today.toString()),
+      )
+      const rollingNext12MonthRetirementsSeniorToAnchor = retiringWithinNextYear.filter(entry =>
+        entry.seniority_number < seniorityNumber,
       ).length
 
       return {
         rank,
         publicationPosition,
         rosterSize: scopedEntries.length,
+        publicationPilotCount,
         activePilotCount: scopedEntries.length - scopedRetiredCount,
         seniorityPercentile: calculateSeniorityPercentile(rank, scopedEntries.length),
         retiredPilotsSeniorToAnchor,
-        rollingNext12MonthRetirements: context.retirementsNext12Months(),
+        rollingNext12MonthRetirements: retiringWithinNextYear.length,
         rollingNext12MonthRetirementsSeniorToAnchor,
         qualificationStandings,
         isHypothetical: isHypothetical(scenario.qualificationScope),
@@ -313,16 +327,13 @@ class AnchoredSeniorityLensImplementation implements AnchoredSeniorityLens {
     this.qualificationPositions = memoizeLast((options) => {
       const unavailable = noResultFor(asOfDate(context))
       if (unavailable) return unavailable
-      const scope = options.qualificationScope ?? {}
-      const hypothetical = isHypothetical(scope)
       return analyzeQualificationPositions(
         entries,
         seniorityNumber,
         asOfDate(context),
         options.through,
         options.growthAssumptions,
-        entries.filter(scopePredicateIncludingAnchor(scope)),
-      ).map(position => ({ ...position, isHypothetical: hypothetical }))
+      )
     })
 
     this.relativeUpcomingRetirements = memoizeLast(filter => context.upcomingRetirements(filter)
@@ -349,5 +360,8 @@ export function createSeniorityLens(
   snapshot: SenioritySnapshot,
   options: CreateSeniorityLensOptions,
 ): SeniorityLens {
-  return new SeniorityLensImplementation(createLensContext(snapshot, options.asOfDate))
+  const modeledEmployeeNumber = options.modeledEmployeeNumber
+    ? normalizeEmployeeNumber(options.modeledEmployeeNumber)
+    : null
+  return new SeniorityLensImplementation(createLensContext(snapshot, options.asOfDate, modeledEmployeeNumber))
 }

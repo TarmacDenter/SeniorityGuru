@@ -271,12 +271,10 @@ export interface PresentedQualificationPosition {
   readonly currentPercentile: number
   readonly projectedPercentile: number
   readonly modeledHoldable: boolean
-  readonly hypotheticalLabel: string | null
 }
 
 export function presentQualificationPositions(
   positions: readonly QualificationPosition[] | NoResult,
-  scope: QualificationScope = {},
 ): PresentedQualificationPosition[] | NoResult {
   if (isNoResult(positions)) return positions
   return positions.map(position => ({
@@ -284,6 +282,5 @@ export function presentQualificationPositions(
     currentPercentile: position.currentPercentile,
     projectedPercentile: position.projectedPercentile,
     modeledHoldable: position.modeledHoldable,
-    hypotheticalLabel: hypotheticalPlacementLabel(position.isHypothetical, scope),
   }))
 }

@@ -170,3 +170,47 @@ describe('public Seniority Analysis interface', () => {
     expect(() => createAnalysis().withAnchor('missing')).toThrow(seniority.AnchorNotFoundError)
   })
 })
+
+describe('publication pilot count', () => {
+  const modeled = makeEntry({ seniority_number: 141, employee_number: '_new_hire', base: 'JFK', seat: 'CA', fleet: '737', retire_date: '2060-01-01' })
+
+  it('equals the list size for a real Anchor Pilot with no scope', () => {
+    const standing = resultOf(createAnalysis().withAnchor('125').seniorityStanding().domain)
+    expect(standing.publicationPilotCount).toBe(5)
+    expect(standing.rosterSize).toBe(5)
+  })
+
+  it('counts only real pilots in the scope', () => {
+    const output = createAnalysis().withAnchor('125').seniorityStanding({ scenario: { qualificationScope: { base: 'ATL' } } })
+    const standing = resultOf(output.domain)
+    // Real Anchor Pilot is outside ATL: Roster Size counts it as modeled, the publication count does not.
+    expect(standing.rosterSize).toBe(3)
+    expect(standing.publicationPilotCount).toBe(2)
+    expect(resultOf(output.presentation).publicationPilotCount).toBe(2)
+  })
+
+  it('excludes the modeled New Hire pilot from the publication count but includes it in Roster Size', () => {
+    const analysis = seniority.createSeniorityAnalysis({ entries, modeledEntry: modeled, asOfDate })
+    const standing = resultOf(analysis.withAnchor('_new_hire').seniorityStanding().domain)
+    expect(standing.rosterSize).toBe(6)
+    expect(standing.publicationPilotCount).toBe(5)
+  })
+
+  it('counts real pilots in the scope when the modeled pilot is scoped', () => {
+    const analysis = seniority.createSeniorityAnalysis({ entries, modeledEntry: modeled, asOfDate })
+    const anchored = analysis.withAnchor('_new_hire')
+
+    const jfk = resultOf(anchored.seniorityStanding({ scenario: { qualificationScope: { base: 'JFK' } } }).domain)
+    expect(jfk).toMatchObject({ rosterSize: 4, publicationPilotCount: 3 })
+
+    const lax = resultOf(anchored.seniorityStanding({ scenario: { qualificationScope: { base: 'LAX' } } }).domain)
+    expect(lax).toMatchObject({ rosterSize: 1, publicationPilotCount: 0 })
+  })
+
+  it('does not change any percentile', () => {
+    const withModeled = seniority.createSeniorityAnalysis({ entries, modeledEntry: modeled, asOfDate })
+    const merged = seniority.createSeniorityAnalysis({ entries: [...entries, modeled], asOfDate })
+    expect(withModeled.withAnchor('_new_hire').seniorityStanding().domain)
+      .toMatchObject({ seniorityPercentile: resultOf(merged.withAnchor('_new_hire').seniorityStanding().domain).seniorityPercentile })
+  })
+})

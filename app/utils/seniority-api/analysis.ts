@@ -46,7 +46,10 @@ import {
 } from '../seniority-analysis/presentation'
 
 export interface CreateSeniorityAnalysisOptions {
+  /** Real pilots from the publication. */
   readonly entries: readonly SeniorityEntry[]
+  /** A modeled New Hire pilot. Counted in Roster Size and Standing, excluded from the publication pilot count. */
+  readonly modeledEntry?: SeniorityEntry | null
   readonly asOfDate: PlainDate
 }
 
@@ -101,9 +104,9 @@ export interface PercentileCrossingAnalysisOptions extends SeniorityTrajectoryAn
   readonly targetPercentile: number
 }
 
+/** Company-wide: there is no Qualification Scope option. */
 export interface QualificationPositionAnalysisOptions {
   readonly through: PlainDate
-  readonly qualificationScope?: QualificationScope
   readonly growthAssumptions?: GrowthAssumptions
 }
 
@@ -254,7 +257,7 @@ function anchoredSeniorityAnalysis(lens: AnchoredSeniorityLens, asOfDate: PlainD
     },
     qualificationPositions: (options) => {
       const domain = lens.qualificationPositions(options)
-      return seniorityOutput(domain, value => presentQualificationPositions(value, options.qualificationScope ?? {}))
+      return seniorityOutput(domain, presentQualificationPositions)
     },
     relativeUpcomingRetirements: options => lens.relativeUpcomingRetirements(options),
   }
@@ -262,7 +265,11 @@ function anchoredSeniorityAnalysis(lens: AnchoredSeniorityLens, asOfDate: PlainD
 
 /** Creates one deep Seniority Analysis module for an immutable entry set and As-of Date. */
 export function createSeniorityAnalysis(options: CreateSeniorityAnalysisOptions): SeniorityAnalysis {
-  const lens = createSeniorityLens(createSenioritySnapshot(options.entries), { asOfDate: options.asOfDate })
+  const modeled = options.modeledEntry ?? null
+  const lens = createSeniorityLens(
+    createSenioritySnapshot(modeled ? [...options.entries, modeled] : options.entries),
+    { asOfDate: options.asOfDate, modeledEmployeeNumber: modeled?.employee_number },
+  )
   return {
     ...commonSeniorityAnalysis(lens, options.asOfDate),
     withAnchor: employeeNumber => anchoredSeniorityAnalysis(lens.withAnchor(employeeNumber), options.asOfDate),

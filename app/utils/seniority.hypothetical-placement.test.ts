@@ -34,7 +34,6 @@ function anchored(anchor = anchorX(), asOf = asOfDate) {
 }
 
 const bosScope: QualificationScope = { base: 'BOS' }
-const caScope: QualificationScope = { seat: 'CA' }
 const fullBosScope: QualificationScope = bos
 
 describe('Hypothetical Placement: Anchor Pilot outside the Qualification Scope', () => {
@@ -98,14 +97,23 @@ describe('Hypothetical Placement: Anchor Pilot outside the Qualification Scope',
     expect(presented.comparisonHypotheticalLabel).toBe('Hypothetical Placement in BOS')
   })
 
-  it('measures Qualification Position against the scope that includes the Anchor Pilot', () => {
-    const output = anchored().qualificationPositions({ through, qualificationScope: caScope })
+  it('keeps Qualification Position company-wide so thresholds and percentile share one scale', () => {
+    const subject = anchored()
+    const output = subject.qualificationPositions({ through })
     const positions = resultOf(output.domain)
-    expect(positions.length).toBeGreaterThan(0)
-    expect(positions.every(position => position.isHypothetical && position.currentPercentile === 66.7)).toBe(true)
+    const companyStanding = resultOf(subject.seniorityStanding().domain)
 
-    const presented = resultOf(output.presentation)
-    expect(presented.every(position => position.hypotheticalLabel === 'Hypothetical Placement in CA')).toBe(true)
+    expect(positions.length).toBeGreaterThan(0)
+    for (const position of positions) {
+      expect(position.currentPercentile).toBe(companyStanding.seniorityPercentile)
+      expect(position).not.toHaveProperty('isHypothetical')
+    }
+    for (const position of resultOf(output.presentation)) expect(position).not.toHaveProperty('hypotheticalLabel')
+  })
+
+  it('does not accept a Qualification Scope on Qualification Position', () => {
+    // @ts-expect-error Qualification Position is company-wide; a scoped percentile would not match its thresholds.
+    anchored().qualificationPositions({ through, qualificationScope: bosScope })
   })
 
   it('places a junior Anchor Pilot after every pilot in the scope', () => {
@@ -170,17 +178,25 @@ describe('Hypothetical Placement: Anchor Pilot outside the Qualification Scope',
     ['full qualification outside', fullBosScope],
     ['no other pilots', { base: 'LAX' }],
   ] satisfies [string, QualificationScope][])(
-    'agrees on one percentile across Standing, trajectory year zero, and Qualification Position (%s)',
+    'agrees on one percentile across Standing and trajectory year zero (%s)',
     (_name, scope) => {
       const subject = anchored()
       const standing = resultOf(subject.seniorityStanding({ scenario: { qualificationScope: scope } }).domain)
       const trajectory = resultOf(subject.seniorityTrajectory({ through, scenario: { qualificationScope: scope } }).domain)
-      const positions = resultOf(subject.qualificationPositions({ through, qualificationScope: scope }).domain)
 
       expect(trajectory.points[0]!.percentile).toBe(standing.seniorityPercentile)
-      expect(positions[0]!.currentPercentile).toBe(standing.seniorityPercentile)
     },
   )
+
+  it('also reconciles Qualification Position when the scope is company-wide', () => {
+    const subject = anchored()
+    const standing = resultOf(subject.seniorityStanding().domain)
+    const trajectory = resultOf(subject.seniorityTrajectory({ through: asOfDate }).domain)
+    const positions = resultOf(subject.qualificationPositions({ through: asOfDate }).domain)
+
+    expect(positions[0]!.currentPercentile).toBe(standing.seniorityPercentile)
+    expect(positions[0]!.projectedPercentile).toBe(trajectory.points[0]!.percentile)
+  })
 })
 
 describe('Hypothetical Placement and retirement', () => {
@@ -208,7 +224,7 @@ describe('Hypothetical Placement and retirement', () => {
     const scenario = { qualificationScope: bosScope }
     expect(subject.seniorityTrajectory({ through, scenario }).domain).toMatchObject({ reason: 'anchor-retired' })
     expect(subject.percentileCrossing({ through, targetPercentile: 50, scenario }).domain).toMatchObject({ reason: 'anchor-retired' })
-    expect(subject.qualificationPositions({ through, qualificationScope: bosScope }).domain).toMatchObject({ reason: 'anchor-retired' })
+    expect(subject.qualificationPositions({ through }).domain).toMatchObject({ reason: 'anchor-retired' })
     expect(subject.seniorityTrajectoryComparison({ through, comparisonScenario: scenario }).domain).toMatchObject({ reason: 'anchor-retired' })
   })
 

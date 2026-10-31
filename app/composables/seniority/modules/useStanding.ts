@@ -123,7 +123,7 @@ export function useStanding(qualificationScope?: Ref<QualificationScope> | Compu
       rank: standing.rank,
       publicationPosition: standing.publicationPosition,
       rosterSize: standing.rosterSize,
-      publicationPilotCount: seniorityStore.entries.length,
+      publicationPilotCount: standing.publicationPilotCount,
       activePilotCount: standing.activePilotCount,
       isSimulated: newHire.syntheticEntry.value?.employee_number === entry.employee_number,
       seniorityPercentile: standing.seniorityPercentile,
