@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import type { SelectMenuItem } from '@nuxt/ui'
 import type { ColumnMap } from '~/utils/parse-spreadsheet'
-import type { UploadColumnMap, UploadMappingOptions } from '~/composables/seniority/upload/types'
+import type { ColumnSource, UploadColumnMap, UploadMappingOptions } from '~/composables/seniority/upload/types'
+import type { ImportField } from '~/utils/import-pipeline/types'
 
 const props = defineProps<{
   headers: string[]
@@ -10,8 +11,8 @@ const props = defineProps<{
   mappingOptions: UploadMappingOptions
   sampleRows: string[][]
   sourceHeaders?: string[]
-  columnSources?: Record<string, { header: string, kind: 'straight' | 'derived' }>
-  suggestedColumnIds?: Partial<Record<keyof ColumnMap, string>>
+  columnSources?: Record<string, ColumnSource>
+  suggestedColumnIds?: Partial<Record<ImportField, string>>
 }>()
 
 const emit = defineEmits<{
@@ -29,8 +30,10 @@ const requiredFields: { key: keyof ColumnMap; label: string }[] = [
 
 const columnLabels = computed(() => {
   const labels = props.headers.map((header, index) => {
-    const source = props.columnSources?.[props.columnIds[index] ?? '']
-    const own = header || `Column ${index + 1}`
+    const columnId = props.columnIds[index] ?? ''
+    const source = props.columnSources?.[columnId]
+    // Unlabelled source columns carry their id as the prepared label; never show it.
+    const own = header && header !== columnId ? header : `Column ${index + 1}`
     if (source?.kind === 'derived') return source.header ? `${own} (derived from ${source.header})` : own
     return source?.header || own
   })
@@ -39,21 +42,28 @@ const columnLabels = computed(() => {
 
 type ColumnOption = { label: string, value: string }
 
-function optionsFor(field?: keyof ColumnMap): SelectMenuItem[][] {
-  const suggested = field ? props.suggestedColumnIds?.[field] : undefined
-  const auto: ColumnOption[] = []
-  const other: ColumnOption[] = []
+/** Options for one field's dropdown; the field's plugin suggestion (if any) is listed first and tagged. */
+function optionsFor(field: keyof ColumnMap): SelectMenuItem[][] {
+  return buildOptions(props.suggestedColumnIds?.[field])
+}
+
+/** Options for dropdowns that belong to no importable field (name parts, birth date): every column, untagged. */
+const untaggedOptions = computed(() => buildOptions(undefined))
+
+function buildOptions(suggestedColumnId: string | undefined): SelectMenuItem[][] {
+  const suggestedOptions: ColumnOption[] = []
+  const otherOptions: ColumnOption[] = []
   props.columnIds.forEach((value, index) => {
     const label = columnLabels.value[index] ?? `Column ${index + 1}`
-    if (value === suggested) {
+    if (value === suggestedColumnId) {
       const derived = props.columnSources?.[value]?.kind === 'derived'
-      auto.push({ label: derived ? label : `${label} (auto-detected)`, value })
+      suggestedOptions.push({ label: derived ? label : `${label} (auto-detected)`, value })
     }
-    else other.push({ label, value })
+    else otherOptions.push({ label, value })
   })
   return [
-    ...(auto.length ? [[{ type: 'label' as const, label: 'Auto-detected' }, ...auto]] : []),
-    ...(other.length ? [[{ type: 'label' as const, label: 'Other columns' }, ...other]] : []),
+    ...(suggestedOptions.length ? [[{ type: 'label' as const, label: 'Auto-detected' }, ...suggestedOptions]] : []),
+    ...(otherOptions.length ? [[{ type: 'label' as const, label: 'Other columns' }, ...otherOptions]] : []),
   ]
 }
 
@@ -135,7 +145,7 @@ function updateOption<K extends keyof UploadMappingOptions>(key: K, value: Uploa
         <UFormField label="Last name column">
           <USelectMenu
             :model-value="mappingOptions.lastNameCol ?? undefined"
-            :items="optionsFor()"
+            :items="untaggedOptions"
             value-key="value"
             placeholder="Not mapped"
             class="w-full"
@@ -145,7 +155,7 @@ function updateOption<K extends keyof UploadMappingOptions>(key: K, value: Uploa
         <UFormField label="First name column">
           <USelectMenu
             :model-value="mappingOptions.firstNameCol ?? undefined"
-            :items="optionsFor()"
+            :items="untaggedOptions"
             value-key="value"
             placeholder="Not mapped"
             class="w-full"
@@ -188,7 +198,7 @@ function updateOption<K extends keyof UploadMappingOptions>(key: K, value: Uploa
         <UFormField label="Date of birth column" required>
           <USelectMenu
             :model-value="mappingOptions.dobCol ?? undefined"
-            :items="optionsFor()"
+            :items="untaggedOptions"
             value-key="value"
             placeholder="Not mapped"
             class="w-full"

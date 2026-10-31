@@ -81,7 +81,9 @@ export function _useFileIO(opts: UploadSession): FilePhase & { _reset: () => voi
     headerRows.value = sourceSheet.rows
       .slice(0, HEADER_ROW_PREVIEW_LIMIT)
       .map(row => row.cells.map(cell => cell === null ? '' : String(cell)))
-    sourceHeaders.value = sourceSheet.columns.map(column => column.label ?? column.id)
+    // Unlabelled source columns get '' so the id never reaches the UI.
+    const sourceLabels = new Map(sourceSheet.columns.map(column => [column.id, column.label ?? '']))
+    sourceHeaders.value = [...sourceLabels.values()]
     selectedHeaderRow.value = headerRowIndex ?? plugin.suggestHeaderRow?.(sourceSheet) ?? 0
     const result = prepareImport({ plugin, sourceSheet, headerRowIndex: selectedHeaderRow.value })
     if (opts.importAttemptId?.value) {
@@ -97,7 +99,7 @@ export function _useFileIO(opts: UploadSession): FilePhase & { _reset: () => voi
     opts.extractedEffectiveDate.value = result.metadata.effectiveDate
     opts.extractedTitle.value = result.metadata.title
     opts.mappingSuggestions.value = { ...result.mappingSuggestions }
-    const sourceLabels = new Map(sourceSheet.columns.map(column => [column.id, column.label ?? column.id]))
+    // Derived = the plugin supplied this column's values itself (cellValues) instead of passing the source cells through.
     const derivedIds = new Set(Object.keys(result.patch.cellValues ?? {}))
     opts.columnSources.value = Object.fromEntries(result.preparedSheet.columns.flatMap((column) => {
       const header = column.sourceColumnId ? sourceLabels.get(column.sourceColumnId) : undefined
