@@ -130,6 +130,7 @@ const demoQualScales = computed<PresentedQualificationPosition[]>(() => {
   return BASE_QUAL_SCALES.map(scale => ({
     qualification: { fleet: scale.fleet, seat: scale.seat, base: scale.base },
     activePilotCount: scale.activeCount,
+    rosterSize: scale.activeCount,
     thresholdPercentile: scale.plugPercentile,
     thresholdSeniorityNumber: scale.plugSenNum,
     percentile25: scale.p25,

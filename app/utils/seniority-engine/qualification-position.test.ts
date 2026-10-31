@@ -58,4 +58,45 @@ describe('Qualification Position analysis', () => {
     expect(withGrowth[0]!.currentPercentile).toBe(withoutGrowth[0]!.currentPercentile)
     expect(withGrowth[0]!.projectedPercentile).toBeGreaterThan(withoutGrowth[0]!.projectedPercentile)
   })
+
+  describe('with a retired pilot in the publication', () => {
+    const qualA = { base: 'AAA', seat: 'CA', fleet: '737' }
+    const qualB = { base: 'BBB', seat: 'CA', fleet: '737' }
+    const entries = [
+      makeDomainEntry({ seniority_number: 1, employee_number: 'E1', retire_date: '2025-01-01', ...qualA }),
+      makeDomainEntry({ seniority_number: 2, employee_number: 'E2', retire_date: '2028-01-01', ...qualB }),
+      makeDomainEntry({ seniority_number: 3, employee_number: 'E3', ...qualB }),
+      makeDomainEntry({ seniority_number: 4, employee_number: 'E4', ...qualA }),
+      makeDomainEntry({ seniority_number: 5, employee_number: 'E5', ...qualA }),
+    ]
+    const find = (positions: ReturnType<typeof analyzeQualificationPositions>, base: string) =>
+      positions.find(position => position.distribution.qualification.base === base)!
+
+    it('measures thresholds against Roster Size while counting only active incumbents', () => {
+      const positions = analyzeQualificationPositions(entries, 4, asOfDate, asOfDate)
+      const a = find(positions, 'AAA').distribution
+      const b = find(positions, 'BBB').distribution
+
+      expect(a.activePilotCount).toBe(2)
+      expect(a.rosterSize).toBe(5)
+      expect(a.thresholdSeniorityNumber).toBe(5)
+      expect(a.thresholdPercentile).toBe(40)
+      expect(a.maximumPercentile).toBe(60)
+      expect(b.rosterSize).toBe(5)
+      expect(b.thresholdPercentile).toBe(80)
+      expect(b.maximumPercentile).toBe(100)
+      expect(find(positions, 'AAA').currentPercentile).toBe(60)
+    })
+
+    it('keeps thresholds fixed at the As-of Date while the Anchor Pilot projection advances', () => {
+      const asOf = find(analyzeQualificationPositions(entries, 4, asOfDate, asOfDate), 'BBB')
+      const later = find(analyzeQualificationPositions(entries, 4, asOfDate, parsePlainDate('2030-01-01')), 'BBB')
+
+      expect(later.distribution.thresholdPercentile).toBe(asOf.distribution.thresholdPercentile)
+      expect(asOf.projectedPercentile).toBe(60)
+      expect(asOf.modeledHoldable).toBe(false)
+      expect(later.projectedPercentile).toBe(80)
+      expect(later.modeledHoldable).toBe(true)
+    })
+  })
 })
