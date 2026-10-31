@@ -474,15 +474,15 @@
     "semantic_hash": "3848141646ae393d36ea0fd81113bfe7"
   },
   "app/components/upload/UploadColumnMapper.test.ts": {
-    "mtime": 1793461067.8064156,
-    "seen": 1793461296.7258353,
-    "ast_hash": "97ac9d28d0cd0ade4783e02fd386d5c3",
+    "mtime": 1793461492.4077704,
+    "seen": 1793461549.442065,
+    "ast_hash": "7322f013d68985cd810c4bd73e131289",
     "semantic_hash": ""
   },
   "app/components/upload/UploadColumnMapper.vue": {
-    "mtime": 1793461214.2624419,
-    "seen": 1793461296.7258387,
-    "ast_hash": "6974fe1d6222d0def70b8c7a57669f08",
+    "mtime": 1793461478.477284,
+    "seen": 1793461549.4420686,
+    "ast_hash": "7d562f053a5dba94f687ebd7f5aaa08c",
     "semantic_hash": ""
   },
   "app/components/upload/UploadReviewTable.test.ts": {
@@ -612,9 +612,9 @@
     "semantic_hash": "71a0a603460527f8737ce8f9e0fd58a0"
   },
   "app/composables/seniority/upload/_useFileIO.ts": {
-    "mtime": 1793461109.7587814,
-    "seen": 1793461296.7259066,
-    "ast_hash": "1ef7f9cb669fb21595fa97062f42e03c",
+    "mtime": 1793461478.4774675,
+    "seen": 1793461549.4420955,
+    "ast_hash": "6fdbd3f78b0fe8bf1453010b3a9d6cf4",
     "semantic_hash": ""
   },
   "app/composables/seniority/upload/_useProgressTracker.test.ts": {
