@@ -208,12 +208,13 @@ describe('anchored analysis', () => {
 
       expect(trajectory.points[0]!.percentile).toBe(standing.seniorityPercentile)
       expect(trajectory.points[0]!.rank).toBe(standing.rank)
-    }
 
-    const positions = resultOf(anchored.qualificationPositions({ through: asOfDate }))
-    expect(positions.length).toBeGreaterThan(0)
-    for (const position of positions) {
-      expect(position.currentPercentile).toBe(resultOf(anchored.seniorityStanding()).seniorityPercentile)
+      const positions = resultOf(anchored.qualificationPositions({ through: asOfDate, qualificationScope }))
+      expect(positions.length).toBeGreaterThan(0)
+      for (const position of positions) {
+        expect(position.currentPercentile).toBe(standing.seniorityPercentile)
+        expect(position.projectedPercentile).toBe(trajectory.points[0]!.percentile)
+      }
     }
   })
 

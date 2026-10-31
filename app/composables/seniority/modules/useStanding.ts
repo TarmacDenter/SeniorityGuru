@@ -166,10 +166,10 @@ export function useStanding(qualificationScope?: Ref<QualificationScope> | Compu
       {
         ...(rankCard.value.isSimulated
           ? {
-              label: 'Total Pilots (modeled)',
+              label: 'Roster Size (modeled)',
               trend: `${rankCard.value.publicationRosterSize.toLocaleString()} in publication`,
             }
-          : { label: 'Total Pilots' }),
+          : { label: 'Roster Size' }),
         value: rankCard.value.rosterSize.toLocaleString(),
         icon: 'i-lucide-users',
       },

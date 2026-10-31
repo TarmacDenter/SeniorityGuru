@@ -32,7 +32,7 @@ describe('SeniorityRankCard', () => {
       'Rank 2 of 4 on roster · 3 active · Publication Position 3 · Seniority Number 90',
     )
     expect(wrapper.get('[data-testid="roster-size"]').findAll('p').map(item => item.text())).toEqual(['Roster Size', '4'])
-    expect(wrapper.get('[data-testid="active-pilots"]').findAll('p').map(item => item.text())).toEqual(['Active Pilots', '3'])
+    expect(wrapper.get('[data-testid="active-pilots"]').findAll('p').map(item => item.text())).toEqual(['Active pilots', '3'])
     expect(wrapper.text().match(/Seniority Percentile/g)).toHaveLength(1)
   })
 

@@ -163,7 +163,7 @@ describe('useStanding', () => {
       newHire.enabled.value = true
     }
 
-    it('real Anchor Pilot: Total Pilots agrees with Roster Size and is not modeled', () => {
+    it('real Anchor Pilot: Roster Size agrees with Roster Size and is not modeled', () => {
       mockStore.entries = [
         makeEntry({ seniority_number: 10, employee_number: 'E1', retire_date: '2020-01-01' }),
         makeEntry({ seniority_number: 40, employee_number: 'E2', retire_date: '2045-01-01' }),
@@ -174,7 +174,7 @@ describe('useStanding', () => {
       const { rankCard, statCards } = useStanding()
 
       expect(rankCard.value).toMatchObject({ rosterSize: 3, publicationRosterSize: 3, isSimulated: false })
-      expect(statCards.value[0]).toEqual({ label: 'Total Pilots', value: '3', icon: 'i-lucide-users' })
+      expect(statCards.value[0]).toEqual({ label: 'Roster Size', value: '3', icon: 'i-lucide-users' })
     })
 
     it.each([
@@ -200,7 +200,7 @@ describe('useStanding', () => {
         activePilotCount: active + 1,
       })
       expect(statCards.value[0]).toMatchObject({
-        label: 'Total Pilots (modeled)',
+        label: 'Roster Size (modeled)',
         value: roster.toLocaleString(),
         trend: '4 in publication',
       })
@@ -298,8 +298,8 @@ describe('useStanding', () => {
 
     expect(cards).toHaveLength(4)
 
-    // Total Pilots
-    expect(cards[0]!.label).toBe('Total Pilots')
+    // Roster Size
+    expect(cards[0]!.label).toBe('Roster Size')
     expect(cards[0]!.value).toBe((3).toLocaleString())
 
     // Retirements This Year — E1 retires within next 12 months

@@ -75,7 +75,7 @@ onMounted(() => {
           <p class="font-mono font-semibold text-highlighted">{{ rank.rosterSize.toLocaleString() }}</p>
         </div>
         <div data-testid="active-pilots">
-          <p class="text-xs text-muted">Active Pilots</p>
+          <p class="text-xs text-muted">Active pilots</p>
           <p class="font-mono font-semibold text-highlighted">{{ rank.activePilotCount.toLocaleString() }}</p>
         </div>
       </div>

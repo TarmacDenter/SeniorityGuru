@@ -307,6 +307,7 @@ class AnchoredSeniorityLensImplementation implements AnchoredSeniorityLens {
         asOfDate(context),
         options.through,
         options.growthAssumptions,
+        entries.filter(qualificationScopeToEntryPredicate(options.qualificationScope ?? {})),
       )
     })
 

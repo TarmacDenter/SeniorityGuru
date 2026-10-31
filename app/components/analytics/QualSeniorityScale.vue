@@ -43,7 +43,7 @@ function isProjecting(position: PresentedQualificationPosition) {
 
 <template>
   <div class="space-y-1">
-    <p class="text-sm text-[var(--ui-text-muted)] mb-3">
+    <p class="text-sm text-muted mb-3">
       Each row shows the company-wide seniority distribution of pilots currently in that position. Your dot moves right as retirements improve your projected standing. Heights scale independently for each Qualification to show distribution shape, not comparable pilot counts. Each threshold is the active incumbent's Rank against Roster Size, fixed at the As-of Date.
     </p>
 
@@ -55,10 +55,10 @@ function isProjecting(position: PresentedQualificationPosition) {
       <div class="w-24 sm:w-28 shrink-0 text-sm font-medium">
         <div class="truncate">
           <span>{{ position.qualification.fleet }} {{ position.qualification.seat }}</span>
-          <span class="text-[var(--ui-text-muted)] ml-1">{{ position.qualification.base }}</span>
+          <span class="text-muted ml-1">{{ position.qualification.base }}</span>
         </div>
-        <div data-testid="qualification-scale-active-count" class="text-xs font-normal text-[var(--ui-text-muted)]">
-          {{ position.rosterSize.toLocaleString() }} on roster · {{ position.activePilotCount.toLocaleString() }} active
+        <div data-testid="qualification-scale-active-count" class="text-xs font-normal text-muted">
+          Percentiles measured against {{ position.rosterSize.toLocaleString() }} on roster · {{ position.activePilotCount.toLocaleString() }} active
         </div>
       </div>
 
@@ -115,13 +115,13 @@ function isProjecting(position: PresentedQualificationPosition) {
 
     <div v-if="sortedPositions.length > 0" class="flex items-center gap-3 pt-1">
       <div class="w-24 sm:w-28 shrink-0" />
-      <div class="flex-1 flex justify-between text-[10px] text-[var(--ui-text-muted)] min-w-[200px]">
+      <div class="flex-1 flex justify-between text-[10px] text-muted min-w-[200px]">
         <span>Junior</span>
         <span>Senior</span>
       </div>
     </div>
 
-    <div v-if="sortedPositions.length === 0" class="text-sm text-[var(--ui-text-muted)] py-4">
+    <div v-if="sortedPositions.length === 0" class="text-sm text-muted py-4">
       No qual data available.
     </div>
   </div>

@@ -49,7 +49,7 @@ describe('QualSeniorityScale', () => {
     })
 
     const counts = wrapper.findAll('[data-testid="qualification-scale-active-count"]')
-    expect(counts.map(count => count.text())).toEqual(['260 on roster · 240 active', '4 on roster · 3 active'])
+    expect(counts.map(count => count.text())).toEqual(['Percentiles measured against 260 on roster · 240 active', 'Percentiles measured against 4 on roster · 3 active'])
     expect(wrapper.text()).toContain('Heights scale independently for each Qualification')
     expect(wrapper.text()).toContain('distribution shape, not comparable pilot counts')
     expect(wrapper.text()).toContain("active incumbent's Rank against Roster Size")
@@ -61,7 +61,7 @@ describe('QualSeniorityScale', () => {
       props: { positions: [position({ activePilotCount: 1, percentileDensity: [] })] },
     })
 
-    expect(wrapper.get('[data-testid="qualification-scale-active-count"]').text()).toBe('1 on roster · 1 active')
+    expect(wrapper.get('[data-testid="qualification-scale-active-count"]').text()).toBe('Percentiles measured against 1 on roster · 1 active')
     expect(wrapper.find('[data-testid="qualification-scale-current-position"]').exists()).toBe(false)
     expect(wrapper.get('[data-testid="qualification-scale-projected-position"]').attributes('style')).toContain('left: 50%')
     expect(wrapper.text()).toContain('Junior')

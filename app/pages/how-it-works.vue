@@ -3,7 +3,7 @@ definePageMeta({ layout: 'default' })
 
 const sections = [
   { id: 'percentile', title: 'Seniority Percentile' },
-  { id: 'adjusted-rank', title: 'Rank, Publication Position, and Roster Size' },
+  { id: 'rank-roster-size', title: 'Rank, Publication Position, and Roster Size' },
   { id: 'holdability', title: 'Holdable and Qualification Thresholds' },
   { id: 'growth-model', title: 'Growth Assumptions' },
   { id: 'projection-limits', title: 'Projection Limitations' },
@@ -61,7 +61,7 @@ const sections = [
         </section>
 
         <!-- Rank, Publication Position, Roster Size -->
-        <section id="adjusted-rank">
+        <section id="rank-roster-size">
           <h2 class="text-xl font-bold mb-3">Rank, Publication Position, and Roster Size</h2>
           <USeparator class="mb-4" />
           <div class="space-y-3 text-sm text-[--ui-text]">

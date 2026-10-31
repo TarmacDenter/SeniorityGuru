@@ -26,7 +26,7 @@ describe('RetirementSnapshot', () => {
 
     expect(wrapper.text()).toContain('Roster Size today')
     expect(wrapper.text()).toContain('120')
-    expect(wrapper.text()).toContain('Active Pilots today')
+    expect(wrapper.text()).toContain('Active pilots')
     expect(wrapper.text()).toContain('100')
   })
 })
