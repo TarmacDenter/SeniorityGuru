@@ -15,6 +15,7 @@ const rank: RankCardData = {
   base: 'LAX',
   seat: 'FO',
   fleet: '777',
+  noResultLabel: null,
   hireDate: '2012-03-01',
 }
 
@@ -53,5 +54,15 @@ describe('SeniorityRankCard', () => {
     expect(wrapper.get('[data-testid="publication-position"]').findAll('p').map(item => item.text())).toEqual(['Publication Position', '4 of 4'])
     expect(wrapper.get('[data-testid="rank"]').findAll('p').map(item => item.text())).toEqual(['Rank', '4 of 4'])
     expect(wrapper.text()).toContain('Modeled counts include the simulated pilot (3 in publication).')
+  })
+
+  it('shows the no-result reason in place of Rank and Seniority Percentile', async () => {
+    const wrapper = await mountSuspended(SeniorityRankCard, {
+      props: { rank: { ...rank, rank: 0, publicationPosition: 0, rosterSize: 0, noResultLabel: 'Anchor Pilot retired' } },
+    })
+
+    expect(wrapper.get('[data-testid="no-result"]').text()).toBe('Anchor Pilot retired')
+    expect(wrapper.find('[data-testid="rank"]').exists()).toBe(false)
+    expect(wrapper.text()).not.toContain('Seniority Percentile')
   })
 })

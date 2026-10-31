@@ -35,6 +35,7 @@ describe('useStanding', () => {
       seat: '--',
       fleet: '--',
       hireDate: '--',
+      noResultLabel: null,
     })
   })
 
@@ -107,6 +108,7 @@ describe('useStanding', () => {
       seat: 'FO',
       fleet: '777',
       hireDate: todayPlainDate().toString(),
+      noResultLabel: null,
     })
     expect(statCards.value[2]).toMatchObject({ label: 'FO/777/LAX', value: '1' })
     expect(retirementSnapshot.value?.retireDate).toBe('2065-06-15')
@@ -136,6 +138,7 @@ describe('useStanding', () => {
       seniorityNumber: 91, publicationPosition: 4, rosterSize: 4, rank: 4,
       activePilotCount: 4, isSimulated: true, base: 'LAX', seat: 'FO', fleet: '777',
       hireDate: todayPlainDate().toString(),
+      noResultLabel: null,
     })
     expect(statCards.value[2]).toMatchObject({ label: 'FO/777/LAX', value: '1' })
     expect(retirementSnapshot.value?.retireDate).toBe('2065-06-15')

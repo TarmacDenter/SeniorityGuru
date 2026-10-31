@@ -59,36 +59,39 @@ onMounted(() => {
       </div>
     </div>
 
-    <div class="grid grid-cols-2 gap-4 mt-4">
-      <div data-testid="publication-position">
-        <p class="text-xs text-muted">Publication Position</p>
-        <p class="font-mono font-semibold text-highlighted">{{ rank.publicationPosition.toLocaleString() }} of {{ rank.rosterSize.toLocaleString() }}</p>
+    <p v-if="rank.noResultLabel" data-testid="no-result" class="font-mono font-semibold text-highlighted mt-4">{{ rank.noResultLabel }}</p>
+    <template v-else>
+      <div class="grid grid-cols-2 gap-4 mt-4">
+        <div data-testid="publication-position">
+          <p class="text-xs text-muted">Publication Position</p>
+          <p class="font-mono font-semibold text-highlighted">{{ rank.publicationPosition.toLocaleString() }} of {{ rank.rosterSize.toLocaleString() }}</p>
+        </div>
+        <div data-testid="rank">
+          <p class="text-xs text-muted">Rank</p>
+          <p class="font-mono font-semibold text-highlighted">{{ rank.rank.toLocaleString() }} of {{ rank.rosterSize.toLocaleString() }}</p>
+        </div>
       </div>
-      <div data-testid="rank">
-        <p class="text-xs text-muted">Rank</p>
-        <p class="font-mono font-semibold text-highlighted">{{ rank.rank.toLocaleString() }} of {{ rank.rosterSize.toLocaleString() }}</p>
-      </div>
-    </div>
-    <p v-if="rank.isSimulated" class="text-xs text-muted mt-2">
-      Modeled counts include the simulated pilot ({{ rank.publicationRosterSize.toLocaleString() }} in publication).
-    </p>
+      <p v-if="rank.isSimulated" class="text-xs text-muted mt-2">
+        Modeled counts include the simulated pilot ({{ rank.publicationRosterSize.toLocaleString() }} in publication).
+      </p>
 
-    <div class="mt-4">
-      <div class="flex justify-between text-xs text-muted mb-1">
-        <span>Seniority Percentile</span>
-        <span class="font-mono">{{ rank.seniorityPercentile }}%</span>
+      <div class="mt-4">
+        <div class="flex justify-between text-xs text-muted mb-1">
+          <span>Seniority Percentile</span>
+          <span class="font-mono">{{ rank.seniorityPercentile }}%</span>
+        </div>
+        <UProgress
+          :model-value="animatedPercentile"
+          :max="100"
+          size="sm"
+          :ui="{
+            indicator: 'bg-gradient-to-r from-primary to-secondary',
+          }"
+        />
       </div>
-      <UProgress
-        :model-value="animatedPercentile"
-        :max="100"
-        size="sm"
-        :ui="{
-          indicator: 'bg-gradient-to-r from-primary to-secondary',
-        }"
-      />
-    </div>
 
-    <p class="text-xs text-muted mt-2">Percentile of Rank among {{ rank.rosterSize.toLocaleString() }} pilots ({{ rank.activePilotCount.toLocaleString() }} active).</p>
+      <p class="text-xs text-muted mt-2">Percentile of Rank among {{ rank.rosterSize.toLocaleString() }} pilots ({{ rank.activePilotCount.toLocaleString() }} active).</p>
+    </template>
 
     <p v-if="yearsOfService !== null" class="text-xs text-muted mt-2">
       {{ yearsOfService }} {{ yearsOfService === 1 ? 'year' : 'years' }} of service

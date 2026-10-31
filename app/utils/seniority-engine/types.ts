@@ -5,8 +5,8 @@ import type { GrowthAssumptions } from '~/utils/seniority-analysis/growth'
 import type {
   EntryPredicate,
   RetirementCountProjection,
-  SeniorityTrajectory,
-  SeniorityTrajectoryComparison,
+  SeniorityTrajectory as CalculatedSeniorityTrajectory,
+  SeniorityTrajectoryComparison as CalculatedSeniorityTrajectoryComparison,
   SeniorityTrajectoryPoint,
   TrajectoryChange,
 } from '~/utils/seniority-analysis/math'
@@ -16,8 +16,6 @@ export type {
   GrowthAssumptions,
   QualificationScope,
   RetirementCountProjection,
-  SeniorityTrajectory,
-  SeniorityTrajectoryComparison,
   SeniorityTrajectoryPoint,
   TrajectoryChange,
 }
@@ -49,6 +47,24 @@ export interface SenioritySnapshot {
   readonly seats: readonly string[]
   readonly fleets: readonly string[]
   readonly qualifications: readonly Qualification[]
+}
+
+export type NoResultReason = 'anchor-retired' | 'anchor-not-in-scope'
+
+/** Explicit absence of a result, with the reason an Anchor Pilot has no Rank or projection. */
+export interface NoResult {
+  readonly kind: 'no-result'
+  readonly reason: NoResultReason
+  readonly label: string
+}
+
+/** A trajectory whose samples stopped because the Anchor Pilot retired inside the projection window. */
+export interface SeniorityTrajectory extends CalculatedSeniorityTrajectory {
+  readonly endedBy?: NoResult
+}
+
+export interface SeniorityTrajectoryComparison extends CalculatedSeniorityTrajectoryComparison {
+  readonly endedBy?: NoResult
 }
 
 export interface QualificationStanding {
@@ -191,6 +207,10 @@ export interface RelativeUpcomingRetirement extends UpcomingRetirement {
   readonly positionsSeniorToAnchor: number
 }
 
+export function isNoResult(value: unknown): value is NoResult {
+  return typeof value === 'object' && value !== null && (value as { kind?: unknown }).kind === 'no-result'
+}
+
 export interface SeniorityStandingOptions {
   readonly scenario?: Scenario
 }
@@ -212,6 +232,7 @@ export interface PercentileCrossingOptions extends SeniorityTrajectoryOptions {
 
 export interface QualificationPositionOptions {
   readonly through: PlainDate
+  readonly qualificationScope?: QualificationScope
   readonly growthAssumptions?: GrowthAssumptions
 }
 
@@ -230,10 +251,10 @@ export interface SeniorityLens extends CommonSeniorityLens {
 
 export interface AnchoredSeniorityLens extends CommonSeniorityLens {
   readonly anchor: Readonly<SeniorityEntry>
-  seniorityStanding(options?: SeniorityStandingOptions): SeniorityStanding
-  seniorityTrajectory(options: SeniorityTrajectoryOptions): SeniorityTrajectory
-  seniorityTrajectoryComparison(options: SeniorityTrajectoryComparisonOptions): SeniorityTrajectoryComparison
-  percentileCrossing(options: PercentileCrossingOptions): PercentileCrossingResult | null
-  qualificationPositions(options: QualificationPositionOptions): readonly QualificationPosition[]
+  seniorityStanding(options?: SeniorityStandingOptions): SeniorityStanding | NoResult
+  seniorityTrajectory(options: SeniorityTrajectoryOptions): SeniorityTrajectory | NoResult
+  seniorityTrajectoryComparison(options: SeniorityTrajectoryComparisonOptions): SeniorityTrajectoryComparison | NoResult
+  percentileCrossing(options: PercentileCrossingOptions): PercentileCrossingResult | null | NoResult
+  qualificationPositions(options: QualificationPositionOptions): readonly QualificationPosition[] | NoResult
   relativeUpcomingRetirements(filter: RelativeUpcomingRetirementFilter): readonly RelativeUpcomingRetirement[]
 }

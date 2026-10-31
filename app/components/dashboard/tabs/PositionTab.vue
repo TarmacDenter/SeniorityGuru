@@ -2,7 +2,7 @@
 import { useSeniorityCore } from '~/composables/seniority'
 import { addYearsDate, diffDateYears } from '~/utils/date'
 import { todayPlainDate } from '~/utils/temporal'
-import { DEFAULT_SENIORITY_GROWTH_ASSUMPTIONS, type GrowthAssumptions } from '~/utils/seniority'
+import { DEFAULT_SENIORITY_GROWTH_ASSUMPTIONS, isNoResult, type GrowthAssumptions } from '~/utils/seniority'
 
 defineProps<{ loading?: boolean }>()
 
@@ -15,12 +15,18 @@ const usePositionProjection = ref(false)
 const positionYearsInput = ref(1)
 const projectionYears = ref(0)
 const projectionDate = computed(() => addYearsDate(todayPlainDate(), projectionYears.value))
-const qualificationPositions = computed(() =>
-  [...(anchoredAnalysis.value?.qualificationPositions({
-    through: projectionDate.value,
-    growthAssumptions: growthAssumptions.value,
-  }).presentation ?? [])],
-)
+const qualificationPositionsOutput = computed(() => anchoredAnalysis.value?.qualificationPositions({
+  through: projectionDate.value,
+  growthAssumptions: growthAssumptions.value,
+}).presentation ?? null)
+const qualificationPositionsNoResult = computed(() => {
+  const output = qualificationPositionsOutput.value
+  return output && isNoResult(output) ? output : null
+})
+const qualificationPositions = computed(() => {
+  const output = qualificationPositionsOutput.value
+  return output && !isNoResult(output) ? [...output] : []
+})
 
 const hasProjection = computed(() =>
   qualificationPositions.value.some(
@@ -182,6 +188,10 @@ onUnmounted(cancelPositionDebounce)
         </template>
         <AnalyticsQualSeniorityScale :positions="qualificationPositions" />
       </UCard>
+
+      <p v-else-if="qualificationPositionsNoResult" data-testid="no-result" class="text-sm text-muted">
+        {{ qualificationPositionsNoResult.label }}
+      </p>
 
       <UAlert
         v-else-if="!hasEmployeeNumber"

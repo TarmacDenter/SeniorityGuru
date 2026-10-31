@@ -49,6 +49,8 @@ export interface CalculateSeniorityTrajectoryOptions {
   readonly through: PlainDate
   readonly predicate?: EntryPredicate
   readonly growthAssumptions?: GrowthAssumptions
+  /** Samples at or after this date are not produced. */
+  readonly anchorRetireDate?: PlainDate
 }
 
 export interface CalculateSeniorityTrajectoryComparisonOptions {
@@ -60,6 +62,8 @@ export interface CalculateSeniorityTrajectoryComparisonOptions {
   readonly comparisonPredicate: EntryPredicate
   readonly baselineGrowthAssumptions?: GrowthAssumptions
   readonly comparisonGrowthAssumptions?: GrowthAssumptions
+  /** Samples at or after this date are not produced. */
+  readonly anchorRetireDate?: PlainDate
 }
 
 export interface CalculateRetirementCountProjectionOptions {
@@ -108,7 +112,10 @@ function calculateTrajectoryPoints(options: CalculateSeniorityTrajectoryOptions)
   const pilotsSeniorToAnchor = filteredEntries.filter(entry => entry.seniority_number < options.seniorityNumber)
   const initialRank = pilotsSeniorToAnchor.length + 1
 
-  return generateAnnualSeniorityDates(options.from, options.through).map((date) => {
+  const retireDate = options.anchorRetireDate
+  return generateAnnualSeniorityDates(options.from, options.through)
+    .filter(date => !retireDate || !isRetiredBy(retireDate, date))
+    .map((date) => {
     const retiredSeniorPilots = pilotsSeniorToAnchor.filter(entry => entry.retire_date && isRetiredBy(entry.retire_date, date)).length
     const rank = initialRank - retiredSeniorPilots
     const addedPilots = options.growthAssumptions?.enabled

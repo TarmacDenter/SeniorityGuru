@@ -54,6 +54,7 @@ describe('seniority presentation', () => {
         { date: date('2028-01-01'), percentile: 19, percentilePointChange: 7, isPeak: true },
         { date: date('2029-01-01'), percentile: 22, percentilePointChange: 3, isPeak: false },
       ],
+      endedByLabel: null,
     })
   })
 
@@ -69,6 +70,7 @@ describe('seniority presentation', () => {
       labels: ['2026-03-15', '2027-03-15'],
       baselineData: [17.2, 91.1],
       comparisonData: [88.4, 6.3],
+      endedByLabel: null,
     })
   })
 

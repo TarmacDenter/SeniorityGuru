@@ -2,10 +2,7 @@ import type {
   AnchoredSeniorityLens,
   CommonSeniorityLens,
   DemographicsOptions,
-  PercentileCrossingOptions,
-  PercentileCrossingResult,
-  QualificationPosition,
-  QualificationPositionOptions,
+  NoResult,
   QualificationStanding,
   RelativeUpcomingRetirement,
   RelativeUpcomingRetirementFilter,
@@ -16,12 +13,6 @@ import type {
   SeniorityDemographics,
   SeniorityLens,
   SenioritySnapshot,
-  SeniorityStanding,
-  SeniorityTrajectory,
-  SeniorityTrajectoryComparison,
-  SeniorityTrajectoryComparisonOptions,
-  SeniorityStandingOptions,
-  SeniorityTrajectoryOptions,
   UpcomingRetirement,
   UpcomingRetirementFilter,
 } from './types'
@@ -36,7 +27,9 @@ import {
   countRetiredPilotsSeniorTo,
 } from '~/utils/seniority-analysis/math'
 import { createSeniorityScenario } from './scenario'
+import { isNoResult } from './types'
 import { memoizeLast, stableStringify } from './memoize'
+import type { QualificationScope } from './qualification-scope'
 import { qualificationScopeToEntryPredicate } from './qualification-scope'
 import {
   analyzeAgeDistribution,
@@ -61,6 +54,9 @@ export class AnchorNotFoundError extends Error {
     this.name = 'AnchorNotFoundError'
   }
 }
+
+const ANCHOR_RETIRED: NoResult = { kind: 'no-result', reason: 'anchor-retired', label: 'Anchor Pilot retired' }
+const ANCHOR_NOT_IN_SCOPE: NoResult = { kind: 'no-result', reason: 'anchor-not-in-scope', label: 'Anchor Pilot not in scope' }
 
 interface LensContext {
   readonly snapshot: SenioritySnapshot
@@ -180,11 +176,11 @@ class SeniorityLensImplementation implements SeniorityLens {
 
 class AnchoredSeniorityLensImplementation implements AnchoredSeniorityLens {
   private readonly common: Omit<CommonSeniorityLens, 'snapshot'>
-  readonly seniorityStanding: (options?: SeniorityStandingOptions) => SeniorityStanding
-  readonly seniorityTrajectory: (options: SeniorityTrajectoryOptions) => SeniorityTrajectory
-  readonly seniorityTrajectoryComparison: (options: SeniorityTrajectoryComparisonOptions) => SeniorityTrajectoryComparison
-  readonly percentileCrossing: (options: PercentileCrossingOptions) => PercentileCrossingResult | null
-  readonly qualificationPositions: (options: QualificationPositionOptions) => readonly QualificationPosition[]
+  readonly seniorityStanding: AnchoredSeniorityLens['seniorityStanding']
+  readonly seniorityTrajectory: AnchoredSeniorityLens['seniorityTrajectory']
+  readonly seniorityTrajectoryComparison: AnchoredSeniorityLens['seniorityTrajectoryComparison']
+  readonly percentileCrossing: AnchoredSeniorityLens['percentileCrossing']
+  readonly qualificationPositions: AnchoredSeniorityLens['qualificationPositions']
   readonly relativeUpcomingRetirements: (filter: RelativeUpcomingRetirementFilter) => readonly RelativeUpcomingRetirement[]
 
   constructor(private readonly context: LensContext, readonly anchor: Readonly<SeniorityEntry>) {
@@ -193,9 +189,20 @@ class AnchoredSeniorityLensImplementation implements AnchoredSeniorityLens {
     const seniorityNumber = anchor.seniority_number
     const anchorListRank = calculateSeniorityRank(entries, seniorityNumber)
 
+    /** Scope is judged before retirement: an out-of-scope Anchor Pilot has no Rank in the scope at all. */
+    const noResultFor = (scope: QualificationScope, date: Temporal.PlainDate): NoResult | null => {
+      if (!qualificationScopeToEntryPredicate(scope)(anchor)) return ANCHOR_NOT_IN_SCOPE
+      if (anchor.retire_date && isRetiredBy(anchor.retire_date, date)) return ANCHOR_RETIRED
+      return null
+    }
+    const endedBy = (through: Temporal.PlainDate): NoResult | undefined =>
+      anchor.retire_date && isRetiredBy(anchor.retire_date, through) ? ANCHOR_RETIRED : undefined
+
     this.seniorityStanding = memoizeLast((options) => {
       const today = asOfDate(context)
       const scenario = options?.scenario ?? createSeniorityScenario()
+      const unavailable = noResultFor(scenario.qualificationScope, today)
+      if (unavailable) return unavailable
       const scopedEntries = entries.filter(qualificationScopeToEntryPredicate(scenario.qualificationScope))
       const publicationPosition = calculateSeniorityRank(scopedEntries, seniorityNumber)
       const retiredPilotsSeniorToAnchor = countRetiredPilotsSeniorTo(scopedEntries, seniorityNumber, today)
@@ -250,39 +257,55 @@ class AnchoredSeniorityLensImplementation implements AnchoredSeniorityLens {
 
     this.seniorityTrajectory = memoizeLast((options) => {
       const scenario = options.scenario ?? createSeniorityScenario()
-      return calculateSeniorityTrajectory({
+      const unavailable = noResultFor(scenario.qualificationScope, asOfDate(context))
+      if (unavailable) return unavailable
+      const trajectory = calculateSeniorityTrajectory({
         entries,
         seniorityNumber,
         from: asOfDate(context),
         through: options.through,
         predicate: qualificationScopeToEntryPredicate(scenario.qualificationScope),
         growthAssumptions: scenario.growthAssumptions,
+        anchorRetireDate: anchor.retire_date ?? undefined,
       })
+      return { ...trajectory, endedBy: endedBy(options.through) }
     })
 
-    this.seniorityTrajectoryComparison = memoizeLast(options => calculateSeniorityTrajectoryComparison({
-      entries,
-      seniorityNumber,
-      from: asOfDate(context),
-      through: options.through,
-      baselinePredicate: qualificationScopeToEntryPredicate(options.baselineScenario.qualificationScope),
-      comparisonPredicate: qualificationScopeToEntryPredicate(options.comparisonScenario.qualificationScope),
-      baselineGrowthAssumptions: options.baselineScenario.growthAssumptions,
-      comparisonGrowthAssumptions: options.comparisonScenario.growthAssumptions,
-    }))
+    this.seniorityTrajectoryComparison = memoizeLast((options) => {
+      const unavailable = noResultFor(options.baselineScenario.qualificationScope, asOfDate(context))
+        ?? noResultFor(options.comparisonScenario.qualificationScope, asOfDate(context))
+      if (unavailable) return unavailable
+      const comparison = calculateSeniorityTrajectoryComparison({
+        entries,
+        seniorityNumber,
+        from: asOfDate(context),
+        through: options.through,
+        baselinePredicate: qualificationScopeToEntryPredicate(options.baselineScenario.qualificationScope),
+        comparisonPredicate: qualificationScopeToEntryPredicate(options.comparisonScenario.qualificationScope),
+        baselineGrowthAssumptions: options.baselineScenario.growthAssumptions,
+        comparisonGrowthAssumptions: options.comparisonScenario.growthAssumptions,
+        anchorRetireDate: anchor.retire_date ?? undefined,
+      })
+      return { ...comparison, endedBy: endedBy(options.through) }
+    })
 
     this.percentileCrossing = memoizeLast((options) => {
       const trajectory = this.seniorityTrajectory({ through: options.through, scenario: options.scenario })
+      if (isNoResult(trajectory)) return trajectory
       return findPercentileCrossing(trajectory.points, options.targetPercentile)
     })
 
-    this.qualificationPositions = memoizeLast(options => analyzeQualificationPositions(
-      entries,
-      seniorityNumber,
-      asOfDate(context),
-      options.through,
-      options.growthAssumptions,
-    ))
+    this.qualificationPositions = memoizeLast((options) => {
+      const unavailable = noResultFor(options.qualificationScope ?? {}, asOfDate(context))
+      if (unavailable) return unavailable
+      return analyzeQualificationPositions(
+        entries,
+        seniorityNumber,
+        asOfDate(context),
+        options.through,
+        options.growthAssumptions,
+      )
+    })
 
     this.relativeUpcomingRetirements = memoizeLast(filter => context.upcomingRetirements(filter)
       .map(row => ({
