@@ -30,6 +30,7 @@ describe('QualSeniorityScale', () => {
           position({
             qualification: { fleet: '737', seat: 'CA', base: 'JFK' },
             activePilotCount: 240,
+            rosterSize: 260,
             percentileDensity: [
               { minimumPercentile: 40, maximumPercentile: 45, pilotCount: 80 },
               { minimumPercentile: 45, maximumPercentile: 50, pilotCount: 160 },
@@ -37,6 +38,7 @@ describe('QualSeniorityScale', () => {
           }),
           position({
             activePilotCount: 3,
+            rosterSize: 4,
             percentileDensity: [
               { minimumPercentile: 40, maximumPercentile: 45, pilotCount: 1 },
               { minimumPercentile: 45, maximumPercentile: 50, pilotCount: 2 },
@@ -47,9 +49,10 @@ describe('QualSeniorityScale', () => {
     })
 
     const counts = wrapper.findAll('[data-testid="qualification-scale-active-count"]')
-    expect(counts.map(count => count.text())).toEqual(['240 active pilots', '3 active pilots'])
+    expect(counts.map(count => count.text())).toEqual(['260 on roster · 240 active', '4 on roster · 3 active'])
     expect(wrapper.text()).toContain('Heights scale independently for each Qualification')
     expect(wrapper.text()).toContain('distribution shape, not comparable pilot counts')
+    expect(wrapper.text()).toContain("active incumbent's Rank against Roster Size")
   })
 
   it('shows a single active pilot from the supplied count even without density buckets', async () => {
@@ -58,7 +61,7 @@ describe('QualSeniorityScale', () => {
       props: { positions: [position({ activePilotCount: 1, percentileDensity: [] })] },
     })
 
-    expect(wrapper.get('[data-testid="qualification-scale-active-count"]').text()).toBe('1 active pilot')
+    expect(wrapper.get('[data-testid="qualification-scale-active-count"]').text()).toBe('1 on roster · 1 active')
     expect(wrapper.find('[data-testid="qualification-scale-current-position"]').exists()).toBe(false)
     expect(wrapper.get('[data-testid="qualification-scale-projected-position"]').attributes('style')).toContain('left: 50%')
     expect(wrapper.text()).toContain('Junior')

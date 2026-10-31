@@ -3,7 +3,7 @@ definePageMeta({ layout: 'default' })
 
 const sections = [
   { id: 'percentile', title: 'Seniority Percentile' },
-  { id: 'adjusted-rank', title: 'Raw and Adjusted Rank' },
+  { id: 'adjusted-rank', title: 'Rank, Publication Position, and Roster Size' },
   { id: 'holdability', title: 'Holdable and Qualification Thresholds' },
   { id: 'growth-model', title: 'Growth Assumptions' },
   { id: 'projection-limits', title: 'Projection Limitations' },
@@ -41,14 +41,14 @@ const sections = [
           <USeparator class="mb-4" />
           <div class="space-y-3 text-sm text-[--ui-text]">
             <p>
-              Seniority Percentile expresses your position within the selected list or Qualification.
+              Seniority Percentile is your Rank against the Roster Size of the selected list or Qualification.
               Higher values mean greater seniority. The most senior pilot has a value of 100%.
             </p>
             <UCard variant="soft" class="font-mono text-sm">
               Seniority Percentile = ((N &minus; Rank + 1) / N) &times; 100
             </UCard>
             <ul class="list-disc list-inside space-y-1 text-[--ui-text-muted]">
-              <li>N is the number of pilots in the selected scope, such as company-wide or a Qualification. Rank is your one-based position.</li>
+              <li>N is the Roster Size: every row in the selected list or Qualification, retired pilots included. It does not shrink as pilots retire. Rank is your one-based position.</li>
               <li>Displayed values are rounded to one decimal place.</li>
               <li>Rank #1 (most senior) = 100th percentile.</li>
               <li>The most junior pilot (Rank = N) has an unrounded Seniority Percentile of 100/N. For 200 pilots, this is 0.5%.</li>
@@ -56,25 +56,35 @@ const sections = [
               <li>With one pilot (N = 1, Rank = 1), the result is 100%.</li>
             </ul>
             <UAlert color="info" variant="soft" icon="i-lucide-calculator" title="Example"
-              description="If you're #50 out of 200 pilots, your percentile is ((200 − 50 + 1) / 200) × 100 = 75.5%." />
+              description="If you're Rank #50 on a Roster Size of 200, your percentile is ((200 − 50 + 1) / 200) × 100 = 75.5%." />
           </div>
         </section>
 
-        <!-- Adjusted vs Raw Rank -->
+        <!-- Rank, Publication Position, Roster Size -->
         <section id="adjusted-rank">
-          <h2 class="text-xl font-bold mb-3">Raw and Adjusted Rank</h2>
+          <h2 class="text-xl font-bold mb-3">Rank, Publication Position, and Roster Size</h2>
           <USeparator class="mb-4" />
           <div class="space-y-3 text-sm text-[--ui-text]">
             <p>
-              <strong>Raw rank</strong> is your position among every row in the selected seniority list.
-              <strong>Adjusted rank</strong> removes pilots who have retired as of today from the rank
-              and total.
+              <strong>Rank</strong> is dynamic. It is your one-based position among pilots still active at the
+              As-of Date, so more-senior pilots who have retired by then are removed from it.
+            </p>
+            <p>
+              <strong>Publication Position</strong> is static. It is your position in the list as published, with
+              retired pilots still counted, so it does not change with the As-of Date.
+            </p>
+            <p>
+              <strong>Roster Size</strong> is fixed. It is the number of rows in the list or Qualification, retired
+              pilots included, and it does not change with the As-of Date.
+            </p>
+            <p>
+              <strong>Seniority Percentile</strong> is your Rank against the Roster Size.
             </p>
             <UAlert color="info" variant="soft" icon="i-lucide-calculator" title="Example"
-              description="If your raw rank is #50 and 3 more-senior pilots have retired, your adjusted rank is #47. The adjusted total also excludes retired pilots." />
+              description="If your Publication Position is #50 and 3 more-senior pilots have retired by the As-of Date, your Rank is #47. The Roster Size is unchanged, so your Seniority Percentile improves." />
             <p class="text-[--ui-text-muted]">
-              The Status by Base / Seat / Fleet table in the My Status view defaults to adjusted values.
-              Its toggle switches between adjusted and raw rank, total, and percentile.
+              Retired pilots are removed from Rank but never from Roster Size, so a retirement raises the
+              percentile of every pilot junior to it.
             </p>
           </div>
         </section>
@@ -86,8 +96,9 @@ const sections = [
           <div class="space-y-3 text-sm text-[--ui-text]">
             <p>
               The <strong>Qualification Threshold</strong> is the most junior active position in a Base,
-              Seat, and Fleet combination. The Position view compares your projected company Seniority Percentile
-              with the unchanged current Qualification Threshold percentile.
+              Seat, and Fleet combination. Its percentile is the active incumbent's Rank against Roster Size, fixed at the As-of Date.
+              The Position view compares your projected company Seniority Percentile
+              with that unchanged Qualification Threshold percentile.
               <strong>Holdable</strong> means your projected percentile meets or exceeds that threshold.
             </p>
             <p class="text-[--ui-text-muted]">
@@ -107,19 +118,19 @@ const sections = [
           <div class="space-y-3 text-sm text-[--ui-text]">
             <p>
               The optional growth assumption adds a calculated number of junior pilots to the
-              projected total each year using compound growth:
+              Roster Size in projections each year using compound growth:
             </p>
             <UCard variant="soft" class="font-mono text-sm">
-              newPilots = round(total &times; ((1 + rate)<sup>years</sup> &minus; 1))
+              newPilots = round(rosterSize &times; ((1 + rate)<sup>years</sup> &minus; 1))
             </UCard>
             <ul class="list-disc list-inside space-y-1 text-[--ui-text-muted]">
               <li>
                 Growth <strong>changes your percentile</strong> because it changes the projected
-                total used as the denominator.
+                Roster Size used as the denominator.
               </li>
               <li>
-                Growth does <strong>not change your rank</strong>. The model does not add rows or
-                assign seniority numbers to the simulated pilots. This means equal distribution across quals. Which is
+                Growth does <strong>not change your Rank</strong>: hires are junior to you. The model does not add rows or
+                assign Seniority Numbers to the simulated pilots. This means equal distribution across quals. Which is
                 obviously not
                 how that generally works. <em>Per qual growth settings are on the roadmap.</em>
               </li>
@@ -136,11 +147,11 @@ const sections = [
           <div class="space-y-3 text-sm text-[--ui-text]">
             <p>
               The base projection uses scheduled retirement dates from the uploaded seniority list.
-              When enabled, the growth assumption changes the projected total. The following are
+              When enabled, the growth assumption changes the projected Roster Size. The following are
               not modeled as individual events:
             </p>
             <ul class="list-disc list-inside space-y-1 text-[--ui-text-muted]">
-              <li>Specific new-hire rows (growth adds only to the projected total; New Hire Mode creates one synthetic
+              <li>Specific new-hire rows (growth adds only to the projected Roster Size; New Hire Mode creates one synthetic
                 pilot)
               </li>
               <li>Vacancies, bids, transfers, and awards</li>
@@ -276,7 +287,7 @@ const sections = [
                     <tbody class="text-[--ui-text-muted]">
                       <tr class="border-b border-(--ui-border)/50">
                         <td class="py-2 px-3 font-medium">Seniority Number</td>
-                        <td class="py-2 px-3">Integer rank on the seniority list (1 = most senior)</td>
+                        <td class="py-2 px-3">Number assigned to the pilot on the seniority list (1 = most senior); a label, not a Rank</td>
                       </tr>
                       <tr class="border-b border-(--ui-border)/50">
                         <td class="py-2 px-3 font-medium">Employee Number</td>

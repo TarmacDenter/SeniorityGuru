@@ -36,7 +36,7 @@ onUnmounted(() => {
     </template>
     <span v-else class="text-xs text-[var(--ui-text-muted)]">Retirements only</span>
     <InfoIcon
-      text="Adds simulated new hires each year via compound growth. Dilutes your percentile — does not affect your raw rank."
+      text="Adds simulated new hires to the Roster Size in projections each year via compound growth. Hires are junior to you, so growth lowers your Seniority Percentile but never changes your Rank."
       size="xs"
       class="ml-1"
     />

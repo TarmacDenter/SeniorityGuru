@@ -203,6 +203,7 @@ describe('PositionTab', () => {
           {
             qualification: { fleet: '737', seat: 'CA', base: 'JFK' },
             activePilotCount: 1,
+            rosterSize: 2,
             thresholdPercentile: 60,
             thresholdSeniorityNumber: 100,
             percentile25: 25,
@@ -217,6 +218,7 @@ describe('PositionTab', () => {
           {
             qualification: { fleet: '737', seat: 'FO', base: 'JFK' },
             activePilotCount: 1,
+            rosterSize: 2,
             thresholdPercentile: 60,
             thresholdSeniorityNumber: 100,
             percentile25: 25,
@@ -236,8 +238,8 @@ describe('PositionTab', () => {
     wrappers.push(wrapper)
 
     expect(wrapper.findAll('[data-testid="qualification-scale-active-count"]').map(count => count.text())).toEqual([
-      '1 active pilot',
-      '1 active pilot',
+      '2 on roster · 1 active',
+      '2 on roster · 1 active',
     ])
     expect(wrapper.text()).toContain('Heights scale independently for each Qualification')
 

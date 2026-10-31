@@ -44,7 +44,7 @@ function isProjecting(position: PresentedQualificationPosition) {
 <template>
   <div class="space-y-1">
     <p class="text-sm text-[var(--ui-text-muted)] mb-3">
-      Each row shows the company-wide seniority distribution of pilots currently in that position. Your dot moves right as retirements improve your projected standing. Heights scale independently for each Qualification to show distribution shape, not comparable pilot counts.
+      Each row shows the company-wide seniority distribution of pilots currently in that position. Your dot moves right as retirements improve your projected standing. Heights scale independently for each Qualification to show distribution shape, not comparable pilot counts. Each threshold is the active incumbent's Rank against Roster Size, fixed at the As-of Date.
     </p>
 
     <div
@@ -58,7 +58,7 @@ function isProjecting(position: PresentedQualificationPosition) {
           <span class="text-[var(--ui-text-muted)] ml-1">{{ position.qualification.base }}</span>
         </div>
         <div data-testid="qualification-scale-active-count" class="text-xs font-normal text-[var(--ui-text-muted)]">
-          {{ position.activePilotCount.toLocaleString() }} active {{ position.activePilotCount === 1 ? 'pilot' : 'pilots' }}
+          {{ position.rosterSize.toLocaleString() }} on roster · {{ position.activePilotCount.toLocaleString() }} active
         </div>
       </div>
 
