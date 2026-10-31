@@ -130,7 +130,7 @@ const demoQualScales = computed<PresentedQualificationPosition[]>(() => {
   return BASE_QUAL_SCALES.map(scale => ({
     qualification: { fleet: scale.fleet, seat: scale.seat, base: scale.base },
     activePilotCount: scale.activeCount,
-    rosterSize: scale.activeCount,
+    rosterSize: Math.ceil(scale.activeCount * 1.05),
     thresholdPercentile: scale.plugPercentile,
     thresholdSeniorityNumber: scale.plugSenNum,
     percentile25: scale.p25,
@@ -546,7 +546,7 @@ async function enterDemo() {
           </template>
           <div class="space-y-3">
             <p class="text-sm text-muted">
-              Each row compares your <em>company-wide</em> seniority number with the makeup of each qualification.
+              Each row compares your <em>company-wide</em> Seniority Percentile with the makeup of each qualification.
               Instead of assuming that every retirement creates a seat for you, this view shows how competitive each
               qualification is over time. Each histogram row shows the number of pilots in a 5% seniority band.
             </p>
@@ -565,7 +565,7 @@ async function enterDemo() {
             Your position by qualification (naive)
           </h2>
           <p class="text-muted max-w-xl mx-auto">
-            Compare your company-wide rank with your position within each qualification. Most seniority calculators plot
+            Compare your company-wide Rank with your position within each qualification. Most seniority calculators plot
             movement only as pilots in that qualification retire. SeniorityGuru reruns the projection with different
             growth assumptions.
           </p>
@@ -609,20 +609,19 @@ async function enterDemo() {
 
             <div class="space-y-4 py-1">
               <div>
-                <div class="text-xs text-muted mb-1">Seniority #</div>
+                <div class="text-xs text-muted mb-1">Seniority Number</div>
                 <div class="font-mono text-xl font-bold">4892</div>
               </div>
               <div>
                 <div class="text-xs text-muted mb-1">Rank</div>
-                <div class="font-mono text-xl font-bold">4,892 <span class="text-sm font-normal text-muted">/ 4,892
-                    pilots</span></div>
+                <div class="font-mono text-xl font-bold">4,892 <span class="text-sm font-normal text-muted">of 4,892
+                    on roster</span></div>
               </div>
               <div>
-                <div class="text-xs text-muted mb-1">Company-wide percentile</div>
+                <div class="text-xs text-muted mb-1">Company-wide Seniority Percentile</div>
                 <div class="flex items-center gap-2">
                   <UIcon name="i-lucide-trending-up" class="size-4 text-success" />
-                  <span class="font-mono text-xl font-bold">0th</span>
-                  <span class="text-sm text-muted">percentile</span>
+                  <span class="font-mono text-xl font-bold">0.0%</span>
                 </div>
               </div>
               <div>
@@ -634,8 +633,8 @@ async function enterDemo() {
                 <div class="flex items-center gap-1.5">
                   <UIcon name="i-lucide-clock" class="size-4 text-primary" />
                   <span class="text-sm">
-                    In 5 years: ~182 pilots above you retire → <span class="font-semibold font-mono">8.4th
-                      percentile</span>
+                    In 5 years: ~182 pilots above you retire → <span class="font-semibold font-mono">3.7%
+                      Seniority Percentile</span>
                   </span>
                 </div>
               </div>
