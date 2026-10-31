@@ -17,6 +17,7 @@ const {
 } = useTrajectory(growthAssumptions)
 
 const qualificationFilter = useQualificationFilter()
+const { rankCard: scopedRankCard } = useStanding(qualificationFilter.qualificationScope)
 const scopedScenario = computed(() => ({
   growthAssumptions: growthAssumptions.value,
   qualificationScope: qualificationFilter.qualificationScope.value,
@@ -121,6 +122,10 @@ const ready = useDeferredReady()
         </template>
       </UCollapsible>
 
+      <p v-if="rankCard.rosterSize > 0" data-testid="trajectory-roster-size" class="text-xs text-muted">
+        Roster Size {{ rankCard.rosterSize.toLocaleString() }} · Active pilots {{ rankCard.activePilotCount.toLocaleString() }}
+      </p>
+
       <!-- Full Trajectory Chart -->
       <USkeleton v-if="hasAnchor && (!ready || !trajectoryChartData?.labels?.length)" class="h-64 rounded-lg" />
       <DashboardTrajectoryChart
@@ -163,6 +168,10 @@ const ready = useDeferredReady()
         context="trajectory"
         @dismiss="dismissBanner"
       />
+
+      <p v-if="scopedRankCard.rosterSize > 0" data-testid="scoped-roster-size" class="text-xs text-muted">
+        Percentile measured against Roster Size {{ scopedRankCard.rosterSize.toLocaleString() }} · Active pilots {{ scopedRankCard.activePilotCount.toLocaleString() }}
+      </p>
 
       <p v-if="waveTrajectoryNoResult" data-testid="no-result" class="text-sm text-muted">{{ waveTrajectoryNoResult.label }}</p>
 

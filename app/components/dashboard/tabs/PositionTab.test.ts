@@ -43,6 +43,10 @@ mockNuxtImport('useSeniorityCore', () => () => ({
   projectionEndDate: mockProjectionEndDate,
 }))
 
+mockNuxtImport('useStanding', () => () => ({
+  rankCard: require('vue').ref({ rosterSize: 260, activePilotCount: 240 }),
+}))
+
 mockNuxtImport('useUser', () => () => ({ employeeNumber: { value: null } }))
 
 describe('PositionTab', () => {
@@ -71,6 +75,11 @@ describe('PositionTab', () => {
     wrappers.push(wrapper)
     return { wrapper, qualificationPositions }
   }
+
+  it('discloses Roster Size and active pilots as separate figures', async () => {
+    const { wrapper } = await mountProjection()
+    expect(wrapper.get('[data-testid="position-roster-size"]').text()).toBe('Roster Size 260 · Active pilots 240')
+  })
 
   it('applies the initial projection immediately when Project forward is enabled', async () => {
     const { wrapper, qualificationPositions } = await mountProjection()
@@ -238,8 +247,8 @@ describe('PositionTab', () => {
     wrappers.push(wrapper)
 
     expect(wrapper.findAll('[data-testid="qualification-scale-active-count"]').map(count => count.text())).toEqual([
-      '2 on roster · 1 active',
-      '2 on roster · 1 active',
+      'Percentiles measured against 2 on roster · 1 active',
+      'Percentiles measured against 2 on roster · 1 active',
     ])
     expect(wrapper.text()).toContain('Heights scale independently for each Qualification')
 

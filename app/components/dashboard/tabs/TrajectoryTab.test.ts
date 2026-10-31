@@ -70,7 +70,7 @@ mockNuxtImport('useSeniorityCore', () => () => ({
 }))
 
 mockNuxtImport('useStanding', () => () => ({
-  rankCard: { value: { base: '--', seat: '--', fleet: '--', seniorityPercentile: 0, seniorityNumber: 0, publicationPosition: 0, rosterSize: 0, rank: 0, activePilotCount: 0, isSimulated: false, hireDate: '--' } },
+  rankCard: require('vue').ref({ base: '--', seat: '--', fleet: '--', seniorityPercentile: 0, seniorityNumber: 0, publicationPosition: 0, rosterSize: 260, rank: 0, activePilotCount: 240, isSimulated: false, hireDate: '--' }),
   baseStatus: { value: [] },
   statCards: { value: [] },
   retirementSnapshot: { value: null },
@@ -103,6 +103,16 @@ describe('TrajectoryTab', () => {
       props: { loading: true },
     })
     expect(wrapper.html()).toContain('skeleton')
+  })
+
+  it('discloses Roster Size and active pilots beside the trajectory and threshold views', async () => {
+    mockHasData.value = true
+    mockAnalysis.value = { retirementYearAnalysis: vi.fn(() => []) }
+    const Tab = await import('./TrajectoryTab.vue')
+    const wrapper = await mountSuspended(Tab.default)
+
+    expect(wrapper.get('[data-testid="trajectory-roster-size"]').text()).toBe('Roster Size 260 · Active pilots 240')
+    expect(wrapper.get('[data-testid="scoped-roster-size"]').text()).toContain('Roster Size 260 · Active pilots 240')
   })
 
   it('renders scoped retirement-wave buckets supplied by Seniority Analysis', async () => {

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useSeniorityCore } from '~/composables/seniority'
+import { useSeniorityCore, useStanding } from '~/composables/seniority'
 import { addYearsDate, diffDateYears } from '~/utils/date'
 import { todayPlainDate } from '~/utils/temporal'
 import { DEFAULT_SENIORITY_GROWTH_ASSUMPTIONS, isNoResult, type GrowthAssumptions } from '~/utils/seniority'
@@ -7,6 +7,7 @@ import { DEFAULT_SENIORITY_GROWTH_ASSUMPTIONS, isNoResult, type GrowthAssumption
 defineProps<{ loading?: boolean }>()
 
 const { hasData, newHire, anchoredAnalysis, projectionEndDate } = useSeniorityCore()
+const { rankCard } = useStanding()
 const { employeeNumber } = useUser()
 const hasEmployeeNumber = computed(() => !!employeeNumber.value || !!newHire.syntheticEntry.value)
 
@@ -180,6 +181,10 @@ onUnmounted(cancelPositionDebounce)
           </div>
         </template>
       </UCollapsible>
+
+      <p v-if="rankCard.rosterSize > 0" data-testid="position-roster-size" class="text-xs text-muted">
+        Roster Size {{ rankCard.rosterSize.toLocaleString() }} · Active pilots {{ rankCard.activePilotCount.toLocaleString() }}
+      </p>
 
       <!-- Qual Seniority Scale -->
       <UCard v-if="qualificationPositions.length > 0">
