@@ -19,6 +19,8 @@ export function createUploadSession(overrides: Partial<UploadSession> = {}): Upl
     autoDetectSucceeded: ref(false),
     preparedSheet: ref<PreparedSheet | null>(null),
     preparationIssues: ref<ImportIssue[]>([]),
+    mappingSuggestions: ref({}),
+    columnSources: ref({}),
     entries: ref<Partial<SeniorityEntryInput>[]>([]),
     rowErrors: shallowRef<Map<number, string[]>>(new Map()),
     pipelineIssues: shallowRef<Map<number, ImportIssue[]>>(new Map()),

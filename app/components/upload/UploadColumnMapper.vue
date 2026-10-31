@@ -1,6 +1,8 @@
 <script setup lang="ts">
+import type { SelectMenuItem } from '@nuxt/ui'
 import type { ColumnMap } from '~/utils/parse-spreadsheet'
-import type { UploadColumnMap, UploadMappingOptions } from '~/composables/seniority/upload/types'
+import type { ColumnSource, UploadColumnMap, UploadMappingOptions } from '~/composables/seniority/upload/types'
+import type { ImportField } from '~/utils/import-pipeline/types'
 
 const props = defineProps<{
   headers: string[]
@@ -9,6 +11,8 @@ const props = defineProps<{
   mappingOptions: UploadMappingOptions
   sampleRows: string[][]
   sourceHeaders?: string[]
+  columnSources?: Record<string, ColumnSource>
+  suggestedColumnIds?: Partial<Record<ImportField, string>>
 }>()
 
 const emit = defineEmits<{
@@ -24,14 +28,44 @@ const requiredFields: { key: keyof ColumnMap; label: string }[] = [
   { key: 'fleet', label: 'Fleet / Aircraft' },
 ]
 
-const columnOptions = computed(() => [
-  props.headers.flatMap((header, index) => props.columnIds[index]?.startsWith('plugin:')
-    ? [{ label: `Suggested: ${header || `Column ${index + 1}`}`, value: props.columnIds[index]! }]
-    : []),
-  props.headers.flatMap((header, index) => !props.columnIds[index]?.startsWith('plugin:')
-    ? [{ label: `Original: ${header || `Column ${index + 1}`}`, value: props.columnIds[index]! }]
-    : []),
-].filter(group => group.length > 0))
+const columnLabels = computed(() => {
+  const labels = props.headers.map((header, index) => {
+    const columnId = props.columnIds[index] ?? ''
+    const source = props.columnSources?.[columnId]
+    // Unlabelled source columns carry their id as the prepared label; never show it.
+    const own = header && header !== columnId ? header : `Column ${index + 1}`
+    if (source?.kind === 'derived') return source.header ? `${own} (derived from ${source.header})` : own
+    return source?.header || own
+  })
+  return labels.map((label, index) => labels.filter(other => other === label).length > 1 ? `${label} (column ${index + 1})` : label)
+})
+
+type ColumnOption = { label: string, value: string }
+
+/** Options for one field's dropdown; the field's plugin suggestion (if any) is listed first and tagged. */
+function optionsFor(field: keyof ColumnMap): SelectMenuItem[][] {
+  return buildOptions(props.suggestedColumnIds?.[field])
+}
+
+/** Options for dropdowns that belong to no importable field (name parts, birth date): every column, untagged. */
+const untaggedOptions = computed(() => buildOptions(undefined))
+
+function buildOptions(suggestedColumnId: string | undefined): SelectMenuItem[][] {
+  const suggestedOptions: ColumnOption[] = []
+  const otherOptions: ColumnOption[] = []
+  props.columnIds.forEach((value, index) => {
+    const label = columnLabels.value[index] ?? `Column ${index + 1}`
+    if (value === suggestedColumnId) {
+      const derived = props.columnSources?.[value]?.kind === 'derived'
+      suggestedOptions.push({ label: derived ? label : `${label} (auto-detected)`, value })
+    }
+    else otherOptions.push({ label, value })
+  })
+  return [
+    ...(suggestedOptions.length ? [[{ type: 'label' as const, label: 'Auto-detected' }, ...suggestedOptions]] : []),
+    ...(otherOptions.length ? [[{ type: 'label' as const, label: 'Other columns' }, ...otherOptions]] : []),
+  ]
+}
 
 function sampleValue(field: keyof ColumnMap): string | undefined {
   const columnId = props.columnMap[field]
@@ -64,7 +98,7 @@ function updateOption<K extends keyof UploadMappingOptions>(key: K, value: Uploa
       <UFormField v-for="field in requiredFields" :key="field.key" :label="field.label" required>
         <USelectMenu
           :model-value="columnMap[field.key] ?? undefined"
-          :items="columnOptions"
+          :items="optionsFor(field.key)"
           value-key="value"
           placeholder="Select column..."
           class="w-full"
@@ -98,7 +132,7 @@ function updateOption<K extends keyof UploadMappingOptions>(key: K, value: Uploa
         <UFormField label="Name column">
           <USelectMenu
             :model-value="columnMap.name ?? undefined"
-            :items="columnOptions"
+            :items="optionsFor('name')"
             value-key="value"
             placeholder="Not mapped"
             class="w-full"
@@ -111,7 +145,7 @@ function updateOption<K extends keyof UploadMappingOptions>(key: K, value: Uploa
         <UFormField label="Last name column">
           <USelectMenu
             :model-value="mappingOptions.lastNameCol ?? undefined"
-            :items="columnOptions"
+            :items="untaggedOptions"
             value-key="value"
             placeholder="Not mapped"
             class="w-full"
@@ -121,7 +155,7 @@ function updateOption<K extends keyof UploadMappingOptions>(key: K, value: Uploa
         <UFormField label="First name column">
           <USelectMenu
             :model-value="mappingOptions.firstNameCol ?? undefined"
-            :items="columnOptions"
+            :items="untaggedOptions"
             value-key="value"
             placeholder="Not mapped"
             class="w-full"
@@ -151,7 +185,7 @@ function updateOption<K extends keyof UploadMappingOptions>(key: K, value: Uploa
         <UFormField label="Retirement date column" required>
           <USelectMenu
             :model-value="columnMap.retire_date ?? undefined"
-            :items="columnOptions"
+            :items="optionsFor('retire_date')"
             value-key="value"
             placeholder="Not mapped"
             class="w-full"
@@ -164,7 +198,7 @@ function updateOption<K extends keyof UploadMappingOptions>(key: K, value: Uploa
         <UFormField label="Date of birth column" required>
           <USelectMenu
             :model-value="mappingOptions.dobCol ?? undefined"
-            :items="columnOptions"
+            :items="untaggedOptions"
             value-key="value"
             placeholder="Not mapped"
             class="w-full"
@@ -181,7 +215,7 @@ function updateOption<K extends keyof UploadMappingOptions>(key: K, value: Uploa
       <UFormField label="Hire date column" required>
         <USelectMenu
           :model-value="columnMap.hire_date ?? undefined"
-          :items="columnOptions"
+          :items="optionsFor('hire_date')"
           value-key="value"
           placeholder="Select column..."
           class="w-full"

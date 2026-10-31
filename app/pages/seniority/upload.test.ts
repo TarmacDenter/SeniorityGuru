@@ -55,6 +55,8 @@ mockNuxtImport('useSeniorityUpload', () => () => ({
     mappingOptions: { value: {} },
     headers: { value: [] },
     columnIds: { value: [] },
+    columnSources: { value: {} },
+    mappingSuggestions: { value: {} },
     sampleRows: { value: [] },
     canAdvance: mockMappingCanAdvance,
     error: mockMappingError,
