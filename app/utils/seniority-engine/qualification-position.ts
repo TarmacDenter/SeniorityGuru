@@ -12,7 +12,7 @@ function isActiveAt(entry: SeniorityEntry, date: PlainDate): boolean {
   return !entry.retire_date || !isRetiredBy(entry.retire_date, date)
 }
 
-function companyPercentile(seniorityNumber: number, sortedNumbers: readonly number[], pilotCount: number): number {
+function companyPercentile(seniorityNumber: number, sortedNumbers: readonly number[], rosterSize: number): number {
   let low = 0
   let high = sortedNumbers.length
   while (low < high) {
@@ -20,7 +20,7 @@ function companyPercentile(seniorityNumber: number, sortedNumbers: readonly numb
     if (sortedNumbers[middle]! < seniorityNumber) low = middle + 1
     else high = middle
   }
-  return calculateSeniorityPercentile(low + 1, pilotCount)
+  return calculateSeniorityPercentile(low + 1, rosterSize)
 }
 
 function analyzeQualificationDistributions(
@@ -41,7 +41,7 @@ function analyzeQualificationDistributions(
   return Array.from(entriesByQualification.values()).map((qualificationEntries) => {
     const first = qualificationEntries[0]!
     const percentiles = qualificationEntries
-      .map(entry => companyPercentile(entry.seniority_number, sortedNumbers, activeEntries.length))
+      .map(entry => companyPercentile(entry.seniority_number, sortedNumbers, entries.length))
       .sort((a, b) => a - b)
     const bucketCounts = new Array<number>(20).fill(0)
     for (const percentile of percentiles) {
@@ -56,6 +56,7 @@ function analyzeQualificationDistributions(
     return {
       qualification: { base: first.base, seat: first.seat, fleet: first.fleet },
       activePilotCount: qualificationEntries.length,
+      rosterSize: entries.length,
       thresholdPercentile: percentiles[0] ?? 0,
       thresholdSeniorityNumber: Math.max(...qualificationEntries.map(entry => entry.seniority_number)),
       percentile25: percentileValue(percentiles, 25),
