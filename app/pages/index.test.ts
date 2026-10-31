@@ -40,8 +40,7 @@ describe('index.vue — CTA rendering', () => {
       '198 active in this qualification',
       '142 active in this qualification',
     ])
-    expect(wrapper.findAll('[data-testid="qualification-scale-roster-size"]').map(item => item.text()))
-      .toEqual(['Percentiles measured against 4,892 on roster'])
+    expect(wrapper.find('[data-testid="qualification-scale-roster-size"]').exists()).toBe(false)
     expect(wrapper.text()).toContain('Heights scale independently for each Qualification')
     expect(wrapper.findAll('[data-testid="qualification-scale-projected-position"]')).toHaveLength(4)
   })

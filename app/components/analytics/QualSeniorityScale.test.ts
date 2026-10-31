@@ -71,6 +71,16 @@ describe('QualSeniorityScale', () => {
     expect(wrapper.text().match(/on roster/g)).toHaveLength(1)
   })
 
+  it('omits the Roster Size line when no position carries a Roster Size', async () => {
+    const Scale = await import('./QualSeniorityScale.vue')
+    const wrapper = await mountSuspended(Scale.default, {
+      props: { positions: [position({ activePilotCount: 94, rosterSize: undefined })] },
+    })
+
+    expect(wrapper.find('[data-testid="qualification-scale-roster-size"]').exists()).toBe(false)
+    expect(wrapper.get('[data-testid="qualification-scale-active-count"]').text()).toBe('94 active in this qualification')
+  })
+
   it('shows a single active pilot from the supplied count even without density buckets', async () => {
     const Scale = await import('./QualSeniorityScale.vue')
     const wrapper = await mountSuspended(Scale.default, {
