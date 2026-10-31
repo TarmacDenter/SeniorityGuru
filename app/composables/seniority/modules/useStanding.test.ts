@@ -28,7 +28,7 @@ describe('useStanding', () => {
       rank: 0,
       publicationPosition: 0,
       rosterSize: 0,
-      publicationRosterSize: 0,
+      publicationPilotCount: 0,
       activePilotCount: 0,
       isSimulated: false,
       seniorityPercentile: 0,
@@ -100,7 +100,7 @@ describe('useStanding', () => {
       seniorityNumber: 91,
       publicationPosition: 4,
       rosterSize: 4,
-      publicationRosterSize: 3,
+      publicationPilotCount: 3,
       rank: 4,
       activePilotCount: 4,
       seniorityPercentile: 25,
@@ -173,7 +173,7 @@ describe('useStanding', () => {
 
       const { rankCard, statCards } = useStanding()
 
-      expect(rankCard.value).toMatchObject({ rosterSize: 3, publicationRosterSize: 3, isSimulated: false })
+      expect(rankCard.value).toMatchObject({ rosterSize: 3, publicationPilotCount: 3, isSimulated: false })
       expect(statCards.value[0]).toEqual({ label: 'Roster Size', value: '3', icon: 'i-lucide-users' })
     })
 
@@ -195,7 +195,7 @@ describe('useStanding', () => {
       expect(rankCard.value).toMatchObject({
         isSimulated: true,
         rosterSize: roster,
-        publicationRosterSize: 4,
+        publicationPilotCount: 4,
         publicationPosition: roster,
         activePilotCount: active + 1,
       })

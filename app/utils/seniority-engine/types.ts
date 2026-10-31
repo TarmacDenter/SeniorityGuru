@@ -211,6 +211,11 @@ export function isNoResult(value: unknown): value is NoResult {
   return typeof value === 'object' && value !== null && (value as { kind?: unknown }).kind === 'no-result'
 }
 
+/** The result itself, or null when it is absent or a no-result. */
+export function resultOrNull<T>(value: T | NoResult | null | undefined): T | null {
+  return value && !isNoResult(value) ? value : null
+}
+
 export interface SeniorityStandingOptions {
   readonly scenario?: Scenario
 }

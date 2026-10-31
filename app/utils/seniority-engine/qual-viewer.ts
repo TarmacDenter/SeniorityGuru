@@ -83,6 +83,13 @@ export function analyzeSeniorityQualificationViewer(options: AnalyzeQualificatio
   const qualRankByEmployee = new Map<string, number>()
   activeQualEntries.forEach((e, index) => qualRankByEmployee.set(normalizeEmployeeNumber(e.employee_number), index + 1))
 
+  const rankFields = (companyRank: number | null, qualificationRank: number | null) => ({
+    companyRank,
+    companyPercentile: companyRank === null ? null : calculateSeniorityPercentile(companyRank, companyRosterSize),
+    qualificationRank,
+    qualificationPercentile: qualificationRank === null ? null : calculateSeniorityPercentile(qualificationRank, qualRosterSize),
+  })
+
   const rows = matches.map((entry): QualificationViewerEntry => {
     const retired = !!entry.retire_date && isRetiredBy(entry.retire_date, asOfDate)
     const employeeKey = normalizeEmployeeNumber(entry.employee_number)
@@ -102,10 +109,7 @@ export function analyzeSeniorityQualificationViewer(options: AnalyzeQualificatio
       isAnchor: !!userEmployeeKey && normalizeEmployeeNumber(entry.employee_number) === userEmployeeKey,
       isMarker: false,
       publicationPosition: publicationPositionByEmployee.get(employeeKey)!,
-      companyRank,
-      companyPercentile: companyRank === null ? null : calculateSeniorityPercentile(companyRank, companyRosterSize),
-      qualificationRank,
-      qualificationPercentile: qualificationRank === null ? null : calculateSeniorityPercentile(qualificationRank, qualRosterSize),
+      ...rankFields(companyRank, qualificationRank),
     }
   })
 
@@ -128,10 +132,7 @@ export function analyzeSeniorityQualificationViewer(options: AnalyzeQualificatio
       isAnchor: true,
       isMarker: true,
       publicationPosition: publicationPositionByEmployee.get(anchorKey)!,
-      companyRank: markerCompanyRank,
-      companyPercentile: markerCompanyRank === null ? null : calculateSeniorityPercentile(markerCompanyRank, companyRosterSize),
-      qualificationRank: markerQualRank,
-      qualificationPercentile: markerQualRank === null ? null : calculateSeniorityPercentile(markerQualRank, qualRosterSize),
+      ...rankFields(markerCompanyRank, markerQualRank),
     }
     rows.splice(markerIndex < 0 ? rows.length : markerIndex, 0, marker)
   }

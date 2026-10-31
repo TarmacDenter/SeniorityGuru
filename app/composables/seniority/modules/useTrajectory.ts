@@ -1,5 +1,5 @@
 import type { ComputedRef, Ref } from 'vue'
-import { DEFAULT_SENIORITY_GROWTH_ASSUMPTIONS, isNoResult } from '~/utils/seniority'
+import { DEFAULT_SENIORITY_GROWTH_ASSUMPTIONS, isNoResult, resultOrNull } from '~/utils/seniority'
 import type {
   AnchoredSeniorityAnalysis,
   GrowthAssumptions,
@@ -17,6 +17,10 @@ export interface ComparativeTrajectory {
   comparisonData: number[]
   /** Why no comparison exists (e.g. "Anchor Pilot not in scope"), or why it stopped early. */
   noResultLabel: string | null
+}
+
+function emptyComparison(noResultLabel: string | null): ComparativeTrajectory {
+  return { labels: [], baselineData: [], comparisonData: [], noResultLabel }
 }
 
 export function useTrajectory(growthAssumptions?: Ref<GrowthAssumptions>): {
@@ -39,14 +43,8 @@ export function useTrajectory(growthAssumptions?: Ref<GrowthAssumptions>): {
         }) ?? null
       : null
   })
-  const presented = computed(() => {
-    const value = trajectory.value?.presentation
-    return value && !isNoResult(value) ? value : null
-  })
-  const domain = computed(() => {
-    const value = trajectory.value?.domain
-    return value && !isNoResult(value) ? value : null
-  })
+  const presented = computed(() => resultOrNull(trajectory.value?.presentation))
+  const domain = computed(() => resultOrNull(trajectory.value?.domain))
   const chartData = computed(() => presented.value?.chartData ?? { labels: [], data: [] })
   const fullTrajectory = computed(() => domain.value?.points ?? [])
   const changes = computed(() => presented.value?.changes ?? [])
@@ -65,7 +63,7 @@ export function useTrajectory(growthAssumptions?: Ref<GrowthAssumptions>): {
     comparison: QualificationScope,
   ): ComparativeTrajectory {
     const through = projectionEndDate.value
-    if (!anchoredAnalysis.value || !through) return { labels: [], baselineData: [], comparisonData: [], noResultLabel: null }
+    if (!anchoredAnalysis.value || !through) return emptyComparison(null)
     const { presentation } = anchoredAnalysis.value.seniorityTrajectoryComparison({
       through,
       baselineScenario: {
@@ -77,7 +75,7 @@ export function useTrajectory(growthAssumptions?: Ref<GrowthAssumptions>): {
         growthAssumptions: effectiveAssumptions.value,
       },
     })
-    if (isNoResult(presentation)) return { labels: [], baselineData: [], comparisonData: [], noResultLabel: presentation.label }
+    if (isNoResult(presentation)) return emptyComparison(presentation.label)
     return { ...presentation, noResultLabel: presentation.endedByLabel }
   }
 

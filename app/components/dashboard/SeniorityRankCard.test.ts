@@ -7,7 +7,7 @@ const rank: RankCardData = {
   seniorityNumber: 90,
   publicationPosition: 3,
   rosterSize: 4,
-  publicationRosterSize: 4,
+  publicationPilotCount: 4,
   rank: 2,
   activePilotCount: 3,
   seniorityPercentile: 75,
@@ -52,7 +52,7 @@ describe('SeniorityRankCard', () => {
 
   it('labels simulated numbers and explains that modeled counts include the simulated pilot', async () => {
     const wrapper = await mountSuspended(SeniorityRankCard, {
-      props: { rank: { ...rank, seniorityNumber: 91, publicationPosition: 4, rank: 4, rosterSize: 4, publicationRosterSize: 3, activePilotCount: 4, seniorityPercentile: 25, isSimulated: true } },
+      props: { rank: { ...rank, seniorityNumber: 91, publicationPosition: 4, rank: 4, rosterSize: 4, publicationPilotCount: 3, activePilotCount: 4, seniorityPercentile: 25, isSimulated: true } },
     })
 
     expect(wrapper.get('[data-testid="seniority-number"]').text()).toBe('Simulated Seniority Number #91')

@@ -2,7 +2,7 @@
 import { useSeniorityCore, useStanding } from '~/composables/seniority'
 import { addYearsDate, diffDateYears } from '~/utils/date'
 import { todayPlainDate } from '~/utils/temporal'
-import { DEFAULT_SENIORITY_GROWTH_ASSUMPTIONS, isNoResult, type GrowthAssumptions } from '~/utils/seniority'
+import { DEFAULT_SENIORITY_GROWTH_ASSUMPTIONS, isNoResult, resultOrNull, type GrowthAssumptions } from '~/utils/seniority'
 
 defineProps<{ loading?: boolean }>()
 
@@ -25,8 +25,8 @@ const qualificationPositionsNoResult = computed(() => {
   return output && isNoResult(output) ? output : null
 })
 const qualificationPositions = computed(() => {
-  const output = qualificationPositionsOutput.value
-  return output && !isNoResult(output) ? [...output] : []
+  const output = resultOrNull(qualificationPositionsOutput.value)
+  return output ? [...output] : []
 })
 
 const hasProjection = computed(() =>

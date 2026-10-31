@@ -46,6 +46,7 @@ describe('public Seniority Analysis interface', () => {
       'DEFAULT_SENIORITY_GROWTH_ASSUMPTIONS',
       'InvalidSenioritySnapshotDataError',
       'isNoResult',
+      'resultOrNull',
       'createSeniorityAnalysis',
     ].sort())
   })

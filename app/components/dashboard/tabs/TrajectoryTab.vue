@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useSeniorityCore, useQualificationFilter, useStanding, useTrajectory } from '~/composables/seniority'
-import { DEFAULT_SENIORITY_GROWTH_ASSUMPTIONS, isNoResult, type GrowthAssumptions } from '~/utils/seniority'
+import { DEFAULT_SENIORITY_GROWTH_ASSUMPTIONS, isNoResult, resultOrNull, type GrowthAssumptions } from '~/utils/seniority'
 
 defineProps<{ loading?: boolean }>()
 
@@ -32,12 +32,10 @@ const waveTrajectoryNoResult = computed(() => {
   return domain && isNoResult(domain) ? domain : null
 })
 const waveTrajectory = computed(() => {
-  const domain = waveTrajectoryOutput.value?.domain
-  return domain && !isNoResult(domain) ? domain.points : []
+  return resultOrNull(waveTrajectoryOutput.value?.domain)?.points ?? []
 })
 const qualificationTrajectoryChanges = computed(() => {
-  const presentation = waveTrajectoryOutput.value?.presentation
-  return presentation && !isNoResult(presentation) ? presentation.changes : []
+  return resultOrNull(waveTrajectoryOutput.value?.presentation)?.changes ?? []
 })
 const targetPercentile = ref(50)
 const targetPercentileMin = computed(() => waveTrajectory.value[0]?.percentile ?? 0)

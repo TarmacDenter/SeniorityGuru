@@ -1,5 +1,5 @@
 import type { ComputedRef, Ref } from 'vue'
-import { isNoResult, type QualificationScope } from '~/utils/seniority'
+import { isNoResult, resultOrNull, type QualificationScope } from '~/utils/seniority'
 import { useSeniorityStore } from '~/stores/seniority'
 import { useSeniorityCore } from './useSeniorityCore'
 
@@ -8,7 +8,7 @@ export interface RankCardData {
   rank: number
   publicationPosition: number
   rosterSize: number
-  publicationRosterSize: number
+  publicationPilotCount: number
   activePilotCount: number
   isSimulated: boolean
   seniorityPercentile: number
@@ -82,7 +82,7 @@ export function useStanding(qualificationScope?: Ref<QualificationScope> | Compu
         rank: 0,
         publicationPosition: 0,
         rosterSize: 0,
-        publicationRosterSize: 0,
+        publicationPilotCount: 0,
         activePilotCount: 0,
         isSimulated: false,
         seniorityPercentile: 0,
@@ -99,7 +99,7 @@ export function useStanding(qualificationScope?: Ref<QualificationScope> | Compu
         rank: 0,
         publicationPosition: 0,
         rosterSize: 0,
-        publicationRosterSize: 0,
+        publicationPilotCount: 0,
         activePilotCount: 0,
         isSimulated: false,
         seniorityPercentile: 0,
@@ -115,7 +115,7 @@ export function useStanding(qualificationScope?: Ref<QualificationScope> | Compu
       rank: standing.rank,
       publicationPosition: standing.publicationPosition,
       rosterSize: standing.rosterSize,
-      publicationRosterSize: seniorityStore.entries.length,
+      publicationPilotCount: seniorityStore.entries.length,
       activePilotCount: standing.activePilotCount,
       isSimulated: newHire.syntheticEntry.value?.employee_number === entry.employee_number,
       seniorityPercentile: standing.seniorityPercentile,
@@ -167,7 +167,7 @@ export function useStanding(qualificationScope?: Ref<QualificationScope> | Compu
         ...(rankCard.value.isSimulated
           ? {
               label: 'Roster Size (modeled)',
-              trend: `${rankCard.value.publicationRosterSize.toLocaleString()} in publication`,
+              trend: `${rankCard.value.publicationPilotCount.toLocaleString()} in publication`,
             }
           : { label: 'Roster Size' }),
         value: rankCard.value.rosterSize.toLocaleString(),
@@ -204,8 +204,7 @@ export function useStanding(qualificationScope?: Ref<QualificationScope> | Compu
     }).domain ?? null
     : null)
   const trajectoryPoints = computed(() => {
-    const trajectory = trajectoryResult.value
-    return trajectory && !isNoResult(trajectory) ? trajectory.points : null
+    return resultOrNull(trajectoryResult.value)?.points ?? null
   })
 
   const retirementSnapshot = computed<RetirementSnapshotData | null>(() => {

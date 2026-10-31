@@ -35,10 +35,10 @@ describe('index.vue — CTA rendering', () => {
     const wrapper = await mountSuspended(IndexPage.default)
 
     expect(wrapper.findAll('[data-testid="qualification-scale-active-count"]').map(count => count.text())).toEqual([
-      '99 on roster · 94 active',
-      '72 on roster · 68 active',
-      '208 on roster · 198 active',
-      '150 on roster · 142 active',
+      'Percentiles measured against 99 on roster · 94 active',
+      'Percentiles measured against 72 on roster · 68 active',
+      'Percentiles measured against 208 on roster · 198 active',
+      'Percentiles measured against 150 on roster · 142 active',
     ])
     expect(wrapper.text()).toContain('Heights scale independently for each Qualification')
     expect(wrapper.findAll('[data-testid="qualification-scale-projected-position"]')).toHaveLength(4)
