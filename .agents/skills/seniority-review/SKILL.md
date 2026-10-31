@@ -29,12 +29,8 @@ Review code when the user asks for a code review. Inspect the requested commit, 
 
 ### Boundaries
 
-- Keep the data flow shallow: `Component → composable → store → Dexie`.
-- Components and pages use composables. They do not import Pinia stores or `~/utils/db`.
-- Stores own Dexie reads and writes. A write updates the store's reactive state in the same operation.
-- Stores do not import other stores. A composable coordinates actions that span stores.
-- Keep large blocks of domain logic out of components and pages.
-- Keep pure analytics in `app/utils/seniority-engine/`. It accepts validated domain values and does not access stores or Dexie.
+- Apply the boundary rules in the nested `AGENTS.md` of each changed directory (see the table in the root `AGENTS.md`). They are the source of truth for data flow, layer ownership, and the seniority facade.
+- Flag a changed file that reaches through a layer, computes a domain value a lower layer already returns, or re-implements an existing module listed in its directory's `AGENTS.md`.
 
 ### Nuxt and TypeScript
 

@@ -1,56 +1,40 @@
 # SeniorityGuru Agent Guide
 
-## Architecture
+Local-first Nuxt 4 PWA (`ssr: false`, no server). User data lives in IndexedDB through Dexie.
 
-SeniorityGuru is a local-first Nuxt 4 progressive web app. It is a client-side application (`ssr: false`) with no server routes, authentication, accounts, or cloud data store. User data remains in IndexedDB through Dexie.
+## Where to look
 
-### Data boundaries
+Read the nested `AGENTS.md` before editing in its directory. It holds that layer's boundaries and the existing code to extend.
 
-Keep the data flow shallow:
+| Editing | Read |
+|---|---|
+| anything under `app/` (data flow, Nuxt conventions) | [app/AGENTS.md](app/AGENTS.md) |
+| `app/components/` | [app/components/AGENTS.md](app/components/AGENTS.md) |
+| `app/pages/` | [app/pages/AGENTS.md](app/pages/AGENTS.md) |
+| `app/composables/` | [app/composables/AGENTS.md](app/composables/AGENTS.md) |
+| `app/stores/` | [app/stores/AGENTS.md](app/stores/AGENTS.md) |
+| `app/utils/` (Dexie schema, Zod schemas, barrel) | [app/utils/AGENTS.md](app/utils/AGENTS.md) |
+| `app/utils/seniority-engine/` | [app/utils/seniority-engine/AGENTS.md](app/utils/seniority-engine/AGENTS.md) |
+| `app/utils/seniority-analysis/` | [app/utils/seniority-analysis/AGENTS.md](app/utils/seniority-analysis/AGENTS.md) |
+| `app/utils/seniority-api/` | [app/utils/seniority-api/AGENTS.md](app/utils/seniority-api/AGENTS.md) |
 
-```
-Component → composable → store → Dexie
-```
-
-- Components and pages use composables. They do not import Pinia stores or `~/utils/db`.
-- Stores own all Dexie reads and writes. A write updates the store's reactive state in the same operation.
-- Stores enforce domain invariants before their Dexie writes. Composables do not duplicate persistence validation.
-- Stores do not import other stores. A composable coordinates actions that span stores.
-- `app/utils/db.ts` owns the Dexie schema. Add a new version block for every schema change. Preserve all existing version blocks and their order.
-
-### Domain model
-
-- `seniorityLists` stores list metadata.
-- `seniorityEntries` stores pilot rows linked by `listId`.
-- `preferences` stores user settings as key-value pairs.
-- `app/utils/seniority-analysis/math.ts` and `growth.ts` contain deterministic calculations with explicit inputs.
-- `app/utils/seniority-engine/` owns snapshots, lenses, As-of Dates, scenarios, scope, memoization, and contextual analysis.
-- `app/utils/seniority-analysis/presentation.ts` maps completed domain results to labels and component-facing values.
-- `app/utils/seniority.ts` is the supported deep public interface and barrel export. Clients import seniority analysis only from `~/utils/seniority`; they do not import `~/utils/seniority-api/analysis`, engine modules, or presentation adapters directly.
-- The barrel binds entries and an As-of Date, hides engine construction, and returns completed domain and presentation values. Its internal coordinator is an implementation detail, not a client-facing module boundary.
-- Components and composables do not construct snapshots, lenses, or scenarios. They do not call free presentation adapters.
-- Seniority analysis follows `math → engine → presentation`. These layers receive validated `SeniorityEntry` values and do not access stores or Dexie.
-- Zod schemas in `app/utils/schemas/` validate data at the upload boundary. Downstream code uses the validated domain types.
-
-### Framework conventions
-
-- `~/` resolves to `app/`.
-- Use Nuxt navigation and route composables rather than direct Vue Router imports.
-- Use Nuxt UI components and semantic UI tokens for interface primitives and theme-aware styling.
+Search the layer for an existing module before writing a new one. Extend it.
 
 ## References
-- **Domain Knowledge** Read ['CONTEXT.md']('CONTEXT.md') for a shared domain language.
+
+- **Domain language:** Read [CONTEXT.md](CONTEXT.md) before naming anything a pilot sees or a domain value.
+- **Decisions:** Read the matching record in `docs/adr/` before changing a behavior it governs.
 - **Import plugin work:** Read [docs/import-plugins.md](docs/import-plugins.md) before adding or changing an airline upload type.
 - **Contribution workflow:** Read [WORKFLOW.md](WORKFLOW.md) before creating a branch or opening a pull request.
 - **Tests:** Keep tests next to the code they cover. Run `pnpm lint`, `pnpm typecheck`, and `pnpm test` after code changes.
 
 ## Agent behavior
+
 - Think before coding. State assumptions, surface tradeoffs, push back when warranted.
 - Simplicity first. Minimum code that solves the problem. Nothing speculative.
 - Surgical changes. Touch only what you must. Clean up only your own mess.
 - Goal-driven execution. Define success criteria. Loop until verified.
 - Worktrees default to `../worktrees/<branch>` as siblings of `repo-stable`.
-
 
 ## Agent skills
 
