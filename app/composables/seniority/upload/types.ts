@@ -2,7 +2,7 @@ import type { ComputedRef, Ref, ShallowRef } from 'vue'
 import type { PlainDate } from '~/utils/temporal'
 import type { SeniorityEntryInput } from '~/utils/schemas/seniority-list'
 import type { ColumnMap, MappingOptions } from '~/utils/parse-spreadsheet'
-import type { ImportIssue, ImportPlugin, PreparedSheet, ReviewEditPatch } from '~/utils/import-pipeline/types'
+import type { ImportField, ImportIssue, ImportPlugin, PreparedSheet, ReviewEditPatch } from '~/utils/import-pipeline/types'
 
 // ── Progress ─────────────────────────────────────────────────────────────────
 
@@ -52,6 +52,12 @@ export interface FilePhase {
  * Internal state owned by useSeniorityUpload and shared with its private phases.
  * The public upload API deliberately does not expose this coordination detail.
  */
+/** Where a prepared column's values come from: a source header, straight or derived by the plugin. */
+export interface ColumnSource {
+  header: string
+  kind: 'straight' | 'derived'
+}
+
 export interface UploadSession {
   selectedUploadTypeId: Ref<string | null>
   rawHeaders: Ref<string[]>
@@ -65,6 +71,8 @@ export interface UploadSession {
   autoDetectSucceeded: Ref<boolean>
   preparedSheet: Ref<PreparedSheet | null>
   preparationIssues: Ref<ImportIssue[]>
+  mappingSuggestions: Ref<Partial<Record<ImportField, string>>>
+  columnSources: Ref<Record<string, ColumnSource>>
   entries: Ref<Partial<SeniorityEntryInput>[]>
   rowErrors: ShallowRef<Map<number, string[]>>
   pipelineIssues: ShallowRef<Map<number, ImportIssue[]>>
@@ -85,6 +93,8 @@ export interface MappingPhase {
   mappingOptions: Ref<UploadMappingOptions>
   headers: Readonly<Ref<string[]>>
   columnIds: ComputedRef<string[]>
+  mappingSuggestions: Readonly<Ref<Partial<Record<ImportField, string>>>>
+  columnSources: Readonly<Ref<Record<string, ColumnSource>>>
   sampleRows: ComputedRef<string[][]>
   canAdvance: ComputedRef<boolean>
   error: Readonly<Ref<string | null>>

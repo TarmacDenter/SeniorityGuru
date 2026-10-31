@@ -96,6 +96,13 @@ export function _useFileIO(opts: UploadSession): FilePhase & { _reset: () => voi
     preparationIssues.value = [...result.issues]
     opts.extractedEffectiveDate.value = result.metadata.effectiveDate
     opts.extractedTitle.value = result.metadata.title
+    opts.mappingSuggestions.value = { ...result.mappingSuggestions }
+    const sourceLabels = new Map(sourceSheet.columns.map(column => [column.id, column.label ?? column.id]))
+    const derivedIds = new Set(Object.keys(result.patch.cellValues ?? {}))
+    opts.columnSources.value = Object.fromEntries(result.preparedSheet.columns.flatMap((column) => {
+      const header = column.sourceColumnId ? sourceLabels.get(column.sourceColumnId) : undefined
+      return header === undefined ? [] : [[column.id, { header, kind: derivedIds.has(column.id) ? 'derived' as const : 'straight' as const }]]
+    }))
     applyPreparedSheet(result.preparedSheet, result.mappingSuggestions, plugin.requiredMappings)
     const saved = (await userStore.getPreference('importMappings'))?.[plugin.id]
     if (saved) {

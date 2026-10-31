@@ -72,6 +72,13 @@ describe('_useColumnMapping', () => {
     })
   })
 
+  describe('mappingSuggestions', () => {
+    it('exposes the session suggestions', () => {
+      const session = createUploadSession({ mappingSuggestions: ref({ base: 'plugin:x:base' }) })
+      expect(_useColumnMapping(session).mappingSuggestions.value).toEqual({ base: 'plugin:x:base' })
+    })
+  })
+
   describe('sampleRows', () => {
     it('returns first 3 rows', () => {
       const { mapping, rawRows } = createMapping()
