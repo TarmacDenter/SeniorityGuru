@@ -9,7 +9,7 @@ const props = defineProps<{
 
 const animatedPercentile = ref(0)
 watch(() => props.rank.seniorityPercentile, (percentile) => {
-  animatedPercentile.value = percentile ?? 0
+  if (percentile !== null) animatedPercentile.value = percentile
 })
 
 const yearsOfService = computed(() => {
@@ -29,7 +29,7 @@ const accentVariant = 'accent' as 'solid'
 
 onMounted(() => {
   requestAnimationFrame(() => {
-    animatedPercentile.value = props.rank.seniorityPercentile ?? 0
+    if (props.rank.seniorityPercentile !== null) animatedPercentile.value = props.rank.seniorityPercentile
   })
 })
 </script>
@@ -88,7 +88,7 @@ onMounted(() => {
         <p class="font-mono font-semibold text-highlighted">{{ formatCount(rank.activePilotCount) }}</p>
       </div>
     </div>
-    <template v-if="!rank.noResultLabel">
+    <template v-if="rank.seniorityPercentile !== null">
       <p v-if="rank.isSimulated" class="text-xs text-muted mt-2">
         Modeled counts include the simulated pilot ({{ formatCount(rank.publicationPilotCount) }} in publication).
       </p>

@@ -18,6 +18,8 @@ const rank: RankCardData = {
   noResultLabel: null,
   hypotheticalLabel: null,
   hireDate: '2012-03-01',
+  rosterSummaryLabel: 'Roster Size 4 · Active pilots 3',
+  percentileScaleLabel: 'Percentile measured against Roster Size 4 · Active pilots 3',
 }
 
 describe('SeniorityRankCard', () => {
@@ -110,5 +112,15 @@ describe('SeniorityRankCard', () => {
     expect(wrapper.get('[data-testid="active-pilots"]').findAll('p').map(item => item.text())).toEqual(['Active pilots', '--'])
     expect(wrapper.text()).not.toContain('Seniority Percentile')
     expect(wrapper.text()).not.toMatch(/Roster Size\s*0/)
+  })
+
+  it('shows no percentile bar or 0% when the Seniority Percentile is missing', async () => {
+    const wrapper = await mountSuspended(SeniorityRankCard, {
+      props: { rank: { ...rank, rank: null, seniorityPercentile: null } },
+    })
+
+    expect(wrapper.find('[role="progressbar"]').exists()).toBe(false)
+    expect(wrapper.text()).not.toContain('Seniority Percentile')
+    expect(wrapper.text()).not.toContain('0%')
   })
 })
