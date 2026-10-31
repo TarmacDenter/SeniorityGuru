@@ -319,6 +319,8 @@ async function onSave() {
                 :mapping-options="upload.mapping.mappingOptions.value"
                 :sample-rows="upload.mapping.sampleRows.value"
                 :source-headers="upload.file.sourceHeaders?.value"
+                :column-sources="upload.mapping.columnSources.value"
+                :suggested-column-ids="upload.mapping.mappingSuggestions.value"
                 @update:column-map="upload.mapping.columnMap.value = $event"
                 @update:mapping-options="upload.mapping.mappingOptions.value = $event"
               />

@@ -167,6 +167,8 @@ export function _useColumnMapping(opts: UploadSession): MappingPhase & { _reset:
     mappingOptions,
     headers: opts.rawHeaders,
     columnIds,
+    mappingSuggestions: opts.mappingSuggestions,
+    columnSources: opts.columnSources,
     sampleRows,
     canAdvance,
     error: readonly(error),

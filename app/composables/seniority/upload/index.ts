@@ -1,7 +1,7 @@
 import type { SeniorityEntryInput } from '~/utils/schemas/seniority-list'
 import { nowInstant, parsePlainDate, serializeInstant, todayPlainDate } from '~/utils/temporal'
-import type { ImportIssue, PreparedSheet, ReviewEditPatch } from '~/utils/import-pipeline/types'
-import type { SeniorityUpload, UploadColumnMap, UploadSession } from './types'
+import type { ImportField, ImportIssue, PreparedSheet, ReviewEditPatch } from '~/utils/import-pipeline/types'
+import type { ColumnSource, SeniorityUpload, UploadColumnMap, UploadSession } from './types'
 import { _useProgressTracker } from './_useProgressTracker'
 import { _useFileIO } from './_useFileIO'
 import { _useColumnMapping } from './_useColumnMapping'
@@ -34,6 +34,8 @@ export function useSeniorityUpload(): SeniorityUpload {
   const autoDetectSucceeded = ref(false)
   const preparedSheet = ref<PreparedSheet | null>(null)
   const preparationIssues = ref<ImportIssue[]>([])
+  const mappingSuggestions = ref<Partial<Record<ImportField, string>>>({})
+  const columnSources = ref<Record<string, ColumnSource>>({})
   const columnMap = ref<UploadColumnMap>({ ...DEFAULT_COLUMN_MAP })
   const mappingOptions = ref({ ...DEFAULT_MAPPING_OPTIONS })
   const entries = ref<Partial<SeniorityEntryInput>[]>([])
@@ -80,6 +82,8 @@ export function useSeniorityUpload(): SeniorityUpload {
     autoDetectSucceeded,
     preparedSheet,
     preparationIssues,
+    mappingSuggestions,
+    columnSources,
     entries,
     rowErrors,
     pipelineIssues,
@@ -139,6 +143,8 @@ export function useSeniorityUpload(): SeniorityUpload {
     autoDetectSucceeded.value = false
     preparedSheet.value = null
     preparationIssues.value = []
+    mappingSuggestions.value = {}
+    columnSources.value = {}
     importAttemptId.value = null
     error.value = null
     review._reset()

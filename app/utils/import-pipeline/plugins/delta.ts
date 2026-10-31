@@ -35,10 +35,14 @@ function prepare(sourceSheet: SourceSheet): PreparationPatch {
   const mappingSuggestions: Partial<Record<ImportField, string>> = {}
   const cellValues: Record<string, Record<string, string>> = {}
   let categoryIndex = -1
+  let categoryColumnId: string | undefined
 
   sourceSheet.columns.forEach((column, index) => {
     const key = normalizeHeader(column.label ?? '').toUpperCase().replace(/ /g, '_')
-    if (key === 'CATEGORY') categoryIndex = index
+    if (key === 'CATEGORY') {
+      categoryIndex = index
+      categoryColumnId = column.id
+    }
     const field = headerFields[key]
     if (!field) return
     const columnId = id(field)
@@ -56,7 +60,7 @@ function prepare(sourceSheet: SourceSheet): PreparationPatch {
     }
     for (const field of ['base', 'fleet', 'seat'] as const) {
       const columnId = id(field)
-      columns.push(preparedColumn('delta', field))
+      columns.push(preparedColumn('delta', field, categoryColumnId))
       mappingSuggestions[field] = columnId
     }
   }
