@@ -37,6 +37,7 @@ describe('useStanding', () => {
       fleet: '--',
       hireDate: '--',
       noResultLabel: null,
+      hypotheticalLabel: null,
     })
   })
 
@@ -110,6 +111,7 @@ describe('useStanding', () => {
       fleet: '777',
       hireDate: todayPlainDate().toString(),
       noResultLabel: null,
+      hypotheticalLabel: null,
     })
     expect(statCards.value[2]).toMatchObject({ label: 'Your Base Rank', value: '1', trend: 'FO/777/LAX · of 1 on roster · 1 active' })
     expect(retirementSnapshot.value?.retireDate).toBe('2065-06-15')
@@ -140,6 +142,7 @@ describe('useStanding', () => {
       activePilotCount: 4, isSimulated: true, base: 'LAX', seat: 'FO', fleet: '777',
       hireDate: todayPlainDate().toString(),
       noResultLabel: null,
+      hypotheticalLabel: null,
     })
     expect(statCards.value[2]).toMatchObject({ label: 'Your Base Rank', value: '1', trend: 'FO/777/LAX · of 1 on roster · 1 active' })
     expect(retirementSnapshot.value?.retireDate).toBe('2065-06-15')
@@ -226,15 +229,91 @@ describe('useStanding', () => {
     expect(rankCard.value).toMatchObject({ rank: 2, publicationPosition: 2, rosterSize: 2 })
   })
 
-  it('shows the no-result reason when the Anchor Pilot is outside the selected scope', () => {
-    mockStore.entries = [
-      makeEntry({ seniority_number: 10, employee_number: 'E1', base: 'JFK', retire_date: '2050-01-01' }),
-      makeEntry({ seniority_number: 40, employee_number: 'E2', base: 'LAX', retire_date: '2050-01-01' }),
-    ]
-    mockUserStore.employeeNumber = 'E2'
-    const { rankCard } = useStanding(ref<QualificationScope>({ base: 'JFK' }))
+  describe('Hypothetical Placement outside the selected scope', () => {
+    function outsideScopeRoster() {
+      mockStore.entries = [
+        makeEntry({ seniority_number: 10, employee_number: 'E1', base: 'JFK', retire_date: '2050-01-01' }),
+        makeEntry({ seniority_number: 40, employee_number: 'E2', base: 'LAX', retire_date: '2050-01-01' }),
+        makeEntry({ seniority_number: 50, employee_number: 'E3', base: 'JFK', retire_date: '2050-01-01' }),
+      ]
+      mockUserStore.employeeNumber = 'E2'
+    }
 
-    expect(rankCard.value.noResultLabel).toBeTruthy()
+    it('places the Anchor Pilot in the scope, names it, and keeps Rank within Roster Size', () => {
+      outsideScopeRoster()
+      const { rankCard } = useStanding(ref<QualificationScope>({ base: 'JFK' }))
+
+      expect(rankCard.value).toMatchObject({
+        noResultLabel: null,
+        hypotheticalLabel: 'Hypothetical Placement in JFK',
+        publicationPosition: 2,
+        rank: 2,
+        rosterSize: 3,
+      })
+    })
+
+    it('labels the Roster Size stat card hypothetical and keeps it equal to the Rank card', () => {
+      outsideScopeRoster()
+      const { rankCard, statCards } = useStanding(ref<QualificationScope>({ base: 'JFK' }))
+
+      expect(statCards.value[0]).toMatchObject({
+        label: 'Roster Size (hypothetical)',
+        value: rankCard.value.rosterSize.toLocaleString(),
+        trend: 'includes you',
+      })
+    })
+
+    it('shows both modeled and hypothetical labels in New Hire Mode', () => {
+      outsideScopeRoster()
+      const { newHire } = useSeniorityCore()
+      newHire.selectedBase.value = 'LAX'
+      newHire.selectedSeat.value = 'FO'
+      newHire.selectedFleet.value = '777'
+      newHire.birthDate.value = parsePlainDate('2000-06-15')
+      newHire.enabled.value = true
+      const { rankCard, statCards } = useStanding(ref<QualificationScope>({ base: 'JFK' }))
+
+      expect(rankCard.value).toMatchObject({ isSimulated: true, hypotheticalLabel: 'Hypothetical Placement in JFK' })
+      expect(statCards.value[0]).toMatchObject({
+        label: 'Roster Size (modeled, hypothetical)',
+        trend: '3 in publication · includes you',
+      })
+    })
+
+    it('marks only the qualifications the Anchor Pilot is not in, each with Rank within Roster Size', () => {
+      outsideScopeRoster()
+      const { baseStatus } = useStanding()
+
+      const own = baseStatus.value.find(row => row.base === 'LAX')!
+      const other = baseStatus.value.find(row => row.base === 'JFK')!
+      expect(own).toMatchObject({ hypotheticalLabel: null, isAnchorCurrentQualification: true })
+      expect(other).toMatchObject({ hypotheticalLabel: 'Hypothetical Placement in JFK CA 737', rank: 2, rosterSize: 3 })
+      for (const row of baseStatus.value) expect(row.rank).toBeLessThanOrEqual(row.rosterSize)
+    })
+
+    it('carries the label onto the retirement snapshot', () => {
+      outsideScopeRoster()
+      const { retirementSnapshot } = useStanding(ref<QualificationScope>({ base: 'JFK' }))
+
+      expect(retirementSnapshot.value?.hypotheticalLabel).toBe('Hypothetical Placement in JFK')
+      expect(retirementSnapshot.value?.rosterSize).toBe(3)
+    })
+
+    it('has no label for a member of the scope', () => {
+      outsideScopeRoster()
+      const { rankCard } = useStanding(ref<QualificationScope>({ base: 'LAX' }))
+
+      expect(rankCard.value.hypotheticalLabel).toBeNull()
+    })
+
+    it('still reports a retired Anchor Pilot outside the scope as the only no-result', () => {
+      outsideScopeRoster()
+      mockStore.entries[1] = makeEntry({ seniority_number: 40, employee_number: 'E2', base: 'LAX', retire_date: '2020-01-01' })
+      const { rankCard } = useStanding(ref<QualificationScope>({ base: 'JFK' }))
+
+      expect(rankCard.value.noResultLabel).toBe('Anchor Pilot retired')
+      expect(rankCard.value.hypotheticalLabel).toBeNull()
+    })
   })
 
   it.each([null, 'E1'])('preserves the existing anchor with incomplete new hire settings and real pilot %s', (employeeNumber) => {

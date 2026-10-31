@@ -8,7 +8,14 @@ const props = defineProps<{
   computeComparative: (
     specA: QualificationScope,
     specB: QualificationScope
-  ) => { labels: string[]; baselineData: number[]; comparisonData: number[]; noResultLabel?: string | null }
+  ) => {
+    labels: string[]
+    baselineData: number[]
+    comparisonData: number[]
+    noResultLabel?: string | null
+    baselineHypotheticalLabel?: string | null
+    comparisonHypotheticalLabel?: string | null
+  }
   userBase?: string
   userSeat?: string
   userFleet?: string
@@ -43,7 +50,7 @@ const chartData = computed<ChartData<'line'>>(() => {
   const result = comparison.value
 
   const datasets: ChartData<'line'>['datasets'] = [{
-    label: currentScope.value || 'Company-wide',
+    label: `${currentScope.value || 'Company-wide'}${result.baselineHypotheticalLabel ? ' (hypothetical)' : ''}`,
     data: result.baselineData,
     borderColor: colors.amber,
     backgroundColor: colors.amberLight,
@@ -55,7 +62,7 @@ const chartData = computed<ChartData<'line'>>(() => {
 
   if (compareScope.value && compareScope.value !== currentScope.value) {
     datasets.push({
-      label: compareScope.value,
+      label: `${compareScope.value}${result.comparisonHypotheticalLabel ? ' (hypothetical)' : ''}`,
       data: result.comparisonData,
       borderColor: colors.cyan,
       backgroundColor: colors.cyanLight,

@@ -18,6 +18,8 @@ export interface RankCardData {
   hireDate: string
   /** Why no Rank is available, e.g. "Anchor Pilot retired"; null when a Rank exists. */
   noResultLabel: string | null
+  /** "Hypothetical Placement in <scope>" when you are not in the selected scope; null otherwise. */
+  hypotheticalLabel: string | null
 }
 
 export interface BaseStatusRow {
@@ -30,6 +32,8 @@ export interface BaseStatusRow {
   activePilotCount: number
   seniorityPercentile: number
   isAnchorCurrentQualification: boolean
+  /** "Hypothetical Placement in <qualification>" for qualifications you are not in; null for your own. */
+  hypotheticalLabel: string | null
 }
 
 export interface StatCard {
@@ -47,6 +51,8 @@ export interface RetirementSnapshotData {
   atRetirement: { date: string; rank: number; percentile: number; rankDelta: string }
   fullTrajectory: { date: string; rank: number; percentile: number; rankDelta: string }[]
   retireDate: string
+  /** Set when the trajectory is a Hypothetical Placement in the selected scope. */
+  hypotheticalLabel: string | null
 }
 
 export function useStanding(qualificationScope?: Ref<QualificationScope> | ComputedRef<QualificationScope>): {
@@ -91,6 +97,7 @@ export function useStanding(qualificationScope?: Ref<QualificationScope> | Compu
         fleet: entry.fleet ?? '--',
         hireDate: entry.hire_date.toString(),
         noResultLabel: standingNoResult.value.label,
+        hypotheticalLabel: null,
       }
     }
     if (!entry || !standing) {
@@ -108,6 +115,7 @@ export function useStanding(qualificationScope?: Ref<QualificationScope> | Compu
         fleet: '--',
         hireDate: '--',
         noResultLabel: null,
+        hypotheticalLabel: null,
       }
     }
     return {
@@ -124,13 +132,14 @@ export function useStanding(qualificationScope?: Ref<QualificationScope> | Compu
       fleet: entry.fleet ?? '--',
       hireDate: entry.hire_date.toString(),
       noResultLabel: null,
+      hypotheticalLabel: standingOutput.value?.presentation.hypotheticalLabel ?? null,
     }
   })
 
   const baseStatus = computed<BaseStatusRow[]>(() => {
-    const standing = standingResult.value
-    if (!standing) return []
-    return standing.qualificationStandings.map(row => ({
+    const presented = standingOutput.value?.presentation
+    if (!presented) return []
+    return presented.qualificationStandings.map(row => ({
       base: row.qualification.base,
       seat: row.qualification.seat,
       fleet: row.qualification.fleet,
@@ -140,6 +149,7 @@ export function useStanding(qualificationScope?: Ref<QualificationScope> | Compu
       activePilotCount: row.activePilotCount,
       seniorityPercentile: row.seniorityPercentile,
       isAnchorCurrentQualification: row.isAnchorCurrentQualification,
+      hypotheticalLabel: row.hypotheticalLabel,
     }))
   })
 
@@ -162,14 +172,18 @@ export function useStanding(qualificationScope?: Ref<QualificationScope> | Compu
       }
     }
 
+    const isModeled = rankCard.value.isSimulated
+    const isHypothetical = !!rankCard.value.hypotheticalLabel
+    const rosterQualifiers = [isModeled && 'modeled', isHypothetical && 'hypothetical'].filter(Boolean)
+    const rosterTrends = [
+      isModeled && `${rankCard.value.publicationPilotCount.toLocaleString()} in publication`,
+      isHypothetical && 'includes you',
+    ].filter(Boolean)
+
     return [
       {
-        ...(rankCard.value.isSimulated
-          ? {
-              label: 'Roster Size (modeled)',
-              trend: `${rankCard.value.publicationPilotCount.toLocaleString()} in publication`,
-            }
-          : { label: 'Roster Size' }),
+        label: rosterQualifiers.length > 0 ? `Roster Size (${rosterQualifiers.join(', ')})` : 'Roster Size',
+        ...(rosterTrends.length > 0 ? { trend: rosterTrends.join(' · ') } : {}),
         value: rankCard.value.rosterSize.toLocaleString(),
         icon: 'i-lucide-users',
       },
@@ -226,6 +240,7 @@ export function useStanding(qualificationScope?: Ref<QualificationScope> | Compu
       atRetirement: fullTrajectory[fullTrajectory.length - 1]!,
       fullTrajectory,
       retireDate: entry.retire_date.toString(),
+      hypotheticalLabel: standingOutput.value?.presentation.hypotheticalLabel ?? null,
     }
   })
 

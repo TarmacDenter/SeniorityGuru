@@ -31,6 +31,9 @@ const waveTrajectoryNoResult = computed(() => {
   const domain = waveTrajectoryOutput.value?.domain
   return domain && isNoResult(domain) ? domain : null
 })
+const waveTrajectoryHypotheticalLabel = computed(() => {
+  return resultOrNull(waveTrajectoryOutput.value?.presentation)?.hypotheticalLabel ?? null
+})
 const waveTrajectory = computed(() => {
   return resultOrNull(waveTrajectoryOutput.value?.domain)?.points ?? []
 })
@@ -172,6 +175,9 @@ const ready = useDeferredReady()
       </p>
 
       <p v-if="waveTrajectoryNoResult" data-testid="no-result" class="text-sm text-muted">{{ waveTrajectoryNoResult.label }}</p>
+      <UBadge v-else-if="waveTrajectoryHypotheticalLabel" data-testid="hypothetical-placement" color="warning" variant="subtle" size="sm">
+        {{ waveTrajectoryHypotheticalLabel }}
+      </UBadge>
 
       <!-- Retirement Wave + Percentile Threshold -->
       <div v-if="!ready || !retirementWave.length" class="grid grid-cols-1 sm:grid-cols-11 gap-6">

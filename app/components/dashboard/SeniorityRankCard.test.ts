@@ -16,6 +16,7 @@ const rank: RankCardData = {
   seat: 'FO',
   fleet: '777',
   noResultLabel: null,
+  hypotheticalLabel: null,
   hireDate: '2012-03-01',
 }
 
@@ -59,6 +60,32 @@ describe('SeniorityRankCard', () => {
     expect(wrapper.get('[data-testid="publication-position"]').findAll('p').map(item => item.text())).toEqual(['Publication Position', '4'])
     expect(wrapper.get('[data-testid="rank"]').findAll('p').map(item => item.text())).toEqual(['Rank', '4'])
     expect(wrapper.text()).toContain('Modeled counts include the simulated pilot (3 in publication).')
+  })
+
+  it('names the scope and says you are not in it for a Hypothetical Placement', async () => {
+    const wrapper = await mountSuspended(SeniorityRankCard, {
+      props: { rank: { ...rank, hypotheticalLabel: 'Hypothetical Placement in BOS CA 220' } },
+    })
+
+    const note = wrapper.get('[data-testid="hypothetical-placement"]')
+    expect(note.text()).toContain('Hypothetical Placement in BOS CA 220')
+    expect(note.text()).toContain('You are not in this scope')
+    expect(wrapper.find('[data-testid="rank"]').exists()).toBe(true)
+  })
+
+  it('shows both the modeled and hypothetical labels in New Hire Mode', async () => {
+    const wrapper = await mountSuspended(SeniorityRankCard, {
+      props: { rank: { ...rank, isSimulated: true, hypotheticalLabel: 'Hypothetical Placement in BOS' } },
+    })
+
+    expect(wrapper.text()).toContain('Modeled counts include the simulated pilot')
+    expect(wrapper.get('[data-testid="hypothetical-placement"]').text()).toContain('Hypothetical Placement in BOS')
+  })
+
+  it('shows no Hypothetical Placement note for a member of the scope', async () => {
+    const wrapper = await mountSuspended(SeniorityRankCard, { props: { rank } })
+
+    expect(wrapper.find('[data-testid="hypothetical-placement"]').exists()).toBe(false)
   })
 
   it('shows the no-result reason in place of Rank and Seniority Percentile', async () => {

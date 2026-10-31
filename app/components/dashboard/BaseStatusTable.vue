@@ -13,6 +13,8 @@ type BaseStatusRow = {
   activePilotCount: number;
   seniorityPercentile: number;
   isAnchorCurrentQualification: boolean;
+  /** Set for qualifications you are not in; Rank and Roster Size count you as a modeled pilot there. */
+  hypotheticalLabel?: string | null;
 };
 
 const props = defineProps<{
@@ -41,6 +43,12 @@ const displayData = computed<BaseStatusRow[]>(() => {
   return base;
 });
 
+function hypotheticalMark(row: BaseStatusRow) {
+  return row.hypotheticalLabel
+    ? h('span', { class: 'ml-1 text-xs font-normal text-warning', title: row.hypotheticalLabel, 'data-testid': 'hypothetical-row' }, '(hypothetical)')
+    : null;
+}
+
 function highlightClass(row: BaseStatusRow): string {
   return row.isAnchorCurrentQualification ? 'font-bold text-primary' : '';
 }
@@ -49,7 +57,7 @@ const columns: TableColumn<BaseStatusRow>[] = [
   { accessorKey: 'base', header: 'Base', cell: ({ row }) => h('span', { class: highlightClass(row.original) }, row.original.base) },
   { accessorKey: 'seat', header: 'Seat', cell: ({ row }) => h('span', { class: highlightClass(row.original) }, row.original.seat) },
   { accessorKey: 'fleet', header: 'Fleet', cell: ({ row }) => h('span', { class: highlightClass(row.original) }, row.original.fleet) },
-  { accessorKey: 'rank', header: 'Rank', cell: ({ row }) => h('span', { class: highlightClass(row.original) }, row.original.rank) },
+  { accessorKey: 'rank', header: 'Rank', cell: ({ row }) => h('span', { class: highlightClass(row.original) }, [row.original.rank, hypotheticalMark(row.original)]) },
   { accessorKey: 'rosterSize', header: 'Roster Size', cell: ({ row }) => h('span', { class: highlightClass(row.original) }, row.original.rosterSize) },
   { accessorKey: 'seniorityPercentile', header: 'Seniority Percentile', cell: ({ row }) => h('span', { class: highlightClass(row.original) }, `${row.original.seniorityPercentile}%`) },
 ];
@@ -58,7 +66,7 @@ const columns: TableColumn<BaseStatusRow>[] = [
 const mobileColumns: TableColumn<BaseStatusRow>[] = [
   { accessorKey: 'base', header: 'Base', cell: ({ row }) => h('span', { class: highlightClass(row.original) }, row.original.base) },
   { accessorKey: 'fleet', header: 'Fleet', cell: ({ row }) => h('span', { class: highlightClass(row.original) }, row.original.fleet) },
-  { accessorKey: 'rank', header: 'Rank', cell: ({ row }) => h('span', { class: `font-mono ${highlightClass(row.original)}` }, row.original.rank) },
+  { accessorKey: 'rank', header: 'Rank', cell: ({ row }) => h('span', { class: `font-mono ${highlightClass(row.original)}` }, [row.original.rank, hypotheticalMark(row.original)]) },
   { accessorKey: 'seniorityPercentile', header: 'Seniority Percentile', cell: ({ row }) => h('span', { class: `font-mono ${highlightClass(row.original)}` }, `${row.original.seniorityPercentile}%`) },
 ];
 </script>
@@ -75,6 +83,7 @@ const mobileColumns: TableColumn<BaseStatusRow>[] = [
     <template v-else>
     <p class="px-3 pt-3 sm:px-0 sm:pt-0 pb-2 text-xs text-muted">
       Rank is your position among active pilots; Roster Size includes retired pilots.
+      Rows marked hypothetical place you in a qualification you are not in and count you in its Roster Size.
     </p>
 
     <!-- Mobile: seat filter dropdown -->

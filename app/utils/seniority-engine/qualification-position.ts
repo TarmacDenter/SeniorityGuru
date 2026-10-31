@@ -76,7 +76,7 @@ export function analyzeQualificationPositions(
   growthAssumptions?: GrowthAssumptions,
   /** Pilots in the Qualification Scope; the Anchor Pilot's Rank and Roster Size are measured here. Thresholds always use `entries`. */
   scopeEntries: readonly SeniorityEntry[] = entries,
-): readonly QualificationPosition[] {
+): readonly Omit<QualificationPosition, 'isHypothetical'>[] {
   const distributions = analyzeQualificationDistributions(entries, asOfDate)
   if (distributions.length === 0) return []
 

@@ -61,6 +61,10 @@ onMounted(() => {
 
     <p v-if="rank.noResultLabel" data-testid="no-result" class="font-mono font-semibold text-highlighted mt-4">{{ rank.noResultLabel }}</p>
     <template v-else>
+      <div v-if="rank.hypotheticalLabel" data-testid="hypothetical-placement" class="mt-4">
+        <p class="text-sm font-semibold text-warning">{{ rank.hypotheticalLabel }}</p>
+        <p class="text-xs text-muted">You are not in this scope. Rank and Roster Size place you in it by Seniority Number and count you as a modeled pilot.</p>
+      </div>
       <div class="mt-4" data-testid="rank">
         <p class="text-xs text-muted">Rank</p>
         <p class="text-3xl font-bold font-mono text-highlighted">{{ rank.rank.toLocaleString() }}</p>

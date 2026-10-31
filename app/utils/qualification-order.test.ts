@@ -18,6 +18,7 @@ function position(overrides: Partial<PresentedQualificationPosition>): Presented
     projectedPercentile: 50,
     currentPercentile: 50,
     modeledHoldable: true,
+    hypotheticalLabel: null,
     ...overrides,
   }
 }

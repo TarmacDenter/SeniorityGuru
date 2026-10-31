@@ -1,9 +1,10 @@
 import { describe, it, expect, vi } from 'vitest'
 import { mountSuspended, mockNuxtImport } from '@nuxt/test-utils/runtime'
 
-const { mockAnalysis, mockHasData } = vi.hoisted(() => {
+const { mockAnalysis, mockHasData, mockAnchored } = vi.hoisted(() => {
   const { ref: vRef } = require('vue')
   return {
+    mockAnchored: vRef(null) as { value: { seniorityTrajectory: ReturnType<typeof vi.fn>, percentileCrossing: ReturnType<typeof vi.fn> } | null },
     mockAnalysis: vRef(null) as { value: { retirementYearAnalysis: ReturnType<typeof vi.fn> } | null },
     mockHasData: vRef(false) as { value: boolean },
   }
@@ -62,11 +63,11 @@ mockNuxtImport('useSeniorityCore', () => () => ({
     reset: vi.fn(),
   },
   analysis: mockAnalysis,
-  anchoredAnalysis: { value: null },
+  anchoredAnalysis: mockAnchored,
   userEntry: { value: undefined },
   hasAnchor: { value: false },
   isNewHireMode: { value: false },
-  projectionEndDate: { value: null },
+  projectionEndDate: { value: '2030-06-15' },
 }))
 
 mockNuxtImport('useStanding', () => () => ({
@@ -113,6 +114,23 @@ describe('TrajectoryTab', () => {
 
     expect(wrapper.get('[data-testid="trajectory-roster-size"]').text()).toBe('Roster Size 260 · Active pilots 240')
     expect(wrapper.get('[data-testid="scoped-roster-size"]').text()).toContain('Roster Size 260 · Active pilots 240')
+  })
+
+  it('badges a Hypothetical Placement trajectory with its scope label', async () => {
+    mockHasData.value = true
+    mockAnalysis.value = { retirementYearAnalysis: vi.fn(() => []) }
+    mockAnchored.value = {
+      seniorityTrajectory: vi.fn(() => ({
+        domain: { points: [], changes: [], isHypothetical: true },
+        presentation: { chartData: { labels: [], data: [] }, changes: [], endedByLabel: null, hypotheticalLabel: 'Hypothetical Placement in BOS' },
+      })),
+      percentileCrossing: vi.fn(() => ({ domain: null, presentation: null })),
+    }
+    const Tab = await import('./TrajectoryTab.vue')
+    const wrapper = await mountSuspended(Tab.default)
+
+    expect(wrapper.get('[data-testid="hypothetical-placement"]').text()).toBe('Hypothetical Placement in BOS')
+    mockAnchored.value = null
   })
 
   it('renders scoped retirement-wave buckets supplied by Seniority Analysis', async () => {

@@ -145,6 +145,7 @@ const demoQualScales = computed<PresentedQualificationPosition[]>(() => {
     projectedPercentile: projectedPct,
     currentPercentile: DEMO_CURRENT_PCT,
     modeledHoldable: projectedPct >= scale.plugPercentile,
+    hypotheticalLabel: null,
   }))
 })
 

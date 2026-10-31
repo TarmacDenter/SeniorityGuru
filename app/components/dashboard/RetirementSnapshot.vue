@@ -20,6 +20,7 @@ const props = defineProps<{
     activePilotCount: number
     fullTrajectory: PresentedSeniorityTrajectoryPoint[]
     retireDate: string
+    hypotheticalLabel?: string | null
   }
 }>()
 
@@ -105,6 +106,10 @@ function formatDate(dateStr: string): string {
         </UBadge>
       </div>
     </template>
+
+    <p v-if="snapshot.hypotheticalLabel" data-testid="hypothetical-placement" class="px-3 pt-3 sm:px-0 sm:pt-0 text-xs font-semibold text-warning">
+      {{ snapshot.hypotheticalLabel }}
+    </p>
 
     <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-4 mb-4 sm:mb-6 px-3 pt-3 sm:px-0 sm:pt-0">
       <div class="text-center">

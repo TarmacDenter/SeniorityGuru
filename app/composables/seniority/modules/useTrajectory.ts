@@ -15,12 +15,22 @@ export interface ComparativeTrajectory {
   labels: string[]
   baselineData: number[]
   comparisonData: number[]
-  /** Why no comparison exists (e.g. "Anchor Pilot not in scope"), or why it stopped early. */
+  /** Why no comparison exists (e.g. "Anchor Pilot retired"), or why it stopped early. */
   noResultLabel: string | null
+  /** Hypothetical Placement labels for a side whose scope excludes the Anchor Pilot; null otherwise. */
+  baselineHypotheticalLabel: string | null
+  comparisonHypotheticalLabel: string | null
 }
 
 function emptyComparison(noResultLabel: string | null): ComparativeTrajectory {
-  return { labels: [], baselineData: [], comparisonData: [], noResultLabel }
+  return {
+    labels: [],
+    baselineData: [],
+    comparisonData: [],
+    noResultLabel,
+    baselineHypotheticalLabel: null,
+    comparisonHypotheticalLabel: null,
+  }
 }
 
 export function useTrajectory(growthAssumptions?: Ref<GrowthAssumptions>): {

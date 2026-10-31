@@ -5,6 +5,8 @@ import type {
   PercentileCrossingResult,
   QualificationPosition,
   SeniorityDemographics,
+  SeniorityTrajectory,
+  SeniorityTrajectoryComparison,
 } from '~/utils/seniority-engine/types'
 import {
   formatQualification,
@@ -20,11 +22,7 @@ import {
   presentSeniorityTrajectory,
   presentSeniorityTrajectoryComparison,
 } from './presentation'
-import type {
-  RetirementCountProjection,
-  SeniorityTrajectory,
-  SeniorityTrajectoryComparison,
-} from './math'
+import type { RetirementCountProjection } from './math'
 
 const date = (value: string) => parsePlainDate(value)
 

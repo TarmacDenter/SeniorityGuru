@@ -110,17 +110,28 @@ describe('useTrajectory', () => {
       { seat: 'CA' },
       { base: 'JFK' },
     )
-    expect(result).toHaveProperty('labels')
-    expect(result).toHaveProperty('baselineData')
-    expect(result).toHaveProperty('comparisonData')
+    // E3 is a LAX CA pilot: a member of the CA baseline, outside the JFK comparison.
+    expect(result.labels.length).toBeGreaterThan(0)
     expect(result.labels.length).toBe(result.baselineData.length)
     expect(result.labels.length).toBe(result.comparisonData.length)
+    expect(result.baselineHypotheticalLabel).toBeNull()
+    expect(result.comparisonHypotheticalLabel).toBe('Hypothetical Placement in JFK')
+    // Baseline CA = E1, E3: Rank 2 of 2 -> 50. Comparison JFK = E1, E2 plus E3 modeled: Rank 3 of 3 -> 33.3.
+    expect(result.baselineData[0]).toBe(50)
+    expect(result.comparisonData[0]).toBe(33.3)
   })
 
   it('computeComparativeTrajectory returns empty when analysis is null', () => {
     const { computeComparativeTrajectory } = useTrajectory()
     const result = computeComparativeTrajectory({ seat: 'CA' }, { base: 'JFK' })
-    expect(result).toEqual({ labels: [], baselineData: [], comparisonData: [], noResultLabel: null })
+    expect(result).toEqual({
+      labels: [],
+      baselineData: [],
+      comparisonData: [],
+      noResultLabel: null,
+      baselineHypotheticalLabel: null,
+      comparisonHypotheticalLabel: null,
+    })
   })
 
   it('respects custom growthAssumptions when provided', () => {

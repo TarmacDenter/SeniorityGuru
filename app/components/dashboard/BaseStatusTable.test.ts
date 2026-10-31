@@ -33,6 +33,22 @@ describe('BaseStatusTable', () => {
     expect(wrapper.text()).toContain('Roster Size includes retired pilots')
   })
 
+  it('marks only the rows that place you in a qualification you are not in', async () => {
+    const wrapper = await mountSuspended(BaseStatusTable, {
+      props: {
+        data: [
+          row,
+          { ...row, base: 'BOS', seat: 'CA', fleet: '220', isAnchorCurrentQualification: false, hypotheticalLabel: 'Hypothetical Placement in BOS CA 220' },
+        ],
+      },
+    })
+
+    const marks = wrapper.findAll('[data-testid="hypothetical-row"]')
+    expect(marks).toHaveLength(1)
+    expect(marks[0]!.attributes('title')).toBe('Hypothetical Placement in BOS CA 220')
+    expect(wrapper.text()).toContain('Rows marked hypothetical')
+  })
+
   it('shows the no-result reason instead of an empty table', async () => {
     const wrapper = await mountSuspended(BaseStatusTable, { props: { data: [], noResultLabel: 'Anchor Pilot retired' } })
 

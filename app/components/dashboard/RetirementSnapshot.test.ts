@@ -21,6 +21,16 @@ describe('RetirementSnapshot', () => {
     expect(wrapper.text()).not.toContain('#15')
   })
 
+  it('labels a Hypothetical Placement trajectory and omits the label for a member', async () => {
+    const hypothetical = await mountSuspended(RetirementSnapshot, {
+      props: { snapshot: { ...snapshot, hypotheticalLabel: 'Hypothetical Placement in BOS' } },
+    })
+    const member = await mountSuspended(RetirementSnapshot, { props: { snapshot } })
+
+    expect(hypothetical.get('[data-testid="hypothetical-placement"]').text()).toBe('Hypothetical Placement in BOS')
+    expect(member.find('[data-testid="hypothetical-placement"]').exists()).toBe(false)
+  })
+
   it('labels Roster Size and active pilot count', async () => {
     const wrapper = await mountSuspended(RetirementSnapshot, { props: { snapshot } })
 
