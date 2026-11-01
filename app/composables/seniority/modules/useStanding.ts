@@ -73,6 +73,7 @@ export interface BaseStatusRow {
 
 /** One seat's Qualifications, highest Seniority Percentile first. */
 export interface QualificationSeatGroup {
+  holdabilitySummaryLabel: string | null
   seat: string
   seatLabel: string
   rows: BaseStatusRow[]
@@ -175,6 +176,7 @@ export function useStanding(qualificationScope?: Ref<QualificationScope> | Compu
       .map(([seat, rows]) => ({
         seat,
         seatLabel: rows[0]!.seatLabel,
+        holdabilitySummaryLabel: standingOutput.value?.presentation.holdabilitySummaryBySeat[seat] ?? null,
         rows: [...rows].sort((a, b) =>
           b.seniorityPercentile - a.seniorityPercentile
           || a.rank - b.rank

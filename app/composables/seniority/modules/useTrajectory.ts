@@ -46,6 +46,7 @@ export function useTrajectory(
   hypotheticalLabel: ComputedRef<string | null>
   /** Why the samples stop early, e.g. "Anchor Pilot retired"; null when the window completes. */
   endedByLabel: ComputedRef<string | null>
+  retirementWave: ComputedRef<{ buckets: readonly { year: number; retirementCount: number; isRetirementWave: boolean }[]; percentileSeries: (number | null)[] }>
   fullTrajectory: ComputedRef<readonly SeniorityTrajectoryPoint[]>
   computeRetirementProjection: (scope?: QualificationScope) => PresentedRetirementCountProjection
   computeComparativeTrajectory: (baseline: QualificationScope, comparison: QualificationScope) => ComparativeTrajectory
@@ -71,14 +72,8 @@ export function useTrajectory(
   const chartData = computed(() => presented.value?.chartData ?? { labels: [], data: [] })
   const fullTrajectory = computed(() => domain.value?.points ?? [])
   const changes = computed(() => presented.value?.changes ?? [])
-  const bestYearLabel = computed(() => {
-    let best: PresentedTrajectoryChange | null = null
-    for (const change of changes.value) {
-      if (!best || change.percentilePointChange > best.percentilePointChange) best = change
-    }
-    if (!best || best.percentilePointChange <= 0) return null
-    return `Best year: ${best.yearLabel} (+${best.percentilePointChange.toFixed(1)}pp)`
-  })
+  const bestYearLabel = computed(() => presented.value?.bestYearLabel ?? null)
+  const retirementWave = computed(() => presented.value?.retirementWave ?? { buckets: [], percentileSeries: [] })
   const hypotheticalLabel = computed(() => presented.value?.hypotheticalLabel ?? null)
   const endedByLabel = computed(() => presented.value?.endedByLabel ?? null)
 
@@ -116,6 +111,7 @@ export function useTrajectory(
     chartData,
     changes,
     bestYearLabel,
+    retirementWave,
     hypotheticalLabel,
     endedByLabel,
     fullTrajectory,

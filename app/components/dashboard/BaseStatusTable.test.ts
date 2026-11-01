@@ -28,7 +28,7 @@ function mount(props: InstanceType<typeof BaseStatusTable>['$props']) {
 
 describe('BaseStatusTable', () => {
   it('labels columns with Base Rank, Roster Size and Seniority Percentile', async () => {
-    const wrapper = await mount({ groups: [{ seat: 'FO', seatLabel: 'First Officer', rows: [row] }] })
+    const wrapper = await mount({ groups: [{ seat: 'FO', seatLabel: 'First Officer', holdabilitySummaryLabel: null, rows: [row] }] })
 
     const text = wrapper.text()
     expect(text).toContain('Base Rank')
@@ -39,7 +39,7 @@ describe('BaseStatusTable', () => {
   })
 
   it('explains that Roster Size includes retired pilots behind an info button', async () => {
-    const wrapper = await mount({ groups: [{ seat: 'FO', seatLabel: 'First Officer', rows: [row] }] })
+    const wrapper = await mount({ groups: [{ seat: 'FO', seatLabel: 'First Officer', holdabilitySummaryLabel: null, rows: [row] }] })
     expect(wrapper.text()).not.toContain('Roster Size includes retired pilots')
 
     await wrapper.find('button[aria-label="About this table"]').trigger('click')
@@ -49,7 +49,7 @@ describe('BaseStatusTable', () => {
   it('marks only the rows that place you in a qualification you are not in', async () => {
     const other = { ...row, base: 'BOS', seat: 'CA', fleet: '220', isAnchorCurrentQualification: false, hypotheticalLabel: 'Hypothetical Placement in BOS CA 220', seatLabel: 'Captain' }
     const wrapper = await mount({
-      groups: [{ seat: 'CA', seatLabel: 'Captain', rows: [other] }, { seat: 'FO', seatLabel: 'First Officer', rows: [row] }],
+      groups: [{ seat: 'CA', seatLabel: 'Captain', holdabilitySummaryLabel: null, rows: [other] }, { seat: 'FO', seatLabel: 'First Officer', holdabilitySummaryLabel: null, rows: [row] }],
     })
 
     const marks = wrapper.findAll('[data-testid="hypothetical-row"]')

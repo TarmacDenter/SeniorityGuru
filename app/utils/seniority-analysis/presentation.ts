@@ -1,4 +1,5 @@
 import type {
+  AnchoredRetirementCountProjection,
   HoldabilityDetail,
   HoldableYear,
   NoResult,
@@ -10,12 +11,13 @@ import type {
   SeniorityStanding,
   SeniorityTrajectory,
   SeniorityTrajectoryComparison,
+  RetirementYearAnalysis,
 } from '~/utils/seniority-engine/types'
 import type { QualificationViewerAnalysis, QualificationViewerEntry } from '~/utils/seniority-engine/qual-viewer'
 import { isNoResult } from '~/utils/seniority-engine/types'
 import type { PlainDate } from '~/utils/temporal'
 import type { RetirementCountProjection, TrajectoryChange } from './math'
-import { diffYears, formatMonthYear, formatYear } from '~/utils/date'
+import { diffDateYears, diffYears, formatMonthYear, formatYear } from '~/utils/date'
 
 export type QualificationViewerRetirementTimeline = 'past' | 'imminent' | 'soon' | null
 
@@ -69,6 +71,8 @@ export interface PresentedTrajectoryChange extends TrajectoryChange {
 export interface PresentedSeniorityTrajectoryValue {
   chartData: { labels: string[]; data: number[] }
   changes: PresentedTrajectoryChange[]
+  bestYearLabel: string | null
+  retirementWave: { buckets: readonly RetirementYearAnalysis[]; percentileSeries: (number | null)[] }
   /** Why the samples stop early, worded as a stop, e.g. "Projection ends at your retirement". */
   endedByLabel: string | null
   /** "Hypothetical Placement in <scope>" when the Anchor Pilot is outside the scope; otherwise null. */
@@ -101,6 +105,25 @@ const ENDED_BY_LABELS: Record<NoResult['reason'], string> = {
 }
 const endedByLabelOf = (endedBy: NoResult | undefined): string | null => endedBy ? ENDED_BY_LABELS[endedBy.reason] : null
 
+export interface PresentedAnchoredRetirementCountProjection extends PresentedRetirementCountProjection {
+  readonly seniorRetirementCount: number
+  readonly seniorRetirementLabel: string
+}
+
+export function presentAnchoredRetirementCountProjection(
+  projection: AnchoredRetirementCountProjection,
+  from: PlainDate,
+  through: PlainDate,
+): PresentedAnchoredRetirementCountProjection {
+  const count = projection.seniorRetirementCount
+  const years = Math.round(diffDateYears(from, through))
+  return {
+    ...presentRetirementCountProjection(projection),
+    seniorRetirementCount: count,
+    seniorRetirementLabel: `${count} ${count === 1 ? 'retirement' : 'retirements'} senior to you in the next ${years === 1 ? 'year' : `${years} years`}`,
+  }
+}
+
 /** Names the scope the Anchor Pilot is placed into when outside it; null for a member. */
 export function hypotheticalPlacementLabel(isHypothetical: boolean, scope: QualificationScope): string | null {
   return isHypothetical ? `Hypothetical Placement in ${formatQualificationScope(scope)}` : null
@@ -109,6 +132,8 @@ export function hypotheticalPlacementLabel(isHypothetical: boolean, scope: Quali
 export function presentSeniorityTrajectory(
   trajectory: SeniorityTrajectory | NoResult,
   scope: QualificationScope = {},
+  bestChange: TrajectoryChange | null = null,
+  retirementYears: readonly RetirementYearAnalysis[] = [],
 ): PresentedSeniorityTrajectory {
   if (isNoResult(trajectory)) return trajectory
   const changes = trajectory.changes.map((change, index, all): PresentedTrajectoryChange => {
@@ -125,7 +150,16 @@ export function presentSeniorityTrajectory(
         && change.percentilePointChange > next,
     }
   })
+  const percentileByYear = new Map<number, number>()
+  for (const point of trajectory.points) {
+    if (!percentileByYear.has(point.date.year)) percentileByYear.set(point.date.year, point.percentile)
+  }
   return {
+    bestYearLabel: bestChange ? `Best year: ${formatYear(bestChange.date)} (+${bestChange.percentilePointChange.toFixed(1)}pp)` : null,
+    retirementWave: {
+      buckets: retirementYears,
+      percentileSeries: trajectory.points.length ? retirementYears.map(bucket => percentileByYear.get(bucket.year) ?? null) : [],
+    },
     chartData: {
       labels: trajectory.points.map(point => point.date.toString()),
       data: trajectory.points.map(point => point.percentile),
@@ -206,12 +240,26 @@ function rosterSizeTrend(standing: SeniorityStanding): string | null {
   return parts.length > 0 ? parts.join(' · ') : null
 }
 
+function holdabilitySummaryBySeat(standing: SeniorityStanding): Record<string, string | null> {
+  const groups = new Map<string, { count: number; hypothetical: number }>()
+  for (const row of standing.qualificationStandings) {
+    const group = groups.get(row.qualification.seat) ?? { count: 0, hypothetical: 0 }
+    group.count++
+    if (row.isHypothetical) group.hypothetical++
+    groups.set(row.qualification.seat, group)
+  }
+  return Object.fromEntries([...groups].map(([seat, group]) => [seat, group.hypothetical === 0
+    ? null
+    : `Hypothetical Placement in ${group.hypothetical === group.count ? 'all' : 'the other'} ${formatSeatLabel(seat)} Qualifications`]))
+}
+
 export function presentSeniorityStanding(standing: SeniorityStanding | NoResult, scope: QualificationScope = {}) {
   if (isNoResult(standing)) return standing
   const qualifiers = rosterSizeNotes(standing, 'modeled', 'hypothetical')
   const rosterSummary = `Roster Size ${formatSeniorityCount(standing.rosterSize)} · Active pilots ${formatSeniorityCount(standing.activePilotCount)}`
   return {
     ...standing,
+    holdabilitySummaryBySeat: holdabilitySummaryBySeat(standing),
     retirementsSeniorToAnchorLabel: `${formatSeniorityCount(standing.rollingNext12MonthRetirementsSeniorToAnchor)} senior to you`,
     retirementsSeniorToAnchorCountLabel: formatSeniorityCount(standing.rollingNext12MonthRetirementsSeniorToAnchor),
     rosterSizeLabel: qualifiers.length > 0 ? `Roster Size (${qualifiers.join(', ')})` : 'Roster Size',
@@ -256,7 +304,15 @@ export function presentAgeBucket(bucket: SeniorityDemographics['ageDistribution'
 }
 
 export function presentSeniorityDemographics(demographics: SeniorityDemographics) {
+  const qualificationSizes = demographics.qualificationComposition
+    .flatMap(qual => (qual.byBase.length ? qual.byBase : [{ base: '—', pilotCount: qual.pilotCount }])
+      .map(({ base, pilotCount }) => ({ fleet: qual.fleet, seat: qual.seat, base, countLabel: pilotCount.toLocaleString() })))
+    .sort((a, b) => a.seat.localeCompare(b.seat) || a.fleet.localeCompare(b.fleet) || a.base.localeCompare(b.base))
   return {
+    matchingPilotCount: demographics.matchingPilotCount,
+    anchorYearsOfService: demographics.anchorYearsOfService,
+    hasYearsOfService: demographics.yearsOfServiceBuckets.some(bucket => bucket.pilotCount > 0),
+    qualificationSizes,
     ageDistribution: {
       buckets: demographics.ageDistribution.buckets.map(presentAgeBucket),
       nullCount: demographics.ageDistribution.unknownAgePilotCount,

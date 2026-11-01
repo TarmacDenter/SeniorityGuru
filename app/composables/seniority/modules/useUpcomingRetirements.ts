@@ -1,6 +1,6 @@
 import { createSeniorityAnalysis, type AnchoredSeniorityAnalysis, type QualificationScope, type RelativeUpcomingRetirement, type UpcomingRetirement } from '~/utils/seniority'
 import { addYearsDate, diffDateYears } from '~/utils/date'
-import { Temporal, todayPlainDate, type PlainDate } from '~/utils/temporal'
+import { Temporal, todayPlainDate } from '~/utils/temporal'
 import { useSeniorityStore } from '~/stores/seniority'
 import { useScenario } from '~/composables/useScenario'
 import { useSeniorityCore } from './useSeniorityCore'
@@ -65,8 +65,7 @@ export function useUpcomingRetirements() {
   /** Whole years from the As-of Date to the last scheduled retirement on the list (at least 1). */
   const horizonMax = computed(() => {
     const start = asOfDate.value
-    const last = seniorityStore.entries.reduce<PlainDate | null>((latest, entry) =>
-      entry.retire_date && (!latest || Temporal.PlainDate.compare(entry.retire_date, latest) > 0) ? entry.retire_date : latest, null)
+    const last = listAnalysis.value?.catalog.latestRetirementDate
     if (!last || Temporal.PlainDate.compare(last, start) <= 0) return 1
     return Math.max(1, Math.ceil(diffDateYears(start, last)))
   })

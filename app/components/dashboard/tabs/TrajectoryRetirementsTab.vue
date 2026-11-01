@@ -15,7 +15,7 @@ const {
   scopeSuffix,
   seniorRetirements,
   retirementWave,
-  wavePoints,
+  wavePercentileSeries,
 } = useNextProjections()
 </script>
 
@@ -58,7 +58,7 @@ const {
         </template>
         <AnalyticsRetirementWaveChart
           :wave-buckets="retirementWave"
-          :trajectory-points="wavePoints"
+          :percentile-series="wavePercentileSeries"
           :qualification-scope="scopeSuffix"
         />
       </UCard>

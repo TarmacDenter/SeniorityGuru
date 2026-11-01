@@ -47,6 +47,8 @@ describe('seniority presentation', () => {
     }
 
     expect(presentSeniorityTrajectory(trajectory)).toEqual({
+      bestYearLabel: null,
+      retirementWave: { buckets: [], percentileSeries: [] },
       chartData: {
         labels: ['2026-01-01', '2027-01-01', '2028-01-01', '2029-01-01'],
         data: [10, 12, 19, 22],
@@ -133,6 +135,7 @@ describe('seniority presentation', () => {
 
   it('adapts constructed demographic domain values without changing their calculations', () => {
     const demographics: SeniorityDemographics = {
+      matchingPilotCount: 10,
       ageDistribution: {
         buckets: [{ minimumAge: 50, maximumAge: 54, pilotCount: 2 }],
         unknownAgePilotCount: 1,
@@ -165,6 +168,10 @@ describe('seniority presentation', () => {
     }
 
     expect(presentSeniorityDemographics(demographics)).toEqual({
+      matchingPilotCount: 10,
+      anchorYearsOfService: undefined,
+      hasYearsOfService: true,
+      qualificationSizes: [{ fleet: '737', seat: 'CA', base: 'JFK', countLabel: '6' }],
       ageDistribution: {
         buckets: [{ label: '50–54', count: 2 }],
         nullCount: 1,
@@ -245,6 +252,7 @@ describe('seniority presentation', () => {
 
   it('joins modeled Holdable state into a completed anchored demographics presentation', () => {
     const demographics: SeniorityDemographics = {
+      matchingPilotCount: 0,
       ageDistribution: { buckets: [], unknownAgePilotCount: 0 },
       yearsOfServiceDistribution: { entryFloor: 0, p10: 0, p25: 0, median: 0, p75: 0, p90: 0, maximum: 0 },
       yearsOfServiceBuckets: [],

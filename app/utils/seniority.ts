@@ -36,6 +36,7 @@ export type {
   QualificationViewerStatus,
 } from './seniority-engine/qual-viewer'
 export type {
+  AnchoredRetirementCountProjection,
   NoResult,
   NoResultReason,
   QualificationScope,
@@ -44,6 +45,7 @@ export type {
 } from './seniority-engine/types'
 export type {
   PresentedHoldabilityDetail,
+  PresentedAnchoredRetirementCountProjection,
   PresentedPercentileCrossing,
   PresentedQualificationPosition,
   PresentedQualificationViewerAnalysis,

@@ -49,6 +49,16 @@ describe('Trajectory › Retirements', () => {
     expect(wrapper.text()).toContain('Retirements within')
   })
 
+  it('keeps the Retirement Wave after the Anchor Pilot retires', async () => {
+    seedRoster()
+    mockStore.entries = mockStore.entries.map(entry => entry.employee_number === 'E4'
+      ? { ...entry, retire_date: makeEntry({ retire_date: '2020-01-01' }).retire_date }
+      : entry)
+    const wrapper = await mountRetirements()
+    expect(wrapper.text()).toContain('Retirement Wave')
+    expect(wrapper.find('analytics-retirement-wave-chart-stub').exists()).toBe(true)
+  })
+
   it('no longer shows the Retirement Snapshot', async () => {
     seedRoster()
     const wrapper = await mountRetirements()
