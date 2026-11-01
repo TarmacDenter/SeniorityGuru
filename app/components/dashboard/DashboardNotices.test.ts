@@ -13,7 +13,7 @@ vi.mock('~/composables/usePwaInstall', () => ({
 
 describe('compact notices', () => {
   it('shows the demo notice as one short line that can be dismissed', async () => {
-    const wrapper = await mountSuspended(DemoBanner, { props: { compact: true } })
+    const wrapper = await mountSuspended(DemoBanner)
     expect(wrapper.text()).toContain('Demo mode')
     expect(wrapper.text()).not.toContain('fictional airline')
     await wrapper.findAll('button').find(b => b.text() === 'Dismiss')!.trigger('click')
@@ -21,7 +21,7 @@ describe('compact notices', () => {
   })
 
   it('shows the install notice as one short line with its choices', async () => {
-    const wrapper = await mountSuspended(InstallBanner, { props: { compact: true } })
+    const wrapper = await mountSuspended(InstallBanner)
     expect(wrapper.text()).toContain('Install Seniority Guru')
     expect(wrapper.text()).not.toContain('browsers won')
     await wrapper.findAll('button').find(b => b.text() === 'Not now')!.trigger('click')

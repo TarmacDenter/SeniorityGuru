@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { _resetCoreSingletons, useSeniorityCore } from './useSeniorityCore'
 import { useUpcomingRetirements } from './useUpcomingRetirements'
-import { useNextProjections } from './useNextProjections'
 import { useScenario } from '~/composables/useScenario'
 import { resetMockStores } from '~/test-utils/seniority-mocks'
 import { Temporal } from '~/utils/temporal'
@@ -126,18 +125,6 @@ describe('useUpcomingRetirements', () => {
 
     scenario.scopeLabel.value = 'JFK CA 737'
     expect(rows.value.map(row => row.seniorityNumber)).toEqual([1, 2])
-  })
-
-  it('keeps its horizon apart from Trajectory\'s year control', () => {
-    mockStore.entries = [pilot(1, 6), pilot(2, 100)]
-    const trajectory = useNextProjections()
-    const report = useUpcomingRetirements()
-
-    report.yearsHorizon.value = 7
-    expect(trajectory.yearsInput.value).toBe(1)
-    trajectory.yearsInput.value = 3
-    expect(report.yearsHorizon.value).toBe(7)
-    expect(useUpcomingRetirements().yearsHorizon.value).toBe(2)
   })
 
   it('counts the window from the selected list\'s As-of Date, not today', () => {

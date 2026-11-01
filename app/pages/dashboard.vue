@@ -84,8 +84,8 @@ const panelUi = computed(() => ({
     </template>
 
     <template #body>
-      <DashboardInstallBanner v-if="compactNotice === 'install'" compact @dismissed="compactNoticeDismissed = 'install'" />
-      <DashboardDemoBanner v-else-if="compactNotice === 'demo'" compact @dismissed="compactNoticeDismissed = 'demo'" />
+      <DashboardInstallBanner v-if="compactNotice === 'install'" @dismissed="compactNoticeDismissed = 'install'" />
+      <DashboardDemoBanner v-else-if="compactNotice === 'demo'" @dismissed="compactNoticeDismissed = 'demo'" />
 
       <!-- Empty state: no lists imported yet -->
       <div

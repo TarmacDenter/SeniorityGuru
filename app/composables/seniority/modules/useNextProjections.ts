@@ -1,4 +1,4 @@
-import { addYearsDate, diffDateYears, formatMonthYear, formatYear } from '~/utils/date'
+import { addYearsDate, diffDateYears } from '~/utils/date'
 import { todayPlainDate } from '~/utils/temporal'
 import { isNoResult, resultOrNull } from '~/utils/seniority'
 import { useTrajectory } from './useTrajectory'
@@ -7,82 +7,24 @@ import { useScopeFilter } from '~/composables/useScopeFilter'
 import { useSeniorityCore } from './useSeniorityCore'
 import { useStanding } from './useStanding'
 
-const DEBOUNCE_MS = 500
-const SNAPSHOT_MIN_YEARS = 3
-const SNAPSHOT_DEFAULT_YEARS = 5
-const SNAPSHOT_MAX_YEARS = 10
+const SENIOR_DEFAULT_YEARS = 5
 const DEFAULT_TARGET_PERCENTILE = 50
 
-/** Seniority Percentile with one decimal so columns align, e.g. "62.4%". */
-const formatPercentile = (value: number) => `${value.toFixed(1)}%`
-
 /**
- * What the Next panel adds to the trajectory: Project forward with its Qualification comparison.
- * Reads the shared Scenario (Qualification Scope, Growth Assumptions); only the projection
- * horizon is local to the panel.
+ * What Trajectory adds to the trajectory: the scope overlay, Retirement Wave, Percentile Threshold
+ * and N-year retirement count. Reads the shared Scenario (Qualification Scope, Growth Assumptions).
  */
 export function useNextProjections() {
   const { analysis, anchoredAnalysis, listAnalysis, projectionEndDate } = useSeniorityCore()
   const { growthAssumptions, qualificationScope, scopeLabel, scopeLabels } = useScenario()
-  const { rankCard, retirementSnapshot } = useStanding(qualificationScope)
+  const { rankCard } = useStanding(qualificationScope)
   const trajectory = useTrajectory(growthAssumptions, qualificationScope)
 
-  // ── Project forward ──────────────────────────────────────────────────────
-  const projectForward = ref(false)
-  const yearsInput = ref(1)
-  const projectionYears = ref(0)
-  const projectionDate = computed(() => addYearsDate(todayPlainDate(), projectionYears.value))
-
+  /** Whole years until the Anchor Pilot retires (0 with no Anchor Pilot). */
   const sliderMax = computed(() => {
     if (!projectionEndDate.value) return 0
     return Math.max(1, Math.ceil(diffDateYears(todayPlainDate(), projectionEndDate.value)))
   })
-  const canProjectForward = computed(() => sliderMax.value > 0)
-  const yearsLabel = computed(() => `+${yearsInput.value}yr${yearsInput.value === 1 ? '' : 's'}`)
-  const asOfLabel = computed(() => projectionYears.value > 0 ? `As of ${projectionDate.value}` : 'As of today')
-
-  let debounceTimer: ReturnType<typeof setTimeout> | null = null
-  function cancelDebounce() {
-    if (debounceTimer) clearTimeout(debounceTimer)
-    debounceTimer = null
-  }
-
-  watch(projectForward, (on) => {
-    cancelDebounce()
-    if (on) {
-      projectionYears.value = yearsInput.value
-    }
-    else {
-      yearsInput.value = 1
-      projectionYears.value = 0
-    }
-  })
-  watch(yearsInput, (years) => {
-    cancelDebounce()
-    if (!projectForward.value) return
-    debounceTimer = setTimeout(() => {
-      projectionYears.value = years
-      debounceTimer = null
-    }, DEBOUNCE_MS)
-  })
-  if (getCurrentScope()) onScopeDispose(cancelDebounce)
-
-  // ── Qualification comparison ─────────────────────────────────────────────
-  const positionsOutput = computed(() => anchoredAnalysis.value?.qualificationPositions({
-    through: projectionDate.value,
-    growthAssumptions: growthAssumptions.value,
-  }).presentation ?? null)
-  const qualificationPositions = computed(() => {
-    const output = resultOrNull(positionsOutput.value)
-    return output ? [...output] : []
-  })
-  const qualificationPositionsNoResultLabel = computed(() => {
-    const output = positionsOutput.value
-    return output && isNoResult(output) ? output.label : null
-  })
-  const hasProjection = computed(() => qualificationPositions.value
-    .some(position => Math.abs(position.projectedPercentile - position.currentPercentile) > 0.1))
-  const rosterSummaryLabel = computed(() => rankCard.value.rosterSummaryLabel)
   /** The scoped Roster Size the trajectory's Seniority Percentile is measured against. */
   const percentileScaleLabel = computed(() => rankCard.value.percentileScaleLabel)
 
@@ -145,32 +87,31 @@ export function useNextProjections() {
     }),
   }
 
-  // ── Retirement snapshot ──────────────────────────────────────────────────
-  const snapshotYears = ref(SNAPSHOT_DEFAULT_YEARS)
-  const snapshotMaxYears = computed(() => Math.min(SNAPSHOT_MAX_YEARS, retirementSnapshot.value?.fullTrajectory.length ?? 0))
-  watch(snapshotMaxYears, (max) => {
-    snapshotYears.value = Math.max(Math.min(snapshotYears.value, max), Math.min(SNAPSHOT_MIN_YEARS, max))
+  // ── Retirements senior to the Anchor Pilot within N years ────────────────
+  const yearsChoice = ref(SENIOR_DEFAULT_YEARS)
+  /** Whole years until the Anchor Pilot retires; past that no retirement moves them. */
+  const seniorMaxYears = computed(() => Math.max(1, sliderMax.value))
+  const seniorYears = computed<number>({
+    get: () => Math.min(Math.max(1, yearsChoice.value), seniorMaxYears.value),
+    set: (years) => { yearsChoice.value = years },
   })
-  const snapshot = computed(() => {
-    const data = retirementSnapshot.value
-    if (!data) return null
-    const years = Math.min(snapshotYears.value, snapshotMaxYears.value)
-    return {
-      retireDateLabel: formatMonthYear(data.retireDate),
-      projectedRankLabel: data.atRetirement.rank.toLocaleString(),
-      percentileLabel: formatPercentile(data.atRetirement.percentile),
-      pilotsAheadLabel: (data.atRetirement.rank - 1).toLocaleString(),
-      rosterSizeLabel: data.rosterSize.toLocaleString(),
-      activePilotLabel: data.activePilotCount.toLocaleString(),
-      hypotheticalLabel: data.hypotheticalLabel,
-      rows: data.fullTrajectory.slice(-years).map(point => ({
-        yearLabel: formatYear(point.date),
-        rankLabel: point.rank.toLocaleString(),
-        percentileLabel: formatPercentile(point.percentile),
-        changeLabel: point.rankDelta,
-      })),
-    }
+  const seniorCount = computed<number | null>(() => {
+    if (!anchoredAnalysis.value) return null
+    const from = todayPlainDate()
+    return anchoredAnalysis.value.relativeUpcomingRetirements({
+      from,
+      through: addYearsDate(from, seniorYears.value),
+      qualificationScope: qualificationScope.value,
+      seniorOnly: true,
+    }).length
   })
+  const seniorLabel = computed(() => {
+    const count = seniorCount.value
+    if (count === null) return null
+    const years = seniorYears.value
+    return `${count} ${count === 1 ? 'retirement' : 'retirements'} senior to you in the next ${years === 1 ? 'year' : `${years} years`}`
+  })
+  const seniorRetirements = { years: seniorYears, maxYears: seniorMaxYears, count: seniorCount, label: seniorLabel }
 
   return {
     ...trajectory,
@@ -179,20 +120,7 @@ export function useNextProjections() {
     retirementWave,
     wavePoints,
     threshold,
-    snapshot,
-    snapshotYears,
-    snapshotMaxYears,
-    projectForward,
-    yearsInput,
-    projectionYears,
-    sliderMax,
-    canProjectForward,
-    yearsLabel,
-    asOfLabel,
-    qualificationPositions,
-    qualificationPositionsNoResultLabel,
-    hasProjection,
-    rosterSummaryLabel,
+    seniorRetirements,
     percentileScaleLabel,
     compareScopeLabel,
     compareScopeItems,

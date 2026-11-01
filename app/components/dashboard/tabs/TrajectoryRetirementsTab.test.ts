@@ -41,22 +41,20 @@ beforeEach(() => {
 })
 
 describe('Trajectory › Retirements', () => {
-  it('shows the retirement snapshot for the Anchor Pilot', async () => {
+  it('reads the count of retirements senior to the Anchor Pilot in the next N years', async () => {
     seedRoster()
     const wrapper = await mountRetirements()
 
-    expect(wrapper.text()).toContain('Retirement Snapshot')
-    expect(wrapper.text()).toContain('Jun 2045')
-    expect(wrapper.text()).toContain('Roster Size today')
-    expect(wrapper.text()).toContain('Final years')
+    expect(wrapper.text()).toMatch(/\d+ retirements? senior to you in the next (year|\d+ years)/)
+    expect(wrapper.text()).toContain('Retirements within')
   })
 
-  it('labels the retirement snapshot a Hypothetical Placement when the scope excludes the Anchor Pilot', async () => {
+  it('no longer shows the Retirement Snapshot', async () => {
     seedRoster()
-    useScenario().scopeLabel.value = 'JFK CA 737'
     const wrapper = await mountRetirements()
 
-    expect(wrapper.get('[data-testid="snapshot-hypothetical"]').text()).toContain('Hypothetical Placement in')
+    expect(wrapper.text()).not.toContain('Retirement Snapshot')
+    expect(wrapper.text()).not.toContain('Final years')
   })
 
   it('shows the Retirement Wave named for the scope and the Retirement Projections', async () => {
@@ -67,15 +65,6 @@ describe('Trajectory › Retirements', () => {
     expect(wrapper.text()).toContain('Retirement Wave — BOS FO 320')
     expect(wrapper.text()).toContain('Retirement Projections')
     expect(wrapper.text()).not.toContain('Percentile Threshold')
-  })
-
-  it('shows no snapshot when the Anchor Pilot has retired', async () => {
-    seedRoster()
-    mockStore.entries[0] = makeEntry({ seniority_number: 1, employee_number: 'E1', base: 'JFK', seat: 'CA', fleet: '737', retire_date: '2020-06-15' })
-    mockUserStore.employeeNumber = 'E1'
-    const wrapper = await mountRetirements()
-
-    expect(wrapper.text()).not.toContain('Retirement Snapshot')
   })
 
   it('asks for an Anchor Pilot before showing anything', async () => {
