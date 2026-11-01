@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { appTheme } from '~/theme';
+
+const isDev = import.meta.dev
 </script>
 
 <template>
@@ -9,5 +11,6 @@ import { appTheme } from '~/theme';
         <NuxtPage />
       </NuxtLayout>
     </UTheme>
+    <LazyDevColorInspector v-if="isDev" />
   </UApp>
 </template>

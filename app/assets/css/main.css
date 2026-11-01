@@ -1,59 +1,88 @@
 /* Fonts — imported here so Vite's CSS module resolver handles node_modules correctly */
-@import "@fontsource-variable/dm-sans/index.css";
-@import "@fontsource-variable/dm-sans/wght-italic.css";
-@import "@fontsource/jetbrains-mono/400.css";
+@import "@fontsource/ibm-plex-sans/400.css";
+@import "@fontsource/ibm-plex-sans/500.css";
+@import "@fontsource/ibm-plex-sans/600.css";
+@import "@fontsource/ibm-plex-serif/400.css";
+@import "@fontsource/ibm-plex-serif/400-italic.css";
+@import "@fontsource/ibm-plex-serif/600.css";
+@import "@fontsource/ibm-plex-mono/400.css";
+@import "@fontsource/ibm-plex-mono/500.css";
+@import "@fontsource/ibm-plex-mono/600.css";
 
 @import "tailwindcss";
 @import "@nuxt/ui";
 
 /* ============================================================
    1. DESIGN TOKENS
-      Custom palette definitions and typography.
-      Navy palette removed — dark mode now uses Tailwind's slate
-      directly, which sits neutrally with sky-blue accents.
+      The printed-list identity: sans for controls, serif for headings
+      and notes, mono for list rows and figures. Fonts are bundled
+      (@fontsource), never fetched from a CDN, so the app works offline.
    ============================================================ */
 @theme {
-  --font-sans: 'DM Sans Variable', system-ui, sans-serif;
-  --font-mono: 'JetBrains Mono', monospace;
+  --font-sans: 'IBM Plex Sans', system-ui, sans-serif;
+  --font-serif: 'IBM Plex Serif', Georgia, serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+}
+
+/* App-specific tokens Nuxt UI does not know. `inline` keeps them following the
+   light/dark values below, so `bg-mark`, `text-mark-ink`, `text-stamp` and `bg-desk` work in both modes. */
+@theme inline {
+  --color-mark: var(--mark);
+  --color-mark-ink: var(--mark-ink);
+  --color-stamp: var(--stamp);
+  --color-desk: var(--desk);
 }
 
 /* ============================================================
    2. SEMANTIC SURFACE OVERRIDES
-      Explicit overrides for both light and dark modes.
-      Light: clean slate-white. Dark: near-black slate.
-      Reference --color-* (Tailwind) not --ui-color-* (NuxtUI).
+      Printed-list paper and ink for both modes. Dark is the default
+      (nuxt.config.ts colorMode.preference). Light is greenbar paper,
+      dark is the same sheet on night paper.
+      --mark is the highlighter on the pilot's own line; --mark-ink is
+      the text on it and stays dark in both modes.
    ============================================================ */
 
-/* Light mode — explicit slate-based palette */
+/* Light mode: paper, greenbar and ink */
 :root {
-  --ui-bg: white;
-  --ui-bg-muted: var(--color-slate-50);
-  --ui-bg-elevated: white;
-  --ui-bg-accented: var(--color-slate-100);
-  --ui-border: var(--color-slate-200);
-  --ui-border-muted: var(--color-slate-100);
+  --ui-bg: #d5e4cd;
+  --ui-bg-muted: #dfe6dc;
+  --ui-bg-elevated: #f3f6f0;
+  --ui-bg-accented: #d2dfd0;
+  --ui-border: #a3b5a6;
+  --ui-border-muted: #c2d0c4;
 
-  --ui-text-dimmed: var(--color-slate-400);
-  --ui-text-muted: var(--color-slate-500);
-  --ui-text-toned: var(--color-slate-600);
-  --ui-text: var(--color-slate-800);
-  --ui-text-highlighted: var(--color-slate-950);
+  --ui-text-dimmed: #7b8993;
+  --ui-text-muted: #51606c;
+  --ui-text-toned: #3a4753;
+  --ui-text: #17212b;
+  --ui-text-highlighted: #0b131b;
+  --ui-text-inverted: #f3f6f0;
+
+  --mark: #ffe14d;
+  --mark-ink: #17212b;
+  --stamp: #b42318;
+  --desk: #c3cac1;
 }
 
-/* Dark mode — deep slate, near-black */
+/* Dark mode: night paper */
 .dark {
-  --ui-bg: var(--color-slate-950);
-  --ui-bg-muted: var(--color-slate-900);
-  --ui-bg-elevated: var(--color-slate-800);
-  --ui-bg-accented: var(--color-slate-700);
-  --ui-border: var(--color-slate-700);
-  --ui-border-muted: color-mix(in srgb, var(--color-slate-700) 50%, transparent);
+  --ui-bg: #11181b;
+  --ui-bg-muted: #151e22;
+  --ui-bg-elevated: #1a262b;
+  --ui-bg-accented: #1f3028;
+  --ui-border: #35463b;
+  --ui-border-muted: color-mix(in srgb, #35463b 55%, transparent);
 
-  --ui-text-dimmed: var(--color-slate-500);
-  --ui-text-muted: var(--color-slate-400);
-  --ui-text-toned: var(--color-slate-300);
-  --ui-text: var(--color-slate-100);
-  --ui-text-highlighted: white;
+  --ui-text-dimmed: #74837a;
+  --ui-text-muted: #9aa9a0;
+  --ui-text-toned: #c4cec6;
+  --ui-text: #e6ebe3;
+  --ui-text-highlighted: #ffffff;
+  --ui-text-inverted: #11181b;
+
+  --mark: #dad66e;
+  --stamp: #ff8f82;
+  --desk: #080c0e;
 }
 
 /* ============================================================
@@ -61,29 +90,33 @@
       Global defaults for both light and dark modes.
    ============================================================ */
 :root {
-  --ui-radius: 0.375rem;
+  --ui-radius: 0.25rem;
 
-  /* Light mode primary: sky-600 — better contrast on white than sky-500 */
-  --ui-primary: var(--color-sky-600);
+  /* Primary is ink: solid buttons and active nav read as printed black on paper. */
+  --ui-primary: #17212b;
 
   /* Primary color scale — app.config.ts cannot override --ui-color-primary-* at runtime;
-     these must be set here explicitly. Change sky-* to retheme. */
-  --ui-color-primary-50: var(--color-sky-50);
-  --ui-color-primary-100: var(--color-sky-100);
-  --ui-color-primary-200: var(--color-sky-200);
-  --ui-color-primary-300: var(--color-sky-300);
-  --ui-color-primary-400: var(--color-sky-400);
-  --ui-color-primary-500: var(--color-sky-500);
-  --ui-color-primary-600: var(--color-sky-600);
-  --ui-color-primary-700: var(--color-sky-700);
-  --ui-color-primary-800: var(--color-sky-800);
-  --ui-color-primary-900: var(--color-sky-900);
-  --ui-color-primary-950: var(--color-sky-950);
+     these must be set here explicitly. */
+  --ui-color-primary-50: var(--color-slate-50);
+  --ui-color-primary-100: var(--color-slate-100);
+  --ui-color-primary-200: var(--color-slate-200);
+  --ui-color-primary-300: var(--color-slate-300);
+  --ui-color-primary-400: var(--color-slate-400);
+  --ui-color-primary-500: var(--color-slate-500);
+  --ui-color-primary-600: var(--color-slate-600);
+  --ui-color-primary-700: var(--color-slate-700);
+  --ui-color-primary-800: var(--color-slate-800);
+  --ui-color-primary-900: var(--color-slate-900);
+  --ui-color-primary-950: var(--color-slate-950);
 }
 
 .dark {
-  /* Dark mode primary: sky-400 — glows on deep dark background */
-  --ui-primary: var(--color-sky-400);
+  /* Dark primary is paper-white ink on the night sheet */
+  --ui-primary: #e6ebe3;
+}
+
+body {
+  font-variant-numeric: tabular-nums;
 }
 
 /* ============================================================
@@ -92,7 +125,8 @@
       These color-code pilots by proximity to retirement:
         past     → already retired / retiring imminently
         imminent → retiring within ~2 years
-        soon     → retiring within ~5 years
+        soon     → retiring within ~5 years (teal, so it never reads as the yellow
+                   highlighter that marks the pilot's own line)
       Mapped to NuxtUI colors in app.config.ts (past/imminent/soon),
       but exact shade values are defined here for both modes.
       Light: shade 600 — Dark: shade 400 (better contrast per mode).
@@ -100,13 +134,13 @@
 :root {
   --ui-past: oklch(57.7% 0.245 27.325);     /* red-600 */
   --ui-imminent: oklch(64.6% 0.222 41.116); /* orange-600 */
-  --ui-soon: oklch(68.1% 0.162 75.834);     /* yellow-600 */
+  --ui-soon: oklch(60% 0.118 184.704);      /* teal-600 */
 }
 
 .dark {
   --ui-past: oklch(70.4% 0.191 22.216);     /* red-400 */
   --ui-imminent: oklch(75% 0.183 55.934);   /* orange-400 */
-  --ui-soon: oklch(85.2% 0.199 91.936);     /* yellow-400 */
+  --ui-soon: oklch(77.7% 0.152 181.912);    /* teal-400 */
 }
 
 /* ============================================================
