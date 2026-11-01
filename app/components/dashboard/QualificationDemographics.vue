@@ -6,7 +6,7 @@ import { useScenario } from '~/composables/useScenario'
 // Needs no Anchor Pilot; with one, the Years of service card marks the Anchor Pilot's bucket.
 const { qualificationScope } = useScenario()
 const {
-  hasResult, qualificationComposition, matchingPilotCount, ageDistribution, captainQualificationThresholds,
+  hasResult, qualificationComposition, qualificationSizes, matchingPilotCount, ageDistribution, captainQualificationThresholds,
   yearsOfServiceDistribution, yearsOfServiceBuckets, hasYearsOfService, retirementAge, userYos,
 } = useDemographics(qualificationScope)
 
@@ -51,7 +51,7 @@ watch(showSections, async (shown) => {
     <!-- Two independent columns, so a tall Sizes table does not stretch its neighbor. -->
     <div v-else class="grid grid-cols-1 items-start gap-6 lg:grid-cols-2">
       <div class="space-y-6">
-        <AnalyticsQualSizesCard :composition="qualificationComposition" />
+        <AnalyticsQualSizesCard :rows="qualificationSizes" />
 
         <UCard>
           <template #header>
