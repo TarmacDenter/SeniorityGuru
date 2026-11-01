@@ -91,6 +91,15 @@ describe('useHoldability', () => {
     expect(holdability.visibleGroups.value.map(group => group.seatLabel)).toEqual(['Captain'])
   })
 
+  it('names Hypothetical Placement once per seat table instead of on every row', () => {
+    seed()
+    const byLabel = Object.fromEntries(useHoldability().groups.value.map(group => [group.seatLabel, group.hypotheticalLabel]))
+    expect(byLabel).toEqual({
+      'Captain': 'Hypothetical Placement in all Captain Qualifications',
+      'First Officer': 'Hypothetical Placement in the other First Officer Qualifications',
+    })
+  })
+
   it('links each Qualification to Junior captains in Demographics', () => {
     seed()
     expect(useHoldability().juniorCaptainsLink).toBe('/dashboard/demographics#junior-captains')
