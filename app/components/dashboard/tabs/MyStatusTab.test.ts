@@ -118,7 +118,7 @@ describe('Now panel', () => {
       expect(glance.text()).toContain('Lists Uploaded')
     })
 
-    it('keeps Status by Base / Seat / Fleet and the improvement rate behind a disclosure', async () => {
+    it('keeps Status by Base / Seat / Fleet behind a disclosure', async () => {
       seedFive()
       const wrapper = await mountSuspended(harness(ref<QualificationScope>({})))
       expect(wrapper.text()).not.toContain('Status by Base / Seat / Fleet')
@@ -128,7 +128,6 @@ describe('Now panel', () => {
       await flushPromises()
 
       expect(wrapper.text()).toContain('Status by Base / Seat / Fleet')
-      expect(wrapper.text()).toContain('Improvement Rate')
 
       await wrapper.findAll('button').find(button => button.text().includes('Open Qualifications'))!.trigger('click')
       expect(useDashboardTabs().activeTab.value).toBe('qualifications')

@@ -1,10 +1,9 @@
 <script setup lang="ts">
-import { useStanding, useTrajectory } from '~/composables/seniority'
+import { useStanding } from '~/composables/seniority'
 
-// The short extras under the Now figures: a glance list, with the longer tables behind a disclosure.
-const { qualificationScope, growthAssumptions } = useScenario()
+// The short extras under the Now figures: a glance list, with the status table behind a disclosure (the improvement-rate sparkline now lives on Next).
+const { qualificationScope } = useScenario()
 const { glance, baseStatus, rankCard } = useStanding(qualificationScope)
-const { changes } = useTrajectory(growthAssumptions, qualificationScope)
 const { activeTab } = useDashboardTabs()
 </script>
 
@@ -24,7 +23,6 @@ const { activeTab } = useDashboardTabs()
       <template #content>
         <div class="mt-3 space-y-6">
           <DashboardBaseStatusTable :data="baseStatus" :no-result-label="rankCard.noResultLabel" />
-          <DashboardTrajectoryDeltaSparkline v-if="changes.length > 0" :changes="changes" />
           <UButton label="Open Qualifications" color="neutral" variant="link" size="sm" trailing-icon="i-lucide-arrow-right" class="px-0" @click="activeTab = 'qualifications'" />
         </div>
       </template>
