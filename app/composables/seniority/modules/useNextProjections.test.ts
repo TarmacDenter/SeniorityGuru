@@ -31,6 +31,7 @@ beforeEach(() => {
   const { scopeLabel, growthAssumptions } = useScenario()
   scopeLabel.value = 'Company-wide'
   growthAssumptions.value = { enabled: false, annualGrowthRate: 0.02 }
+  useState('trajectoryCompareScopeLabel').value = undefined
 })
 
 afterEach(() => {
@@ -162,5 +163,53 @@ describe('useNextProjections: retirement analysis', () => {
 
   it('names no best year without improvement data', () => {
     expect(useNextProjections().bestYearLabel.value).toBeNull()
+  })
+})
+
+describe('useNextProjections: Trajectory › Projection', () => {
+  it('overlays the trajectory within another Qualification Scope on the same axes', () => {
+    seedRoster()
+    const projections = useNextProjections()
+    const alone = projections.projectionChart.value
+    expect(alone.overlay).toBeNull()
+    expect(alone.label).toBe('Company-wide')
+    expect(projections.compareScopeItems.value).not.toContain('Company-wide')
+    expect(projections.compareScopeItems.value).toContain('JFK CA 737')
+
+    projections.compareScopeLabel.value = 'JFK CA 737'
+    const compared = projections.projectionChart.value
+    expect(compared.labels).toEqual(alone.labels)
+    expect(compared.data).toEqual(alone.data)
+    expect(compared.overlay).toMatchObject({
+      label: 'JFK CA 737 (Hypothetical Placement)',
+      hypotheticalLabel: 'Hypothetical Placement in JFK CA 737',
+    })
+    expect(compared.overlay!.data).toHaveLength(alone.labels.length)
+    expect(compared.overlay!.data).not.toEqual(alone.data)
+  })
+
+  it('drops the overlay when it names the scenario scope', () => {
+    seedRoster()
+    const projections = useNextProjections()
+    projections.compareScopeLabel.value = 'BOS FO 320'
+    useScenario().scopeLabel.value = 'BOS FO 320'
+
+    expect(projections.projectionChart.value.overlay).toBeNull()
+    expect(projections.projectionChart.value.label).toBe('BOS FO 320')
+  })
+
+  it('names the Roster Size the scoped projection is measured against', () => {
+    seedRoster()
+    const projections = useNextProjections()
+    expect(projections.percentileScaleLabel.value).toBe('Percentile measured against Roster Size 5 · Active pilots 5')
+
+    useScenario().scopeLabel.value = 'BOS FO 320'
+    expect(projections.percentileScaleLabel.value).toBe('Percentile measured against Roster Size 2 · Active pilots 2')
+  })
+
+  it('says the scoped trajectory ends at the Anchor Pilot retirement', () => {
+    seedRoster()
+    useScenario().scopeLabel.value = 'BOS FO 320'
+    expect(useNextProjections().endedByLabel.value).toBe('Projection ends at your retirement')
   })
 })

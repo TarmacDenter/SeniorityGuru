@@ -67,7 +67,7 @@ export interface PresentedTrajectoryChange extends TrajectoryChange {
 export interface PresentedSeniorityTrajectoryValue {
   chartData: { labels: string[]; data: number[] }
   changes: PresentedTrajectoryChange[]
-  /** Reason the samples stopped early, such as "Anchor Pilot retired". */
+  /** Why the samples stop early, worded as a stop, e.g. "Projection ends at your retirement". */
   endedByLabel: string | null
   /** "Hypothetical Placement in <scope>" when the Anchor Pilot is outside the scope; otherwise null. */
   hypotheticalLabel: string | null
@@ -91,6 +91,10 @@ export interface PresentedRetirementCountProjection {
   data: number[]
   scopedPilotCount: number
 }
+
+/** The plotted line keeps rendering up to the stop, so the reason reads as an end point, not as a no-result. */
+const ENDED_BY_LABELS: Record<NoResult['reason'], string> = { 'anchor-retired': 'Projection ends at your retirement' }
+const endedByLabelOf = (endedBy: NoResult | undefined): string | null => endedBy ? ENDED_BY_LABELS[endedBy.reason] : null
 
 /** Names the scope the Anchor Pilot is placed into when outside it; null for a member. */
 export function hypotheticalPlacementLabel(isHypothetical: boolean, scope: QualificationScope): string | null {
@@ -122,7 +126,7 @@ export function presentSeniorityTrajectory(
       data: trajectory.points.map(point => point.percentile),
     },
     changes,
-    endedByLabel: trajectory.endedBy?.label ?? null,
+    endedByLabel: endedByLabelOf(trajectory.endedBy),
     hypotheticalLabel: hypotheticalPlacementLabel(trajectory.isHypothetical, scope),
   }
 }
@@ -137,7 +141,7 @@ export function presentSeniorityTrajectoryComparison(
     labels: comparison.points.map(point => point.date.toString()),
     baselineData: comparison.points.map(point => point.baselinePercentile),
     comparisonData: comparison.points.map(point => point.comparisonPercentile),
-    endedByLabel: comparison.endedBy?.label ?? null,
+    endedByLabel: endedByLabelOf(comparison.endedBy),
     baselineHypotheticalLabel: hypotheticalPlacementLabel(comparison.baselineIsHypothetical, baselineScope),
     comparisonHypotheticalLabel: hypotheticalPlacementLabel(comparison.comparisonIsHypothetical, comparisonScope),
   }

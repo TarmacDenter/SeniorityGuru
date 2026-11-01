@@ -33,16 +33,15 @@ function emptyComparison(noResultLabel: string | null): ComparativeTrajectory {
   }
 }
 
-const KEY_CHANGE_COUNT = 5
-
 export function useTrajectory(
   growthAssumptions?: Ref<GrowthAssumptions>,
   qualificationScope?: Ref<QualificationScope> | ComputedRef<QualificationScope>,
 ): {
   chartData: ComputedRef<{ labels: string[]; data: number[] }>
+  /** One row per projection year within the Qualification Scope: the yearly-change table and its header chart. */
   changes: ComputedRef<PresentedTrajectoryChange[]>
-  /** The years with the largest percentile movement, in date order, for the Next panel. */
-  keyChanges: ComputedRef<PresentedTrajectoryChange[]>
+  /** e.g. "Best year: 2031 (+3.2pp)"; null when no year improves. */
+  bestYearLabel: ComputedRef<string | null>
   /** "Hypothetical Placement in <scope>" when the Anchor Pilot is outside the Qualification Scope; otherwise null. */
   hypotheticalLabel: ComputedRef<string | null>
   /** Why the samples stop early, e.g. "Anchor Pilot retired"; null when the window completes. */
@@ -72,12 +71,14 @@ export function useTrajectory(
   const chartData = computed(() => presented.value?.chartData ?? { labels: [], data: [] })
   const fullTrajectory = computed(() => domain.value?.points ?? [])
   const changes = computed(() => presented.value?.changes ?? [])
-  const keyChanges = computed(() => [...changes.value]
-    .filter(change => change.percentilePointChange !== 0)
-    .sort((a, b) => Math.abs(b.percentilePointChange) - Math.abs(a.percentilePointChange)
-      || a.date.toString().localeCompare(b.date.toString()))
-    .slice(0, KEY_CHANGE_COUNT)
-    .sort((a, b) => a.date.toString().localeCompare(b.date.toString())))
+  const bestYearLabel = computed(() => {
+    let best: PresentedTrajectoryChange | null = null
+    for (const change of changes.value) {
+      if (!best || change.percentilePointChange > best.percentilePointChange) best = change
+    }
+    if (!best || best.percentilePointChange <= 0) return null
+    return `Best year: ${best.yearLabel} (+${best.percentilePointChange.toFixed(1)}pp)`
+  })
   const hypotheticalLabel = computed(() => presented.value?.hypotheticalLabel ?? null)
   const endedByLabel = computed(() => presented.value?.endedByLabel ?? null)
 
@@ -114,7 +115,7 @@ export function useTrajectory(
   return {
     chartData,
     changes,
-    keyChanges,
+    bestYearLabel,
     hypotheticalLabel,
     endedByLabel,
     fullTrajectory,

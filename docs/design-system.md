@@ -87,5 +87,5 @@ Stamps, dot leaders, greenbar stripes and the ink gauge are not used.
 3. Navigation shell: Current, Trajectory, Demographics and List in the sidebar and bottom bar, with small views as tabs.
 4. Sections: each section and small view built on stock parts. Sorting, grouping and labels live in composables, with tests.
 5. Shared components: one anchored table (stock table, your line highlighted) for Current › Status and List.
-6. Remaining pages: Upload, Settings, landing, How it works.
+6. Remaining pages: Upload, Settings, landing, How it works. Done.
 7. Cleanup: remove the stamp and serif tokens, and components nothing references.
