@@ -117,6 +117,9 @@ vi.mock('~/composables/seniority/modules/useTrajectory', () => ({
     keyChanges: ref([]),
     hypotheticalLabel: ref(null),
     endedByLabel: ref(null),
+    fullTrajectory: ref([]),
+    computeRetirementProjection: () => ({ labels: [], data: [], scopedPilotCount: 0 }),
+    computeComparativeTrajectory: () => ({ labels: [], baselineData: [], comparisonData: [], noResultLabel: null }),
   }),
 }))
 
