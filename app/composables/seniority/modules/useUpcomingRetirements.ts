@@ -21,6 +21,8 @@ export interface RetirementRow {
 export interface RetirementFilterItem { label: string; value: string | null }
 
 const DEFAULT_HORIZON_YEARS = 2
+/** How long the slider must rest before the report recomputes. */
+const HORIZON_SETTLE_MS = 250
 
 type Raw = UpcomingRetirement | RelativeUpcomingRetirement
 
@@ -65,6 +67,17 @@ export function useUpcomingRetirements() {
     set: (years) => { yearsChoice.value = years },
   })
   const throughDate = computed(() => addYearsDate(asOfDate.value, yearsHorizon.value))
+
+  // The report follows the horizon only once the drag settles; the readout follows it live.
+  const settledChoice = ref(DEFAULT_HORIZON_YEARS)
+  let settleTimer: ReturnType<typeof setTimeout> | undefined
+  watch(yearsChoice, (years) => {
+    clearTimeout(settleTimer)
+    settleTimer = setTimeout(() => { settledChoice.value = years }, HORIZON_SETTLE_MS)
+  }, { flush: 'sync' })
+  onScopeDispose(() => clearTimeout(settleTimer))
+  const settledThroughDate = computed(() =>
+    addYearsDate(asOfDate.value, Math.min(Math.max(1, settledChoice.value), horizonMax.value)))
   const yearsText = computed(() => `${yearsHorizon.value} ${yearsHorizon.value === 1 ? 'year' : 'years'}`)
   const horizonLabel = computed(() => `${yearsText.value} · through ${throughDate.value}`)
   const emptyResultLabel = computed(() =>
@@ -106,7 +119,7 @@ export function useUpcomingRetirements() {
     if (!hasData.value || !analysis.value) return []
     const filter = {
       from: asOfDate.value,
-      through: throughDate.value,
+      through: settledThroughDate.value,
       qualificationScope: qualificationScope.value,
     }
     const raw: readonly Raw[] = anchoredAnalysis.value
