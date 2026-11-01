@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { nextTick } from 'vue'
+import { nextTick, ref } from 'vue'
+import type { QualificationScope } from '~/utils/seniority'
 import { useDemographics } from './useDemographics'
 import { useSeniorityCore, _resetCoreSingletons } from './useSeniorityCore'
 import { resetMockStores } from '~/test-utils/seniority-mocks'
@@ -31,24 +32,39 @@ function seed() {
 }
 
 describe('useDemographics', () => {
-  it('counts the matching pilots and narrows them with the Qualification filter', async () => {
+  it('follows the Qualification Scope it is given, including a fleet, seat or base alone', async () => {
     seed()
-    const demographics = useDemographics()
+    const scope = ref<QualificationScope>({})
+    const demographics = useDemographics(scope)
     expect(demographics.matchingPilotCount.value).toBe(3)
-    expect(demographics.qualificationLabel.value).toBe('')
 
-    demographics.filter.selectedBase.value = 'JFK'
+    scope.value = { base: 'JFK' }
     await nextTick()
-
     expect(demographics.matchingPilotCount.value).toBe(2)
     expect(demographics.qualificationComposition.value.map(row => row.qualificationLabel)).toEqual(['737 CA'])
-    expect(demographics.qualificationLabel.value).toContain('JFK')
+
+    scope.value = { seat: 'FO' }
+    await nextTick()
+    expect(demographics.qualificationComposition.value.map(row => row.qualificationLabel)).toEqual(['777 FO'])
+
+    scope.value = { fleet: '737' }
+    await nextTick()
+    expect(demographics.matchingPilotCount.value).toBe(2)
+  })
+
+  it('works without an Anchor Pilot', () => {
+    seed()
+    const demographics = useDemographics(ref({}))
+    expect(demographics.hasResult.value).toBe(true)
+    expect(demographics.matchingPilotCount.value).toBe(3)
+    expect(demographics.hasYearsOfService.value).toBe(true)
+    expect(demographics.userYos.value).toBeUndefined()
   })
 
   it('exposes distributions and the Anchor Pilot years of service', () => {
     seed()
     mockUserStore.employeeNumber = 'E1'
-    const demographics = useDemographics()
+    const demographics = useDemographics(ref({}))
 
     expect(demographics.ageDistribution.value.buckets).toBeDefined()
     expect(demographics.yearsOfServiceBuckets.value.length).toBeGreaterThan(0)
@@ -57,9 +73,10 @@ describe('useDemographics', () => {
   })
 
   it('has no result and no years of service before a list is loaded', () => {
-    const demographics = useDemographics()
+    const demographics = useDemographics(ref({}))
     expect(demographics.hasResult.value).toBe(false)
     expect(demographics.matchingPilotCount.value).toBe(0)
+    expect(demographics.hasYearsOfService.value).toBe(false)
     expect(demographics.userYos.value).toBeUndefined()
   })
 })

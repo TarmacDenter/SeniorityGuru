@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import { flushPromises } from '@vue/test-utils'
 import { _resetCoreSingletons, useSeniorityCore } from '~/composables/seniority/modules/useSeniorityCore'
+import { useScenario } from '~/composables/useScenario'
 import { resetMockStores } from '~/test-utils/seniority-mocks'
 import QualificationDemographics from './QualificationDemographics.vue'
 
@@ -15,16 +16,17 @@ vi.mock('vue-chartjs', () => ({ Bar: { template: '<div />' }, Line: { template: 
 
 const { makeEntry } = await import('~/test-utils/factories')
 
+// No employee number: Demographics must still read fully.
 beforeEach(() => {
   _resetCoreSingletons()
   resetMockStores(mockStore, mockUserStore)
   useSeniorityCore().newHire.reset()
+  useScenario().scopeLabel.value = 'Company-wide'
   mockStore.entries = [
     makeEntry({ employee_number: 'E1', base: 'JFK', seat: 'CA', fleet: '737', retire_date: '2050-01-01' }),
     makeEntry({ employee_number: 'E2', base: 'JFK', seat: 'CA', fleet: '737', retire_date: '2050-01-01' }),
     makeEntry({ employee_number: 'E3', base: 'LAX', seat: 'FO', fleet: '777', retire_date: '2050-01-01' }),
   ]
-  mockUserStore.employeeNumber = 'E1'
 })
 
 async function mountReady() {
@@ -35,35 +37,35 @@ async function mountReady() {
 }
 
 describe('Qualification demographics', () => {
-  it('shows the filter bar and each demographics section by name', async () => {
+  it('shows every card without an employee number', async () => {
     const wrapper = await mountReady()
     const text = wrapper.text()
 
-    expect(text).toContain('All Fleets')
-    for (const heading of ['Most Junior Captain by Qual', 'Qual Composition', 'Age Distribution', 'Years of Service']) {
-      expect(text).toContain(heading)
+    for (const title of ['Sizes', 'Composition', 'Ages', 'Years of service', 'Junior captains']) {
+      expect(text).toContain(title)
     }
     expect(text).toContain('737 CA')
     expect(text).toContain('777 FO')
+    expect(text).toContain('Median')
+    expect(text).not.toContain('You:')
+    expect(text).not.toContain('All Fleets')
   })
 
-  it('narrows the composition and titles the charts when a base is chosen', async () => {
+  it('follows the scenario Qualification Scope', async () => {
     const wrapper = await mountReady()
 
-    wrapper.findComponent({ name: 'AnalyticsQualFilterBar' }).vm.$emit('update:base', 'LAX')
+    useScenario().scopeLabel.value = 'LAX'
     await flushPromises()
 
     expect(wrapper.text()).toContain('777 FO')
     expect(wrapper.text()).not.toContain('737 CA')
-    expect(wrapper.text()).toMatch(/Age Distribution\s+—\s+LAX/)
   })
 
-  it('explains the projection assumptions and lets a pilot dismiss them', async () => {
+  it('says plainly when the import has no ages', async () => {
+    mockStore.entries = mockStore.entries.map(entry => ({ ...entry, retire_date: undefined }))
     const wrapper = await mountReady()
-    expect(wrapper.text()).toContain('Projection Assumptions')
 
-    await wrapper.findAll('button').find(button => button.text() === 'Dismiss')!.trigger('click')
-    expect(wrapper.text()).not.toContain('Projection Assumptions')
-    expect(wrapper.text()).toContain('Projections based on scheduled retirements only.')
+    expect(wrapper.text()).toContain('No ages are available for the pilots in this Qualification Scope.')
+    expect(wrapper.text()).toContain('Years of service')
   })
 })
