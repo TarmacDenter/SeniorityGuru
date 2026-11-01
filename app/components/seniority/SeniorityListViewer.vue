@@ -2,7 +2,7 @@
 import { h, resolveComponent } from 'vue'
 import { useMediaQuery } from '@vueuse/core'
 import { getPaginationRowModel } from '@tanstack/vue-table'
-import type { Row, Table } from '@tanstack/vue-table'
+import type { Table } from '@tanstack/vue-table'
 import type { TableColumn } from '@nuxt/ui'
 import type { PresentedQualificationViewerAnalysis, PresentedQualificationViewerEntry, QualificationScope } from '~/utils/seniority'
 import { useSeniorityCore, useSeniorityLists } from '~/composables/seniority'
@@ -120,16 +120,12 @@ const columns: TableColumn<SeniorityRow>[] = [
   { accessorKey: 'status', header: 'Status', cell: ({ row }) => row.original.status === 'active' ? '' : row.original.status },
 ]
 
-const tableMeta = {
-  class: {
-    tr: (row: Row<SeniorityRow>) => [
-      row.original.isAnchor ? 'bg-primary/10' : '',
-      row.original.isMarker ? 'ring-1 ring-inset ring-primary' : '',
-      row.original.status === 'retired' ? 'bg-past/10 text-muted' : '',
-      row.original.retirementTimeline === 'imminent' ? 'bg-imminent/10' : '',
-      row.original.retirementTimeline === 'soon' ? 'bg-soon/10' : '',
-    ].join(' ').trim(),
-  },
+function rowClass(row: SeniorityRow): string {
+  return [
+    row.isMarker ? 'ring-1 ring-inset ring-primary' : '',
+    row.retirementTimeline === 'imminent' ? 'bg-imminent/10' : '',
+    row.retirementTimeline === 'soon' ? 'bg-soon/10' : '',
+  ].join(' ').trim()
 }
 
 const latestList = computed(() => lists.value[0] ?? null)
@@ -201,7 +197,7 @@ function scrollToUserRow() {
         <template v-else>
           <p v-if="latestList && !isCompact" class="shrink-0 text-sm text-muted mb-4">{{ isQualMode ? `${qualificationScope.base}-${qualificationScope.fleet}-${qualificationScope.seat}` : 'Company-wide' }} · {{ projected.rosterSize }} on roster · {{ projected.activePilotCount }} active</p>
           <div class="flex min-h-0 flex-1 flex-col">
-            <UTable ref="table" v-model:global-filter="globalFilter" v-model:pagination="pagination" v-model:expanded="expanded" v-model:column-visibility="columnVisibility" :data="tableData" :columns="columns" :loading="isLoading" :pagination-options="{ getPaginationRowModel: getPaginationRowModel() }" sticky :meta="tableMeta" :expanded-options="{ getRowCanExpand: () => true }" :ui="{ thead: 'bg-default', ...(isCompact ? { th: 'px-2 py-2 text-xs', td: 'px-2 py-1.5 text-xs' } : {}) }" class="min-h-0 w-full flex-1 overscroll-contain text-xs sm:text-base">
+            <SeniorityAnchoredTable ref="table" v-model:global-filter="globalFilter" v-model:pagination="pagination" v-model:expanded="expanded" v-model:column-visibility="columnVisibility" mark-column="name" :row-class="rowClass" :data="tableData" :columns="columns" :loading="isLoading" :pagination-options="{ getPaginationRowModel: getPaginationRowModel() }" sticky :expanded-options="{ getRowCanExpand: () => true }" :ui="{ thead: 'bg-default', ...(isCompact ? { th: 'px-2 py-2 text-xs', td: 'px-2 py-1.5 text-xs' } : {}) }" class="min-h-0 w-full flex-1 overscroll-contain text-xs sm:text-base">
               <template #expanded="{ row }">
                 <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 px-4 py-3 text-xs">
                   <div><p class="text-muted mb-0.5">Employee number</p><p>{{ row.original.employeeNumber }}</p></div>
@@ -212,7 +208,7 @@ function scrollToUserRow() {
                   <div><p class="text-muted mb-0.5">Retirement</p><p>{{ row.original.retirementDate }} <span v-if="row.original.status !== 'active'">· {{ row.original.status }}</span></p></div>
                 </div>
               </template>
-            </UTable>
+            </SeniorityAnchoredTable>
           </div>
         </template>
       </div>

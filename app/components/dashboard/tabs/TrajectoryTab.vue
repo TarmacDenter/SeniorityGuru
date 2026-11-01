@@ -173,7 +173,7 @@ const ready = useDeferredReady()
       <p data-testid="scoped-roster-size" class="text-xs text-muted">{{ scopedRankCard.percentileScaleLabel ?? '--' }}</p>
 
       <p v-if="waveTrajectoryNoResult" data-testid="no-result" class="text-sm text-muted">{{ waveTrajectoryNoResult.label }}</p>
-      <UBadge v-else-if="waveTrajectoryHypotheticalLabel" data-testid="hypothetical-placement" color="warning" variant="subtle" size="sm">
+      <UBadge v-else-if="waveTrajectoryHypotheticalLabel" data-testid="hypothetical-placement" color="neutral" variant="outline" size="sm">
         {{ waveTrajectoryHypotheticalLabel }}
       </UBadge>
       <p v-if="waveTrajectoryEndedByLabel" data-testid="scoped-trajectory-ended-by" class="text-xs text-muted">{{ waveTrajectoryEndedByLabel }}</p>

@@ -27,13 +27,15 @@ const years = defineModel<number>('years', { required: true })
   <section aria-labelledby="retirement-snapshot-heading">
     <h3 id="retirement-snapshot-heading" class="font-serif text-lg font-semibold text-highlighted">Retirement Snapshot</h3>
 
-    <p
+    <UBadge
       v-if="snapshot.hypotheticalLabel"
       data-testid="snapshot-hypothetical"
-      class="mt-2 inline-block -rotate-1 border-2 border-stamp px-2 py-0.5 font-sans text-sm font-semibold text-stamp"
+      color="neutral"
+      variant="outline"
+      class="mt-2"
     >
       {{ snapshot.hypotheticalLabel }}
-    </p>
+    </UBadge>
 
     <dl class="mt-3 grid grid-cols-2 gap-x-6 sm:grid-cols-3">
       <div class="flex items-baseline gap-2 border-b border-dotted border-default py-1.5">
