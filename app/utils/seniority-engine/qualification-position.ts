@@ -19,6 +19,7 @@ import type {
 import { findPercentileCrossing } from './trajectory-analysis'
 import { qualificationKey } from './qualification-key'
 import { percentileValue } from './percentile-value'
+import { findLatestRetirementDate } from './retirement-analysis'
 import { isRetiredBy } from '~/utils/date'
 import { Temporal, type PlainDate } from '~/utils/temporal'
 
@@ -74,8 +75,8 @@ function findHoldableYear(
 /** The last date a projection can reach: the pilot's retirement, or the list's last scheduled retirement. */
 export function projectionHorizon(entries: readonly SeniorityEntry[], retireDate: PlainDate | null | undefined, asOfDate: PlainDate): PlainDate {
   if (retireDate) return retireDate
-  return entries.reduce<PlainDate>((latest, entry) =>
-    entry.retire_date && Temporal.PlainDate.compare(entry.retire_date, latest) > 0 ? entry.retire_date : latest, asOfDate)
+  const latest = findLatestRetirementDate(entries)
+  return latest && Temporal.PlainDate.compare(latest, asOfDate) > 0 ? latest : asOfDate
 }
 
 /** A pilot's company-wide Seniority Percentile by year from the As-of Date until they retire. */

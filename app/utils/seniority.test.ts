@@ -396,3 +396,17 @@ describe('unimproving trajectory caption', () => {
     expect(resultOf(output.presentation).bestYearLabel).toBeNull()
   })
 })
+
+
+describe('Qualification projection horizon fallback', () => {
+  it('keeps the As-of Date sample when the undated Anchor Pilot outlasts all scheduled retirements', () => {
+    const qualification = { base: 'JFK', seat: 'CA', fleet: '737' }
+    const analysis = seniority.createSeniorityAnalysis({ asOfDate, entries: [
+      makeEntry({ seniority_number: 1, employee_number: 'retired', ...qualification, retire_date: '2025-01-01' }),
+      makeEntry({ seniority_number: 2, employee_number: 'anchor', ...qualification, retire_date: undefined }),
+    ] }).withAnchor('anchor')
+    const detail = resultOf(analysis.holdabilityDetail({ qualification }).presentation)
+    expect(detail?.labels).toEqual(['2026-06-15'])
+    expect(detail?.anchorSeries).toEqual([100])
+  })
+})
