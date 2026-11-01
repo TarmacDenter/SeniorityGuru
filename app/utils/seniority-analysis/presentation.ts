@@ -212,7 +212,6 @@ export function presentSeniorityStanding(standing: SeniorityStanding | NoResult,
   const rosterSummary = `Roster Size ${formatSeniorityCount(standing.rosterSize)} · Active pilots ${formatSeniorityCount(standing.activePilotCount)}`
   return {
     ...standing,
-    rollingNext12MonthRetirementsLabel: formatSeniorityCount(standing.rollingNext12MonthRetirements),
     retirementsSeniorToAnchorLabel: `${formatSeniorityCount(standing.rollingNext12MonthRetirementsSeniorToAnchor)} senior to you`,
     retirementsSeniorToAnchorCountLabel: formatSeniorityCount(standing.rollingNext12MonthRetirementsSeniorToAnchor),
     rosterSizeLabel: qualifiers.length > 0 ? `Roster Size (${qualifiers.join(', ')})` : 'Roster Size',
@@ -233,7 +232,6 @@ export function presentSeniorityStanding(standing: SeniorityStanding | NoResult,
       percentileLabel: formatSeniorityPercentile(item.seniorityPercentile),
       seatLabel: formatSeatLabel(item.qualification.seat),
       baseFleetLabel: `${item.qualification.base} ${item.qualification.fleet}`,
-      rosterTrendLabel: `${formatQualification(item.qualification)} · of ${formatSeniorityCount(item.rosterSize)} on roster · ${formatSeniorityCount(item.activePilotCount)} active`,
       hypotheticalLabel: hypotheticalPlacementLabel(item.isHypothetical, item.qualification),
     })),
   }

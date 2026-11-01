@@ -79,6 +79,7 @@ const rowId = (row: HoldabilityRow) => row.key
           <div v-else class="space-y-3">
             <AppButtonToggle v-if="seatOptions.length > 1" v-model="seat" :options="seatOptions" aria-label="Seat" />
             <section v-for="group in groups" :key="group.seat" :aria-label="group.seatLabel">
+              <UBadge v-if="group.hypotheticalLabel" color="neutral" variant="outline" size="sm" class="mb-2">{{ group.hypotheticalLabel }}</UBadge>
               <SeniorityAnchoredTable
                 :data="group.rows"
                 :columns="columns"
@@ -98,7 +99,6 @@ const rowId = (row: HoldabilityRow) => row.key
                     <UIcon :name="selectedKey === row.original.key ? 'i-lucide-chevron-down' : 'i-lucide-chevron-right'" class="size-4 shrink-0" aria-hidden="true" />
                     {{ row.original.baseFleetLabel }}
                   </button>
-                  <UBadge v-if="row.original.hypotheticalLabel" color="neutral" variant="outline" size="sm">{{ row.original.hypotheticalLabel }}</UBadge>
                   </div>
                   <div class="mt-1 whitespace-normal sm:hidden">
                     <span :class="row.original.holdableStatus === 'now' ? 'font-semibold' : ''">{{ row.original.holdableLabel }}</span>

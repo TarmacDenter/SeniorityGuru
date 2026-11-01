@@ -56,10 +56,11 @@ useListSelectionRoute()
 
 const { showBanner: showInstallBanner } = usePwaInstall()
 const { showBanner: showDemoNotice } = useDemoBanner()
-const { hasData } = useSeniorityCore()
+const { hasData, hasAnchor } = useSeniorityCore()
 const { scopeLabel, scopeLabels, growthAssumptions, growthLabel, asOfLabel } = useScenario()
 const compactNoticeDismissed = ref<string | null>(null)
-const showScenarioStrip = computed(() => !loading.value && hasData.value && !!section.value?.hasScenario)
+const showScenarioStrip = computed(() => !loading.value && hasData.value && !!section.value?.hasScenario
+  && (hasAnchor.value || !section.value.needsAnchor))
 // The list picker serves the List views that read the chosen list; Compare and Uploads pick their own.
 const showListPicker = computed(() => route.path === '/dashboard/list/full' || route.path === '/dashboard/list/retirements')
 const compactNotice = computed(() => {

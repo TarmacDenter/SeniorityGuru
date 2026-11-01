@@ -21,6 +21,8 @@ export interface HoldabilityRow extends BaseStatusRow {
 export interface HoldabilitySeatGroup {
   seat: string
   seatLabel: string
+  /** Names Hypothetical Placement once for the seat's table; null when the Anchor Pilot is in every row. */
+  hypotheticalLabel: string | null
   rows: HoldabilityRow[]
 }
 
@@ -43,6 +45,12 @@ function keyOf(qualification: { base: string, seat: string, fleet: string }): st
   return `${qualification.fleet} ${qualification.seat} ${qualification.base}`
 }
 
+function seatHypotheticalLabel(group: { seatLabel: string, rows: { hypotheticalLabel: string | null }[] }): string | null {
+  const hypothetical = group.rows.filter(row => row.hypotheticalLabel).length
+  if (hypothetical === 0) return null
+  return `Hypothetical Placement in ${hypothetical === group.rows.length ? 'all' : 'the other'} ${group.seatLabel} Qualifications`
+}
+
 /**
  * Current › Holdability: every Qualification with today's Rank and its Holdable Year, and the selected
  * Qualification's detail series. Holdable Year is measured from the As-of Date, so Project forward does not move it.
@@ -60,6 +68,7 @@ export function useHoldability(
 
   const groups = computed<HoldabilitySeatGroup[]>(() => qualificationGroups.value.map(group => ({
     ...group,
+    hypotheticalLabel: seatHypotheticalLabel(group),
     rows: group.rows.flatMap((row) => {
       const key = keyOf(row)
       const position = positionsByKey.value.get(key)

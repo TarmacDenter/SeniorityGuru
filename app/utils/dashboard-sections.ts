@@ -14,6 +14,8 @@ export interface DashboardSection {
   views: DashboardView[]
   /** Whether the shared Scenario toolbar drives this section. List shows only its list picker. */
   hasScenario: boolean
+  /** Whether the section needs an Anchor Pilot; without one it shows only an empty state. */
+  needsAnchor: boolean
 }
 
 export const DASHBOARD_SECTIONS: DashboardSection[] = [
@@ -27,6 +29,7 @@ export const DASHBOARD_SECTIONS: DashboardSection[] = [
       { label: 'Holdability', path: '/dashboard/current/holdability' },
     ],
     hasScenario: true,
+    needsAnchor: true,
   },
   {
     key: 'trajectory',
@@ -38,6 +41,7 @@ export const DASHBOARD_SECTIONS: DashboardSection[] = [
       { label: 'Retirements', path: '/dashboard/trajectory/retirements' },
     ],
     hasScenario: true,
+    needsAnchor: true,
   },
   {
     key: 'demographics',
@@ -46,6 +50,7 @@ export const DASHBOARD_SECTIONS: DashboardSection[] = [
     path: '/dashboard/demographics',
     views: [],
     hasScenario: true,
+    needsAnchor: false,
   },
   {
     key: 'list',
@@ -59,6 +64,7 @@ export const DASHBOARD_SECTIONS: DashboardSection[] = [
       { label: 'Uploads', path: '/dashboard/list/uploads' },
     ],
     hasScenario: false,
+    needsAnchor: false,
   },
 ]
 

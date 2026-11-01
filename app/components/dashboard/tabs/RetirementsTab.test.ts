@@ -79,6 +79,7 @@ describe('RetirementsTab', () => {
 
     await wrapper.find('[role="slider"]').trigger('keydown', { key: 'ArrowRight' })
     expect(wrapper.text()).toContain(`3 years · through ${inMonths(36)}`)
-    expect(bodyRows(wrapper)[1]).toContain(inMonths(30))
+    expect(bodyRows(wrapper)).toHaveLength(1)
+    await vi.waitFor(() => expect(bodyRows(wrapper)[1]).toContain(inMonths(30)))
   })
 })

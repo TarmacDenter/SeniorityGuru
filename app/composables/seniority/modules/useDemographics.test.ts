@@ -52,6 +52,24 @@ describe('useDemographics', () => {
     expect(demographics.matchingPilotCount.value).toBe(2)
   })
 
+  it('lists sizes by seat, then fleet, then base, with ready-to-render counts', () => {
+    const retire_date = '2050-01-01'
+    mockStore.entries = [
+      makeEntry({ employee_number: 'E1', base: 'LAX', seat: 'FO', fleet: '777', retire_date }),
+      makeEntry({ employee_number: 'E2', base: 'JFK', seat: 'CA', fleet: '737', retire_date }),
+      makeEntry({ employee_number: 'E3', base: 'ATL', seat: 'CA', fleet: '737', retire_date }),
+      makeEntry({ employee_number: 'E4', base: 'JFK', seat: 'CA', fleet: '320', retire_date }),
+      makeEntry({ employee_number: 'E5', base: 'JFK', seat: 'CA', fleet: '737', retire_date }),
+    ]
+    const { qualificationSizes } = useDemographics(ref({}))
+    expect(qualificationSizes.value.map(row => [row.fleet, row.seat, row.base, row.countLabel])).toEqual([
+      ['320', 'CA', 'JFK', '1'],
+      ['737', 'CA', 'ATL', '1'],
+      ['737', 'CA', 'JFK', '2'],
+      ['777', 'FO', 'LAX', '1'],
+    ])
+  })
+
   it('works without an Anchor Pilot', () => {
     seed()
     const demographics = useDemographics(ref({}))

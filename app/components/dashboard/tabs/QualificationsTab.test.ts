@@ -18,6 +18,7 @@ function row(overrides: Partial<HoldabilityRow>): HoldabilityRow {
 const groups: HoldabilitySeatGroup[] = [{
   seat: 'CA',
   seatLabel: 'Captain',
+  hypotheticalLabel: 'Hypothetical Placement in the other Captain Qualifications',
   rows: [
     row({ isAnchorCurrentQualification: true, isAnchor: true }),
     row({
@@ -70,6 +71,16 @@ describe('Current › Holdability', () => {
     expect(text).toContain('Holdable now')
     expect(text).toContain('Holdable from 2029')
     expect(text).toContain('Not before your retirement')
+  })
+
+  it('names Hypothetical Placement once for the seat, not on every row', async () => {
+    const hypothetical = (label: string) => row({ key: label, baseFleetLabel: label, hypotheticalLabel: `Hypothetical Placement in ${label}` })
+    const many: HoldabilitySeatGroup[] = [{ ...groups[0]!, rows: [row({}), hypothetical('LAX 777'), hypothetical('SFO 787')] }]
+    const wrapper = await mountSuspended(QualificationsTab, { props: props({ groups: many }), global })
+    const text = wrapper.text()
+
+    expect(text.match(/Hypothetical Placement/g)).toHaveLength(1)
+    expect(text).toContain('Hypothetical Placement in the other Captain Qualifications')
   })
 
   it('offers one seat at a time', async () => {

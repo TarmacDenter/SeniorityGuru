@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { _resetCoreSingletons, useSeniorityCore } from './useSeniorityCore'
 import { useUpcomingRetirements } from './useUpcomingRetirements'
 import { useScenario } from '~/composables/useScenario'
@@ -20,12 +20,15 @@ function pilot(n: number, retireInMonths: number, overrides: Record<string, unkn
 }
 
 beforeEach(() => {
+  vi.useFakeTimers()
   _resetCoreSingletons()
   resetMockStores(mockStore, mockUserStore)
   mockStore.currentListId = null
   useSeniorityCore().newHire.reset()
   useScenario().scopeLabel.value = 'Company-wide'
 })
+
+afterEach(() => { vi.useRealTimers() })
 
 describe('useUpcomingRetirements', () => {
   it('lists retirements inside the two-year horizon, soonest first, with readable labels', () => {
@@ -42,6 +45,22 @@ describe('useUpcomingRetirements', () => {
 
     const { rows, yearsHorizon } = useUpcomingRetirements()
     yearsHorizon.value = 5
+    vi.advanceTimersByTime(250)
+    expect(rows.value.map(row => row.seniorityNumber)).toEqual([1, 2])
+  })
+
+  it('moves the readout with the slider but recomputes rows only after the drag settles', () => {
+    mockStore.entries = [pilot(1, 6), pilot(2, 40), pilot(3, 600)]
+
+    const { rows, yearsHorizon, horizonLabel } = useUpcomingRetirements()
+    expect(rows.value.map(row => row.seniorityNumber)).toEqual([1])
+    yearsHorizon.value = 4
+    vi.advanceTimersByTime(100)
+    yearsHorizon.value = 5
+    expect(horizonLabel.value).toBe(`5 years · through ${inMonths(60)}`)
+    vi.advanceTimersByTime(200)
+    expect(rows.value.map(row => row.seniorityNumber)).toEqual([1])
+    vi.advanceTimersByTime(100)
     expect(rows.value.map(row => row.seniorityNumber)).toEqual([1, 2])
   })
 
@@ -85,6 +104,7 @@ describe('useUpcomingRetirements', () => {
     expect(horizonLabel.value).toBe(`2 years · through ${inMonths(24)}`)
     expect(horizonMax.value).toBe(9)
     yearsHorizon.value = horizonMax.value
+    vi.advanceTimersByTime(250)
     expect(rows.value.map(row => row.seniorityNumber)).toEqual([1, 3, 2])
     yearsHorizon.value = 1
     expect(horizonLabel.value).toBe(`1 year · through ${inMonths(12)}`)
@@ -134,6 +154,16 @@ describe('useUpcomingRetirements', () => {
 
     const { rows } = useUpcomingRetirements()
     expect(rows.value.map(row => row.seniorityNumber)).toEqual([1])
+  })
+
+  it('measures Rank relative to me as of the selected list\'s As-of Date, not today', () => {
+    mockStore.entries = [pilot(1, -20), pilot(2, -30), pilot(3, 600)]
+    mockStore.lists = [{ id: 7, title: 'Old list', effectiveDate: Temporal.PlainDate.from(inMonths(-36)) }]
+    mockStore.currentListId = 7
+    mockUserStore.employeeNumber = 'E3'
+
+    const { rows } = useUpcomingRetirements()
+    expect(rows.value.map(row => [row.seniorityNumber, row.relativeLabel])).toEqual([[2, '+1'], [1, '+2']])
   })
 
   it('is empty without a list', () => {

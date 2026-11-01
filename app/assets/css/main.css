@@ -20,11 +20,10 @@
 }
 
 /* App-specific tokens Nuxt UI does not know. `inline` keeps them following the
-   light/dark values below, so `bg-mark`, `text-mark-ink`, `text-stamp` and `bg-desk` work in both modes. */
+   light/dark values below, so `bg-mark`, `text-mark-ink` and `bg-desk` work in both modes. */
 @theme inline {
   --color-mark: var(--mark);
   --color-mark-ink: var(--mark-ink);
-  --color-stamp: var(--stamp);
   --color-desk: var(--desk);
 }
 
@@ -55,7 +54,6 @@
 
   --mark: #ffe14d;
   --mark-ink: #17212b;
-  --stamp: #b42318;
   --desk: #c3cac1;
 }
 
@@ -76,7 +74,6 @@
   --ui-text-inverted: #11181b;
 
   --mark: #dad66e;
-  --stamp: #ff8f82;
   --desk: #080c0e;
 }
 

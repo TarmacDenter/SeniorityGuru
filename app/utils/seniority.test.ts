@@ -255,13 +255,6 @@ describe('presented Standing labels', () => {
     expect(presentation.rosterSizeLabel).toBe('Roster Size (hypothetical)')
     expect(presentation.rosterSizeTrend).toBe('includes you')
   })
-
-  it('describes each Qualification row with its own roster and active counts', () => {
-    const rows = resultOf(createAnalysis().withAnchor('125').seniorityStanding().presentation).qualificationStandings
-    const own = rows.find(row => row.isAnchorCurrentQualification)!
-
-    expect(own.rosterTrendLabel).toBe('CA/737/JFK · of 3 on roster · 2 active')
-  })
 })
 
 describe('Standing for a scope with no real pilots', () => {
