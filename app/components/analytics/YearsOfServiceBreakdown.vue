@@ -30,22 +30,18 @@ const props = defineProps<{
 
 const { defaults, colors } = useChartTheme()
 
+function isUserBucket(minYos: number): boolean {
+  return props.userYos !== undefined && props.userYos >= minYos && props.userYos < minYos + 1
+}
+
 const chartData = computed(() => ({
   labels: props.histogram.map((b) => b.label),
   datasets: [
     {
       label: 'Pilots',
       data: props.histogram.map((b) => b.count),
-      backgroundColor: props.histogram.map((b) =>
-        props.userYos !== undefined && props.userYos >= b.minYos && props.userYos < b.minYos + 1
-          ? 'rgba(14, 165, 233, 0.8)'   // sky-500 — user's bucket
-          : colors.primaryLight,
-      ),
-      borderColor: props.histogram.map((b) =>
-        props.userYos !== undefined && props.userYos >= b.minYos && props.userYos < b.minYos + 1
-          ? '#0ea5e9'
-          : colors.primary,
-      ),
+      backgroundColor: props.histogram.map(b => isUserBucket(b.minYos) ? colors.mark : colors.inkFill),
+      borderColor: props.histogram.map(b => isUserBucket(b.minYos) ? colors.markInk : colors.ink),
       borderWidth: 1,
     },
   ],
@@ -94,7 +90,7 @@ const chartOptions = computed<ChartOptions<'bar'>>(() => ({
       <span>P75 <strong class="text-highlighted font-mono">{{ distribution.p75.toFixed(1) }}y</strong></span>
       <span>P90 <strong class="text-highlighted font-mono">{{ distribution.p90.toFixed(1) }}y</strong></span>
       <span>Most junior entry <strong class="text-highlighted font-mono">{{ distribution.entryFloor.toFixed(1) }}y</strong></span>
-      <span v-if="userYos !== undefined" class="text-primary font-semibold">
+      <span v-if="userYos !== undefined" class="text-highlighted font-semibold">
         You: {{ userYos.toFixed(1) }}y
       </span>
     </div>

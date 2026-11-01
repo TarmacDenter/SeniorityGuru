@@ -74,6 +74,8 @@ const years = computed(() => {
   return Array.from({ length: n }, (_, i) => String(2026 + i))
 })
 
+const { colors } = useChartTheme()
+
 const chartData = computed<ChartData>(() => {
   const { startPct, yearsToRetirement, thresholdLabel } = activePreset.value
   const base = generateTrajectory(3.5, growthRate.value, startPct, yearsToRetirement)
@@ -85,8 +87,8 @@ const chartData = computed<ChartData>(() => {
       {
         label: 'Base scenario',
         data: base,
-        borderColor: '#38bdf8',
-        backgroundColor: 'rgba(56, 189, 248, 0.08)',
+        borderColor: colors.ink,
+        backgroundColor: 'transparent',
         borderWidth: 2.5,
         pointRadius: 0,
         pointHoverRadius: 4,
@@ -97,7 +99,7 @@ const chartData = computed<ChartData>(() => {
       {
         label: `50pct-threshold`,
         data: Array(n).fill(50),
-        borderColor: 'rgba(100, 116, 139, 0.45)',
+        borderColor: colors.rule,
         backgroundColor: 'transparent',
         borderWidth: 1,
         borderDash: [6, 4],
@@ -109,7 +111,7 @@ const chartData = computed<ChartData>(() => {
       {
         label: `75pct-threshold|${thresholdLabel}`,
         data: Array(n).fill(75),
-        borderColor: 'rgba(100, 116, 139, 0.45)',
+        borderColor: colors.rule,
         backgroundColor: 'transparent',
         borderWidth: 1,
         borderDash: [6, 4],
@@ -121,7 +123,7 @@ const chartData = computed<ChartData>(() => {
       {
         label: '90pct-threshold',
         data: Array(n).fill(90),
-        borderColor: 'rgba(100, 116, 139, 0.45)',
+        borderColor: colors.rule,
         backgroundColor: 'transparent',
         borderWidth: 1,
         borderDash: [6, 4],
@@ -165,8 +167,8 @@ const chartOptions = computed<ChartOptions>(() => ({
       title: {
         display: true,
         text: 'Seniority Percentile',
-        color: '#64748b',
-        font: { family: "'DM Sans Variable', system-ui, sans-serif", size: 11 },
+        color: colors.soft,
+        font: { family: "'IBM Plex Sans', system-ui, sans-serif", size: 11 },
       },
       ticks: {
         callback: (v) => `${v}%`,
@@ -177,9 +179,9 @@ const chartOptions = computed<ChartOptions>(() => ({
 
 // ── Custom legend items ───────────────────────────────────────────────────────
 
-const legendItems = [
-  { label: 'Base scenario', color: '#38bdf8', dashed: false },
-]
+const legendItems = computed(() => [
+  { label: 'Base scenario', color: colors.ink, dashed: false },
+])
 </script>
 
 <template>
@@ -193,7 +195,7 @@ const legendItems = [
             :key="q.key"
             class="px-4 py-1.5 transition-colors"
             :class="qualificationScope === q.key
-              ? 'bg-primary text-white'
+              ? 'bg-primary text-inverted'
               : 'text-muted hover:bg-(--ui-bg-elevated)'"
             @click="qualificationScope = q.key"
           >

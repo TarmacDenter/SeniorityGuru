@@ -530,7 +530,7 @@ async function enterDemo() {
               <h3 class="font-semibold text-sm">Position by qualification</h3>
               <div class="flex items-center gap-3 ml-auto flex-wrap">
                 <div class="flex items-center gap-2">
-                  <USwitch v-model="demoProjection" size="sm" />
+                  <AppSwitch v-model="demoProjection" size="sm" />
                   <span class="text-sm text-muted">Project forward</span>
                 </div>
                 <template v-if="demoProjection">

@@ -68,11 +68,12 @@ All three families are IBM Plex, bundled with `@fontsource`. No CDN.
 - **Color inspector.** In development, press Alt+I (or the "Colors" button) and hover any element to see its colors and the tokens that match.
 - **Token playground.** `/dev/theme`.
 
-## Not yet designed
+## Controls and charts
 
-- Sliders, switches and histograms still use stock Nuxt UI styling in the new colors. The plan is a printed ruler slider with a highlighter thumb, a labeled On/Off switch, and single-ink histograms with your line in highlighter.
-- Charts use fixed colors from `useChartTheme.ts` and do not yet follow the mode.
-- Hardcoded blue remains in the rank card progress bar and the Compare statistics.
+- **Ruler slider.** Tick marks along the track and a highlighter thumb with an ink outline. Styled in `app/theme.ts`.
+- **Switch.** Square-cornered ink toggle with its state spelled out: use `AppSwitch`, which shows "On" or "Off" beside it.
+- **Charts.** `useChartTheme` resolves the semantic tokens for the active mode and refreshes when the mode changes. Bars and lines are single ink; the pilot's own bucket is the highlighter.
+- Hardcoded blue is gone from the rank card progress bar (now an ink gauge) and the Compare statistics.
 
 ## Rollout
 

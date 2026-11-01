@@ -48,7 +48,7 @@ const summaryStats = computed(() => {
   return [
     { label: 'Retired', count: comparison.value.retired.length, color: 'text-(--ui-text-muted)' },
     { label: 'Departed', count: comparison.value.departed.length, color: 'text-(--ui-warning)' },
-    { label: 'Qual Moves', count: comparison.value.qualMoves.length, color: 'text-(--ui-info)' },
+    { label: 'Qual Moves', count: comparison.value.qualMoves.length, color: 'text-(--ui-text-toned)' },
     { label: 'Seniority Number Changes', count: comparison.value.seniorityNumberChanges.length, color: 'text-(--ui-primary)' },
     { label: 'New Hires', count: comparison.value.newHires.length, color: 'text-(--ui-success)' },
   ]

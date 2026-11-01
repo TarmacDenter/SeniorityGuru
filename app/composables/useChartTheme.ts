@@ -1,56 +1,77 @@
 import type { ChartOptions } from 'chart.js'
 
-export function useChartTheme() {
-  const defaults: ChartOptions = {
+const SANS = "'IBM Plex Sans', system-ui, sans-serif"
+const MONO = "'IBM Plex Mono', ui-monospace, monospace"
+
+/** Canvas cannot read CSS variables, so each token is resolved to its current value. */
+function readToken(name: string): string {
+  if (typeof document === 'undefined') return ''
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim()
+}
+
+function buildColors() {
+  return {
+    /** The one ink: bars and lines. */
+    ink: readToken('--ui-text-toned'),
+    /** Bar fill on the page paper. Single ink, no second hue. */
+    inkFill: readToken('--ui-text-dimmed'),
+    /** Second series and axis text. */
+    soft: readToken('--ui-text-muted'),
+    softFill: readToken('--ui-border'),
+    /** The pilot's own line: highlighter, with the dark ink that stays readable on it. */
+    mark: readToken('--mark'),
+    markInk: readToken('--mark-ink'),
+    rule: readToken('--ui-border'),
+  }
+}
+
+function buildDefaults(colors: ReturnType<typeof buildColors>): ChartOptions {
+  const ticks = { color: colors.soft, font: { family: MONO, size: 10 } }
+  return {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
       legend: {
-        labels: {
-          color: '#64748b', // slate-500 — readable on both light and dark
-          font: { family: "'IBM Plex Sans', system-ui, sans-serif", size: 12 }
-        }
+        labels: { color: colors.soft, font: { family: SANS, size: 12 } }
       },
       tooltip: {
-        backgroundColor: '#0f172a', // slate-900
-        titleColor: '#f8fafc',
-        bodyColor: '#cbd5e1',       // slate-300
-        borderColor: '#1e293b',     // slate-800
+        backgroundColor: readToken('--ui-bg-elevated'),
+        titleColor: readToken('--ui-text-highlighted'),
+        bodyColor: readToken('--ui-text-toned'),
+        borderColor: colors.rule,
         borderWidth: 1,
         padding: 10,
-        titleFont: { family: "'IBM Plex Sans', system-ui, sans-serif", size: 13, weight: 'bold' as const },
-        bodyFont: { family: "'IBM Plex Mono', ui-monospace, monospace", size: 12 }
+        titleFont: { family: SANS, size: 13, weight: 'bold' as const },
+        bodyFont: { family: MONO, size: 12 }
       }
     },
     scales: {
-      x: {
-        ticks: {
-          color: '#64748b',
-          font: { family: "'IBM Plex Mono', ui-monospace, monospace", size: 10 }
-        },
-        grid: { color: 'rgba(51, 65, 85, 0.35)' } // slate-700/35
-      },
-      y: {
-        ticks: {
-          color: '#64748b',
-          font: { family: "'IBM Plex Mono', ui-monospace, monospace", size: 10 }
-        },
-        grid: { color: 'rgba(51, 65, 85, 0.35)' } // slate-700/35
-      }
+      x: { ticks: { ...ticks }, grid: { color: colors.rule } },
+      y: { ticks: { ...ticks }, grid: { color: colors.rule } }
     }
   }
+}
 
-  const colors = {
-    primary: '#3fa37f',
-    primaryLight: 'rgba(63, 163, 127, 0.18)',
-    amber: '#3fa37f',
-    amberLight: 'rgba(63, 163, 127, 0.18)',
-    cyan: '#6b8fb5',
-    cyanLight: 'rgba(107, 143, 181, 0.18)',
-    peakHighlight: 'rgba(251, 191, 36, 0.7)',
-    peakBorder: '#f59e0b',
-    slate: '#64748b'
+/**
+ * Chart colors drawn from the active mode's semantic tokens.
+ * `colors` and `defaults` are reactive: they refresh when the color mode changes,
+ * so charts that read them redraw on dark/light.
+ */
+export function useChartTheme() {
+  const colorMode = useColorMode()
+  const colors = reactive(buildColors())
+  const defaults = reactive(buildDefaults(colors)) as ChartOptions
+
+  function refresh() {
+    Object.assign(colors, buildColors())
+    Object.assign(defaults, buildDefaults(colors))
   }
+
+  watch(() => colorMode.value, () => {
+    refresh()
+    // The mode class lands on <html> after this tick; read again once it has.
+    nextTick(refresh)
+  }, { flush: 'post' })
 
   return { defaults, colors }
 }

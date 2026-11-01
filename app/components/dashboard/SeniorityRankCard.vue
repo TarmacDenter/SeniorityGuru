@@ -103,7 +103,7 @@ onMounted(() => {
           :max="100"
           size="sm"
           :ui="{
-            indicator: 'bg-gradient-to-r from-primary to-secondary',
+            indicator: 'bg-primary',
           }"
         />
       </div>

@@ -17,18 +17,14 @@ const chartData = computed<ChartData<'bar'>>(() => ({
     {
       label: 'pp/yr',
       data: props.changes.map(change => change.percentilePointChange),
-      backgroundColor: props.changes.map(change =>
-        change.isPeak ? colors.peakHighlight : colors.primaryLight,
-      ),
-      borderColor: props.changes.map(change =>
-        change.isPeak ? colors.peakBorder : colors.primary,
-      ),
+      backgroundColor: props.changes.map(change => change.isPeak ? colors.ink : colors.inkFill),
+      borderColor: colors.ink,
       borderWidth: 1,
     },
   ],
 }))
 
-const chartOptions: ChartOptions = {
+const chartOptions = computed<ChartOptions>(() => ({
   plugins: {
     legend: { display: false },
   },
@@ -37,7 +33,7 @@ const chartOptions: ChartOptions = {
       ticks: {
         maxTicksLimit: 6,
         font: { size: 9 },
-        color: '#64748b',
+        color: colors.soft,
       },
       grid: { display: false },
     },
@@ -46,12 +42,12 @@ const chartOptions: ChartOptions = {
       ticks: {
         maxTicksLimit: 3,
         font: { size: 9 },
-        color: '#64748b',
+        color: colors.soft,
       },
-      grid: { color: 'rgba(51, 65, 85, 0.2)' },
+      grid: { color: colors.rule },
     },
   },
-}
+}))
 
 const bestYear = computed(() => {
   if (props.changes.length === 0) return null
