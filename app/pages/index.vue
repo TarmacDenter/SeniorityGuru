@@ -144,6 +144,11 @@ const demoQualScales = computed<PresentedQualificationPosition[]>(() => {
     projectedPercentile: projectedPct,
     currentPercentile: DEMO_CURRENT_PCT,
     modeledHoldable: projectedPct >= scale.plugPercentile,
+    // The landing scale shows no Holdable Year; these complete the presented shape.
+    qualificationLabel: `${scale.fleet} ${scale.seat} ${scale.base}`,
+    holdableYear: null,
+    holdableLabel: '',
+    thresholdRelationLabel: null,
   }))
 })
 

@@ -1,4 +1,6 @@
 import type {
+  HoldabilityDetail,
+  HoldableYear,
   NoResult,
   PercentileCrossingResult,
   Qualification,
@@ -333,6 +335,21 @@ export interface PresentedQualificationPosition {
   readonly currentPercentile: number
   readonly projectedPercentile: number
   readonly modeledHoldable: boolean
+  /** "Fleet Seat Base", e.g. "737 CA JFK". */
+  readonly qualificationLabel: string
+  /** "now", the Holdable Year, or null when the trajectory ends first. */
+  readonly holdableYear: 'now' | number | null
+  readonly holdableLabel: string
+  /** Set when the Anchor Pilot is junior to the Qualification's most junior active pilot today. */
+  readonly thresholdRelationLabel: string | null
+}
+
+const NOT_BEFORE_RETIREMENT_LABEL = 'Not before your retirement'
+
+function holdableYearLabel(holdableYear: HoldableYear): string {
+  if (holdableYear === 'now') return 'Holdable now'
+  if (isNoResult(holdableYear)) return NOT_BEFORE_RETIREMENT_LABEL
+  return `Holdable from ${holdableYear}`
 }
 
 export function presentQualificationPositions(
@@ -344,5 +361,36 @@ export function presentQualificationPositions(
     currentPercentile: position.currentPercentile,
     projectedPercentile: position.projectedPercentile,
     modeledHoldable: position.modeledHoldable,
+    qualificationLabel: `${position.distribution.qualification.fleet} ${position.distribution.qualification.seat} ${position.distribution.qualification.base}`,
+    holdableYear: isNoResult(position.holdableYear) ? null : position.holdableYear,
+    holdableLabel: holdableYearLabel(position.holdableYear),
+    thresholdRelationLabel: position.holdableYear === 'now'
+      ? null
+      : `Junior to the most junior pilot (Seniority Number ${position.distribution.thresholdSeniorityNumber})`,
   }))
+}
+
+export interface PresentedHoldabilityDetail {
+  readonly qualificationLabel: string
+  readonly thresholdPercentile: number
+  /** "83.3%". */
+  readonly thresholdPercentileLabel: string
+  /** ISO dates of the yearly samples. */
+  readonly labels: readonly string[]
+  readonly anchorSeries: readonly number[]
+  /** Today's threshold pilot; null once they have retired. */
+  readonly thresholdPilotSeries: readonly (number | null)[]
+}
+
+export function presentHoldabilityDetail(detail: HoldabilityDetail | null | NoResult): PresentedHoldabilityDetail | null | NoResult {
+  if (!detail || isNoResult(detail)) return detail
+  const { fleet, seat, base } = detail.qualification
+  return {
+    qualificationLabel: `${fleet} ${seat} ${base}`,
+    thresholdPercentile: detail.thresholdPercentile,
+    thresholdPercentileLabel: formatSeniorityPercentile(detail.thresholdPercentile),
+    labels: detail.points.map(point => point.date.toString()),
+    anchorSeries: detail.points.map(point => point.anchorPercentile),
+    thresholdPilotSeries: detail.points.map(point => point.thresholdPilotPercentile),
+  }
 }

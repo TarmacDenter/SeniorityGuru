@@ -6,8 +6,10 @@ import { createSeniorityScenario } from '~/utils/seniority-engine/scenario'
 import type {
   AnchoredSeniorityLens,
   DemographicsOptions,
+  HoldabilityDetail,
   NoResult,
   PercentileCrossingResult,
+  Qualification,
   QualificationPosition,
   RelativeUpcomingRetirement,
   RetirementCountProjection,
@@ -25,6 +27,7 @@ import { analyzeSeniorityQualificationViewer, type QualificationViewerAnalysis }
 import { isNoResult } from '~/utils/seniority-engine/types'
 import { enumerateQualificationScopes, type QualificationScope } from '~/utils/seniority-engine/qualification-scope'
 import {
+  presentHoldabilityDetail,
   presentPercentileCrossing,
   presentAnchoredSeniorityDemographics,
   presentQualificationPositions,
@@ -34,6 +37,7 @@ import {
   presentSeniorityStanding,
   presentSeniorityTrajectory,
   presentSeniorityTrajectoryComparison,
+  type PresentedHoldabilityDetail,
   type PresentedPercentileCrossing,
   type PresentedQualificationPosition,
   type PresentedRetirementCountProjection,
@@ -110,6 +114,12 @@ export interface QualificationPositionAnalysisOptions {
   readonly growthAssumptions?: GrowthAssumptions
 }
 
+/** Company-wide, like Qualification Position. */
+export interface HoldabilityDetailAnalysisOptions {
+  readonly qualification: Qualification
+  readonly growthAssumptions?: GrowthAssumptions
+}
+
 export interface UpcomingRetirementAnalysisOptions {
   readonly through: PlainDate
   readonly qualificationScope?: QualificationScope
@@ -157,6 +167,10 @@ export interface AnchoredSeniorityAnalysis extends CommonSeniorityAnalysis {
   qualificationPositions(
     options: QualificationPositionAnalysisOptions,
   ): SeniorityOutput<readonly QualificationPosition[] | NoResult, readonly PresentedQualificationPosition[] | NoResult>
+  /** The Anchor Pilot against one Qualification Threshold, with today's threshold pilot as a reference series. */
+  holdabilityDetail(
+    options: HoldabilityDetailAnalysisOptions,
+  ): SeniorityOutput<HoldabilityDetail | null | NoResult, PresentedHoldabilityDetail | null | NoResult>
   relativeUpcomingRetirements(
     options: RelativeUpcomingRetirementAnalysisOptions,
   ): readonly RelativeUpcomingRetirement[]
@@ -259,6 +273,7 @@ function anchoredSeniorityAnalysis(lens: AnchoredSeniorityLens, asOfDate: PlainD
       const domain = lens.qualificationPositions(options)
       return seniorityOutput(domain, presentQualificationPositions)
     },
+    holdabilityDetail: options => seniorityOutput(lens.holdabilityDetail(options), presentHoldabilityDetail),
     relativeUpcomingRetirements: options => lens.relativeUpcomingRetirements(options),
   }
 }
