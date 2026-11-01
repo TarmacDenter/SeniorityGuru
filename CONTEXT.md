@@ -20,6 +20,9 @@ The company-assigned ordering number for a pilot. A smaller number means greater
 A one-based position in publication order after removing the pilots who have retired by the As-of Date. It changes as the As-of Date moves, and it is shown beside the Seniority Number wherever a pilot's position appears. Rank, not Seniority Number, measures positional distance.
 _Avoid_: List Rank, Raw Rank, Adjusted Rank
 
+**Base Rank**:
+The Anchor Pilot's Rank among the pilots of one Qualification (base, seat and fleet). Where the Anchor Pilot is not in that Qualification, it is a Hypothetical Placement.
+
 **Publication Position**:
 A one-based position in the Seniority List's published order, retired pilots included. It is static and is shown beside Rank, never in place of it.
 _Avoid_: List Rank, Raw Rank, Static Rank

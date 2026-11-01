@@ -17,7 +17,7 @@ const props = defineProps<{
   rowClass?: (row: T) => string
 }>()
 
-const ANCHOR_ROW = 'bg-mark [&>td]:font-bold [&>td]:text-mark-ink [&_td_*]:text-mark-ink [&>td:first-child]:shadow-[inset_4px_0_0_var(--mark-ink)]'
+const ANCHOR_ROW = 'bg-mark [&>td]:font-bold [&>td]:text-mark-ink [&_td_*]:text-mark-ink [&>td:first-child]:shadow-[inset_4px_0_0_var(--ui-text-highlighted)]'
 const RETIRED_ROW = '[&>td]:line-through [&>td]:text-muted'
 
 const markedColumns = computed<TableColumn<T>[]>(() => props.columns.map((column) => {

@@ -7,7 +7,7 @@ const { employeeNumber } = useUser()
 const { hasData, hasAnchor: userFound, isNewHireMode, newHire } = useSeniorityCore()
 const hasEmployeeNumber = computed(() => !!employeeNumber.value || !!newHire.syntheticEntry.value)
 const { qualificationScope } = useScenario()
-const { rankCard, figures } = useStanding(qualificationScope)
+const { rankCard, figures, qualificationGroups } = useStanding(qualificationScope)
 const { rows: excerptRows } = useListExcerpt()
 </script>
 
@@ -21,5 +21,6 @@ const { rows: excerptRows } = useListExcerpt()
     :rank-card="rankCard"
     :figures="figures"
     :excerpt-rows="excerptRows"
+    :qualification-groups="qualificationGroups"
   />
 </template>
