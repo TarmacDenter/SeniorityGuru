@@ -86,7 +86,7 @@ const chartOptions = computed(() => ({
     <template #header>
       <div class="flex flex-wrap items-center justify-between gap-2">
         <div class="flex items-center">
-          <h3 class="font-semibold text-highlighted">Seniority Trajectory</h3>
+          <h2 class="font-semibold text-highlighted">Your Seniority Percentile over time</h2>
           <InfoIcon text="Shows how your seniority percentile changes as pilots senior to you retire. Percentile: 100% = most senior, 0% = most junior." size="sm" class="ml-1.5" />
           <slot name="badge" />
         </div>

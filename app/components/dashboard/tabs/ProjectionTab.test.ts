@@ -98,11 +98,12 @@ describe('Trajectory › Projection', () => {
   it('shows a dismissible note of what the projection assumes', async () => {
     const wrapper = await mountProjection()
     expect(wrapper.text()).toContain('Projection Assumptions')
+    expect(wrapper.text()).toContain('New hires, upgrades and other attrition are not modeled unless you set Growth Assumptions.')
 
     const dismiss = wrapper.findAll('button').find(button => button.text() === 'Dismiss')!
     await dismiss.trigger('click')
     expect(wrapper.text()).not.toContain('Projection Assumptions')
-    expect(wrapper.text()).toContain('Projections based on scheduled retirements only.')
+    expect(wrapper.text()).not.toContain('Scheduled retirements only.')
     expect(mockUserStore.savePreference).toHaveBeenCalledWith('trajectoryAssumptionsDismissed', true)
   })
 

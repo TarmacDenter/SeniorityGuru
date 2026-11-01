@@ -61,7 +61,7 @@ const columns: TableColumn<PresentedTrajectoryChange>[] = [
       :data="changes"
       :columns="columns"
       sticky
-      class="max-h-72"
+      class="max-h-60"
       :ui="{ thead: 'bg-default', td: 'py-1.5', th: 'py-2' }"
     />
   </UCard>

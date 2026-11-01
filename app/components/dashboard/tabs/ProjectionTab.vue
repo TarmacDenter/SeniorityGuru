@@ -46,18 +46,20 @@ const emptyAction = computed(() => props.hasData
     />
 
     <div v-else class="space-y-4">
-      <div class="flex flex-wrap items-center gap-2">
-        <h2 class="text-lg font-semibold text-highlighted">Your Seniority Percentile over time</h2>
-        <UBadge v-if="hypotheticalLabel" data-testid="hypothetical-placement" color="neutral" variant="outline">
-          {{ hypotheticalLabel }}
-        </UBadge>
-      </div>
-
-      <AnalyticsAssumptionsBanner
-        :is-banner-dismissed="assumptionsNote.dismissed.value"
-        context="trajectory"
-        @dismiss="assumptionsNote.toggle"
-      />
+      <UAlert
+        v-if="!assumptionsNote.dismissed.value"
+        icon="i-lucide-info"
+        color="neutral"
+        variant="subtle"
+        title="Projection Assumptions"
+        :actions="[{ label: 'Dismiss', color: 'neutral', variant: 'ghost', size: 'xs', onClick: assumptionsNote.toggle }]"
+        orientation="horizontal"
+      >
+        <template #description>
+          Scheduled retirements only. New hires, upgrades and other attrition are not modeled unless you set Growth Assumptions.
+          <NuxtLink to="/how-it-works#projection-limits" class="text-primary underline">How it works</NuxtLink>
+        </template>
+      </UAlert>
 
       <div class="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <DashboardTrajectoryChart :data="projectionChart" :ended-by-label="endedByLabel" class="lg:col-span-2">
@@ -84,6 +86,9 @@ const emptyAction = computed(() => props.hasData
             </div>
           </template>
           <template #footer>
+            <UBadge v-if="hypotheticalLabel" data-testid="hypothetical-placement" color="neutral" variant="outline" size="sm" class="mt-2 mr-2">
+              {{ hypotheticalLabel }}
+            </UBadge>
             <p v-if="percentileScaleLabel" data-testid="trajectory-roster-size" class="mt-1 text-xs text-muted">{{ percentileScaleLabel }}</p>
             <UBadge v-if="projectionChart.overlay?.hypotheticalLabel" color="neutral" variant="outline" size="sm" class="mt-2">
               {{ projectionChart.overlay.hypotheticalLabel }}
