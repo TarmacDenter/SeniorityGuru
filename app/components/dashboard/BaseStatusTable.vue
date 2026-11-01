@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { h } from 'vue';
+import { h, resolveComponent } from 'vue';
 import type { TableColumn } from '@nuxt/ui';
 import { useMediaQuery } from '@vueuse/core';
 
@@ -45,7 +45,7 @@ const displayData = computed<BaseStatusRow[]>(() => {
 
 function hypotheticalMark(row: BaseStatusRow) {
   return row.hypotheticalLabel
-    ? h('span', { class: 'ml-1 text-xs font-normal text-warning', title: row.hypotheticalLabel, 'data-testid': 'hypothetical-row' }, '(hypothetical)')
+    ? h(resolveComponent('UBadge'), { color: 'neutral', variant: 'outline', size: 'sm', class: 'ml-1 font-normal', title: row.hypotheticalLabel, 'data-testid': 'hypothetical-row' }, () => 'hypothetical')
     : null;
 }
 

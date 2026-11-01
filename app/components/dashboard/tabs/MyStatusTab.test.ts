@@ -78,13 +78,24 @@ describe('Now panel', () => {
     mockUserStore.employeeNumber = 'E3'
     const wrapper = await mountSuspended(harness(ref<QualificationScope>({})))
 
+    expect(wrapper.find('table caption').text()).toBe('Seniority List around your line')
     const rows = wrapper.findAll('tbody tr')
-    expect(rows.map(row => row.find('td:nth-child(2)').text())).toEqual(['Pilot 1', 'Pilot 2', 'Pilot 3', 'Pilot 4', 'Pilot 5'])
-    expect(rows.filter(row => row.attributes('aria-current') === 'true').map(row => row.find('td:nth-child(2)').text())).toEqual(['Pilot 3'])
+    expect(rows.map(row => row.find('td').text())).toEqual(['10', '20', '30', '40', '50'])
+    expect(rows.map(row => row.find('td:nth-child(2)').text())).toEqual(['Pilot 1', 'Pilot 2', 'Pilot 3 (Your line)', 'Pilot 4', 'Pilot 5'])
+    expect(rows.filter(row => row.text().includes('Your line')).map(row => row.find('td').text())).toEqual(['30'])
     expect(figureValue(wrapper, 'Rank')).toBe('3')
     expect(figureValue(wrapper, 'Seniority Number')).toBe('30')
     expect(figureValue(wrapper, 'Seniority Percentile')).toBe('60.0%')
     expect(figureValue(wrapper, 'Active pilots')).toBe('5')
+  })
+
+  it('labels a retired neighbor in the excerpt', async () => {
+    mockStore.entries = [1, 2, 3].map(n => makeEntry({ seniority_number: n * 10, employee_number: `E${n}`, name: `Pilot ${n}`, retire_date: n === 1 ? '2020-01-01' : '2050-01-01' }))
+    mockUserStore.employeeNumber = 'E2'
+    const wrapper = await mountSuspended(harness(ref<QualificationScope>({})))
+
+    const retired = wrapper.findAll('tbody tr').filter(row => row.text().includes('retired'))
+    expect(retired.map(row => row.find('td').text())).toEqual(['10'])
   })
 
   it('renders placeholders, never zero, when the Anchor Pilot has retired', async () => {

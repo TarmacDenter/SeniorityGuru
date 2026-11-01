@@ -59,11 +59,15 @@ const stubs = {
         setGlobalFilter: vi.fn(),
         setPageIndex: vi.fn(),
       }
-      const cellText = (column: any, row: any) => {
-        const value = column.cell ? column.cell({ row: { original: row } }) : row[column.accessorKey]
-        const text = value && typeof value === 'object' ? value.children : value
-        return text === null || text === undefined ? '' : String(text)
+      const vnodeText = (value: any): string => {
+        if (value === null || value === undefined) return ''
+        if (Array.isArray(value)) return value.map(vnodeText).join('')
+        if (typeof value === 'object') return vnodeText(value.children)
+        return String(value)
       }
+      const cellText = (column: any, row: any) => vnodeText(column.cell
+        ? column.cell({ row: { original: row }, getValue: () => row[column.accessorKey] })
+        : row[column.accessorKey])
       return { tableApi, cellText }
     },
     template: `<div data-testid="table">
@@ -203,5 +207,18 @@ describe('SeniorityListViewer', () => {
     await wrapper.find('button').trigger('click')
 
     expect(wrapper.text()).toContain('Pilot 51|E51|51|51|active|anchor')
+  })
+
+  it('marks only the pilot\'s own line', async () => {
+    state.lists.value = [makeList()]
+    state.employeeNumber.value = 'E2'
+    state.entries.value = [1, 2, 3].map(n => makeDomainEntry({ seniority_number: n, employee_number: `E${n}`, name: `Pilot ${n}` }))
+    const Component = (await import('./SeniorityListViewer.vue')).default
+    const wrapper = await mountSuspended(Component, { global: { stubs } })
+    const name = (employee: string) => wrapper.get(`[data-testid="cell-${employee}-name"]`).text()
+
+    expect(name('E2')).toBe('Pilot 2 (Your line)')
+    expect(name('E1')).toBe('Pilot 1')
+    expect(name('E3')).toBe('Pilot 3')
   })
 })
