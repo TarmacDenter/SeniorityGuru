@@ -2,15 +2,17 @@
 import { h, resolveComponent } from 'vue'
 import { watchDebounced } from '@vueuse/core'
 import type { TableColumn } from '@nuxt/ui'
-import { RETIREMENT_PAGE_SIZE, useUpcomingRetirements } from '~/composables/seniority/modules/useUpcomingRetirements'
+import { useUpcomingRetirements } from '~/composables/seniority/modules/useUpcomingRetirements'
 import type { RetirementRow, RetirementSortKey } from '~/composables/seniority/modules/useUpcomingRetirements'
 
 // List › Upcoming retirements. Range, scope, filtering, sorting and labels come from the composable.
 const {
   hasData, hasAnchor, yearsHorizon, horizonMax, horizonLabelFor, emptyResultLabel, seniorOnly,
   filterBase, filterSeat, filterFleet, baseItems, seatItems, fleetItems, sortKey, sortDir, toggleSort, rows,
-  page, pageCount, pageRows,
 } = useUpcomingRetirements()
+
+// Client-side paging keeps the DOM to one page of rows.
+const table = useTableFeatures<RetirementRow>('retirementsTable', { pageSize: 50 })
 
 // The slider and its readout move live; the report follows once the thumb rests.
 const SLIDER_SETTLE_MS = 250
@@ -87,10 +89,13 @@ const columns = computed<TableColumn<RetirementRow>[]>(() => [
       </p>
 
       <UTable
-        :data="pageRows"
+        ref="retirementsTable"
+        v-model:pagination="table.pagination.value"
+        :data="rows"
         :columns="columns"
         :get-row-id="row => row.key"
         :sorting-options="{ manualSorting: true }"
+        :pagination-options="table.paginationOptions"
         :ui="{ td: 'font-mono', caption: 'sr-only' }"
         caption="Upcoming retirements"
       >
@@ -102,11 +107,11 @@ const columns = computed<TableColumn<RetirementRow>[]>(() => [
 
       <TablePagination
         v-if="rows.length"
-        :current-page="page"
-        :page-count="pageCount"
-        :total-rows="rows.length"
-        :page-size="RETIREMENT_PAGE_SIZE"
-        @update:page="(p: number) => page = p"
+        :current-page="table.currentPage.value"
+        :page-count="table.pageCount.value"
+        :total-rows="table.totalRows.value"
+        :page-size="table.pagination.value.pageSize"
+        @update:page="(p: number) => table.tableRef.value?.tableApi?.setPageIndex(p - 1)"
       />
     </template>
   </div>

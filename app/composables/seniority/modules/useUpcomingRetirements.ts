@@ -21,8 +21,6 @@ export interface RetirementRow {
 export interface RetirementFilterItem { label: string; value: string | null }
 
 const DEFAULT_HORIZON_YEARS = 2
-/** Rows rendered per page of the Retirements table. */
-export const RETIREMENT_PAGE_SIZE = 50
 
 type Raw = UpcomingRetirement | RelativeUpcomingRetirement
 
@@ -147,12 +145,6 @@ export function useUpcomingRetirements() {
     })
   })
 
-  const page = ref(1)
-  const pageCount = computed(() => Math.max(1, Math.ceil(rows.value.length / RETIREMENT_PAGE_SIZE)))
-  const pageRows = computed(() => rows.value.slice((page.value - 1) * RETIREMENT_PAGE_SIZE, page.value * RETIREMENT_PAGE_SIZE))
-  // A new result set (or a reversed sort) starts again from the first page.
-  watch(rows, () => { page.value = 1 })
-
   return {
     hasData,
     hasAnchor,
@@ -172,8 +164,5 @@ export function useUpcomingRetirements() {
     sortDir,
     toggleSort,
     rows,
-    page,
-    pageCount,
-    pageRows,
   }
 }

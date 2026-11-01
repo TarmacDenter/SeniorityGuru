@@ -1,5 +1,4 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { nextTick } from 'vue'
 import { _resetCoreSingletons, useSeniorityCore } from './useSeniorityCore'
 import { useUpcomingRetirements } from './useUpcomingRetirements'
 import { useScenario } from '~/composables/useScenario'
@@ -53,20 +52,6 @@ describe('useUpcomingRetirements', () => {
     expect(horizonLabelFor(1)).toBe(`1 year · through ${inMonths(12)}`)
     expect(horizonLabelFor(5)).toBe(`5 years · through ${inMonths(60)}`)
     expect(horizonLabel.value).toBe(`2 years · through ${inMonths(24)}`)
-  })
-
-  it('pages the rows and returns to the first page when the result set changes', async () => {
-    mockStore.entries = Array.from({ length: 120 }, (_, i) => pilot(i + 1, 1 + (i % 20)))
-
-    const { rows, pageRows, pageCount, page, toggleSort } = useUpcomingRetirements()
-    expect(rows.value).toHaveLength(120)
-    expect(pageCount.value).toBe(3)
-    expect(pageRows.value).toHaveLength(50)
-    page.value = 3
-    expect(pageRows.value).toHaveLength(20)
-    toggleSort('seniorityNumber')
-    await nextTick()
-    expect(page.value).toBe(1)
   })
 
   it('sorts by Seniority Number and flips direction on a second toggle', () => {

@@ -104,4 +104,13 @@ describe('RetirementsTab', () => {
     await vi.waitFor(() => expect(wrapper.text()).toContain('Page 2 of 3'))
     expect(bodyRows(wrapper)).toHaveLength(50)
   })
+
+  it('returns to the first page when the sort changes', async () => {
+    mockStore.entries = Array.from({ length: 120 }, (_, i) => pilot(i + 1, 1 + (i % 20)))
+    const wrapper = await mountTab()
+    await wrapper.get('button[aria-label="Next Page"]').trigger('click')
+    await vi.waitFor(() => expect(wrapper.text()).toContain('Page 2 of 3'))
+    await wrapper.get('button[aria-label^="Sort by Estimated retirement date"]').trigger('click')
+    await vi.waitFor(() => expect(wrapper.text()).toContain('Page 1 of 3'))
+  })
 })
