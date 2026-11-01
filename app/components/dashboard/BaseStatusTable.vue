@@ -15,8 +15,10 @@ const props = defineProps<{
 const isMobile = useMediaQuery('(max-width: 639px)');
 const mobileSeat = ref<string | undefined>(undefined);
 
+// Open on the seat that holds your own Qualification, so your Base Rank row is visible first.
 watch(() => props.groups, (groups) => {
-  if (!groups.some(group => group.seat === mobileSeat.value)) mobileSeat.value = groups[0]?.seat;
+  if (groups.some(group => group.seat === mobileSeat.value)) return;
+  mobileSeat.value = (groups.find(group => group.rows.some(row => row.isAnchorCurrentQualification)) ?? groups[0])?.seat;
 }, { immediate: true });
 
 const displayData = computed<BaseStatusRow[]>(() => isMobile.value
