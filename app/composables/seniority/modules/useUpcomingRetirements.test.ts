@@ -156,6 +156,16 @@ describe('useUpcomingRetirements', () => {
     expect(rows.value.map(row => row.seniorityNumber)).toEqual([1])
   })
 
+  it('measures Rank relative to me as of the selected list\'s As-of Date, not today', () => {
+    mockStore.entries = [pilot(1, -20), pilot(2, -30), pilot(3, 600)]
+    mockStore.lists = [{ id: 7, title: 'Old list', effectiveDate: Temporal.PlainDate.from(inMonths(-36)) }]
+    mockStore.currentListId = 7
+    mockUserStore.employeeNumber = 'E3'
+
+    const { rows } = useUpcomingRetirements()
+    expect(rows.value.map(row => [row.seniorityNumber, row.relativeLabel])).toEqual([[2, '+1'], [1, '+2']])
+  })
+
   it('is empty without a list', () => {
     const { rows, hasData } = useUpcomingRetirements()
     expect(hasData.value).toBe(false)

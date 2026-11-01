@@ -1,4 +1,4 @@
-import type { QualificationScope, RelativeUpcomingRetirement, UpcomingRetirement } from '~/utils/seniority'
+import { createSeniorityAnalysis, type AnchoredSeniorityAnalysis, type QualificationScope, type RelativeUpcomingRetirement, type UpcomingRetirement } from '~/utils/seniority'
 import { addYearsDate, diffDateYears } from '~/utils/date'
 import { Temporal, todayPlainDate, type PlainDate } from '~/utils/temporal'
 import { useSeniorityStore } from '~/stores/seniority'
@@ -43,13 +43,24 @@ function filterItems(allLabel: string, values: readonly string[] | undefined): R
  * Qualification and (with an Anchor Pilot) by seniority, sorted, with display text ready to render.
  */
 export function useUpcomingRetirements() {
-  const { listAnalysis, analysis, anchoredAnalysis, hasData, hasAnchor } = useSeniorityCore()
+  const { listAnalysis, analysis, anchoredAnalysis: todayAnchored, hasData, hasAnchor, newHire } = useSeniorityCore()
   const seniorityStore = useSeniorityStore()
   const { qualificationScope: scenarioScope } = useScenario()
 
   /** The selected list's As-of Date (its effective date); today when no list is selected. */
   const asOfDate = computed(() =>
     seniorityStore.lists.find(list => list.id === seniorityStore.currentListId)?.effectiveDate ?? todayPlainDate())
+
+  /** The Anchor Pilot's analysis as of the As-of Date, so Rank relative to me follows a historical list rather than today. */
+  const anchoredAnalysis = computed<AnchoredSeniorityAnalysis | null>(() => {
+    const current = todayAnchored.value
+    if (!current || Temporal.PlainDate.compare(asOfDate.value, todayPlainDate()) === 0) return current
+    return createSeniorityAnalysis({
+      entries: seniorityStore.entries,
+      modeledEntry: newHire.syntheticEntry.value ?? undefined,
+      asOfDate: asOfDate.value,
+    }).withAnchor(current.anchor.employee_number)
+  })
 
   /** Whole years from the As-of Date to the last scheduled retirement on the list (at least 1). */
   const horizonMax = computed(() => {
