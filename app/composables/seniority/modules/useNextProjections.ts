@@ -1,6 +1,6 @@
 import { addYearsDate, diffDateYears, formatMonthYear, formatYear } from '~/utils/date'
 import { todayPlainDate } from '~/utils/temporal'
-import { formatSeniorityPercentile, isNoResult, resultOrNull } from '~/utils/seniority'
+import { isNoResult, resultOrNull } from '~/utils/seniority'
 import { useTrajectory } from './useTrajectory'
 import { useScenario } from '~/composables/useScenario'
 import { useSeniorityCore } from './useSeniorityCore'
@@ -11,6 +11,9 @@ const SNAPSHOT_MIN_YEARS = 3
 const SNAPSHOT_DEFAULT_YEARS = 5
 const SNAPSHOT_MAX_YEARS = 10
 const DEFAULT_TARGET_PERCENTILE = 50
+
+/** Seniority Percentile with one decimal so columns align, e.g. "62.4%". */
+const formatPercentile = (value: number) => `${value.toFixed(1)}%`
 
 /**
  * What the Next panel adds to the trajectory: Project forward with its Qualification comparison.
@@ -127,7 +130,7 @@ export function useNextProjections() {
     return {
       retireDateLabel: formatMonthYear(data.retireDate),
       projectedRankLabel: data.atRetirement.rank.toLocaleString(),
-      percentileLabel: formatSeniorityPercentile(data.atRetirement.percentile),
+      percentileLabel: formatPercentile(data.atRetirement.percentile),
       pilotsAheadLabel: (data.atRetirement.rank - 1).toLocaleString(),
       rosterSizeLabel: data.rosterSize.toLocaleString(),
       activePilotLabel: data.activePilotCount.toLocaleString(),
@@ -135,7 +138,7 @@ export function useNextProjections() {
       rows: data.fullTrajectory.slice(-years).map(point => ({
         yearLabel: formatYear(point.date),
         rankLabel: point.rank.toLocaleString(),
-        percentileLabel: formatSeniorityPercentile(point.percentile),
+        percentileLabel: formatPercentile(point.percentile),
         changeLabel: point.rankDelta,
       })),
     }
