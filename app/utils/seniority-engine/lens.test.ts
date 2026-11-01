@@ -128,6 +128,15 @@ describe('organization analysis', () => {
     expect(rows[0]).not.toHaveProperty('positionsSeniorToAnchor')
   })
 
+  it('counts upcoming retirements from an explicit start date instead of the As-of Date', () => {
+    const rows = createOrganizationLens().upcomingRetirements({
+      from: Temporal.PlainDate.from('2025-01-01'),
+      through: Temporal.PlainDate.from('2027-01-01'),
+    })
+
+    expect(rows.map(row => row.employeeNumber)).toEqual(['E100', 'E105'])
+  })
+
   it('returns numeric demographic and retirement-year domain values', () => {
     const lens = createOrganizationLens()
     const scenario = createSeniorityScenario({ qualificationScope: { seat: 'CA' } })

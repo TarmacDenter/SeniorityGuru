@@ -67,5 +67,18 @@ describe('RetirementsTab', () => {
     mockStore.entries = [pilot(1, 600)]
     const wrapper = await mountTab()
     expect(wrapper.text()).toContain('No retirements found')
+    expect(wrapper.text()).toContain('No pilots match the current filters within 2 years')
+  })
+
+  it('reads out the chosen years and shows later retirements as the slider moves', async () => {
+    mockStore.entries = [pilot(1, 6), pilot(2, 30)]
+    const wrapper = await mountTab()
+    expect(wrapper.text()).toContain('Retiring within')
+    expect(wrapper.text()).toContain(`2 years · through ${inMonths(24)}`)
+    expect(bodyRows(wrapper)).toHaveLength(1)
+
+    await wrapper.find('[role="slider"]').trigger('keydown', { key: 'ArrowRight' })
+    expect(wrapper.text()).toContain(`3 years · through ${inMonths(36)}`)
+    expect(bodyRows(wrapper)[1]).toContain(inMonths(30))
   })
 })
