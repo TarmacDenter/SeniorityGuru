@@ -1,14 +1,23 @@
 <script setup lang="ts">
 import { h, resolveComponent } from 'vue'
+import { watchDebounced } from '@vueuse/core'
 import type { TableColumn } from '@nuxt/ui'
-import { useUpcomingRetirements } from '~/composables/seniority/modules/useUpcomingRetirements'
+import { RETIREMENT_PAGE_SIZE, useUpcomingRetirements } from '~/composables/seniority/modules/useUpcomingRetirements'
 import type { RetirementRow, RetirementSortKey } from '~/composables/seniority/modules/useUpcomingRetirements'
 
 // List › Upcoming retirements. Range, scope, filtering, sorting and labels come from the composable.
 const {
-  hasData, hasAnchor, yearsHorizon, horizonMax, horizonLabel, emptyResultLabel, seniorOnly,
+  hasData, hasAnchor, yearsHorizon, horizonMax, horizonLabelFor, emptyResultLabel, seniorOnly,
   filterBase, filterSeat, filterFleet, baseItems, seatItems, fleetItems, sortKey, sortDir, toggleSort, rows,
+  page, pageCount, pageRows,
 } = useUpcomingRetirements()
+
+// The slider and its readout move live; the report follows once the thumb rests.
+const SLIDER_SETTLE_MS = 250
+const sliderYears = ref(yearsHorizon.value)
+const sliderLabel = computed(() => horizonLabelFor(sliderYears.value))
+watch(yearsHorizon, (years) => { sliderYears.value = years })
+watchDebounced(sliderYears, (years) => { yearsHorizon.value = years }, { debounce: SLIDER_SETTLE_MS })
 
 const numeric = { class: { th: 'text-right', td: 'text-right' } }
 
@@ -53,8 +62,8 @@ const columns = computed<TableColumn<RetirementRow>[]>(() => [
     <template v-else>
       <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
         <label for="retiring-within" class="whitespace-nowrap text-sm text-muted">Retiring within</label>
-        <USlider id="retiring-within" v-model="yearsHorizon" :min="1" :max="horizonMax" :step="1" size="sm" class="w-40 sm:w-56" aria-label="Retiring within years" />
-        <span class="whitespace-nowrap font-mono text-sm font-semibold text-highlighted" aria-live="polite">{{ horizonLabel }}</span>
+        <USlider id="retiring-within" v-model="sliderYears" :min="1" :max="horizonMax" :step="1" size="sm" class="w-40 sm:w-56" aria-label="Retiring within years" />
+        <span class="whitespace-nowrap font-mono text-sm font-semibold text-highlighted" aria-live="polite">{{ sliderLabel }}</span>
       </div>
 
       <div class="flex flex-wrap items-center gap-3">
@@ -78,7 +87,7 @@ const columns = computed<TableColumn<RetirementRow>[]>(() => [
       </p>
 
       <UTable
-        :data="rows"
+        :data="pageRows"
         :columns="columns"
         :get-row-id="row => row.key"
         :sorting-options="{ manualSorting: true }"
@@ -90,6 +99,15 @@ const columns = computed<TableColumn<RetirementRow>[]>(() => [
           <p class="mt-1 text-sm text-muted">{{ emptyResultLabel }}</p>
         </template>
       </UTable>
+
+      <TablePagination
+        v-if="rows.length"
+        :current-page="page"
+        :page-count="pageCount"
+        :total-rows="rows.length"
+        :page-size="RETIREMENT_PAGE_SIZE"
+        @update:page="(p: number) => page = p"
+      />
     </template>
   </div>
 </template>

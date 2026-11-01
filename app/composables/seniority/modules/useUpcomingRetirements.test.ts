@@ -1,4 +1,5 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { nextTick } from 'vue'
 import { _resetCoreSingletons, useSeniorityCore } from './useSeniorityCore'
 import { useUpcomingRetirements } from './useUpcomingRetirements'
 import { useScenario } from '~/composables/useScenario'
@@ -20,15 +21,12 @@ function pilot(n: number, retireInMonths: number, overrides: Record<string, unkn
 }
 
 beforeEach(() => {
-  vi.useFakeTimers()
   _resetCoreSingletons()
   resetMockStores(mockStore, mockUserStore)
   mockStore.currentListId = null
   useSeniorityCore().newHire.reset()
   useScenario().scopeLabel.value = 'Company-wide'
 })
-
-afterEach(() => { vi.useRealTimers() })
 
 describe('useUpcomingRetirements', () => {
   it('lists retirements inside the two-year horizon, soonest first, with readable labels', () => {
@@ -45,23 +43,30 @@ describe('useUpcomingRetirements', () => {
 
     const { rows, yearsHorizon } = useUpcomingRetirements()
     yearsHorizon.value = 5
-    vi.advanceTimersByTime(250)
     expect(rows.value.map(row => row.seniorityNumber)).toEqual([1, 2])
   })
 
-  it('moves the readout with the slider but recomputes rows only after the drag settles', () => {
-    mockStore.entries = [pilot(1, 6), pilot(2, 40), pilot(3, 600)]
+  it('labels any year count so the slider can read out ahead of the committed horizon', () => {
+    mockStore.entries = [pilot(1, 6), pilot(2, 40)]
 
-    const { rows, yearsHorizon, horizonLabel } = useUpcomingRetirements()
-    expect(rows.value.map(row => row.seniorityNumber)).toEqual([1])
-    yearsHorizon.value = 4
-    vi.advanceTimersByTime(100)
-    yearsHorizon.value = 5
-    expect(horizonLabel.value).toBe(`5 years · through ${inMonths(60)}`)
-    vi.advanceTimersByTime(200)
-    expect(rows.value.map(row => row.seniorityNumber)).toEqual([1])
-    vi.advanceTimersByTime(100)
-    expect(rows.value.map(row => row.seniorityNumber)).toEqual([1, 2])
+    const { horizonLabelFor, horizonLabel } = useUpcomingRetirements()
+    expect(horizonLabelFor(1)).toBe(`1 year · through ${inMonths(12)}`)
+    expect(horizonLabelFor(5)).toBe(`5 years · through ${inMonths(60)}`)
+    expect(horizonLabel.value).toBe(`2 years · through ${inMonths(24)}`)
+  })
+
+  it('pages the rows and returns to the first page when the result set changes', async () => {
+    mockStore.entries = Array.from({ length: 120 }, (_, i) => pilot(i + 1, 1 + (i % 20)))
+
+    const { rows, pageRows, pageCount, page, toggleSort } = useUpcomingRetirements()
+    expect(rows.value).toHaveLength(120)
+    expect(pageCount.value).toBe(3)
+    expect(pageRows.value).toHaveLength(50)
+    page.value = 3
+    expect(pageRows.value).toHaveLength(20)
+    toggleSort('seniorityNumber')
+    await nextTick()
+    expect(page.value).toBe(1)
   })
 
   it('sorts by Seniority Number and flips direction on a second toggle', () => {
@@ -104,7 +109,6 @@ describe('useUpcomingRetirements', () => {
     expect(horizonLabel.value).toBe(`2 years · through ${inMonths(24)}`)
     expect(horizonMax.value).toBe(9)
     yearsHorizon.value = horizonMax.value
-    vi.advanceTimersByTime(250)
     expect(rows.value.map(row => row.seniorityNumber)).toEqual([1, 3, 2])
     yearsHorizon.value = 1
     expect(horizonLabel.value).toBe(`1 year · through ${inMonths(12)}`)

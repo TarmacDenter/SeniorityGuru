@@ -21,8 +21,8 @@ export interface RetirementRow {
 export interface RetirementFilterItem { label: string; value: string | null }
 
 const DEFAULT_HORIZON_YEARS = 2
-/** How long the slider must rest before the report recomputes. */
-const HORIZON_SETTLE_MS = 250
+/** Rows rendered per page of the Retirements table. */
+export const RETIREMENT_PAGE_SIZE = 50
 
 type Raw = UpcomingRetirement | RelativeUpcomingRetirement
 
@@ -78,20 +78,12 @@ export function useUpcomingRetirements() {
   })
   const throughDate = computed(() => addYearsDate(asOfDate.value, yearsHorizon.value))
 
-  // The report follows the horizon only once the drag settles; the readout follows it live.
-  const settledChoice = ref(DEFAULT_HORIZON_YEARS)
-  let settleTimer: ReturnType<typeof setTimeout> | undefined
-  watch(yearsChoice, (years) => {
-    clearTimeout(settleTimer)
-    settleTimer = setTimeout(() => { settledChoice.value = years }, HORIZON_SETTLE_MS)
-  }, { flush: 'sync' })
-  onScopeDispose(() => clearTimeout(settleTimer))
-  const settledThroughDate = computed(() =>
-    addYearsDate(asOfDate.value, Math.min(Math.max(1, settledChoice.value), horizonMax.value)))
-  const yearsText = computed(() => `${yearsHorizon.value} ${yearsHorizon.value === 1 ? 'year' : 'years'}`)
-  const horizonLabel = computed(() => `${yearsText.value} · through ${throughDate.value}`)
+  const yearsLabel = (years: number) => `${years} ${years === 1 ? 'year' : 'years'}`
+  /** Readout text for any year count, so the slider can show its live position before `yearsHorizon` settles. */
+  const horizonLabelFor = (years: number) => `${yearsLabel(years)} · through ${addYearsDate(asOfDate.value, years)}`
+  const horizonLabel = computed(() => horizonLabelFor(yearsHorizon.value))
   const emptyResultLabel = computed(() =>
-    `No pilots match the current filters within ${yearsText.value}. Try more years or other filters.`)
+    `No pilots match the current filters within ${yearsLabel(yearsHorizon.value)}. Try more years or other filters.`)
 
   const seniorOnly = ref(true)
 
@@ -129,7 +121,7 @@ export function useUpcomingRetirements() {
     if (!hasData.value || !analysis.value) return []
     const filter = {
       from: asOfDate.value,
-      through: settledThroughDate.value,
+      through: throughDate.value,
       qualificationScope: qualificationScope.value,
     }
     const raw: readonly Raw[] = anchoredAnalysis.value
@@ -155,12 +147,19 @@ export function useUpcomingRetirements() {
     })
   })
 
+  const page = ref(1)
+  const pageCount = computed(() => Math.max(1, Math.ceil(rows.value.length / RETIREMENT_PAGE_SIZE)))
+  const pageRows = computed(() => rows.value.slice((page.value - 1) * RETIREMENT_PAGE_SIZE, page.value * RETIREMENT_PAGE_SIZE))
+  // A new result set (or a reversed sort) starts again from the first page.
+  watch(rows, () => { page.value = 1 })
+
   return {
     hasData,
     hasAnchor,
     yearsHorizon,
     horizonMax,
     horizonLabel,
+    horizonLabelFor,
     emptyResultLabel,
     seniorOnly,
     filterBase,
@@ -173,5 +172,8 @@ export function useUpcomingRetirements() {
     sortDir,
     toggleSort,
     rows,
+    page,
+    pageCount,
+    pageRows,
   }
 }

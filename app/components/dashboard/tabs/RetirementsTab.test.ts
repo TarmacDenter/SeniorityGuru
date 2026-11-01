@@ -94,4 +94,14 @@ describe('RetirementsTab', () => {
     expect(bodyRows(wrapper)).toHaveLength(1)
     await vi.waitFor(() => expect(bodyRows(wrapper)[1]).toContain(inMonths(30)))
   })
+
+  it('renders one page of rows and moves to the next page', async () => {
+    mockStore.entries = Array.from({ length: 120 }, (_, i) => pilot(i + 1, 1 + (i % 20)))
+    const wrapper = await mountTab()
+    expect(bodyRows(wrapper)).toHaveLength(50)
+    expect(wrapper.text()).toContain('120 results')
+    await wrapper.get('button[aria-label="Next Page"]').trigger('click')
+    await vi.waitFor(() => expect(wrapper.text()).toContain('Page 2 of 3'))
+    expect(bodyRows(wrapper)).toHaveLength(50)
+  })
 })
