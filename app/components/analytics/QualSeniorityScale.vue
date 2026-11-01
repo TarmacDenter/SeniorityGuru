@@ -85,7 +85,7 @@ function isProjecting(position: PresentedQualificationPosition) {
         <div
           data-testid="qualification-scale-threshold"
           class="absolute bottom-0 w-0.5 border-l-2"
-          :class="position.modeledHoldable ? 'border-solid border-inverted' : 'border-dashed border-stamp'"
+          :class="position.modeledHoldable ? 'border-solid border-inverted' : 'border-dashed border-inverted'"
           :style="{ left: `${position.thresholdPercentile}%`, height: '100%' }"
         />
 

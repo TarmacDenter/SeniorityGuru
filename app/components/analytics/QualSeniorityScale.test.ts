@@ -160,7 +160,7 @@ describe('QualSeniorityScale', () => {
     ])
   })
 
-  it('marks the Qualification Threshold solid ink when holdable and a dashed stamp when not, with no palette colors', async () => {
+  it('marks the Qualification Threshold solid ink when holdable and dashed ink when not, with no palette colors', async () => {
     const Scale = await import('./QualSeniorityScale.vue')
     const wrapper = await mountSuspended(Scale.default, {
       props: {
@@ -173,7 +173,8 @@ describe('QualSeniorityScale', () => {
 
     const [holdable, notYet] = wrapper.findAll('[data-testid="qualification-scale-threshold"]')
     expect(holdable!.classes()).toContain('border-solid')
-    expect(notYet!.classes()).toEqual(expect.arrayContaining(['border-dashed', 'border-stamp']))
+    expect(notYet!.classes()).toEqual(expect.arrayContaining(['border-dashed', 'border-inverted']))
+    expect(notYet!.classes()).not.toContain('border-stamp')
     expect(wrapper.html()).not.toMatch(/ui-color-(success|primary|error)/)
   })
 })
