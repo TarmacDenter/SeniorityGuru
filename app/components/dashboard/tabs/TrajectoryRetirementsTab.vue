@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useNextProjections } from '~/composables/seniority'
 
-// Trajectory › Retirements: the retirement snapshot, the Retirement Wave with the trajectory over it,
+// Trajectory › Retirements: the Retirement Wave with an N-year count with the trajectory over it,
 // and Retirement Projections across Qualification Scopes.
 defineProps<{
   loading: boolean
@@ -13,9 +13,7 @@ const {
   computeRetirementProjection,
   scopeOptions,
   scopeSuffix,
-  snapshot,
-  snapshotYears,
-  snapshotMaxYears,
+  seniorRetirements,
   retirementWave,
   wavePoints,
 } = useNextProjections()
@@ -38,25 +36,32 @@ const {
     />
 
     <div v-else class="space-y-6">
-      <div class="grid grid-cols-1 gap-6 lg:grid-cols-11">
-        <UCard v-if="retirementWave.length > 0" class="lg:col-span-6">
-          <template #header>
-            <h3 class="font-serif text-lg font-semibold text-highlighted">Retirement Wave{{ scopeSuffix }}</h3>
-          </template>
-          <AnalyticsRetirementWaveChart
-            :wave-buckets="retirementWave"
-            :trajectory-points="wavePoints"
-            :qualification-scope="scopeSuffix"
-          />
-        </UCard>
-        <DashboardRetirementSnapshot
-          v-if="snapshot"
-          v-model:years="snapshotYears"
-          class="lg:col-span-5"
-          :snapshot="snapshot"
-          :max-years="snapshotMaxYears"
+      <UCard v-if="retirementWave.length > 0">
+        <template #header>
+          <div class="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
+            <h3 class="text-lg font-semibold text-highlighted">Retirement Wave{{ scopeSuffix }}</h3>
+            <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
+              <label for="retirements-within" class="whitespace-nowrap text-sm text-muted">Retirements within</label>
+              <USlider
+                id="retirements-within"
+                v-model="seniorRetirements.years.value"
+                :min="1"
+                :max="seniorRetirements.maxYears.value"
+                :step="1"
+                size="sm"
+                class="w-32 sm:w-44"
+                aria-label="Retirements within years"
+              />
+              <span class="font-mono text-sm font-semibold text-highlighted" aria-live="polite">{{ seniorRetirements.label.value }}</span>
+            </div>
+          </div>
+        </template>
+        <AnalyticsRetirementWaveChart
+          :wave-buckets="retirementWave"
+          :trajectory-points="wavePoints"
+          :qualification-scope="scopeSuffix"
         />
-      </div>
+      </UCard>
 
       <DashboardRetirementComparison
         :qualification-scope-options="scopeOptions"
