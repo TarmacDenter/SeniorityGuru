@@ -2,9 +2,6 @@
 @import "@fontsource/ibm-plex-sans/400.css";
 @import "@fontsource/ibm-plex-sans/500.css";
 @import "@fontsource/ibm-plex-sans/600.css";
-@import "@fontsource/ibm-plex-serif/400.css";
-@import "@fontsource/ibm-plex-serif/400-italic.css";
-@import "@fontsource/ibm-plex-serif/600.css";
 @import "@fontsource/ibm-plex-mono/400.css";
 @import "@fontsource/ibm-plex-mono/500.css";
 @import "@fontsource/ibm-plex-mono/600.css";
@@ -14,13 +11,11 @@
 
 /* ============================================================
    1. DESIGN TOKENS
-      The printed-list identity: sans for controls, serif for headings
-      and notes, mono for list rows and figures. Fonts are bundled
+      Sans for controls, headings and notes, mono for list rows and figures. Fonts are bundled
       (@fontsource), never fetched from a CDN, so the app works offline.
    ============================================================ */
 @theme {
   --font-sans: 'IBM Plex Sans', system-ui, sans-serif;
-  --font-serif: 'IBM Plex Serif', Georgia, serif;
   --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
 }
 

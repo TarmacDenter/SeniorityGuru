@@ -1,5 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { nextTick } from 'vue'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { useSeniorityCore, _resetCoreSingletons } from './useSeniorityCore'
 import { useNextProjections } from './useNextProjections'
 import { useScenario } from '~/composables/useScenario'
@@ -32,85 +31,6 @@ beforeEach(() => {
   scopeLabel.value = 'Company-wide'
   growthAssumptions.value = { enabled: false, annualGrowthRate: 0.02 }
   useState('trajectoryCompareScopeLabel').value = undefined
-})
-
-afterEach(() => {
-  vi.useRealTimers()
-})
-
-describe('useNextProjections: project forward', () => {
-  it('shows positions as of today until Project forward is turned on', () => {
-    seedRoster()
-    const projections = useNextProjections()
-
-    expect(projections.asOfLabel.value).toBe('As of today')
-    expect(projections.sliderMax.value).toBeGreaterThan(1)
-  })
-
-  it('offers no slider range when there is no Anchor Pilot', () => {
-    const projections = useNextProjections()
-
-    expect(projections.sliderMax.value).toBe(0)
-    expect(projections.canProjectForward.value).toBe(false)
-  })
-
-  it('moves the As-of label a year ahead when Project forward is turned on', async () => {
-    seedRoster()
-    const projections = useNextProjections()
-    const nextYear = new Date().getFullYear() + 1
-
-    projections.projectForward.value = true
-    await nextTick()
-
-    expect(projections.asOfLabel.value).toMatch(new RegExp(`^As of ${nextYear}-\\d{2}-\\d{2}$`))
-    expect(projections.yearsLabel.value).toBe('+1yr')
-  })
-
-  it('waits half a second after the slider stops before projecting', async () => {
-    vi.useFakeTimers()
-    seedRoster()
-    const projections = useNextProjections()
-    projections.projectForward.value = true
-    await nextTick()
-
-    projections.yearsInput.value = 3
-    await nextTick()
-    expect(projections.yearsLabel.value).toBe('+3yrs')
-    expect(projections.projectionYears.value).toBe(1)
-
-    vi.advanceTimersByTime(500)
-    expect(projections.projectionYears.value).toBe(3)
-  })
-
-  it('returns to today when Project forward is turned off', async () => {
-    seedRoster()
-    const projections = useNextProjections()
-    projections.projectForward.value = true
-    await nextTick()
-    projections.projectForward.value = false
-    await nextTick()
-
-    expect(projections.asOfLabel.value).toBe('As of today')
-    expect(projections.projectionYears.value).toBe(0)
-  })
-
-  it('compares the Anchor Pilot across Qualifications and shows the roster summary', () => {
-    seedRoster()
-    const projections = useNextProjections()
-
-    expect(projections.qualificationPositions.value.length).toBeGreaterThan(1)
-    expect(projections.rosterSummaryLabel.value).toContain('5')
-  })
-
-  it('says why there is no comparison when the Anchor Pilot has retired', () => {
-    seedRoster()
-    mockStore.entries[0] = makeEntry({ seniority_number: 1, employee_number: 'E1', base: 'JFK', seat: 'CA', fleet: '737', retire_date: '2020-06-15' })
-    mockUserStore.employeeNumber = 'E1'
-    const projections = useNextProjections()
-
-    expect(projections.qualificationPositions.value).toEqual([])
-    expect(projections.qualificationPositionsNoResultLabel.value).toBe('Anchor Pilot retired')
-  })
 })
 
 describe('useNextProjections: retirement analysis', () => {

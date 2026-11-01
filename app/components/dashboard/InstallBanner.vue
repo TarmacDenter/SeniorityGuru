@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { usePwaInstall } from '~/composables/usePwaInstall'
 
-const props = defineProps<{ compact?: boolean }>()
 const emit = defineEmits<{ dismissed: [] }>()
 const { showBanner, isIos, showIosModal, install, snooze, dismiss } = usePwaInstall()
 
@@ -18,7 +17,7 @@ async function dismissBanner() {
 
 <template>
   <div
-    v-if="showBanner && props.compact"
+    v-if="showBanner"
     role="status"
     class="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-default bg-elevated px-4 py-2 text-sm"
   >
@@ -29,27 +28,6 @@ async function dismissBanner() {
     <UButton size="xs" color="neutral" variant="outline" @click="install">{{ isIos ? 'How to Install' : 'Install' }}</UButton>
     <UButton size="xs" variant="ghost" color="neutral" @click="snoozeBanner">Not now</UButton>
     <UButton size="xs" variant="ghost" color="neutral" @click="dismissBanner">Don't ask again</UButton>
-  </div>
-  <div v-else-if="showBanner" class="px-4 pt-4">
-    <UAlert
-      icon="i-lucide-smartphone"
-      color="primary"
-      variant="subtle"
-      title="Install Seniority Guru"
-      description="Get the full app experience and keep your data safe — installed apps get reliable local storage that browsers won't clear."
-    >
-      <template #actions>
-        <UButton size="sm" color="primary" @click="install">
-          {{ isIos ? 'How to Install' : 'Install' }}
-        </UButton>
-        <UButton size="sm" variant="ghost" color="neutral" @click="snoozeBanner">
-          Not now
-        </UButton>
-        <UButton size="sm" variant="ghost" color="neutral" @click="dismissBanner">
-          Don't ask again
-        </UButton>
-      </template>
-    </UAlert>
   </div>
 
   <UModal
