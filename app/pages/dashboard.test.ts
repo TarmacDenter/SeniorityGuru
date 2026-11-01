@@ -22,6 +22,7 @@ const {
   mockFetchEntries,
   mockLists,
   mockHasData,
+  mockHasAnchor,
 } = vi.hoisted(() => {
   const { ref: vRef } = require('vue')
   return {
@@ -34,6 +35,7 @@ const {
     mockFetchEntries: vi.fn(),
     mockLists: vRef([] as ListItem[]),
     mockHasData: { value: false },
+    mockHasAnchor: { value: null as boolean | null },
   }
 })
 
@@ -90,7 +92,7 @@ vi.mock('~/composables/seniority/modules/useSeniorityCore', () => ({
   useSeniorityCore: () => ({
     hasData: ref(mockHasData.value),
     listAnalysis: ref(null),
-    hasAnchor: ref(mockHasData.value),
+    hasAnchor: ref(mockHasAnchor.value ?? mockHasData.value),
     isNewHireMode: ref(false),
     newHire: { syntheticEntry: ref(null) },
     analysis: ref(null),
@@ -243,6 +245,7 @@ describe('dashboard.vue — sections', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockHasData.value = true
+    mockHasAnchor.value = null
     mockShowDemoBadge.value = false
     mockRoutePath.value = '/dashboard/current/status'
     mockRouteQuery.value = {}
@@ -291,6 +294,20 @@ describe('dashboard.vue — sections', () => {
     expect(wrapper.text()).toContain('As-of Date')
     expect(wrapper.text()).toContain('Growth Assumptions')
     expect(wrapper.find('[aria-label="Seniority List"]').exists()).toBe(false)
+  })
+
+  it.each(['/dashboard/current/status', '/dashboard/trajectory/projection'])('shows no scenario toolbar on %s without an Anchor Pilot', async (path) => {
+    mockHasAnchor.value = false
+    const wrapper = await mountDashboard(path)
+    expect(wrapper.find('[data-testid="scenario-strip"]').exists()).toBe(false)
+    expect(wrapper.text()).not.toContain('Qualification Scope')
+    expect(wrapper.text()).not.toContain('Growth Assumptions')
+  })
+
+  it('keeps the scenario toolbar on Demographics without an Anchor Pilot', async () => {
+    mockHasAnchor.value = false
+    const wrapper = await mountDashboard('/dashboard/demographics')
+    expect(wrapper.find('[data-testid="scenario-strip"]').exists()).toBe(true)
   })
 
   it('shows only the list picker on List', async () => {
