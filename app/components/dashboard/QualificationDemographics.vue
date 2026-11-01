@@ -12,10 +12,20 @@ const {
 
 const ready = useDeferredReady()
 const showSections = computed(() => ready.value && hasResult.value)
+
+// The cards render after first paint, so a link to one (#junior-captains) has nothing to land on
+// until they appear; scroll to it then.
+const route = useRoute()
+const root = useTemplateRef<HTMLElement>('root')
+watch(showSections, async (shown) => {
+  if (!shown || !route.hash) return
+  await nextTick()
+  root.value?.querySelector(`[id="${CSS.escape(route.hash.slice(1))}"]`)?.scrollIntoView()
+}, { immediate: true })
 </script>
 
 <template>
-  <section aria-labelledby="demographics-heading" class="space-y-4">
+  <section ref="root" aria-labelledby="demographics-heading" class="space-y-4">
     <div>
       <h2 id="demographics-heading" class="text-lg font-semibold text-highlighted">Who holds each Qualification</h2>
       <p class="mt-1 text-sm text-muted">

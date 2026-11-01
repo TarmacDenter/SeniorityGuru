@@ -29,8 +29,8 @@ beforeEach(() => {
   ]
 })
 
-async function mountReady() {
-  const wrapper = await mountSuspended(QualificationDemographics)
+async function mountReady(route?: string) {
+  const wrapper = await mountSuspended(QualificationDemographics, { route })
   await new Promise(resolve => setTimeout(resolve, 10))
   await flushPromises()
   return wrapper
@@ -67,5 +67,13 @@ describe('Qualification demographics', () => {
 
     expect(wrapper.text()).toContain('No ages are available for the pilots in this Qualification Scope.')
     expect(wrapper.text()).toContain('Years of service')
+  })
+
+  it('scrolls to the Junior captains card when the link names it, even though the card renders late', async () => {
+    const scrolled: string[] = []
+    Element.prototype.scrollIntoView = function (this: Element) { scrolled.push(this.id) }
+    await mountReady('/dashboard/demographics#junior-captains')
+
+    expect(scrolled).toEqual(['junior-captains'])
   })
 })
