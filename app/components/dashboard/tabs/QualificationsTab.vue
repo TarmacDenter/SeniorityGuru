@@ -62,8 +62,8 @@ defineProps<{
               <td class="px-2 pt-2 text-right" :class="row.hypotheticalLabel ? 'pb-0.5' : 'pb-2'">{{ row.percentileLabel }}</td>
             </tr>
             <tr v-if="row.hypotheticalLabel">
-              <td colspan="4" class="px-2 pb-2 font-serif text-xs font-normal italic text-stamp" data-testid="hypothetical-row">
-                {{ row.hypotheticalLabel }}
+              <td colspan="4" class="px-2 pb-2" data-testid="hypothetical-row">
+                <UBadge color="neutral" variant="outline" size="sm">{{ row.hypotheticalLabel }}</UBadge>
               </td>
             </tr>
           </tbody>

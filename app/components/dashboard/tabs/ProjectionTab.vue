@@ -43,13 +43,15 @@ const {
 
     <template v-else>
       <h2 class="font-serif text-xl font-semibold text-highlighted">Your Seniority Percentile over time</h2>
-      <p
+      <UBadge
         v-if="hypotheticalLabel"
         data-testid="hypothetical-placement"
-        class="mt-2 inline-block -rotate-1 border-2 border-stamp px-2 py-0.5 font-sans text-sm font-semibold text-stamp"
+        color="neutral"
+        variant="outline"
+        class="mt-2"
       >
         {{ hypotheticalLabel }}
-      </p>
+      </UBadge>
 
       <div class="mt-4">
         <DashboardTrajectoryChart :data="chartData" :ended-by-label="endedByLabel" />

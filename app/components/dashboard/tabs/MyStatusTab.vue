@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { h, resolveComponent } from 'vue'
+import { useMediaQuery } from '@vueuse/core'
+import type { TableColumn } from '@nuxt/ui'
 import type { ListExcerptRow, RankCardData, StandingFigure } from '~/composables/seniority'
 
 // The Now panel: the Seniority List around the Anchor Pilot's line, then the Standing figures.
@@ -12,6 +15,22 @@ defineProps<{
   figures: StandingFigure[]
   excerptRows: ListExcerptRow[]
 }>()
+
+const isCompact = useMediaQuery('(max-width: 639px)')
+const numeric = { class: { th: 'text-right', td: 'text-right' } }
+const excerptColumns: TableColumn<ListExcerptRow>[] = [
+  { accessorKey: 'seniorityNumber', header: 'Seniority Number', meta: numeric },
+  {
+    accessorKey: 'nameLabel',
+    header: 'Name',
+    meta: { class: { td: '[overflow-wrap:anywhere]' } },
+    cell: ({ row }) => row.original.status === 'retired'
+      ? h('span', null, [row.original.nameLabel, ' ', h(resolveComponent('UBadge'), { color: 'neutral', variant: 'outline', size: 'sm', class: 'no-underline' }, () => 'retired')])
+      : row.original.nameLabel,
+  },
+  { accessorKey: 'rankLabel', header: 'Rank', meta: numeric },
+  { accessorKey: 'publicationPositionLabel', header: 'Publication Position', meta: numeric },
+]
 </script>
 
 <template>
@@ -45,35 +64,16 @@ defineProps<{
           {{ rankCard.noResultLabel }}
         </p>
 
-        <table v-if="excerptRows.length > 0" class="mt-4 w-full border-collapse font-mono text-sm sm:text-base" aria-label="Seniority List around your line">
-          <thead>
-            <tr class="border-b border-highlighted font-sans text-xs font-medium text-muted">
-              <th scope="col" class="px-2 py-1.5 text-right">Seniority Number</th>
-              <th scope="col" class="px-2 py-1.5 text-left">Name</th>
-              <th scope="col" class="px-2 py-1.5 text-right">Rank</th>
-              <th scope="col" class="hidden px-2 py-1.5 text-right sm:table-cell">Publication Position</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr
-              v-for="row in excerptRows"
-              :key="row.employeeNumber"
-              :aria-current="row.isAnchor ? 'true' : undefined"
-              :class="[
-                row.isAnchor ? 'bg-mark text-mark-ink font-bold shadow-[inset_4px_0_0_var(--mark-ink)]' : 'even:bg-accented',
-                row.status === 'retired' && !row.isAnchor ? 'text-muted line-through' : '',
-              ]"
-            >
-              <td class="px-2 py-2 text-right">{{ row.seniorityNumber }}</td>
-              <td class="px-2 py-2 [overflow-wrap:anywhere]">
-                {{ row.nameLabel }}
-                <span v-if="row.status === 'retired'" class="font-serif text-xs italic text-stamp">retired</span>
-              </td>
-              <td class="px-2 py-2 text-right">{{ row.rankLabel }}</td>
-              <td class="hidden px-2 py-2 text-right sm:table-cell">{{ row.publicationPositionLabel }}</td>
-            </tr>
-          </tbody>
-        </table>
+        <SeniorityAnchoredTable
+          v-if="excerptRows.length > 0"
+          :data="excerptRows"
+          :columns="excerptColumns"
+          mark-column="nameLabel"
+          :column-visibility="{ publicationPositionLabel: !isCompact }"
+          caption="Seniority List around your line"
+          :ui="{ td: 'px-2 py-2 font-mono text-sm sm:text-base whitespace-normal', th: 'px-2 py-1.5 text-xs font-medium text-muted' }"
+          class="mt-4"
+        />
 
         <dl class="mt-6" data-testid="standing-figures">
           <div v-for="figure in figures" :key="figure.label" class="flex items-baseline gap-2 py-1">
@@ -88,13 +88,15 @@ defineProps<{
         <p v-if="rankCard.percentileScaleLabel" class="mt-3 font-serif text-sm italic text-muted">
           {{ rankCard.percentileScaleLabel }}. A Seniority Percentile of 100 is the most senior end.
         </p>
-        <p
+        <UBadge
           v-if="rankCard.hypotheticalLabel"
           data-testid="hypothetical-placement"
-          class="mt-3 inline-block -rotate-1 border-2 border-stamp px-2 py-0.5 font-sans text-sm font-semibold text-stamp"
+          color="neutral"
+          variant="outline"
+          class="mt-3"
         >
           {{ rankCard.hypotheticalLabel }}
-        </p>
+        </UBadge>
       </template>
     </template>
   </div>
