@@ -32,7 +32,7 @@ Use semantic tokens (`bg-default`, `text-muted`, `border-default`, `text-highlig
 | Highlighter | `--mark`, with text `--mark-ink` | The pilot's own line. Text on it stays dark in both modes, muted text included. |
 | Retirement | `--ui-past`, `--ui-imminent`, `--ui-soon` | Retirement proximity: red, orange, teal. Teal, so it never reads as the highlighter. |
 
-The `--stamp` token and `font-serif` are not used in new work. They are removed once nothing references them.
+The `font-serif` token is removed. The `--stamp` token stays for the dashed "not holdable yet" Qualification Threshold marker and is not used in new work.
 
 ## Type
 

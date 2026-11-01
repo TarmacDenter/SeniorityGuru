@@ -1,6 +1,5 @@
 import type { ComputedRef, Ref } from 'vue'
-import { isNoResult, resultOrNull, type QualificationScope } from '~/utils/seniority'
-import { useSeniorityStore } from '~/stores/seniority'
+import { isNoResult, type QualificationScope } from '~/utils/seniority'
 import { useSeniorityCore } from './useSeniorityCore'
 
 export interface RankCardData {
@@ -87,40 +86,15 @@ export interface StandingFigure {
   note?: string
 }
 
-const ROSTER_SIZE_ICON = 'i-lucide-users'
 const SEAT_ORDER: Record<string, number> = { CA: 0, FO: 1 }
-
-export interface StatCard {
-  label: string
-  value: string
-  trend?: string
-  trendUp?: boolean
-  icon: string
-}
-
-export interface RetirementSnapshotData {
-  /** Roster Size and active count today; the trajectory points carry only Rank and Seniority Percentile. */
-  rosterSize: number
-  activePilotCount: number
-  atRetirement: { date: string; rank: number; percentile: number; rankDelta: string }
-  fullTrajectory: { date: string; rank: number; percentile: number; rankDelta: string }[]
-  retireDate: string
-  /** Set when the trajectory is a Hypothetical Placement in the selected scope. */
-  hypotheticalLabel: string | null
-}
 
 export function useStanding(qualificationScope?: Ref<QualificationScope> | ComputedRef<QualificationScope>): {
   rankCard: ComputedRef<RankCardData>
   baseStatus: ComputedRef<BaseStatusRow[]>
   qualificationGroups: ComputedRef<QualificationSeatGroup[]>
   figures: ComputedRef<StandingFigure[]>
-  statCards: ComputedRef<StatCard[]>
-  /** The stat cards that Now's figures do not already show (Roster Size is one of them), as dot-leader rows. */
-  glance: ComputedRef<StandingFigure[]>
-  retirementSnapshot: ComputedRef<RetirementSnapshotData | null>
 } {
-  const { anchoredAnalysis, projectionEndDate } = useSeniorityCore()
-  const seniorityStore = useSeniorityStore()
+  const { anchoredAnalysis } = useSeniorityCore()
 
   const anchorEntry = computed(() => anchoredAnalysis.value?.anchor)
   const rawStandingOutput = computed(() => anchoredAnalysis.value?.seniorityStanding({
@@ -222,91 +196,5 @@ export function useStanding(qualificationScope?: Ref<QualificationScope> | Compu
     ]
   })
 
-  const statCards = computed<StatCard[]>(() => {
-    const lists = seniorityStore.lists
-    const entry = anchorEntry.value
-    const standing = standingResult.value
-    const presented = standingOutput.value?.presentation
-
-    let baseRankValue = PLACEHOLDER
-    let baseRankTrend: string | undefined
-    if (standing && entry?.base && entry?.seat && entry?.fleet) {
-      const userQualification = presented?.qualificationStandings.find(
-        item => item.qualification.base === entry.base
-          && item.qualification.seat === entry.seat
-          && item.qualification.fleet === entry.fleet,
-      )
-      if (userQualification) {
-        baseRankValue = userQualification.rankLabel
-        baseRankTrend = userQualification.rosterTrendLabel
-      }
-    }
-
-    return [
-      {
-        label: presented?.rosterSizeLabel ?? 'Roster Size',
-        ...(presented?.rosterSizeTrend ? { trend: presented.rosterSizeTrend } : {}),
-        value: presented?.rosterSizeValueLabel ?? PLACEHOLDER,
-        icon: ROSTER_SIZE_ICON,
-      },
-      {
-        label: 'Retirements (Next 12 mo.)',
-        value: presented?.rollingNext12MonthRetirementsLabel ?? PLACEHOLDER,
-        trend: entry ? presented?.retirementsSeniorToAnchorLabel : undefined,
-        trendUp: (standing?.rollingNext12MonthRetirementsSeniorToAnchor ?? 0) > 0 || undefined,
-        icon: 'i-lucide-calendar-clock',
-      },
-      {
-        label: 'Your Base Rank',
-        value: baseRankValue,
-        trend: baseRankTrend,
-        icon: 'i-lucide-map-pin',
-      },
-      {
-        label: 'Lists Uploaded',
-        value: lists.length.toLocaleString(),
-        icon: 'i-lucide-file-text',
-      },
-    ]
-  })
-
-  const glance = computed<StandingFigure[]>(() => statCards.value
-    .filter(card => card.icon !== ROSTER_SIZE_ICON)
-    .map(card => ({ label: card.label, value: card.value, ...(card.trend ? { note: card.trend } : {}) })))
-
-  const trajectoryOutput = computed(() => projectionEndDate.value
-    ? anchoredAnalysis.value?.seniorityTrajectory({
-      through: projectionEndDate.value,
-      scenario: { qualificationScope: qualificationScope?.value ?? {} },
-    }) ?? null
-    : null)
-  const trajectoryPoints = computed(() => {
-    return resultOrNull(trajectoryOutput.value?.domain)?.points ?? null
-  })
-
-  const retirementSnapshot = computed<RetirementSnapshotData | null>(() => {
-    const entry = anchorEntry.value
-    const trajectoryPointList = trajectoryPoints.value
-    const standing = standingResult.value
-    if (!entry?.retire_date || !standing || !trajectoryPointList || trajectoryPointList.length === 0) return null
-    const fullTrajectory = trajectoryPointList.map((point, index, points) => {
-      const previous = points[index - 1]
-      const delta = previous ? point.rank - previous.rank : 0
-      return {
-        ...point,
-        date: point.date.toString(),
-        rankDelta: delta === 0 ? '--' : delta > 0 ? `+${delta}` : String(delta),
-      }
-    })
-    return {
-      rosterSize: standing.rosterSize,
-      activePilotCount: standing.activePilotCount,
-      atRetirement: fullTrajectory[fullTrajectory.length - 1]!,
-      fullTrajectory,
-      retireDate: entry.retire_date.toString(),
-      hypotheticalLabel: standingOutput.value?.presentation.hypotheticalLabel ?? null,
-    }
-  })
-
-  return { rankCard, baseStatus, qualificationGroups, figures, statCards, glance, retirementSnapshot }
+  return { rankCard, baseStatus, qualificationGroups, figures }
 }
