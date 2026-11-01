@@ -1,5 +1,7 @@
 # Use a printed seniority list visual identity
 
+**Status:** partly superseded by [ADR 0009](0009-native-shell-with-print-accents.md). Stock Nuxt UI dashboard parts replace the greenbar tables, stamps, serif headings, dot leaders and custom tabs. The highlighter on the pilot's own line, IBM Plex type, ink as primary and both themes still stand.
+
 The interface takes its look from an airline's printed seniority list: ruled tables on greenbar paper, IBM Plex type, a highlighter on the pilot's own line, and the same sheet on night paper in dark mode. Primary is ink, not a brand color. Dark is the default. [docs/design-system.md](../design-system.md) holds the rules, and `app/assets/css/main.css` holds the token values.
 
 ## Considered Options
