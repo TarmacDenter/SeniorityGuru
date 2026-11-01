@@ -125,7 +125,6 @@ describe('SeniorityListViewer', () => {
       'Qualification Rank',
       'Qualification percentile',
     ]))
-    expect(wrapper.find('div.flex-1.min-h-0.overflow-auto').exists()).toBe(true)
 
     await wrapper.find('button').trigger('click')
 
