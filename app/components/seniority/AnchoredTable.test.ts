@@ -23,13 +23,24 @@ const columns: TableColumn<Row>[] = [
   { accessorKey: 'name', header: 'Name' },
 ]
 
-function mountTable() {
+function mountTable(data = rows, tableColumns = columns) {
   return mountSuspended(defineComponent({
-    setup: () => () => h(AnchoredTable as any, { data: rows, columns, markColumn: 'name' }),
+    setup: () => () => h(AnchoredTable as any, { data, columns: tableColumns, markColumn: 'name' }),
   }))
 }
 
 describe('AnchoredTable', () => {
+  it('keeps the retired Anchor Pilot identified beside their retirement status', async () => {
+    const wrapper = await mountTable(
+      [{ seniorityNumber: 30, name: 'Pilot C', status: 'retired', isAnchor: true }],
+      [...columns, { accessorKey: 'status', header: 'Status' }],
+    )
+
+    const line = wrapper.get('tbody tr')
+    expect(line.text()).toContain('Pilot C (Your line)')
+    expect(line.text()).toContain('retired')
+  })
+
   it('lists the rows in order under their column headers', async () => {
     const wrapper = await mountTable()
 

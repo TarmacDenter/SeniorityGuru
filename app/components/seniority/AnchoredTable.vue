@@ -37,8 +37,10 @@ const markedColumns = computed<TableColumn<T>[]>(() => props.columns.map((column
 const meta = {
   class: {
     tr: (row: Row<T>) => {
-      if (row.original.isAnchor) return ANCHOR_ROW
-      return [row.original.status === 'retired' ? RETIRED_ROW : '', props.rowClass?.(row.original) ?? ''].join(' ').trim()
+      return [
+        row.original.status === 'retired' ? RETIRED_ROW : '',
+        row.original.isAnchor ? ANCHOR_ROW : props.rowClass?.(row.original) ?? '',
+      ].join(' ').trim()
     },
   },
 }

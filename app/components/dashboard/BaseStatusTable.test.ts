@@ -54,7 +54,7 @@ describe('BaseStatusTable', () => {
 
     const marks = wrapper.findAll('[data-testid="hypothetical-row"]')
     expect(marks).toHaveLength(1)
-    expect(marks[0]!.attributes('title')).toBe('Hypothetical Placement in BOS CA 220')
+    expect(marks[0]!.text()).toBe('Hypothetical Placement in BOS CA 220')
   })
 
   it('shows the no-result reason instead of an empty table', async () => {

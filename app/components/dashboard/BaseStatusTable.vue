@@ -27,7 +27,7 @@ const displayData = computed<BaseStatusRow[]>(() => isMobile.value
 
 function hypotheticalMark(row: BaseStatusRow) {
   return row.hypotheticalLabel
-    ? h(resolveComponent('UBadge'), { color: 'neutral', variant: 'outline', size: 'sm', class: 'ml-1 font-normal', title: row.hypotheticalLabel, 'data-testid': 'hypothetical-row' }, () => 'hypothetical')
+    ? h(resolveComponent('UBadge'), { color: 'neutral', variant: 'outline', size: 'sm', class: 'ml-1 font-normal whitespace-normal', 'data-testid': 'hypothetical-row' }, () => row.hypotheticalLabel)
     : null;
 }
 
