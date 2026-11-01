@@ -78,6 +78,7 @@ describe('Now panel', () => {
     mockUserStore.employeeNumber = 'E3'
     const wrapper = await mountSuspended(harness(ref<QualificationScope>({})))
 
+    expect(wrapper.find('table caption').text()).toBe('Seniority List around your line')
     const rows = wrapper.findAll('tbody tr')
     expect(rows.map(row => row.find('td').text())).toEqual(['10', '20', '30', '40', '50'])
     expect(rows.map(row => row.find('td:nth-child(2)').text())).toEqual(['Pilot 1', 'Pilot 2', 'Pilot 3 (Your line)', 'Pilot 4', 'Pilot 5'])

@@ -70,7 +70,7 @@ const excerptColumns: TableColumn<ListExcerptRow>[] = [
           :columns="excerptColumns"
           mark-column="nameLabel"
           :column-visibility="{ publicationPositionLabel: !isCompact }"
-          aria-label="Seniority List around your line"
+          caption="Seniority List around your line"
           :ui="{ td: 'px-2 py-2 font-mono text-sm sm:text-base whitespace-normal', th: 'px-2 py-1.5 text-xs font-medium text-muted' }"
           class="mt-4"
         />
