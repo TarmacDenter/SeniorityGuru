@@ -4,7 +4,6 @@ import { useStanding } from '~/composables/seniority'
 // The short extras under the Now figures: a glance list, with the status table behind a disclosure (the improvement-rate sparkline now lives on Next).
 const { qualificationScope } = useScenario()
 const { glance, baseStatus, rankCard } = useStanding(qualificationScope)
-const { activeTab } = useDashboardTabs()
 </script>
 
 <template>
@@ -23,7 +22,7 @@ const { activeTab } = useDashboardTabs()
       <template #content>
         <div class="mt-3 space-y-6">
           <DashboardBaseStatusTable :data="baseStatus" :no-result-label="rankCard.noResultLabel" />
-          <UButton label="Open Qualifications" color="neutral" variant="link" size="sm" trailing-icon="i-lucide-arrow-right" class="px-0" @click="activeTab = 'qualifications'" />
+          <UButton label="Open Holdability" to="/dashboard/current/holdability" color="neutral" variant="link" size="sm" trailing-icon="i-lucide-arrow-right" class="px-0" />
         </div>
       </template>
     </UCollapsible>

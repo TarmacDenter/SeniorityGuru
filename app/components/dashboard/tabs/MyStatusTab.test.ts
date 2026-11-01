@@ -6,7 +6,6 @@ import { UApp } from '#components'
 import { _resetCoreSingletons, useSeniorityCore } from '~/composables/seniority/modules/useSeniorityCore'
 import { useStanding } from '~/composables/seniority/modules/useStanding'
 import { useListExcerpt } from '~/composables/seniority/modules/useListExcerpt'
-import { useDashboardTabs } from '~/composables/useDashboardTabs'
 import { resetMockStores } from '~/test-utils/seniority-mocks'
 import type { QualificationScope } from '~/utils/seniority'
 import MyStatusTab from './MyStatusTab.vue'
@@ -129,8 +128,7 @@ describe('Now panel', () => {
 
       expect(wrapper.text()).toContain('Status by Base / Seat / Fleet')
 
-      await wrapper.findAll('button').find(button => button.text().includes('Open Qualifications'))!.trigger('click')
-      expect(useDashboardTabs().activeTab.value).toBe('qualifications')
+      expect(wrapper.find('a[href="/dashboard/current/holdability"]').text()).toContain('Open Holdability')
     })
   })
 })

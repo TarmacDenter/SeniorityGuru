@@ -23,5 +23,5 @@ export async function uploadTestList(page: Page) {
   await page.locator('[data-segment="day"]').fill('01')
   await page.locator('[data-segment="year"]').fill('2026')
   await page.getByRole('button', { name: 'Looks Good' }).click()
-  await page.waitForURL(/\/dashboard\?tab=seniority/)
+  await page.waitForURL(/\/dashboard\/list\/full/)
 }

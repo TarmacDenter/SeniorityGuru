@@ -143,7 +143,7 @@ async function onSave() {
     toast.add({ title: `Uploaded ${count} entries`, color: 'success' })
     upload.reset()
     clearRowFilter()
-    await navigateTo({ path: '/dashboard', query: { tab: 'seniority' } })
+    await navigateTo({ path: '/dashboard/list/full' })
   } catch {
     toast.add({ title: upload.confirm.error.value ?? 'Upload failed', color: 'error' })
   }
