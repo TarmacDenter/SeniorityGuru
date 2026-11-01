@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import type { Ref } from 'vue'
-import { useMediaQuery } from '@vueuse/core'
 import { useSeniorityCore, useStanding, useTrajectory, useListExcerpt, useSeniorityLists } from '~/composables/seniority'
 import { useDashboardTabs } from '~/composables/useDashboardTabs'
 import { useScenario } from '~/composables/useScenario'
@@ -75,7 +74,6 @@ const { scopeLabel, scopeLabels, qualificationScope, growthAssumptions, growthLa
 const { rankCard, figures, qualificationGroups } = useStanding(qualificationScope)
 const { rows: excerptRows } = useListExcerpt()
 const { chartData: trajectoryChartData, keyChanges, hypotheticalLabel: trajectoryHypotheticalLabel, endedByLabel: trajectoryEndedByLabel } = useTrajectory(growthAssumptions, qualificationScope)
-const isCompactViewport = useMediaQuery('(max-width: 639px), (max-height: 499px)')
 const compactNoticeDismissed = ref<string | null>(null)
 const selectedListLabel = computed(() => listOptions.value.find(option => option.id === selectedListId.value)?.label ?? null)
 const isDemoList = computed(() => !!selectedList.value?.isDemo && showDemoBadge.value)
@@ -87,7 +85,7 @@ const compactNotice = computed(() => {
 })
 // The Lists panel fills the body and scrolls its own table; the other panels scroll the body.
 const panelUi = computed(() => ({
-  body: `flex flex-col flex-1 sm:overflow-y-auto p-0 sm:p-0${activeTab.value === 'lists' ? ' sm:overflow-hidden' : ''}`,
+  body: `flex flex-col flex-1 sm:overflow-y-auto p-0 sm:p-0${activeTab.value === 'lists' ? ' gap-0 sm:gap-0 sm:overflow-hidden' : ''}`,
 }))
 </script>
 
@@ -102,14 +100,8 @@ const panelUi = computed(() => ({
     </template>
 
     <template #body>
-      <template v-if="isCompactViewport">
-        <DashboardInstallBanner v-if="compactNotice === 'install'" compact @dismissed="compactNoticeDismissed = 'install'" />
-        <DashboardDemoBanner v-else-if="compactNotice === 'demo'" compact @dismissed="compactNoticeDismissed = 'demo'" />
-      </template>
-      <template v-else>
-        <DashboardInstallBanner />
-        <DashboardDemoBanner />
-      </template>
+      <DashboardInstallBanner v-if="compactNotice === 'install'" compact @dismissed="compactNoticeDismissed = 'install'" />
+      <DashboardDemoBanner v-else-if="compactNotice === 'demo'" compact @dismissed="compactNoticeDismissed = 'demo'" />
 
       <!-- Empty state: no lists imported yet -->
       <div
