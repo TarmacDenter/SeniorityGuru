@@ -1,6 +1,8 @@
-import type { RelativeUpcomingRetirement, UpcomingRetirement } from '~/utils/seniority'
-import { addYearsDate } from '~/utils/date'
-import { Temporal, todayPlainDate } from '~/utils/temporal'
+import type { QualificationScope, RelativeUpcomingRetirement, UpcomingRetirement } from '~/utils/seniority'
+import { addYearsDate, diffDateYears } from '~/utils/date'
+import { Temporal, todayPlainDate, type PlainDate } from '~/utils/temporal'
+import { useSeniorityStore } from '~/stores/seniority'
+import { useScenario } from '~/composables/useScenario'
 import { useSeniorityCore } from './useSeniorityCore'
 
 export type RetirementSortKey = 'retirementDate' | 'seniorityNumber' | 'rankRelativeToMe'
@@ -18,12 +20,7 @@ export interface RetirementRow {
 
 export interface RetirementFilterItem { label: string; value: string | null }
 
-export const RETIREMENT_HORIZONS = [
-  { label: '1 year', value: 1 },
-  { label: '2 years', value: 2 },
-  { label: '3 years', value: 3 },
-  { label: '5 years', value: 5 },
-]
+const DEFAULT_HORIZON_YEARS = 2
 
 type Raw = UpcomingRetirement | RelativeUpcomingRetirement
 
@@ -45,12 +42,50 @@ function filterItems(allLabel: string, values: readonly string[] | undefined): R
  */
 export function useUpcomingRetirements() {
   const { listAnalysis, analysis, anchoredAnalysis, hasData, hasAnchor } = useSeniorityCore()
+  const seniorityStore = useSeniorityStore()
+  const { qualificationScope: scenarioScope } = useScenario()
 
-  const yearsHorizon = ref(2)
+  /** The selected list's As-of Date (its effective date); today when no list is selected. */
+  const asOfDate = computed(() =>
+    seniorityStore.lists.find(list => list.id === seniorityStore.currentListId)?.effectiveDate ?? todayPlainDate())
+
+  /** Whole years from the As-of Date to the last scheduled retirement on the list (at least 1). */
+  const horizonMax = computed(() => {
+    const start = asOfDate.value
+    const last = seniorityStore.entries.reduce<PlainDate | null>((latest, entry) =>
+      entry.retire_date && (!latest || Temporal.PlainDate.compare(entry.retire_date, latest) > 0) ? entry.retire_date : latest, null)
+    if (!last || Temporal.PlainDate.compare(last, start) <= 0) return 1
+    return Math.max(1, Math.ceil(diffDateYears(start, last)))
+  })
+
+  // The pilot's choice; held apart from the range so a shorter list clamps it without losing it.
+  const yearsChoice = ref(DEFAULT_HORIZON_YEARS)
+  const yearsHorizon = computed<number>({
+    get: () => Math.min(Math.max(1, yearsChoice.value), horizonMax.value),
+    set: (years) => { yearsChoice.value = years },
+  })
+  const throughDate = computed(() => addYearsDate(asOfDate.value, yearsHorizon.value))
+  const yearsText = computed(() => `${yearsHorizon.value} ${yearsHorizon.value === 1 ? 'year' : 'years'}`)
+  const horizonLabel = computed(() => `${yearsText.value} · through ${throughDate.value}`)
+  const emptyResultLabel = computed(() =>
+    `No pilots match the current filters within ${yearsText.value}. Try more years or other filters.`)
+
   const seniorOnly = ref(true)
-  const filterBase = ref<string | null>(null)
-  const filterSeat = ref<string | null>(null)
-  const filterFleet = ref<string | null>(null)
+
+  // Qualification Scope: the scenario's until the pilot changes a filter here; then the local
+  // override (which may be All) holds the whole scope and the scenario no longer moves it.
+  const scopeOverride = ref<QualificationScope | null>(null)
+  const qualificationScope = computed<QualificationScope>(() => scopeOverride.value ?? scenarioScope.value)
+  const scopeField = (key: keyof QualificationScope) => computed<string | null>({
+    get: () => qualificationScope.value[key] ?? null,
+    set: (value) => {
+      const { [key]: _replaced, ...rest } = qualificationScope.value
+      scopeOverride.value = value ? { ...rest, [key]: value } : rest
+    },
+  })
+  const filterBase = scopeField('base')
+  const filterSeat = scopeField('seat')
+  const filterFleet = scopeField('fleet')
   const sortKey = ref<RetirementSortKey>('retirementDate')
   const sortDir = ref<RetirementSortDir>('asc')
 
@@ -70,12 +105,9 @@ export function useUpcomingRetirements() {
   const rows = computed<RetirementRow[]>(() => {
     if (!hasData.value || !analysis.value) return []
     const filter = {
-      through: addYearsDate(todayPlainDate(), yearsHorizon.value),
-      qualificationScope: {
-        ...(filterBase.value && { base: filterBase.value }),
-        ...(filterSeat.value && { seat: filterSeat.value }),
-        ...(filterFleet.value && { fleet: filterFleet.value }),
-      },
+      from: asOfDate.value,
+      through: throughDate.value,
+      qualificationScope: qualificationScope.value,
     }
     const raw: readonly Raw[] = anchoredAnalysis.value
       ? anchoredAnalysis.value.relativeUpcomingRetirements({ ...filter, seniorOnly: seniorOnly.value })
@@ -104,6 +136,9 @@ export function useUpcomingRetirements() {
     hasData,
     hasAnchor,
     yearsHorizon,
+    horizonMax,
+    horizonLabel,
+    emptyResultLabel,
     seniorOnly,
     filterBase,
     filterSeat,
