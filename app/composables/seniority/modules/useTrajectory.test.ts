@@ -45,7 +45,7 @@ describe('useTrajectory', () => {
     mockUserStore.employeeNumber = 'E2'
 
     const { endedByLabel } = useTrajectory()
-    expect(endedByLabel.value).toBe('Anchor Pilot retired')
+    expect(endedByLabel.value).toBe('Projection ends at your retirement')
   })
 
   it('has no end reason without an Anchor Pilot', () => {
@@ -175,19 +175,28 @@ describe('useTrajectory', () => {
     expect(midWithGrowth.percentile).not.toBe(midWithoutGrowth.percentile)
   })
 
-  it('keyChanges keeps the largest percentile movements in date order', () => {
-    mockStore.entries = Array.from({ length: 12 }, (_, i) =>
-      makeEntry({ seniority_number: i + 1, employee_number: `E${i + 1}`, retire_date: `${2027 + i}-06-15` }))
-    mockUserStore.employeeNumber = 'E12'
+  it('lists every yearly change within the Qualification Scope, with its best year', () => {
+    mockStore.entries = [
+      makeEntry({ seniority_number: 1, employee_number: 'E1', base: 'JFK', seat: 'CA', fleet: '737', retire_date: '2030-06-15' }),
+      makeEntry({ seniority_number: 2, employee_number: 'E2', base: 'BOS', seat: 'FO', fleet: '320', retire_date: '2033-06-15' }),
+      makeEntry({ seniority_number: 3, employee_number: 'E3', base: 'BOS', seat: 'FO', fleet: '320', retire_date: '2045-06-15' }),
+    ]
+    mockUserStore.employeeNumber = 'E3'
 
-    const { changes, keyChanges } = useTrajectory()
-    expect(keyChanges.value.length).toBeLessThanOrEqual(5)
-    expect(keyChanges.value.length).toBeGreaterThan(0)
-    const dates = keyChanges.value.map(change => change.date.toString())
-    expect(dates).toEqual([...dates].sort())
-    const smallestKept = Math.min(...keyChanges.value.map(change => Math.abs(change.percentilePointChange)))
-    const dropped = changes.value.filter(change => !keyChanges.value.includes(change))
-    for (const change of dropped) expect(Math.abs(change.percentilePointChange)).toBeLessThanOrEqual(smallestKept)
+    const companyWide = useTrajectory()
+    expect(companyWide.bestYearLabel.value).toMatch(/^Best year: 2030 \(\+\d+\.\dpp\)$/)
+
+    const scoped = useTrajectory(undefined, ref({ base: 'BOS', seat: 'FO', fleet: '320' }))
+    const moving = scoped.changes.value.filter(change => change.percentilePointChange !== 0)
+    expect(moving.map(change => change.yearLabel)).toEqual(['2033'])
+    expect(moving[0]!.changeLabel).toMatch(/^\+\d+\.\d pp$/)
+    expect(moving[0]!.percentileLabel).toMatch(/^\d+\.\d%$/)
+    expect(scoped.changes.value.length).toBeGreaterThan(moving.length)
+    expect(scoped.bestYearLabel.value).toMatch(/^Best year: 2033 \(\+\d+\.\dpp\)$/)
+  })
+
+  it('has no best year when the Seniority Percentile never improves', () => {
+    expect(useTrajectory().bestYearLabel.value).toBeNull()
   })
 
   it('follows the Qualification Scope and labels a Hypothetical Placement', () => {
