@@ -1,89 +1,99 @@
 <script setup lang="ts">
-import type { RankCardData, BaseStatusRow, StatCard, RetirementSnapshotData } from '~/composables/seniority'
-import type { PresentedTrajectoryChange } from '~/utils/seniority'
+import type { ListExcerptRow, RankCardData, StandingFigure } from '~/composables/seniority'
 
-const scopeLabel = defineModel<string>('scopeLabel', { default: 'Company-wide' })
-
+// The Now panel: the Seniority List around the Anchor Pilot's line, then the Standing figures.
 defineProps<{
   loading: boolean
   hasData: boolean
   hasEmployeeNumber: boolean
   userFound: boolean
   isNewHireMode: boolean
-  scopeLabels: string[]
   rankCard: RankCardData
-  stats: StatCard[]
-  retirementSnapshot: RetirementSnapshotData | null
-  trajectoryChanges: PresentedTrajectoryChange[]
-  baseStatusData: BaseStatusRow[]
-  trajectoryChartData: { labels: string[]; data: number[] }
-  /** Why the plotted trajectory stops early, e.g. "Anchor Pilot retired"; null when it runs its full window. */
-  trajectoryEndedByLabel: string | null
+  figures: StandingFigure[]
+  excerptRows: ListExcerptRow[]
 }>()
 </script>
 
 <template>
-  <div>
-    <!-- Loading state — skeleton -->
-    <div v-if="loading" class="grid grid-cols-1 lg:grid-cols-4 gap-4 lg:gap-6 py-6">
-      <USkeleton class="h-32 lg:[grid-column:1/-1]" />
-      <USkeleton v-for="i in 4" :key="i" class="h-24" />
-      <USkeleton class="lg:[grid-column:1/3] h-[280px]" />
-      <USkeleton class="lg:[grid-column:3/5] h-[280px]" />
+  <div class="px-4 sm:px-6 py-4 sm:py-6 max-w-3xl">
+    <div v-if="loading" class="space-y-4">
+      <USkeleton class="h-6 w-48" />
+      <USkeleton class="h-64" />
+      <USkeleton class="h-32" />
     </div>
 
-    <!-- Empty: no seniority list -->
-    <UEmpty v-else-if="!hasData" icon="i-lucide-list-ordered" title="No Seniority Data Yet"
+    <UEmpty
+      v-else-if="!hasData"
+      icon="i-lucide-list-ordered"
+      title="No Seniority Data Yet"
       description="Upload your airline's seniority list to see your position, track retirements, and project your trajectory."
       :actions="[{ label: 'Upload Seniority List', icon: 'i-lucide-upload', to: '/seniority/upload', size: 'lg' as const }]"
-      class="py-24" />
+      class="py-24"
+    />
 
-    <!-- Has data — quick hits grid -->
     <template v-else>
-      <!-- Banners (outside grid) -->
-      <DashboardEmployeeNumberBanner v-if="!hasEmployeeNumber" class="mb-4 lg:mb-6" />
-      <DashboardNewHireModeBanner
-        v-if="!userFound || isNewHireMode"
-        class="mb-4 lg:mb-6"
-      />
+      <DashboardEmployeeNumberBanner v-if="!hasEmployeeNumber" class="mb-4" />
+      <DashboardNewHireModeBanner v-if="!userFound || isNewHireMode" class="mb-4" />
 
-      <div class="grid grid-cols-1 lg:grid-cols-4 gap-4 lg:gap-6">
-        <div v-if="userFound && scopeLabels.length > 1" class="lg:[grid-column:1/-1] flex items-center gap-2">
-          <span class="text-sm text-muted">Qualification Scope</span>
-          <USelect v-model="scopeLabel" :items="scopeLabels" size="sm" class="min-w-40" />
-        </div>
+      <template v-if="userFound">
+        <h2 class="font-serif text-xl font-semibold text-highlighted">Your line on the Seniority List</h2>
+        <p class="mt-1 font-serif text-sm italic text-muted">
+          Seniority Number {{ rankCard.seniorityNumber }} · {{ rankCard.base }} {{ rankCard.seat }} {{ rankCard.fleet }}
+        </p>
 
-        <!-- Rank card -->
-        <DashboardSeniorityRankCard v-if="userFound" :rank="rankCard"
-          class="lg:[grid-column:1/-1] dashboard-enter" />
+        <p v-if="rankCard.noResultLabel" data-testid="no-result" class="mt-4 font-mono font-semibold text-highlighted">
+          {{ rankCard.noResultLabel }}
+        </p>
 
-        <!-- Stat cards -->
-        <DashboardStatCard v-for="(stat, i) in stats" :key="stat.label" v-bind="stat" class="dashboard-enter"
-          :style="{ animationDelay: `${i * 40 + 80}ms` }" />
+        <table v-if="excerptRows.length > 0" class="mt-4 w-full border-collapse font-mono text-sm sm:text-base" aria-label="Seniority List around your line">
+          <thead>
+            <tr class="border-b border-highlighted font-sans text-xs font-medium text-muted">
+              <th scope="col" class="px-2 py-1.5 text-right">Seniority Number</th>
+              <th scope="col" class="px-2 py-1.5 text-left">Name</th>
+              <th scope="col" class="px-2 py-1.5 text-right">Rank</th>
+              <th scope="col" class="hidden px-2 py-1.5 text-right sm:table-cell">Publication Position</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr
+              v-for="row in excerptRows"
+              :key="row.employeeNumber"
+              :aria-current="row.isAnchor ? 'true' : undefined"
+              :class="[
+                row.isAnchor ? 'bg-mark text-mark-ink font-bold shadow-[inset_4px_0_0_var(--mark-ink)]' : 'even:bg-accented',
+                row.status === 'retired' && !row.isAnchor ? 'text-muted line-through' : '',
+              ]"
+            >
+              <td class="px-2 py-2 text-right">{{ row.seniorityNumber }}</td>
+              <td class="px-2 py-2 [overflow-wrap:anywhere]">
+                {{ row.nameLabel }}
+                <span v-if="row.status === 'retired'" class="font-serif text-xs italic text-stamp">retired</span>
+              </td>
+              <td class="px-2 py-2 text-right">{{ row.rankLabel }}</td>
+              <td class="hidden px-2 py-2 text-right sm:table-cell">{{ row.publicationPositionLabel }}</td>
+            </tr>
+          </tbody>
+        </table>
 
-        <!-- Quick-hits: sparkline + retirement snapshot -->
-        <template v-if="userFound">
-          <DashboardTrajectoryDeltaSparkline
-            v-if="trajectoryChanges.length > 0"
-            :changes="trajectoryChanges"
-            class="lg:[grid-column:1/3] dashboard-enter"
-            style="animation-delay: 260ms"
-          />
-          <DashboardRetirementSnapshot v-if="retirementSnapshot" :snapshot="retirementSnapshot"
-            class="lg:[grid-column:3/5] lg:[grid-row:span_2] dashboard-enter" style="animation-delay: 280ms" />
-        </template>
-      </div>
+        <dl class="mt-6" data-testid="standing-figures">
+          <div v-for="figure in figures" :key="figure.label" class="flex items-baseline gap-2 py-1">
+            <dt class="font-serif text-base text-default">{{ figure.label }}</dt>
+            <span class="flex-1 -translate-y-1 border-b-2 border-dotted border-default" aria-hidden="true" />
+            <dd class="font-mono font-medium text-highlighted">{{ figure.value }}</dd>
+          </div>
+        </dl>
 
-      <!-- Base/Seat/Fleet Status -->
-      <div v-if="userFound" class="mt-6">
-        <h2 class="text-sm font-semibold text-[var(--ui-text-muted)] uppercase tracking-wide mb-3">How Do I Look Today?</h2>
-        <DashboardBaseStatusTable :data="baseStatusData" :no-result-label="rankCard.noResultLabel" />
-      </div>
-
-      <!-- Career Trajectory -->
-      <div v-if="userFound" class="mt-6">
-        <DashboardTrajectoryChart :data="trajectoryChartData" :ended-by-label="trajectoryEndedByLabel" />
-      </div>
+        <p v-if="rankCard.percentileScaleLabel" class="mt-3 font-serif text-sm italic text-muted">
+          {{ rankCard.percentileScaleLabel }}. A Seniority Percentile of 100 is the most senior end.
+        </p>
+        <p
+          v-if="rankCard.hypotheticalLabel"
+          data-testid="hypothetical-placement"
+          class="mt-3 inline-block -rotate-1 border-2 border-stamp px-2 py-0.5 font-sans text-sm font-semibold text-stamp"
+        >
+          {{ rankCard.hypotheticalLabel }}
+        </p>
+      </template>
     </template>
   </div>
 </template>

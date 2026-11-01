@@ -4,10 +4,9 @@ import { defineComponent, h, ref } from 'vue'
 import { UApp } from '#components'
 import { _resetCoreSingletons, useSeniorityCore } from '~/composables/seniority/modules/useSeniorityCore'
 import { useStanding } from '~/composables/seniority/modules/useStanding'
-import { useTrajectory } from '~/composables/seniority/modules/useTrajectory'
+import { useListExcerpt } from '~/composables/seniority/modules/useListExcerpt'
 import { resetMockStores } from '~/test-utils/seniority-mocks'
 import type { QualificationScope } from '~/utils/seniority'
-import DashboardStatCard from '../DashboardStatCard.vue'
 import MyStatusTab from './MyStatusTab.vue'
 
 const mockStore = vi.hoisted(() => ({ entries: [] as any[], lists: [] as any[] }))
@@ -18,29 +17,29 @@ vi.mock('~/utils/db', () => ({ db: { preferences: { get: vi.fn().mockResolvedVal
 
 const { makeEntry } = await import('~/test-utils/factories')
 
-/** Feeds MyStatusTab from the real useStanding, the way the dashboard page does. */
+/** Feeds the Now panel from the real composables, the way the dashboard page does. */
 function harness(scope: ReturnType<typeof ref<QualificationScope>>) {
   return defineComponent({
     setup() {
-      const { rankCard, statCards, retirementSnapshot, baseStatus } = useStanding(scope as any)
-      const { chartData, endedByLabel } = useTrajectory()
+      const { rankCard, figures } = useStanding(scope as any)
+      const { rows } = useListExcerpt(2)
       return () => h(UApp, null, () => h(MyStatusTab, {
         loading: false,
         hasData: true,
         hasEmployeeNumber: true,
         userFound: true,
         isNewHireMode: false,
-        scopeLabels: ['Company-wide'],
         rankCard: rankCard.value,
-        stats: statCards.value,
-        retirementSnapshot: retirementSnapshot.value,
-        trajectoryChanges: [],
-        baseStatusData: baseStatus.value,
-        trajectoryChartData: chartData.value,
-        trajectoryEndedByLabel: endedByLabel.value,
+        figures: figures.value,
+        excerptRows: rows.value,
       }))
     },
   })
+}
+
+function figureValue(wrapper: Awaited<ReturnType<typeof mountSuspended>>, label: string): string {
+  const item = wrapper.findAll('[data-testid="standing-figures"] > div').find((div: { find: (s: string) => { text: () => string } }) => div.find('dt').text() === label)
+  return item!.find('dd').text()
 }
 
 beforeEach(() => {
@@ -49,8 +48,8 @@ beforeEach(() => {
   useSeniorityCore().newHire.reset()
 })
 
-describe('MyStatusTab Roster Size', () => {
-  it('shows the same Roster Size on the stat card and the Rank card under a Qualification Scope', async () => {
+describe('Now panel', () => {
+  it('shows the Roster Size that follows the Qualification Scope', async () => {
     mockStore.entries = [
       makeEntry({ seniority_number: 10, employee_number: 'E1', base: 'JFK', seat: 'FO', fleet: '320', retire_date: '2050-01-01' }),
       makeEntry({ seniority_number: 20, employee_number: 'E2', base: 'JFK', seat: 'FO', fleet: '320', retire_date: '2050-01-01' }),
@@ -60,35 +59,41 @@ describe('MyStatusTab Roster Size', () => {
     ]
     mockUserStore.employeeNumber = 'E3'
     const scope = ref<QualificationScope>({})
-    const wrapper = await mountSuspended(harness(scope), { global: { stubs: { DashboardChart: true } } })
-    const companyWide = wrapper.get('[data-testid="roster-size"]').findAll('p')[1]!.text()
-    expect(companyWide).toBe('5')
+    const wrapper = await mountSuspended(harness(scope))
+    expect(figureValue(wrapper, 'Roster Size')).toBe('5')
 
-    const statCardRoster = () => wrapper.findAllComponents(DashboardStatCard)[0]!.props('value')
-    const rankCardRoster = () => wrapper.get('[data-testid="roster-size"]').findAll('p')[1]!.text()
-    expect(statCardRoster()).toBe(companyWide)
-
-    for (const next of [{ base: 'JFK', seat: 'FO', fleet: '320' }, { base: 'BOS', seat: 'CA', fleet: '220' }, { base: 'ORD' }]) {
-      scope.value = next
-      await wrapper.vm.$nextTick()
-      expect(statCardRoster()).toBe(rankCardRoster())
-    }
     // JFK FO 320 holds E1, E2; the Anchor Pilot E3 is modeled into it: 3.
     scope.value = { base: 'JFK', seat: 'FO', fleet: '320' }
     await wrapper.vm.$nextTick()
-    expect(wrapper.get('[data-testid="roster-size"]').findAll('p')[1]!.text()).toBe('3')
+    expect(figureValue(wrapper, 'Roster Size')).toBe('3')
+    expect(wrapper.text()).toContain('Hypothetical Placement in JFK FO 320')
   })
-})
 
-describe('MyStatusTab end-of-trajectory message', () => {
-  it('says once that the trajectory ends at the Anchor Pilot retirement', async () => {
+  it('marks the pilot line among its neighbors and lists the Standing figures', async () => {
+    mockStore.entries = [1, 2, 3, 4, 5].map(n => makeEntry({ seniority_number: n * 10, employee_number: `E${n}`, name: `Pilot ${n}`, retire_date: '2050-01-01' }))
+    mockUserStore.employeeNumber = 'E3'
+    const wrapper = await mountSuspended(harness(ref<QualificationScope>({})))
+
+    const rows = wrapper.findAll('tbody tr')
+    expect(rows.map(row => row.find('td:nth-child(2)').text())).toEqual(['Pilot 1', 'Pilot 2', 'Pilot 3', 'Pilot 4', 'Pilot 5'])
+    expect(rows.filter(row => row.attributes('aria-current') === 'true').map(row => row.find('td:nth-child(2)').text())).toEqual(['Pilot 3'])
+    expect(figureValue(wrapper, 'Rank')).toBe('3')
+    expect(figureValue(wrapper, 'Seniority Number')).toBe('30')
+    expect(figureValue(wrapper, 'Seniority Percentile')).toBe('60.0%')
+    expect(figureValue(wrapper, 'Active pilots')).toBe('5')
+  })
+
+  it('renders placeholders, never zero, when the Anchor Pilot has retired', async () => {
     mockStore.entries = [
-      makeEntry({ seniority_number: 1, employee_number: 'E1', retire_date: '2035-06-15' }),
-      makeEntry({ seniority_number: 2, employee_number: 'E2', retire_date: '2040-06-15' }),
+      makeEntry({ seniority_number: 1, employee_number: 'E1', retire_date: '2020-01-01' }),
+      makeEntry({ seniority_number: 2, employee_number: 'E2', retire_date: '2050-01-01' }),
     ]
-    mockUserStore.employeeNumber = 'E2'
-    const wrapper = await mountSuspended(harness(ref<QualificationScope>({})), { global: { stubs: { DashboardChart: true } } })
+    mockUserStore.employeeNumber = 'E1'
+    const wrapper = await mountSuspended(harness(ref<QualificationScope>({})))
 
-    expect(wrapper.findAll('[data-testid="trajectory-ended-by"]').map(item => item.text())).toEqual(['Anchor Pilot retired'])
+    expect(wrapper.text()).toContain('Anchor Pilot retired')
+    expect(figureValue(wrapper, 'Rank')).toBe('--')
+    expect(figureValue(wrapper, 'Roster Size')).toBe('--')
+    expect(figureValue(wrapper, 'Seniority Percentile')).toBe('--')
   })
 })

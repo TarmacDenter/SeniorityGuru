@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import type { Ref } from 'vue'
 import { useMediaQuery } from '@vueuse/core'
-import { useSeniorityCore, useStanding, useSeniorityLists } from '~/composables/seniority'
+import { useSeniorityCore, useStanding, useTrajectory, useListExcerpt, useSeniorityLists } from '~/composables/seniority'
 import { useDashboardTabs } from '~/composables/useDashboardTabs'
+import { useScenario } from '~/composables/useScenario'
 import { useDemoBanner } from '~/composables/useDemoBanner'
 import { usePwaInstall } from '~/composables/usePwaInstall'
 import { DEFAULT_TAB } from '~/utils/dashboard-tabs'
@@ -68,29 +69,25 @@ const { employeeNumber } = useUser()
 const { showBadge: showDemoBadge } = useDemoBanner()
 const { showBanner: showInstallBanner } = usePwaInstall()
 const { showBanner: showDemoNotice } = useDemoBanner()
-const { hasData, hasAnchor: userFound, isNewHireMode, newHire, listAnalysis } = useSeniorityCore()
+const { hasData, hasAnchor: userFound, isNewHireMode, newHire } = useSeniorityCore()
 const hasEmployeeNumber = computed(() => !!employeeNumber.value || !!newHire.syntheticEntry.value)
-const scopeOptionList = computed(() => listAnalysis.value?.catalog.qualificationScopeOptions ?? [])
-const { scopeOptions: scopeLabels, specForLabel } = useScopeFilter(scopeOptionList)
-const selectedScopeLabel = ref('Company-wide')
-const standingScope = computed(() => specForLabel(selectedScopeLabel.value))
-const { rankCard, statCards: stats, retirementSnapshot, baseStatus: baseStatusData } = useStanding(standingScope)
-const { chartData: trajectoryChartData, changes: trajectoryChanges, endedByLabel: trajectoryEndedByLabel } = useTrajectory()
+const { scopeLabel, scopeLabels, qualificationScope, growthAssumptions, growthLabel, asOfLabel } = useScenario()
+const { rankCard, figures, qualificationGroups } = useStanding(qualificationScope)
+const { rows: excerptRows } = useListExcerpt()
+const { chartData: trajectoryChartData, keyChanges, hypotheticalLabel: trajectoryHypotheticalLabel, endedByLabel: trajectoryEndedByLabel } = useTrajectory(growthAssumptions, qualificationScope)
 const isCompactViewport = useMediaQuery('(max-width: 639px), (max-height: 499px)')
-const dashboardControlsOpen = ref(false)
 const compactNoticeDismissed = ref<string | null>(null)
-const activeTabLabel = computed(() => tabs.find(tab => String(tab.value) === activeTab.value)?.label ?? 'Dashboard')
-const selectedListLabel = computed(() => listOptions.value.find(option => option.id === selectedListId.value)?.label ?? 'Select list')
+const selectedListLabel = computed(() => listOptions.value.find(option => option.id === selectedListId.value)?.label ?? null)
+const isDemoList = computed(() => !!selectedList.value?.isDemo && showDemoBadge.value)
+const showScenarioStrip = computed(() => !loading.value && hasData.value && activeTab.value !== 'lists')
 const compactNotice = computed(() => {
   if (showInstallBanner.value && compactNoticeDismissed.value !== 'install') return 'install'
   if (showDemoNotice.value && compactNoticeDismissed.value !== 'demo') return 'demo'
   return null
 })
-const fullBleedTabs = new Set(['position', 'trajectory', 'seniority'])
+// The Lists panel fills the body and scrolls its own table; the other panels scroll the body.
 const panelUi = computed(() => ({
-  body: fullBleedTabs.has(activeTab.value)
-    ? `flex flex-col flex-1 sm:overflow-y-auto p-0${activeTab.value === 'seniority' ? ' sm:p-0' : ''}`
-    : undefined,
+  body: `flex flex-col flex-1 sm:overflow-y-auto p-0 sm:p-0${activeTab.value === 'lists' ? ' sm:overflow-hidden' : ''}`,
 }))
 </script>
 
@@ -99,71 +96,9 @@ const panelUi = computed(() => ({
     <template #header>
       <SeniorityNavbar title="Dashboard" :description="navbarDescription" />
 
-      <UDashboardToolbar v-if="!isCompactViewport" class="hidden sm:flex overflow-y-hidden">
-        <UTabs v-model="activeTab" :items="tabs" :content="false" variant="link" />
+      <UDashboardToolbar class="overflow-y-hidden">
+        <UTabs v-model="activeTab" :items="tabs" :content="false" variant="link" aria-label="Dashboard panels" />
       </UDashboardToolbar>
-
-      <!-- Mobile-only: scrollable tab chip row -->
-      <DashboardTabChips v-if="!isCompactViewport" v-model="activeTab" :tabs="tabs" />
-
-      <!-- Compact view: one disclosure keeps navigation and list selection out of the table viewport. -->
-      <div v-if="isCompactViewport" class="border-b border-(--ui-border) p-2">
-        <UCollapsible v-model:open="dashboardControlsOpen" class="flex flex-col gap-2">
-          <UButton
-            :label="`Controls · ${activeTabLabel} · ${selectedListLabel}`"
-            color="neutral"
-            variant="outline"
-            size="sm"
-            trailing-icon="i-lucide-sliders-horizontal"
-            block
-            class="justify-between"
-          />
-          <template #content>
-            <div class="flex flex-wrap items-center gap-2 pt-1">
-              <USelect v-model="activeTab" :items="tabs" value-key="value" label-key="label" class="min-w-40 flex-1" />
-              <USelectMenu
-                v-if="lists.length > 0"
-                v-model="selectedListId"
-                :items="listOptions"
-                value-key="id"
-                label-key="label"
-                placeholder="Select list..."
-                size="sm"
-                class="min-w-40 flex-1"
-              />
-              <UBadge v-if="selectedList?.isDemo && showDemoBadge" color="info" variant="subtle" size="sm">
-                <UIcon name="i-lucide-flask-conical" class="size-3 mr-1" />
-                Demo
-              </UBadge>
-              <UBadge v-if="isHistorical" color="warning" variant="subtle" size="sm">
-                <UIcon name="i-lucide-alert-triangle" class="size-3 mr-1" />
-                Historical
-              </UBadge>
-            </div>
-          </template>
-        </UCollapsible>
-      </div>
-
-      <!-- List selector — all breakpoints -->
-      <div v-if="lists.length > 0 && !isCompactViewport" class="flex items-center gap-2 px-3 py-1.5 border-b border-(--ui-border)">
-        <USelectMenu
-          v-model="selectedListId"
-          :items="listOptions"
-          value-key="id"
-          label-key="label"
-          placeholder="Select list..."
-          size="sm"
-          class="flex-1 sm:flex-none sm:w-56"
-        />
-        <UBadge v-if="selectedList?.isDemo && showDemoBadge" color="info" variant="subtle" size="sm">
-          <UIcon name="i-lucide-flask-conical" class="size-3 mr-1" />
-          Demo
-        </UBadge>
-        <UBadge v-if="isHistorical" color="warning" variant="subtle" size="sm">
-          <UIcon name="i-lucide-alert-triangle" class="size-3 mr-1" />
-          Historical
-        </UBadge>
-      </div>
     </template>
 
     <template #body>
@@ -201,41 +136,59 @@ const panelUi = computed(() => ({
         </p>
       </div>
 
-      <!-- My Status tab (quick hits) -->
-      <DashboardTabsMyStatusTab
-        v-else-if="activeTab === 'status'"
-        v-model:scope-label="selectedScopeLabel"
-        :loading="loading"
-        :has-data="hasData"
-        :has-employee-number="hasEmployeeNumber"
-        :user-found="userFound"
-        :is-new-hire-mode="isNewHireMode"
-        :scope-labels="scopeLabels"
-        :rank-card="rankCard"
-        :stats="stats"
-        :retirement-snapshot="retirementSnapshot"
-        :trajectory-changes="trajectoryChanges"
-        :base-status-data="baseStatusData"
-        :trajectory-chart-data="trajectoryChartData"
-        :trajectory-ended-by-label="trajectoryEndedByLabel"
-      />
+      <template v-else>
+        <DashboardScenarioStrip
+          v-if="showScenarioStrip"
+          v-model:scope-label="scopeLabel"
+          v-model:growth-assumptions="growthAssumptions"
+          :scope-labels="scopeLabels"
+          :as-of-label="asOfLabel"
+          :list-label="selectedListLabel"
+          :growth-label="growthLabel"
+          :is-demo="isDemoList"
+          :is-historical="isHistorical"
+        />
 
-      <!-- Demographics tab -->
-      <DashboardTabsDemographicsTab v-else-if="activeTab === 'demographics'" :loading="loading" />
+        <DashboardTabsMyStatusTab
+          v-if="activeTab === 'now'"
+          :loading="loading"
+          :has-data="hasData"
+          :has-employee-number="hasEmployeeNumber"
+          :user-found="userFound"
+          :is-new-hire-mode="isNewHireMode"
+          :rank-card="rankCard"
+          :figures="figures"
+          :excerpt-rows="excerptRows"
+        />
 
-      <!-- Position tab -->
-      <DashboardTabsPositionTab v-else-if="activeTab === 'position'" :loading="loading" />
+        <DashboardTabsNextTab
+          v-else-if="activeTab === 'next'"
+          :loading="loading"
+          :has-data="hasData"
+          :user-found="userFound"
+          :chart-data="trajectoryChartData"
+          :ended-by-label="trajectoryEndedByLabel"
+          :key-changes="keyChanges"
+          :hypothetical-label="trajectoryHypotheticalLabel"
+        />
 
-      <!-- Trajectory tab -->
-      <DashboardTabsTrajectoryTab v-else-if="activeTab === 'trajectory'" :loading="loading" />
+        <DashboardTabsQualificationsTab
+          v-else-if="activeTab === 'qualifications'"
+          :loading="loading"
+          :user-found="userFound"
+          :groups="qualificationGroups"
+          :no-result-label="rankCard.noResultLabel"
+        />
 
-      <!-- Seniority List tab — fills panel body, manages its own scroll -->
-      <DashboardTabsSeniorityListTab v-else-if="activeTab === 'seniority'" :loading="loading" :compact-controls-open="dashboardControlsOpen" />
-
-      <!-- Retirements tab -->
-      <DashboardTabsRetirementsTab v-else-if="activeTab === 'retirements'" />
-
-      <div v-else />
+        <DashboardTabsSeniorityListTab
+          v-else
+          v-model:selected-list-id="selectedListId"
+          :loading="loading"
+          :list-options="listOptions"
+          :is-demo="isDemoList"
+          :is-historical="isHistorical"
+        />
+      </template>
     </template>
   </UDashboardPanel>
 </template>

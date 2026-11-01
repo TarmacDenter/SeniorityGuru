@@ -11,7 +11,7 @@ vi.mock('@vueuse/core', async (importOriginal) => {
 })
 
 vi.mock('~/composables/useDashboardTabs', () => ({
-  useDashboardTabs: () => ({ activeTab: { value: 'status' }, tabs: [] }),
+  useDashboardTabs: () => ({ activeTab: { value: 'now' }, tabs: [] }),
   DASHBOARD_TABS: [],
 }))
 

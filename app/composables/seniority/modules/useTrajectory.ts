@@ -33,9 +33,18 @@ function emptyComparison(noResultLabel: string | null): ComparativeTrajectory {
   }
 }
 
-export function useTrajectory(growthAssumptions?: Ref<GrowthAssumptions>): {
+const KEY_CHANGE_COUNT = 5
+
+export function useTrajectory(
+  growthAssumptions?: Ref<GrowthAssumptions>,
+  qualificationScope?: Ref<QualificationScope> | ComputedRef<QualificationScope>,
+): {
   chartData: ComputedRef<{ labels: string[]; data: number[] }>
   changes: ComputedRef<PresentedTrajectoryChange[]>
+  /** The years with the largest percentile movement, in date order, for the Next panel. */
+  keyChanges: ComputedRef<PresentedTrajectoryChange[]>
+  /** "Hypothetical Placement in <scope>" when the Anchor Pilot is outside the Qualification Scope; otherwise null. */
+  hypotheticalLabel: ComputedRef<string | null>
   /** Why the samples stop early, e.g. "Anchor Pilot retired"; null when the window completes. */
   endedByLabel: ComputedRef<string | null>
   fullTrajectory: ComputedRef<readonly SeniorityTrajectoryPoint[]>
@@ -51,7 +60,10 @@ export function useTrajectory(growthAssumptions?: Ref<GrowthAssumptions>): {
     return through
       ? anchoredAnalysis.value?.seniorityTrajectory({
           through,
-          scenario: { growthAssumptions: effectiveAssumptions.value },
+          scenario: {
+            growthAssumptions: effectiveAssumptions.value,
+            qualificationScope: qualificationScope?.value ?? {},
+          },
         }) ?? null
       : null
   })
@@ -60,6 +72,13 @@ export function useTrajectory(growthAssumptions?: Ref<GrowthAssumptions>): {
   const chartData = computed(() => presented.value?.chartData ?? { labels: [], data: [] })
   const fullTrajectory = computed(() => domain.value?.points ?? [])
   const changes = computed(() => presented.value?.changes ?? [])
+  const keyChanges = computed(() => [...changes.value]
+    .filter(change => change.percentilePointChange !== 0)
+    .sort((a, b) => Math.abs(b.percentilePointChange) - Math.abs(a.percentilePointChange)
+      || a.date.toString().localeCompare(b.date.toString()))
+    .slice(0, KEY_CHANGE_COUNT)
+    .sort((a, b) => a.date.toString().localeCompare(b.date.toString())))
+  const hypotheticalLabel = computed(() => presented.value?.hypotheticalLabel ?? null)
   const endedByLabel = computed(() => presented.value?.endedByLabel ?? null)
 
   function computeRetirementProjection(scope: QualificationScope = {}): PresentedRetirementCountProjection {
@@ -95,6 +114,8 @@ export function useTrajectory(growthAssumptions?: Ref<GrowthAssumptions>): {
   return {
     chartData,
     changes,
+    keyChanges,
+    hypotheticalLabel,
     endedByLabel,
     fullTrajectory,
     computeRetirementProjection,

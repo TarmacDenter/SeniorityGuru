@@ -13,12 +13,15 @@ import type { QualificationViewerAnalysis, QualificationViewerEntry } from '~/ut
 import { isNoResult } from '~/utils/seniority-engine/types'
 import type { PlainDate } from '~/utils/temporal'
 import type { RetirementCountProjection, TrajectoryChange } from './math'
-import { diffYears, formatMonthYear } from '~/utils/date'
+import { diffYears, formatMonthYear, formatYear } from '~/utils/date'
 
 export type QualificationViewerRetirementTimeline = 'past' | 'imminent' | 'soon' | null
 
 export interface PresentedQualificationViewerEntry extends QualificationViewerEntry {
   readonly retirementTimeline: QualificationViewerRetirementTimeline
+  /** Company Rank for display; a placeholder for a retired pilot, who has none. */
+  readonly companyRankLabel: string
+  readonly publicationPositionLabel: string
 }
 
 export interface PresentedQualificationViewerAnalysis extends Omit<QualificationViewerAnalysis, 'entries'> {
@@ -31,7 +34,12 @@ export function presentSeniorityQualificationViewer(
 ): PresentedQualificationViewerAnalysis {
   return {
     ...analysis,
-    entries: analysis.entries.map((entry) => {
+    entries: analysis.entries.map((viewerEntry) => {
+      const entry = {
+        ...viewerEntry,
+        companyRankLabel: viewerEntry.companyRank === null ? '--' : formatSeniorityCount(viewerEntry.companyRank),
+        publicationPositionLabel: formatSeniorityCount(viewerEntry.publicationPosition),
+      }
       if (!entry.retirementDate) return { ...entry, retirementTimeline: null }
       const days = diffYears(asOfDate.toString(), entry.retirementDate.toString()) * 365.25
       const retirementTimeline = days < 0
@@ -48,6 +56,12 @@ export function presentSeniorityQualificationViewer(
 
 export interface PresentedTrajectoryChange extends TrajectoryChange {
   readonly isPeak: boolean
+  /** Calendar year of the change, e.g. "2031". */
+  readonly yearLabel: string
+  /** Seniority Percentile after the change, one decimal, e.g. "62.4%". */
+  readonly percentileLabel: string
+  /** Signed percentile-point change, one decimal, e.g. "+3.2 pp". */
+  readonly changeLabel: string
 }
 
 export interface PresentedSeniorityTrajectoryValue {
@@ -93,6 +107,9 @@ export function presentSeniorityTrajectory(
     const next = index < all.length - 1 ? all[index + 1]!.percentilePointChange : -Infinity
     return {
       ...change,
+      yearLabel: formatYear(change.date),
+      percentileLabel: formatSeniorityPercentile(change.percentile),
+      changeLabel: `${change.percentilePointChange > 0 ? '+' : ''}${change.percentilePointChange.toFixed(1)} pp`,
       isPeak:
         change.percentilePointChange > 0
         && change.percentilePointChange > previous
@@ -149,6 +166,22 @@ export function formatSeniorityCount(value: number): string {
   return value.toLocaleString()
 }
 
+/** Seniority Percentile with one decimal so columns align; null (no Rank) renders a placeholder. */
+export function formatSeniorityPercentile(value: number | null | undefined): string {
+  return value == null ? '--' : `${value.toFixed(1)}%`
+}
+
+const SEAT_LABELS: Record<string, string> = { CA: 'Captain', FO: 'First Officer' }
+
+export function formatSeatLabel(seat: string): string {
+  return SEAT_LABELS[seat] ?? seat
+}
+
+/** Growth Assumptions as a phrase, e.g. "Retirements only" or "3.5% annual growth". */
+export function formatGrowthAssumptions(assumptions: { enabled: boolean; annualGrowthRate: number }): string {
+  return assumptions.enabled ? `${(assumptions.annualGrowthRate * 100).toFixed(1)}% annual growth` : 'Retirements only'
+}
+
 export function formatSeniorityRankChange(value: number): string {
   if (value === 0) return '--'
   return value > 0 ? `+${value}` : String(value)
@@ -178,10 +211,18 @@ export function presentSeniorityStanding(standing: SeniorityStanding | NoResult,
     rosterSummaryLabel: rosterSummary,
     percentileScaleLabel: `Percentile measured against ${rosterSummary}`,
     hypotheticalLabel: hypotheticalPlacementLabel(standing.isHypothetical, scope),
+    rankLabel: formatSeniorityCount(standing.rank),
+    publicationPositionLabel: formatSeniorityCount(standing.publicationPosition),
+    activePilotCountLabel: formatSeniorityCount(standing.activePilotCount),
+    seniorityPercentileLabel: formatSeniorityPercentile(standing.seniorityPercentile),
     qualificationStandings: standing.qualificationStandings.map(item => ({
       ...item,
       qualificationLabel: formatQualification(item.qualification),
       rankLabel: formatSeniorityCount(item.rank),
+      rosterOfLabel: `of ${formatSeniorityCount(item.rosterSize)}`,
+      percentileLabel: formatSeniorityPercentile(item.seniorityPercentile),
+      seatLabel: formatSeatLabel(item.qualification.seat),
+      baseFleetLabel: `${item.qualification.base} ${item.qualification.fleet}`,
       rosterTrendLabel: `${formatQualification(item.qualification)} · of ${formatSeniorityCount(item.rosterSize)} on roster · ${formatSeniorityCount(item.activePilotCount)} active`,
       hypotheticalLabel: hypotheticalPlacementLabel(item.isHypothetical, item.qualification),
     })),

@@ -174,4 +174,32 @@ describe('useTrajectory', () => {
     // With growth, the total is larger so percentile improvement is dampened
     expect(midWithGrowth.percentile).not.toBe(midWithoutGrowth.percentile)
   })
+
+  it('keyChanges keeps the largest percentile movements in date order', () => {
+    mockStore.entries = Array.from({ length: 12 }, (_, i) =>
+      makeEntry({ seniority_number: i + 1, employee_number: `E${i + 1}`, retire_date: `${2027 + i}-06-15` }))
+    mockUserStore.employeeNumber = 'E12'
+
+    const { changes, keyChanges } = useTrajectory()
+    expect(keyChanges.value.length).toBeLessThanOrEqual(5)
+    expect(keyChanges.value.length).toBeGreaterThan(0)
+    const dates = keyChanges.value.map(change => change.date.toString())
+    expect(dates).toEqual([...dates].sort())
+    const smallestKept = Math.min(...keyChanges.value.map(change => Math.abs(change.percentilePointChange)))
+    const dropped = changes.value.filter(change => !keyChanges.value.includes(change))
+    for (const change of dropped) expect(Math.abs(change.percentilePointChange)).toBeLessThanOrEqual(smallestKept)
+  })
+
+  it('follows the Qualification Scope and labels a Hypothetical Placement', () => {
+    mockStore.entries = [
+      makeEntry({ seniority_number: 1, employee_number: 'E1', base: 'JFK', seat: 'FO', fleet: '320', retire_date: '2030-06-15' }),
+      makeEntry({ seniority_number: 2, employee_number: 'E2', base: 'JFK', seat: 'FO', fleet: '320', retire_date: '2035-06-15' }),
+      makeEntry({ seniority_number: 3, employee_number: 'E3', base: 'BOS', seat: 'CA', fleet: '220', retire_date: '2040-06-15' }),
+    ]
+    mockUserStore.employeeNumber = 'E3'
+
+    expect(useTrajectory().hypotheticalLabel.value).toBeNull()
+    const scoped = useTrajectory(undefined, ref({ base: 'JFK', seat: 'FO', fleet: '320' }))
+    expect(scoped.hypotheticalLabel.value).toBe('Hypothetical Placement in JFK FO 320')
+  })
 })
