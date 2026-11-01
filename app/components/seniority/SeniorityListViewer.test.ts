@@ -13,8 +13,14 @@ const state = vi.hoisted(() => {
     entriesLoading: vRef(false),
     employeeNumber: vRef(null),
     isNewHireMode: vRef(false),
+    isCompact: vRef(false),
   }
 })
+
+vi.mock('@vueuse/core', async (importOriginal) => ({
+  ...await importOriginal<typeof import('@vueuse/core')>(),
+  useMediaQuery: () => state.isCompact,
+}))
 
 vi.mock('~/composables/seniority', () => ({
   useSeniorityLists: () => ({ lists: state.lists, entriesLoading: state.entriesLoading }),
@@ -97,6 +103,44 @@ describe('SeniorityListViewer', () => {
     state.entriesLoading.value = false
     state.employeeNumber.value = null
     state.isNewHireMode.value = false
+    state.isCompact.value = false
+  })
+
+  it('opens compact controls accessibly and preserves the selected Qualification when reopened', async () => {
+    state.isCompact.value = true
+    state.lists.value = [makeList()]
+    state.employeeNumber.value = 'E1'
+    state.entries.value = [
+      makeDomainEntry({ seniority_number: 1, employee_number: 'E1', name: 'First', base: 'JFK', fleet: '737', seat: 'CA' }),
+      makeDomainEntry({ seniority_number: 2, employee_number: 'E2', name: 'Second', base: 'LAX', fleet: '320', seat: 'FO' }),
+    ]
+    const Component = (await import('./SeniorityListViewer.vue')).default
+    const wrapper = await mountSuspended(Component, { global: { stubs } })
+
+    const controls = wrapper.findAll('button').find(button => button.text() === 'Controls')
+    expect(controls, 'phone users can reach the controls').toBeDefined()
+    expect(controls!.attributes('aria-expanded')).toBe('false')
+    expect(wrapper.find('select').exists()).toBe(false)
+
+    await controls!.trigger('click')
+
+    expect(controls!.attributes('aria-expanded')).toBe('true')
+    expect(wrapper.get(`#${controls!.attributes('aria-controls')}`).attributes('id')).toBe(controls!.attributes('aria-controls'))
+    expect(wrapper.get('input').attributes('placeholder')).toBe('Search by name or employee number...')
+    expect(wrapper.get('select').attributes('aria-label')).toBe('Qualification')
+    await wrapper.get('select').setValue('["LAX","FO","320"]')
+    expect(wrapper.text()).toContain('Second|E2|1|2|active')
+    expect(wrapper.text()).not.toContain('First|E1|')
+
+    await wrapper.findAll('button').find(button => button.text() === 'Insert yourself')!.trigger('click')
+    expect(wrapper.get('[data-testid="cell-E1-name"]').text()).toBe('First (Your line)')
+    expect(wrapper.text()).toContain('First|E1|1|1|inserted|anchor')
+
+    await controls!.trigger('click')
+    await controls!.trigger('click')
+    expect((wrapper.get('select').element as HTMLSelectElement).value).toBe('["LAX","FO","320"]')
+    expect(wrapper.get('[data-testid="cell-E1-name"]').text()).toBe('First (Your line)')
+    expect(wrapper.text()).toContain('First|E1|1|1|inserted|anchor')
   })
 
   it('keeps the table loading while the parent is loading', async () => {
