@@ -57,4 +57,3 @@ Use semantic tokens and the native shell with print accents. Components render; 
 ## Execution and verification
 
 Publish four ready-for-agent child tickets of #190, with no blocking edges. Implement each in its own subagent worktree and commit there. Integrate the commits onto feature/ui-improvement. Run focused checks during development, then lint, typecheck, layering grep and the complete test suite with at most four workers after integration. Run browser checks for changed interactions and table appearance. Review fixes on separate Standards and Spec axes. Remove only worktrees and branches created for this run after integration and verification. Finish with an evidence-based debrief; do not modify or close the parent issue.
-
