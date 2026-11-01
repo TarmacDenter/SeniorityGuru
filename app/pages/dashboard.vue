@@ -13,7 +13,7 @@ definePageMeta({ layout: 'dashboard' })
 const route = useRoute()
 const { fetchLists, fetchEntries } = useSeniorityLists()
 const { loadPreferences } = useUser()
-const { lists, selectedListId, loading, listOptions, isHistorical, selectedListLabel, isDemoList, navbarDescription } = useDashboardList()
+const { lists, selectedListId, loading, listOptions, isHistorical, isDemoList, navbarDescription } = useDashboardList()
 const { section, viewItems } = useDashboardSections()
 
 function useListSelectionRoute() {
@@ -46,7 +46,10 @@ function useListSelectionRoute() {
     if (!selectedListId.value || !lists.value.some(list => list.id === selectedListId.value)) {
       selectedListId.value = lists.value[0]?.id ?? undefined
     }
-    if (selectedListId.value) await fetchEntries(selectedListId.value)
+    if (selectedListId.value) {
+      await fetchEntries(selectedListId.value)
+      if (route.query.list !== String(selectedListId.value)) await syncRoute()
+    }
     initializing.value = false
     loading.value = false
   })
@@ -116,11 +119,12 @@ const panelUi = computed(() => ({
       <template v-else>
         <DashboardScenarioStrip
           v-if="showScenarioStrip"
+          v-model:selected-list-id="selectedListId"
           v-model:scope-label="scopeLabel"
           v-model:growth-assumptions="growthAssumptions"
           :scope-labels="scopeLabels"
           :as-of-label="asOfLabel"
-          :list-label="selectedListLabel"
+          :list-options="listOptions"
           :growth-label="growthLabel"
           :is-demo="isDemoList"
           :is-historical="isHistorical"

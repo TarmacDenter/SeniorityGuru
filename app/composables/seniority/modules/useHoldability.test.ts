@@ -1,8 +1,9 @@
-// @vitest-environment node
+// @vitest-environment nuxt
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { nextTick } from 'vue'
 import { useHoldability } from './useHoldability'
 import { useSeniorityCore, _resetCoreSingletons } from './useSeniorityCore'
+import { useDashboardList } from '~/composables/useDashboardList'
 import { resetMockStores } from '~/test-utils/seniority-mocks'
 
 const mockStore = vi.hoisted(() => {
@@ -20,6 +21,7 @@ beforeEach(() => {
   _resetCoreSingletons()
   resetMockStores(mockStore, mockUserStore)
   useSeniorityCore().newHire.reset()
+  useDashboardList().selectedListId.value = undefined
 })
 
 // The anchor (3) is in JFK FO 737 and senior to its threshold (4). LAX FO 777's threshold is pilot 2, reached when
@@ -102,7 +104,19 @@ describe('useHoldability', () => {
 
   it('links each Qualification to Junior captains in Demographics', () => {
     seed()
-    expect(useHoldability().juniorCaptainsLink).toBe('/dashboard/demographics#junior-captains')
+    expect(useHoldability().juniorCaptainsLink.value).toBe('/dashboard/demographics#junior-captains')
+  })
+
+  it('keeps the selected list in Junior captains links as the shared selection changes', async () => {
+    seed()
+    const { selectedListId } = useDashboardList()
+    selectedListId.value = 12
+    const holdability = useHoldability()
+    expect(holdability.juniorCaptainsLink.value).toBe('/dashboard/demographics?list=12#junior-captains')
+
+    selectedListId.value = 20
+    await nextTick()
+    expect(holdability.juniorCaptainsLink.value).toBe('/dashboard/demographics?list=20#junior-captains')
   })
 
   it('says why there are no rows when the Anchor Pilot has retired', () => {

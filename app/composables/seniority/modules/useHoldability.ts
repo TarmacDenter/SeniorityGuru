@@ -1,5 +1,6 @@
 import type { ComputedRef, Ref } from 'vue'
 import { DEFAULT_SENIORITY_GROWTH_ASSUMPTIONS, resultOrNull, type GrowthAssumptions, type PresentedHoldabilityDetail, type QualificationScope } from '~/utils/seniority'
+import { useDashboardList } from '~/composables/useDashboardList'
 import { useSeniorityCore } from './useSeniorityCore'
 import { useStanding, type BaseStatusRow } from './useStanding'
 import { useQualificationPositions } from './useQualificationPositions'
@@ -39,8 +40,6 @@ const COLUMN_LABELS = {
   status: 'Holdable',
 } as const
 
-const JUNIOR_CAPTAINS_LINK = '/dashboard/demographics#junior-captains'
-
 function keyOf(qualification: { base: string, seat: string, fleet: string }): string {
   return `${qualification.fleet} ${qualification.seat} ${qualification.base}`
 }
@@ -59,6 +58,8 @@ export function useHoldability(
   qualificationScope?: Ref<QualificationScope> | ComputedRef<QualificationScope>,
   growthAssumptions?: Ref<GrowthAssumptions>,
 ) {
+  const { selectedListId } = useDashboardList()
+  const juniorCaptainsLink = computed(() => `/dashboard/demographics${selectedListId.value ? `?list=${selectedListId.value}` : ''}#junior-captains`)
   const assumptions = growthAssumptions ?? ref<GrowthAssumptions>({ ...DEFAULT_SENIORITY_GROWTH_ASSUMPTIONS })
   const { anchoredAnalysis } = useSeniorityCore()
   const { rankCard, qualificationGroups } = useStanding(qualificationScope)
@@ -120,7 +121,7 @@ export function useHoldability(
 
   return {
     columnLabels: COLUMN_LABELS,
-    juniorCaptainsLink: JUNIOR_CAPTAINS_LINK,
+    juniorCaptainsLink,
     groups,
     seatOptions,
     selectedSeat,

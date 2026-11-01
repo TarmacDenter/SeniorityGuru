@@ -174,6 +174,18 @@ describe('dashboard.vue — route-synced ref / watcher race condition', () => {
     expect(mockNavigateTo).not.toHaveBeenCalled()
   })
 
+  it('records the default list in the URL so a destination reload retains it', async () => {
+    mockRouteQuery.value = { scope: 'JFK' }
+    mockFetchLists.mockImplementation(() => { mockLists.value = [makeList(77)] })
+    const DashboardPage = await import('./dashboard.vue')
+    await mountSuspended(DashboardPage.default, { global: { stubs } })
+
+    await vi.waitFor(() => expect(mockNavigateTo).toHaveBeenCalledWith(
+      { path: '/dashboard/current/status', query: { scope: 'JFK', list: '77' } },
+      { replace: true },
+    ))
+  })
+
   it('calls fetchEntries exactly once with the URL param ID (not the first-list default)', async () => {
     const OLD_ID = 10
     const NEW_ID = 20
@@ -293,7 +305,29 @@ describe('dashboard.vue — sections', () => {
     expect(wrapper.find('[data-testid="scenario-strip"]').exists()).toBe(true)
     expect(wrapper.text()).toContain('As-of Date')
     expect(wrapper.text()).toContain('Growth Assumptions')
-    expect(wrapper.find('[aria-label="Seniority List"]').exists()).toBe(false)
+    expect(wrapper.find('[aria-label="Seniority List"]').exists()).toBe(true)
+  })
+
+  it('selects a historical list from the scenario toolbar and loads it into the shared analysis', async () => {
+    mockRouteQuery.value = { list: '2' }
+    mockShowDemoBadge.value = true
+    mockFetchLists.mockImplementation(() => {
+      mockLists.value = [{ ...makeList(2), title: 'Latest list' }, { ...makeList(1), title: 'Historical list', isDemo: true }]
+    })
+    const wrapper = await mountDashboard()
+    await wrapper.find('[aria-controls="scenario-strip-controls"]').trigger('click')
+    await wrapper.find('[aria-label="Seniority List"]').trigger('click')
+    await vi.waitFor(() => expect(document.body.querySelector('[role="option"]')).not.toBeNull())
+    const historical = Array.from(document.body.querySelectorAll<HTMLElement>('[role="option"]')).find(option => option.textContent?.includes('Historical list'))!
+    historical.click()
+
+    await vi.waitFor(() => expect(mockFetchEntries).toHaveBeenLastCalledWith(1))
+    expect(mockNavigateTo).toHaveBeenLastCalledWith(
+      { path: '/dashboard/current/status', query: { list: '1' } },
+      { replace: true },
+    )
+    expect(wrapper.text()).toContain('Historical')
+    expect(wrapper.text()).toContain('Demo')
   })
 
   it.each(['/dashboard/current/status', '/dashboard/trajectory/projection'])('shows no scenario toolbar on %s without an Anchor Pilot', async (path) => {

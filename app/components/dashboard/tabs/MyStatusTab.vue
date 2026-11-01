@@ -2,6 +2,7 @@
 import { h, resolveComponent } from 'vue'
 import { useMediaQuery } from '@vueuse/core'
 import type { TableColumn } from '@nuxt/ui'
+import { useDashboardList } from '~/composables/useDashboardList'
 import type { ListExcerptRow, QualificationSeatGroup, RankCardData, StandingFigure } from '~/composables/seniority'
 
 // Current › Status: the headline figures, the Seniority List around the Anchor Pilot's line,
@@ -17,6 +18,8 @@ defineProps<{
   excerptRows: ListExcerptRow[]
   qualificationGroups: QualificationSeatGroup[]
 }>()
+
+const { holdabilityLink } = useDashboardList()
 
 const isCompact = useMediaQuery('(max-width: 639px)')
 const numeric = { class: { th: 'text-right', td: 'text-right' } }
@@ -118,7 +121,7 @@ const excerptColumns: TableColumn<ListExcerptRow>[] = [
       </div>
 
       <DashboardBaseStatusTable :groups="qualificationGroups" :no-result-label="rankCard.noResultLabel" />
-      <UButton label="Open Holdability" to="/dashboard/current/holdability" color="neutral" variant="link" size="sm" trailing-icon="i-lucide-arrow-right" class="px-0" />
+      <UButton label="Open Holdability" :to="holdabilityLink" color="neutral" variant="link" size="sm" trailing-icon="i-lucide-arrow-right" class="px-0" />
     </div>
   </div>
 </template>
