@@ -135,24 +135,52 @@ describe('useNextProjections: retirement analysis', () => {
     expect(projections.threshold.result.value?.year).toMatch(/^\d{4}/)
   })
 
-  it('presents the retirement snapshot with one-decimal percentiles and the final years only', async () => {
+  it('counts retirements senior to the Anchor Pilot within the chosen number of years', () => {
     seedRoster()
-    const projections = useNextProjections()
-    const snapshot = projections.snapshot.value
+    const { seniorRetirements } = useNextProjections()
+    const thisYear = new Date().getFullYear()
+    // E1, E2 and E3 retire in 2030, 2032 and 2034; the Anchor Pilot E4 in 2045.
+    seniorRetirements.years.value = 2030 - thisYear + 1
+    expect(seniorRetirements.count.value).toBe(1)
+    expect(seniorRetirements.label.value).toBe(`1 retirement senior to you in the next ${seniorRetirements.years.value} years`)
 
-    expect(snapshot).not.toBeNull()
-    expect(snapshot!.retireDateLabel).toBe('Jun 2045')
-    expect(snapshot!.percentileLabel).toMatch(/^\d+\.\d%$/)
-    expect(snapshot!.rows.length).toBeLessThanOrEqual(5)
-    expect(snapshot!.rows[0]!.percentileLabel).toMatch(/^\d+\.\d%$/)
-
-    projections.snapshotYears.value = 3
-    await nextTick()
-    expect(projections.snapshot.value!.rows).toHaveLength(3)
+    seniorRetirements.years.value = 2034 - thisYear + 1
+    expect(seniorRetirements.count.value).toBe(3)
+    expect(seniorRetirements.label.value).toMatch(/^3 retirements senior to you in the next \d+ years$/)
   })
 
-  it('has no snapshot without an Anchor Pilot', () => {
-    expect(useNextProjections().snapshot.value).toBeNull()
+  it('counts only retirements senior to the Anchor Pilot, inside the shared Qualification Scope', () => {
+    seedRoster()
+    const { seniorRetirements } = useNextProjections()
+    seniorRetirements.years.value = seniorRetirements.maxYears.value
+    expect(seniorRetirements.count.value).toBe(3)
+
+    useScenario().scopeLabel.value = 'JFK CA 737'
+    expect(seniorRetirements.count.value).toBe(2)
+  })
+
+  it('offers 1 to the years until the Anchor Pilot retires, starting at 5 years or fewer', () => {
+    seedRoster()
+    const { seniorRetirements } = useNextProjections()
+    const untilRetirement = 2045 - new Date().getFullYear()
+
+    expect(seniorRetirements.maxYears.value).toBeGreaterThanOrEqual(untilRetirement)
+    expect(seniorRetirements.years.value).toBe(5)
+    seniorRetirements.years.value = 999
+    expect(seniorRetirements.years.value).toBe(seniorRetirements.maxYears.value)
+  })
+
+  it('says "1 year" in the singular', () => {
+    seedRoster()
+    const { seniorRetirements } = useNextProjections()
+    seniorRetirements.years.value = 1
+    expect(seniorRetirements.label.value).toMatch(/in the next year$/)
+  })
+
+  it('has no count without an Anchor Pilot', () => {
+    const { seniorRetirements } = useNextProjections()
+    expect(seniorRetirements.count.value).toBeNull()
+    expect(seniorRetirements.label.value).toBeNull()
   })
 
   it('names the best year of improvement', () => {
