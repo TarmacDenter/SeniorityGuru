@@ -1,250 +1,95 @@
 <script setup lang="ts">
-import type { TableColumn } from '@nuxt/ui'
-import { useSeniorityCore } from '~/composables/seniority'
-import type { RelativeUpcomingRetirement, UpcomingRetirement } from '~/utils/seniority'
-import { addYearsDate } from '~/utils/date'
-import { Temporal, todayPlainDate } from '~/utils/temporal'
+import { RETIREMENT_HORIZONS, useUpcomingRetirements } from '~/composables/seniority/modules/useUpcomingRetirements'
+import type { RetirementSortKey } from '~/composables/seniority/modules/useUpcomingRetirements'
 
-const { listAnalysis, analysis, anchoredAnalysis, hasData, hasAnchor } = useSeniorityCore()
+// Retirements view of the Lists panel. Filtering, sorting and labels come from the composable.
+const {
+  hasData, hasAnchor, yearsHorizon, seniorOnly, filterBase, filterSeat, filterFleet,
+  baseItems, seatItems, fleetItems, sortKey, sortDir, toggleSort, rows,
+} = useUpcomingRetirements()
 
-// ── Filter state ────────────────────────────────────────────────────────────
-const yearsHorizon = ref<1 | 2 | 3 | 5 | number>(2)
-const seniorOnly = ref(true)
-const filterBase = ref<string | null>(null)
-const filterSeat = ref<string | null>(null)
-const filterFleet = ref<string | null>(null)
+const sortableColumns = computed<{ key: RetirementSortKey; label: string; align: string }[]>(() => [
+  { key: 'seniorityNumber', label: 'Seniority Number', align: 'text-right' },
+  ...(hasAnchor.value ? [{ key: 'rankRelativeToMe' as const, label: 'Rank relative to me', align: 'text-right' }] : []),
+  { key: 'retirementDate', label: 'Estimated retirement date', align: 'text-right' },
+])
 
-// ── Sort state ───────────────────────────────────────────────────────────────
-type SortKey = 'retirementDate' | 'seniorityNumber' | 'rankRelativeToMe'
-type SortDir = 'asc' | 'desc'
-const sortKey = ref<SortKey>('retirementDate')
-const sortDir = ref<SortDir>('asc')
-
-function toggleSort(key: SortKey) {
-  if (sortKey.value === key) {
-    sortDir.value = sortDir.value === 'asc' ? 'desc' : 'asc'
-  }
-  else {
-    sortKey.value = key
-    sortDir.value = 'asc'
-  }
+function ariaSort(key: RetirementSortKey) {
+  if (sortKey.value !== key) return 'none'
+  return sortDir.value === 'asc' ? 'ascending' : 'descending'
 }
-
-// ── Qualification options ─────────────────────────────────────────────────────────────
-const availableBases = computed(() => listAnalysis.value?.catalog.bases ?? [])
-const availableSeats = computed(() => listAnalysis.value?.catalog.seats ?? [])
-const availableFleets = computed(() => listAnalysis.value?.catalog.fleets ?? [])
-
-type SelectItem = { label: string; value: string | null }
-const baseItems = computed<SelectItem[]>(() => [
-  { label: 'All bases', value: null },
-  ...availableBases.value.map(b => ({ label: b, value: b })),
-])
-const seatItems = computed<SelectItem[]>(() => [
-  { label: 'All seats', value: null },
-  ...availableSeats.value.map(s => ({ label: s, value: s })),
-])
-const fleetItems = computed<SelectItem[]>(() => [
-  { label: 'All fleets', value: null },
-  ...availableFleets.value.map(f => ({ label: f, value: f })),
-])
-
-// ── Rows ─────────────────────────────────────────────────────────────────────
-type RetirementRow = UpcomingRetirement | RelativeUpcomingRetirement
-
-const rows = computed((): RetirementRow[] => {
-  if (!hasData.value || !analysis.value) return []
-
-  const filter = {
-    through: addYearsDate(todayPlainDate(), yearsHorizon.value),
-    qualificationScope: {
-      ...(filterBase.value && { base: filterBase.value }),
-      ...(filterSeat.value && { seat: filterSeat.value }),
-      ...(filterFleet.value && { fleet: filterFleet.value }),
-    },
-  }
-  const raw = anchoredAnalysis.value
-    ? anchoredAnalysis.value.relativeUpcomingRetirements({ ...filter, seniorOnly: seniorOnly.value })
-    : analysis.value.upcomingRetirements(filter)
-
-  return [...raw].sort((a, b) => {
-    let cmp = 0
-    if (sortKey.value === 'retirementDate') cmp = Temporal.PlainDate.compare(a.retirementDate, b.retirementDate)
-    else if (sortKey.value === 'seniorityNumber') cmp = a.seniorityNumber - b.seniorityNumber
-    else if (sortKey.value === 'rankRelativeToMe') cmp = (relativeRank(a) - relativeRank(b))
-    return sortDir.value === 'asc' ? cmp : -cmp
-  })
-})
-
-function relativeRank(row: RetirementRow): number {
-  return 'positionsSeniorToAnchor' in row ? row.positionsSeniorToAnchor : 0
-}
-
-const columns = computed((): TableColumn<RetirementRow>[] => {
-  const base: TableColumn<RetirementRow>[] = [
-    { accessorKey: 'seniorityNumber', header: 'Seniority #' },
-    {
-      accessorKey: 'qual',
-      header: 'Qual',
-      cell: ({ row }) => `${row.original.qualification.base} · ${row.original.qualification.seat} / ${row.original.qualification.fleet}`,
-    },
-    { accessorKey: 'retirementDate', header: 'Est. Retire Date' },
-  ]
-  if (hasAnchor.value) {
-    base.splice(1, 0, {
-      accessorKey: 'rankRelativeToMe',
-      header: 'Rank Relative to Me',
-      cell: ({ row }) => {
-        const v = 'positionsSeniorToAnchor' in row.original ? row.original.positionsSeniorToAnchor : 0
-        return v > 0 ? `+${v}` : String(v)
-      },
-    })
-  }
-  return base
-})
-
-const horizonOptions = [
-  { label: '1 year', value: 1 },
-  { label: '2 years', value: 2 },
-  { label: '3 years', value: 3 },
-  { label: '5 years', value: 5 },
-]
 </script>
 
 <template>
   <div class="space-y-4">
-    <!-- Empty state: no list loaded -->
     <UEmpty
       v-if="!hasData"
       icon="i-lucide-calendar-x"
       title="No seniority list loaded"
       description="Import your airline's seniority list to see upcoming retirements."
       :actions="[{ label: 'Import a list', icon: 'i-lucide-upload', to: '/seniority/upload' }]"
-      class="py-24"
+      class="py-16"
     />
 
     <template v-else>
-      <!-- Filters row -->
       <div class="flex flex-wrap items-center gap-3">
-        <!-- Time horizon -->
-        <UTabs
-          v-model="yearsHorizon"
-          :items="horizonOptions"
-          :content="false"
-          variant="pill"
-          size="sm"
-        />
+        <UTabs v-model="yearsHorizon" :items="RETIREMENT_HORIZONS" :content="false" variant="link" size="sm" aria-label="Retirement horizon" />
 
-        <!-- Senior only toggle -->
-        <div class="flex items-center gap-2">
-          <USwitch v-model="seniorOnly" :disabled="!hasAnchor" size="sm" />
-          <span class="text-sm" :class="!hasAnchor ? 'text-muted' : ''">
-            Senior to me only
-          </span>
-        </div>
+        <label class="flex items-center gap-2 text-sm" :class="hasAnchor ? '' : 'text-muted'">
+          <AppSwitch v-model="seniorOnly" :disabled="!hasAnchor" size="sm" />
+          Senior to me only
+        </label>
 
-        <!-- Qualification filters -->
-        <div class="flex items-center gap-2 flex-wrap">
-          <USelectMenu
-            v-model="filterBase"
-            :items="baseItems"
-            value-key="value"
-            label-key="label"
-            placeholder="Base"
-            size="sm"
-            class="w-28"
-          />
-          <USelectMenu
-            v-model="filterSeat"
-            :items="seatItems"
-            value-key="value"
-            label-key="label"
-            placeholder="Seat"
-            size="sm"
-            class="w-24"
-          />
-          <USelectMenu
-            v-model="filterFleet"
-            :items="fleetItems"
-            value-key="value"
-            label-key="label"
-            placeholder="Fleet"
-            size="sm"
-            class="w-28"
-          />
+        <div class="flex flex-wrap items-center gap-2">
+          <USelectMenu v-model="filterBase" :items="baseItems" value-key="value" label-key="label" placeholder="Base" size="sm" class="w-28" aria-label="Base" />
+          <USelectMenu v-model="filterSeat" :items="seatItems" value-key="value" label-key="label" placeholder="Seat" size="sm" class="w-24" aria-label="Seat" />
+          <USelectMenu v-model="filterFleet" :items="fleetItems" value-key="value" label-key="label" placeholder="Fleet" size="sm" class="w-28" aria-label="Fleet" />
         </div>
       </div>
 
-      <!-- Employee number prompt -->
-      <div
-        v-if="!hasAnchor"
-        class="flex items-center gap-3 rounded-lg border border-[var(--ui-border)] bg-[var(--ui-bg-muted)] px-4 py-3 text-sm"
-      >
-        <UIcon name="i-lucide-user-x" class="size-4 shrink-0 text-muted" />
-        <span class="text-muted">
-          Set an employee number that appears in this list in
-          <NuxtLink to="/settings" class="underline text-primary">Settings</NuxtLink>
-          to see rank relative to you and filter by seniority.
-        </span>
-      </div>
+      <p v-if="!hasAnchor" class="border-l-2 border-default pl-3 font-serif text-sm italic text-muted">
+        Set an employee number that appears in this list in
+        <NuxtLink to="/settings" class="underline text-highlighted">Settings</NuxtLink>
+        to see rank relative to you and filter by seniority.
+      </p>
 
-      <!-- Table -->
-      <UCard>
-        <div class="overflow-x-auto">
-        <UTable
-          :data="rows"
-          :columns="columns"
-          :ui="{ th: 'cursor-pointer select-none' }"
-        >
-          <template #seniorityNumber-header>
-            <button class="flex items-center gap-1" @click="toggleSort('seniorityNumber')">
-              Seniority #
-              <UIcon
-                :name="sortKey === 'seniorityNumber' && sortDir === 'desc' ? 'i-lucide-chevron-down' : 'i-lucide-chevron-up'"
-                :class="sortKey === 'seniorityNumber' ? 'text-primary' : 'text-muted'"
-                class="size-3"
-              />
-            </button>
-          </template>
+      <div class="overflow-x-auto">
+        <table class="w-full border-collapse font-mono text-sm sm:text-base" aria-label="Upcoming retirements">
+          <thead>
+            <tr class="border-b border-default font-sans text-xs font-medium text-muted">
+              <th v-for="column in sortableColumns.slice(0, 1)" :key="column.key" scope="col" :aria-sort="ariaSort(column.key)" class="px-2 py-1.5" :class="column.align">
+                <button type="button" class="inline-flex items-center gap-1" @click="toggleSort(column.key)">
+                  {{ column.label }}
+                  <UIcon :name="sortKey === column.key && sortDir === 'desc' ? 'i-lucide-chevron-down' : 'i-lucide-chevron-up'" class="size-3" :class="sortKey === column.key ? 'text-highlighted' : 'text-dimmed'" />
+                </button>
+              </th>
+              <th scope="col" class="px-2 py-1.5 text-left">Qualification</th>
+              <th v-for="column in sortableColumns.slice(1)" :key="column.key" scope="col" :aria-sort="ariaSort(column.key)" class="px-2 py-1.5" :class="column.align">
+                <button type="button" class="inline-flex items-center gap-1" @click="toggleSort(column.key)">
+                  {{ column.label }}
+                  <UIcon :name="sortKey === column.key && sortDir === 'desc' ? 'i-lucide-chevron-down' : 'i-lucide-chevron-up'" class="size-3" :class="sortKey === column.key ? 'text-highlighted' : 'text-dimmed'" />
+                </button>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="row in rows" :key="row.key" class="even:bg-accented">
+              <td class="px-2 py-2 text-right">{{ row.seniorityNumber }}</td>
+              <td class="px-2 py-2 text-left">{{ row.qualificationLabel }}</td>
+              <td v-if="hasAnchor" class="px-2 py-2 text-right">{{ row.relativeLabel }}</td>
+              <td class="px-2 py-2 text-right">{{ row.retirementDateLabel }}</td>
+            </tr>
+          </tbody>
+        </table>
 
-          <template #rankRelativeToMe-header>
-            <button class="flex items-center gap-1" @click="toggleSort('rankRelativeToMe')">
-              Rank Relative to Me
-              <UIcon
-                :name="sortKey === 'rankRelativeToMe' && sortDir === 'desc' ? 'i-lucide-chevron-down' : 'i-lucide-chevron-up'"
-                :class="sortKey === 'rankRelativeToMe' ? 'text-primary' : 'text-muted'"
-                class="size-3"
-              />
-            </button>
-          </template>
-
-          <template #retirementDate-header>
-            <button class="flex items-center gap-1" @click="toggleSort('retirementDate')">
-              Est. Retire Date
-              <UIcon
-                :name="sortKey === 'retirementDate' && sortDir === 'desc' ? 'i-lucide-chevron-down' : 'i-lucide-chevron-up'"
-                :class="sortKey === 'retirementDate' ? 'text-primary' : 'text-muted'"
-                class="size-3"
-              />
-            </button>
-          </template>
-
-          <!-- Empty state for no results -->
-          <template #empty>
-            <div class="flex flex-col items-center gap-3 py-12 text-center">
-              <UIcon name="i-lucide-calendar-check" class="size-10 text-muted" />
-              <div class="space-y-1">
-                <p class="font-medium">No retirements found</p>
-                <p class="text-sm text-muted">
-                  No pilots match the current filters within the {{ yearsHorizon }}-year horizon.
-                  Try expanding the time range or adjusting your filters.
-                </p>
-              </div>
-            </div>
-          </template>
-        </UTable>
+        <div v-if="rows.length === 0" class="py-12 text-center">
+          <p class="font-medium text-highlighted">No retirements found</p>
+          <p class="mt-1 text-sm text-muted">
+            No pilots match the current filters within the {{ yearsHorizon }}-year horizon.
+            Try expanding the time range or adjusting your filters.
+          </p>
         </div>
-      </UCard>
+      </div>
     </template>
   </div>
 </template>

@@ -1,6 +1,12 @@
 <script setup lang="ts">
-// The Lists panel: choose a Seniority List, reach Compare and Upload, and read the full list.
+// The Lists panel: choose a Seniority List, reach Compare and Upload, and read either the full list or its Retirements.
 const selectedListId = defineModel<number | undefined>('selectedListId')
+
+const view = ref<'list' | 'retirements'>('list')
+const views = [
+  { label: 'Seniority list', value: 'list' },
+  { label: 'Retirements', value: 'retirements' },
+]
 
 defineProps<{
   loading: boolean
@@ -30,6 +36,12 @@ defineProps<{
       <UButton to="/seniority/compare" icon="i-lucide-git-compare-arrows" color="neutral" variant="outline" size="sm">Compare</UButton>
       <UButton to="/seniority/upload" icon="i-lucide-upload" color="neutral" variant="outline" size="sm">Upload</UButton>
     </div>
-    <SeniorityListViewer :loading="loading" class="min-h-0 flex-1" />
+    <div class="border-b border-default px-4 sm:px-6">
+      <UTabs v-model="view" :items="views" :content="false" variant="link" size="sm" aria-label="Lists view" />
+    </div>
+    <SeniorityListViewer v-if="view === 'list'" :loading="loading" class="min-h-0 flex-1" />
+    <div v-else class="min-h-0 flex-1 overflow-auto p-4 sm:p-6">
+      <DashboardTabsRetirementsTab />
+    </div>
   </div>
 </template>
