@@ -494,4 +494,78 @@ describe('useStanding', () => {
     const { retirementSnapshot } = useStanding()
     expect(retirementSnapshot.value).toBeNull()
   })
+
+  describe('qualification directory', () => {
+    function directoryEntries() {
+      return [
+        makeEntry({ seniority_number: 1, employee_number: 'E1', base: 'JFK', seat: 'FO', fleet: '737', retire_date: '2045-01-01' }),
+        makeEntry({ seniority_number: 2, employee_number: 'E2', base: 'JFK', seat: 'CA', fleet: '737', retire_date: '2045-01-01' }),
+        makeEntry({ seniority_number: 3, employee_number: 'E3', base: 'LAX', seat: 'CA', fleet: '777', retire_date: '2045-01-01' }),
+        makeEntry({ seniority_number: 4, employee_number: 'E4', base: 'LAX', seat: 'CA', fleet: '777', retire_date: '2045-01-01' }),
+        makeEntry({ seniority_number: 5, employee_number: 'E5', base: 'ORD', seat: 'FO', fleet: '320', retire_date: '2045-01-01' }),
+      ]
+    }
+
+    it('groups Qualifications by seat, Captains first, highest Seniority Percentile first', () => {
+      mockStore.entries = directoryEntries()
+      mockUserStore.employeeNumber = 'E3'
+
+      const { qualificationGroups } = useStanding()
+      expect(qualificationGroups.value.map(group => group.seatLabel)).toEqual(['Captain', 'First Officer'])
+      for (const group of qualificationGroups.value) {
+        const percentiles = group.rows.map(row => row.seniorityPercentile)
+        expect(percentiles).toEqual([...percentiles].sort((a, b) => b - a))
+      }
+      expect(qualificationGroups.value[0]!.rows.map(row => row.baseFleetLabel).sort()).toEqual(['JFK 737', 'LAX 777'])
+    })
+
+    it('formats Rank, "of N" and percentile with one decimal, and labels Hypothetical Placement', () => {
+      mockStore.entries = directoryEntries()
+      mockUserStore.employeeNumber = 'E3'
+
+      const { qualificationGroups } = useStanding()
+      const own = qualificationGroups.value[0]!.rows.find(row => row.isAnchorCurrentQualification)!
+      expect(own).toMatchObject({ baseFleetLabel: 'LAX 777', rankLabel: '1', rosterOfLabel: 'of 2', hypotheticalLabel: null })
+      expect(own.percentileLabel).toMatch(/^\d+\.\d%$/)
+
+      const other = qualificationGroups.value[0]!.rows.find(row => row.baseFleetLabel === 'JFK 737')!
+      expect(other.hypotheticalLabel).toMatch(/^Hypothetical Placement in /)
+    })
+
+    it('returns no groups without an Anchor Pilot', () => {
+      mockStore.entries = directoryEntries()
+      mockUserStore.employeeNumber = 'UNKNOWN'
+      expect(useStanding().qualificationGroups.value).toEqual([])
+    })
+  })
+
+  describe('figures', () => {
+    it('lists Rank, Seniority Number, Roster Size, Seniority Percentile and Active pilots', () => {
+      mockStore.entries = [1, 2, 3, 4].map(n => makeEntry({ seniority_number: n, employee_number: `E${n}`, retire_date: '2045-01-01' }))
+      mockUserStore.employeeNumber = 'E2'
+
+      expect(useStanding().figures.value).toEqual([
+        { label: 'Rank', value: '2' },
+        { label: 'Seniority Number', value: '2' },
+        { label: 'Roster Size', value: '4' },
+        { label: 'Seniority Percentile', value: '75.0%' },
+        { label: 'Active pilots', value: '4' },
+      ])
+    })
+
+    it('uses placeholders, not zero, for a retired Anchor Pilot', () => {
+      mockStore.entries = [
+        makeEntry({ seniority_number: 1, employee_number: 'E1', retire_date: '2020-01-01' }),
+        makeEntry({ seniority_number: 2, employee_number: 'E2', retire_date: '2045-01-01' }),
+      ]
+      mockUserStore.employeeNumber = 'E1'
+
+      const values = Object.fromEntries(useStanding().figures.value.map(f => [f.label, f.value]))
+      expect(values).toMatchObject({ Rank: '--', 'Roster Size': '--', 'Seniority Percentile': '--', 'Active pilots': '--' })
+    })
+
+    it('is empty without an Anchor Pilot', () => {
+      expect(useStanding().figures.value).toEqual([])
+    })
+  })
 })

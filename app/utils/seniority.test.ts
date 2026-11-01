@@ -45,6 +45,7 @@ describe('public Seniority Analysis interface', () => {
       'AnchorNotFoundError',
       'DEFAULT_SENIORITY_GROWTH_ASSUMPTIONS',
       'InvalidSenioritySnapshotDataError',
+      'formatGrowthAssumptions',
       'isNoResult',
       'resultOrNull',
       'createSeniorityAnalysis',

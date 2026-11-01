@@ -11,7 +11,10 @@ import type {
 import {
   formatQualification,
   formatQualificationScope,
+  formatGrowthAssumptions,
+  formatSeatLabel,
   formatSeniorityCount,
+  formatSeniorityPercentile,
   formatSeniorityRankChange,
   presentAnchoredSeniorityDemographics,
   presentAgeBucket,
@@ -49,9 +52,9 @@ describe('seniority presentation', () => {
         data: [10, 12, 19, 22],
       },
       changes: [
-        { date: date('2027-01-01'), percentile: 12, percentilePointChange: 2, isPeak: false },
-        { date: date('2028-01-01'), percentile: 19, percentilePointChange: 7, isPeak: true },
-        { date: date('2029-01-01'), percentile: 22, percentilePointChange: 3, isPeak: false },
+        { date: date('2027-01-01'), percentile: 12, percentilePointChange: 2, isPeak: false, yearLabel: '2027', percentileLabel: '12.0%', changeLabel: '+2.0 pp' },
+        { date: date('2028-01-01'), percentile: 19, percentilePointChange: 7, isPeak: true, yearLabel: '2028', percentileLabel: '19.0%', changeLabel: '+7.0 pp' },
+        { date: date('2029-01-01'), percentile: 22, percentilePointChange: 3, isPeak: false, yearLabel: '2029', percentileLabel: '22.0%', changeLabel: '+3.0 pp' },
       ],
       endedByLabel: null,
       hypotheticalLabel: null,
@@ -268,5 +271,24 @@ describe('seniority presentation', () => {
 
     expect(presentAnchoredSeniorityDemographics(demographics, positions)
       .captainQualificationThresholds[0]?.modeledHoldable).toBe(true)
+  })
+})
+
+describe('display formats', () => {
+  it('always shows Seniority Percentile with one decimal and a placeholder when absent', () => {
+    expect(formatSeniorityPercentile(2)).toBe('2.0%')
+    expect(formatSeniorityPercentile(98.25)).toBe('98.3%')
+    expect(formatSeniorityPercentile(null)).toBe('--')
+  })
+
+  it('phrases Growth Assumptions', () => {
+    expect(formatGrowthAssumptions({ enabled: false, annualGrowthRate: 0.03 })).toBe('Retirements only')
+    expect(formatGrowthAssumptions({ enabled: true, annualGrowthRate: 0.035 })).toBe('3.5% annual growth')
+  })
+
+  it('names seats', () => {
+    expect(formatSeatLabel('CA')).toBe('Captain')
+    expect(formatSeatLabel('FO')).toBe('First Officer')
+    expect(formatSeatLabel('XX')).toBe('XX')
   })
 })

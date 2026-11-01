@@ -64,7 +64,28 @@ export interface BaseStatusRow {
   isAnchorCurrentQualification: boolean
   /** "Hypothetical Placement in <qualification>" for qualifications you are not in; null for your own. */
   hypotheticalLabel: string | null
+  /** Display text, formatted by the analysis presentation: "JFK 737", "12", "of 480", "62.4%", "Captain". */
+  baseFleetLabel: string
+  rankLabel: string
+  rosterOfLabel: string
+  percentileLabel: string
+  seatLabel: string
 }
+
+/** One seat's Qualifications, highest Seniority Percentile first. */
+export interface QualificationSeatGroup {
+  seat: string
+  seatLabel: string
+  rows: BaseStatusRow[]
+}
+
+/** A label and figure for the Now dot-leader list; value is a placeholder when no figure exists. */
+export interface StandingFigure {
+  label: string
+  value: string
+}
+
+const SEAT_ORDER: Record<string, number> = { CA: 0, FO: 1 }
 
 export interface StatCard {
   label: string
@@ -88,6 +109,8 @@ export interface RetirementSnapshotData {
 export function useStanding(qualificationScope?: Ref<QualificationScope> | ComputedRef<QualificationScope>): {
   rankCard: ComputedRef<RankCardData>
   baseStatus: ComputedRef<BaseStatusRow[]>
+  qualificationGroups: ComputedRef<QualificationSeatGroup[]>
+  figures: ComputedRef<StandingFigure[]>
   statCards: ComputedRef<StatCard[]>
   retirementSnapshot: ComputedRef<RetirementSnapshotData | null>
 } {
@@ -157,7 +180,40 @@ export function useStanding(qualificationScope?: Ref<QualificationScope> | Compu
       seniorityPercentile: row.seniorityPercentile,
       isAnchorCurrentQualification: row.isAnchorCurrentQualification,
       hypotheticalLabel: row.hypotheticalLabel,
+      baseFleetLabel: row.baseFleetLabel,
+      rankLabel: row.rankLabel,
+      rosterOfLabel: row.rosterOfLabel,
+      percentileLabel: row.percentileLabel,
+      seatLabel: row.seatLabel,
     }))
+  })
+
+  const qualificationGroups = computed<QualificationSeatGroup[]>(() => {
+    const bySeat = new Map<string, BaseStatusRow[]>()
+    for (const row of baseStatus.value) bySeat.set(row.seat, [...(bySeat.get(row.seat) ?? []), row])
+    return [...bySeat.entries()]
+      .sort(([a], [b]) => (SEAT_ORDER[a] ?? 99) - (SEAT_ORDER[b] ?? 99) || a.localeCompare(b))
+      .map(([seat, rows]) => ({
+        seat,
+        seatLabel: rows[0]!.seatLabel,
+        rows: [...rows].sort((a, b) =>
+          b.seniorityPercentile - a.seniorityPercentile
+          || a.rank - b.rank
+          || a.baseFleetLabel.localeCompare(b.baseFleetLabel)),
+      }))
+  })
+
+  const figures = computed<StandingFigure[]>(() => {
+    const entry = anchorEntry.value
+    if (!entry) return []
+    const presented = standingOutput.value?.presentation
+    return [
+      { label: 'Rank', value: presented?.rankLabel ?? PLACEHOLDER },
+      { label: 'Seniority Number', value: String(entry.seniority_number) },
+      { label: 'Roster Size', value: presented?.rosterSizeValueLabel ?? PLACEHOLDER },
+      { label: 'Seniority Percentile', value: presented?.seniorityPercentileLabel ?? PLACEHOLDER },
+      { label: 'Active pilots', value: presented?.activePilotCountLabel ?? PLACEHOLDER },
+    ]
   })
 
   const statCards = computed<StatCard[]>(() => {
@@ -242,5 +298,5 @@ export function useStanding(qualificationScope?: Ref<QualificationScope> | Compu
     }
   })
 
-  return { rankCard, baseStatus, statCards, retirementSnapshot }
+  return { rankCard, baseStatus, qualificationGroups, figures, statCards, retirementSnapshot }
 }
