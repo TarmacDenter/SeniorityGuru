@@ -12,7 +12,7 @@ const log = createLogger('lists-page')
 
 type SeniorityList = SeniorityListSummary
 
-const { lists, listsLoading, listsError, fetchLists, deleteList: storeDeleteList, updateList: storeUpdateList } = useSeniorityLists()
+const { lists, listsLoading, listsError, listCountLabel, recentLists, fetchLists, deleteList: storeDeleteList, updateList: storeUpdateList } = useSeniorityLists()
 const toast = useToast()
 
 const {
@@ -141,6 +141,12 @@ onMounted(async () => {
 <template>
   <div class="p-4 space-y-3">
     <UAlert v-if="listsError" icon="i-lucide-alert-triangle" color="error" :title="listsError" />
+
+    <div class="flex flex-wrap items-baseline gap-x-6 gap-y-1">
+      <p class="text-sm text-muted">Lists Uploaded <span class="ml-1 font-mono text-base font-semibold text-highlighted">{{ listCountLabel }}</span></p>
+    </div>
+
+    <DashboardRecentListsTimeline v-if="recentLists.length > 0" :lists="recentLists" />
 
     <div class="flex flex-wrap items-center gap-2">
       <UInput

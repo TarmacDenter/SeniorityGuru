@@ -555,17 +555,39 @@ describe('useStanding', () => {
   })
 
   describe('figures', () => {
-    it('lists Rank, Seniority Number, Roster Size, Seniority Percentile and Active pilots', () => {
-      mockStore.entries = [1, 2, 3, 4].map(n => makeEntry({ seniority_number: n, employee_number: `E${n}`, retire_date: '2045-01-01' }))
+    const RETIREMENTS = 'Retirements senior to you (next 12 months)'
+
+    it('lists the one headline figure set', () => {
+      const sixMonthsFromNow = todayPlainDate().add({ months: 6 }).toString()
+      mockStore.entries = [
+        makeEntry({ seniority_number: 1, employee_number: 'E1', retire_date: sixMonthsFromNow }),
+        makeEntry({ seniority_number: 2, employee_number: 'E2', retire_date: '2045-01-01' }),
+        makeEntry({ seniority_number: 3, employee_number: 'E3', retire_date: sixMonthsFromNow }),
+        makeEntry({ seniority_number: 4, employee_number: 'E4', retire_date: '2045-01-01' }),
+      ]
       mockUserStore.employeeNumber = 'E2'
 
+      // E1 and E3 retire within 12 months; only E1 is senior to the Anchor Pilot.
       expect(useStanding().figures.value).toEqual([
         { label: 'Rank', value: '2' },
         { label: 'Seniority Number', value: '2' },
         { label: 'Roster Size', value: '4' },
         { label: 'Seniority Percentile', value: '75.0%' },
         { label: 'Active pilots', value: '4' },
+        { label: RETIREMENTS, value: '1' },
       ])
+    })
+
+    it('carries the Roster Size trend when the Anchor Pilot is placed into the scope', () => {
+      mockStore.entries = [
+        makeEntry({ seniority_number: 10, employee_number: 'E1', base: 'JFK', retire_date: '2050-01-01' }),
+        makeEntry({ seniority_number: 40, employee_number: 'E2', base: 'LAX', retire_date: '2050-01-01' }),
+        makeEntry({ seniority_number: 50, employee_number: 'E3', base: 'JFK', retire_date: '2050-01-01' }),
+      ]
+      mockUserStore.employeeNumber = 'E2'
+
+      const rosterSize = useStanding(ref<QualificationScope>({ base: 'JFK' })).figures.value.find(f => f.label === 'Roster Size')
+      expect(rosterSize).toEqual({ label: 'Roster Size', value: '3', note: 'includes you' })
     })
 
     it('uses placeholders, not zero, for a retired Anchor Pilot', () => {
@@ -576,7 +598,7 @@ describe('useStanding', () => {
       mockUserStore.employeeNumber = 'E1'
 
       const values = Object.fromEntries(useStanding().figures.value.map(f => [f.label, f.value]))
-      expect(values).toMatchObject({ Rank: '--', 'Roster Size': '--', 'Seniority Percentile': '--', 'Active pilots': '--' })
+      expect(values).toMatchObject({ Rank: '--', 'Roster Size': '--', 'Seniority Percentile': '--', 'Active pilots': '--', [RETIREMENTS]: '--' })
     })
 
     it('is empty without an Anchor Pilot', () => {
