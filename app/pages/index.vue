@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import type { PresentedQualificationPosition } from '~/utils/seniority'
-
 definePageMeta({ layout: 'default' })
 
 const { install } = usePwaInstall()
@@ -65,194 +63,18 @@ const featureCards = [
 ]
 
 
-const BASE_QUAL_SCALES = [
-  {
-    fleet: 'E175', seat: 'FO', base: 'DEN', activeCount: 142,
-    plugPercentile: 2, plugSenNum: 4780, p25: 18, median: 32, p75: 51, max: 62,
-    density: [
-      { start: 0, count: 4 }, { start: 5, count: 8 }, { start: 10, count: 14 },
-      { start: 15, count: 19 }, { start: 20, count: 22 }, { start: 25, count: 20 },
-      { start: 30, count: 16 }, { start: 35, count: 13 }, { start: 40, count: 10 },
-      { start: 45, count: 8 }, { start: 50, count: 5 }, { start: 55, count: 2 },
-      { start: 60, count: 1 }, { start: 65, count: 0 }, { start: 70, count: 0 },
-      { start: 75, count: 0 }, { start: 80, count: 0 }, { start: 85, count: 0 },
-      { start: 90, count: 0 }, { start: 95, count: 0 },
-    ],
-  },
-  {
-    fleet: 'E175', seat: 'CA', base: 'DEN', activeCount: 68,
-    plugPercentile: 41, plugSenNum: 2950, p25: 52, median: 64, p75: 76, max: 91,
-    density: [
-      { start: 0, count: 0 }, { start: 5, count: 0 }, { start: 10, count: 0 },
-      { start: 15, count: 0 }, { start: 20, count: 0 }, { start: 25, count: 0 },
-      { start: 30, count: 0 }, { start: 35, count: 0 }, { start: 40, count: 3 },
-      { start: 45, count: 7 }, { start: 50, count: 12 }, { start: 55, count: 14 },
-      { start: 60, count: 13 }, { start: 65, count: 9 }, { start: 70, count: 6 },
-      { start: 75, count: 3 }, { start: 80, count: 1 }, { start: 85, count: 0 },
-      { start: 90, count: 0 }, { start: 95, count: 0 },
-    ],
-  },
-  {
-    fleet: 'A320', seat: 'FO', base: 'ORD', activeCount: 198,
-    plugPercentile: 2, plugSenNum: 4820, p25: 12, median: 26, p75: 44, max: 58,
-    density: [
-      { start: 0, count: 8 }, { start: 5, count: 16 }, { start: 10, count: 24 },
-      { start: 15, count: 28 }, { start: 20, count: 26 }, { start: 25, count: 22 },
-      { start: 30, count: 18 }, { start: 35, count: 14 }, { start: 40, count: 10 },
-      { start: 45, count: 7 }, { start: 50, count: 4 }, { start: 55, count: 3 },
-      { start: 60, count: 0 }, { start: 65, count: 0 }, { start: 70, count: 0 },
-      { start: 75, count: 0 }, { start: 80, count: 0 }, { start: 85, count: 0 },
-      { start: 90, count: 0 }, { start: 95, count: 0 },
-    ],
-  },
-  {
-    fleet: 'A320', seat: 'CA', base: 'ORD', activeCount: 94,
-    plugPercentile: 46, plugSenNum: 2700, p25: 55, median: 67, p75: 79, max: 92,
-    density: [
-      { start: 0, count: 0 }, { start: 5, count: 0 }, { start: 10, count: 0 },
-      { start: 15, count: 0 }, { start: 20, count: 0 }, { start: 25, count: 0 },
-      { start: 30, count: 0 }, { start: 35, count: 0 }, { start: 40, count: 0 },
-      { start: 45, count: 4 }, { start: 50, count: 10 }, { start: 55, count: 16 },
-      { start: 60, count: 18 }, { start: 65, count: 14 }, { start: 70, count: 10 },
-      { start: 75, count: 6 }, { start: 80, count: 3 }, { start: 85, count: 1 },
-      { start: 90, count: 0 }, { start: 95, count: 0 },
-    ],
-  },
-]
-
-const DEMO_CURRENT_PCT = 35
-const demoProjection = useState('landing-demo-projection', () => false)
-const demoProjectionYears = useState('landing-demo-projection-years', () => 5)
-
-const demoQualScales = computed<PresentedQualificationPosition[]>(() => {
-  const years = demoProjection.value ? demoProjectionYears.value : 0
-  const projectedPct = Math.min(99, DEMO_CURRENT_PCT + years * 3.2)
-  return BASE_QUAL_SCALES.map(scale => ({
-    qualification: { fleet: scale.fleet, seat: scale.seat, base: scale.base },
-    activePilotCount: scale.activeCount,
-    thresholdPercentile: scale.plugPercentile,
-    thresholdSeniorityNumber: scale.plugSenNum,
-    percentile25: scale.p25,
-    medianPercentile: scale.median,
-    percentile75: scale.p75,
-    maximumPercentile: scale.max,
-    percentileDensity: scale.density.map(bucket => ({
-      minimumPercentile: bucket.start,
-      maximumPercentile: bucket.start + 5,
-      pilotCount: bucket.count,
-    })),
-    projectedPercentile: projectedPct,
-    currentPercentile: DEMO_CURRENT_PCT,
-    modeledHoldable: projectedPct >= scale.plugPercentile,
-    // The landing scale shows no Holdable Year; these complete the presented shape.
-    qualificationLabel: `${scale.fleet} ${scale.seat} ${scale.base}`,
-    holdableYear: null,
-    holdableLabel: '',
-    thresholdRelationLabel: null,
-  }))
-})
-
-
-type DemoQual = 'all' | 'fo' | 'ca'
-const demoQual = useState<DemoQual>('landing-demo-qual', () => 'all')
-
-const demoAgeData: Record<DemoQual, { label: string; count: number }[]> = {
-  all: [
-    { label: '25–30', count: 187 },
-    { label: '30–35', count: 423 },
-    { label: '35–40', count: 612 },
-    { label: '40–45', count: 748 },
-    { label: '45–50', count: 831 },
-    { label: '50–55', count: 796 },
-    { label: '55–60', count: 724 },
-    { label: '60–65', count: 571 },
-  ],
-  fo: [
-    { label: '25–30', count: 165 },
-    { label: '30–35', count: 380 },
-    { label: '35–40', count: 520 },
-    { label: '40–45', count: 610 },
-    { label: '45–50', count: 540 },
-    { label: '50–55', count: 380 },
-    { label: '55–60', count: 280 },
-    { label: '60–65', count: 125 },
-  ],
-  ca: [
-    { label: '25–30', count: 22 },
-    { label: '30–35', count: 43 },
-    { label: '35–40', count: 92 },
-    { label: '40–45', count: 138 },
-    { label: '45–50', count: 291 },
-    { label: '50–55', count: 416 },
-    { label: '55–60', count: 444 },
-    { label: '60–65', count: 446 },
-  ],
-}
-
-const demoWaveData: Record<DemoQual, { year: number; count: number; isWave: boolean }[]> = {
-  all: [
-    { year: 2026, count: 95, isWave: false },
-    { year: 2027, count: 112, isWave: false },
-    { year: 2028, count: 143, isWave: true },
-    { year: 2029, count: 178, isWave: true },
-    { year: 2030, count: 194, isWave: true },
-    { year: 2031, count: 185, isWave: true },
-    { year: 2032, count: 168, isWave: true },
-    { year: 2033, count: 142, isWave: true },
-    { year: 2034, count: 118, isWave: false },
-    { year: 2035, count: 98, isWave: false },
-    { year: 2036, count: 84, isWave: false },
-    { year: 2037, count: 71, isWave: false },
-    { year: 2038, count: 63, isWave: false },
-    { year: 2039, count: 58, isWave: false },
-    { year: 2040, count: 52, isWave: false },
-    { year: 2041, count: 48, isWave: false },
-    { year: 2042, count: 44, isWave: false },
-    { year: 2043, count: 41, isWave: false },
-    { year: 2044, count: 38, isWave: false },
-  ],
-  fo: [
-    { year: 2026, count: 52, isWave: false },
-    { year: 2027, count: 61, isWave: false },
-    { year: 2028, count: 78, isWave: true },
-    { year: 2029, count: 95, isWave: true },
-    { year: 2030, count: 104, isWave: true },
-    { year: 2031, count: 98, isWave: true },
-    { year: 2032, count: 87, isWave: true },
-    { year: 2033, count: 71, isWave: true },
-    { year: 2034, count: 58, isWave: false },
-    { year: 2035, count: 46, isWave: false },
-    { year: 2036, count: 38, isWave: false },
-    { year: 2037, count: 32, isWave: false },
-  ],
-  ca: [
-    { year: 2026, count: 43, isWave: true },
-    { year: 2027, count: 51, isWave: true },
-    { year: 2028, count: 65, isWave: true },
-    { year: 2029, count: 83, isWave: true },
-    { year: 2030, count: 90, isWave: true },
-    { year: 2031, count: 87, isWave: true },
-    { year: 2032, count: 81, isWave: true },
-    { year: 2033, count: 71, isWave: true },
-    { year: 2034, count: 60, isWave: false },
-    { year: 2035, count: 52, isWave: false },
-    { year: 2036, count: 46, isWave: false },
-    { year: 2037, count: 39, isWave: false },
-  ],
-}
-
-const demoQualOptions: { key: DemoQual; label: string }[] = [
-  { key: 'all', label: 'All Pilots' },
-  { key: 'fo', label: 'FO' },
-  { key: 'ca', label: 'CA' },
-]
-
-const demoAgeBuckets = computed(() => demoAgeData[demoQual.value])
-const demoWaveBuckets = computed(() => demoWaveData[demoQual.value].map(bucket => ({
-  year: bucket.year,
-  retirementCount: bucket.count,
-  isRetirementWave: bucket.isWave,
-})))
+const {
+  projection: demoProjection,
+  projectionYears: demoProjectionYears,
+  projectionLabel: demoProjectionLabel,
+  qualificationPositions: demoQualScales,
+  seat: demoSeat,
+  seatOptions: demoSeatOptions,
+  ageBuckets: demoAgeBuckets,
+  waveBuckets: demoWaveBuckets,
+  sampleFileColumns,
+  sampleFileRows,
+} = useLandingDemo()
 
 const config = useRuntimeConfig()
 const feedbackEmail = config.public.feedbackEmail as string
@@ -276,7 +98,7 @@ async function enterDemo() {
   <div>
 
     <!-- ── Section 1: Hero ───────────────────────────────────────────────── -->
-    <section class="py-24 sm:py-32 bg-(--ui-bg)">
+    <section class="py-24 sm:py-32 bg-default">
       <UContainer>
         <div class="flex flex-col items-center text-center gap-6 max-w-3xl mx-auto">
           <UIcon name="i-lucide-plane" class="size-12 text-primary" />
@@ -308,11 +130,11 @@ async function enterDemo() {
 
           <div class="flex flex-wrap justify-center items-center gap-x-3 gap-y-1 text-sm text-muted">
             <span>Stays on your device</span>
-            <span class="text-(--ui-border)" aria-hidden="true">·</span>
+            <span class="text-dimmed" aria-hidden="true">·</span>
             <span>No account needed</span>
-            <span class="text-(--ui-border)" aria-hidden="true">·</span>
+            <span class="text-dimmed" aria-hidden="true">·</span>
             <span>Works offline</span>
-            <span class="text-(--ui-border)" aria-hidden="true">·</span>
+            <span class="text-dimmed" aria-hidden="true">·</span>
             <a href="https://github.com/TarmacDenter/SeniorityGuru" target="_blank"
               class="text-primary hover:underline inline-flex items-center gap-1">
               Open source
@@ -326,7 +148,7 @@ async function enterDemo() {
     </section>
 
     <!-- ── Section 2: Upload an Airline Seniority List ───────────────────── -->
-    <section class="py-16 sm:py-20 bg-(--ui-bg-elevated)">
+    <section class="py-16 sm:py-20 bg-elevated">
       <UContainer>
         <!-- Open-source banner -->
         <div class="text-center mb-12">
@@ -435,57 +257,7 @@ async function enterDemo() {
                   <p class="text-sm text-muted">
                     Your spreadsheet needs these columns (names are flexible — you can map them during upload):
                   </p>
-                  <div class="overflow-x-auto">
-                    <table class="w-full text-sm border-collapse">
-                      <thead>
-                        <tr class="border-b border-(--ui-border)">
-                          <th class="text-left py-2 px-3 font-semibold text-xs uppercase tracking-wide text-muted">Sen.
-                            #</th>
-                          <th class="text-left py-2 px-3 font-semibold text-xs uppercase tracking-wide text-muted">Emp.
-                            #</th>
-                          <th class="text-left py-2 px-3 font-semibold text-xs uppercase tracking-wide text-muted">Seat
-                          </th>
-                          <th class="text-left py-2 px-3 font-semibold text-xs uppercase tracking-wide text-muted">Base
-                          </th>
-                          <th class="text-left py-2 px-3 font-semibold text-xs uppercase tracking-wide text-muted">Fleet
-                          </th>
-                          <th class="text-left py-2 px-3 font-semibold text-xs uppercase tracking-wide text-muted">Hire
-                            Date</th>
-                          <th class="text-left py-2 px-3 font-semibold text-xs uppercase tracking-wide text-muted">
-                            Retire Date</th>
-                        </tr>
-                      </thead>
-                      <tbody class="font-mono text-xs">
-                        <tr class="border-b border-(--ui-border)/50">
-                          <td class="py-2 px-3">1</td>
-                          <td class="py-2 px-3">90142</td>
-                          <td class="py-2 px-3">CA</td>
-                          <td class="py-2 px-3">ATL</td>
-                          <td class="py-2 px-3">B777</td>
-                          <td class="py-2 px-3">1988-06-15</td>
-                          <td class="py-2 px-3">2028-03-01</td>
-                        </tr>
-                        <tr class="border-b border-(--ui-border)/50">
-                          <td class="py-2 px-3">2</td>
-                          <td class="py-2 px-3">90287</td>
-                          <td class="py-2 px-3">FO</td>
-                          <td class="py-2 px-3">MSP</td>
-                          <td class="py-2 px-3">A320</td>
-                          <td class="py-2 px-3">1990-01-22</td>
-                          <td class="py-2 px-3">2030-07-14</td>
-                        </tr>
-                        <tr>
-                          <td class="py-2 px-3">3</td>
-                          <td class="py-2 px-3">90415</td>
-                          <td class="py-2 px-3">CA</td>
-                          <td class="py-2 px-3">LAX</td>
-                          <td class="py-2 px-3">B737</td>
-                          <td class="py-2 px-3">1992-09-03</td>
-                          <td class="py-2 px-3">2032-11-20</td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
+                  <UTable :data="sampleFileRows" :columns="sampleFileColumns" :ui="{ td: 'font-mono text-xs' }" />
                   <p class="text-xs text-muted">
                     All data shown is fabricated for illustration purposes. <strong>Name</strong> is optional.
                   </p>
@@ -541,7 +313,7 @@ async function enterDemo() {
                 <template v-if="demoProjection">
                   <USlider v-model="demoProjectionYears" :min="1" :max="20" :step="1" class="w-32" />
                   <UBadge color="neutral" variant="subtle" size="sm" class="font-mono shrink-0">
-                    +{{ demoProjectionYears }}yr{{ demoProjectionYears === 1 ? '' : 's' }}
+                    {{ demoProjectionLabel }}
                   </UBadge>
                 </template>
                 <UBadge v-else color="neutral" variant="subtle" size="sm">Today</UBadge>
@@ -562,7 +334,7 @@ async function enterDemo() {
 
 
     <!-- Trajectory Demo ───────────────────────────────────── -->
-    <section id="demo" class="py-16 sm:py-20 bg-(--ui-bg-elevated)">
+    <section id="demo" class="py-16 sm:py-20 bg-elevated">
       <UContainer>
         <div class="text-center mb-10">
           <h2 class="text-2xl sm:text-3xl font-bold tracking-tight mb-3">
@@ -585,7 +357,7 @@ async function enterDemo() {
     </section>
 
     <!-- ── Section 4: New Hire ───────────────────────────────────────────── -->
-    <section class="py-16 sm:py-20 bg-(--ui-bg-elevated)">
+    <section class="py-16 sm:py-20 bg-elevated">
       <UContainer>
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center max-w-5xl mx-auto">
           <!-- Copy -->
@@ -606,7 +378,7 @@ async function enterDemo() {
           <UCard class="max-w-sm mx-auto lg:mx-0 w-full">
             <template #header>
               <div class="flex items-center justify-between">
-                <span class="font-semibold">My Status</span>
+                <span class="font-semibold">Current › Status</span>
                 <UBadge color="primary" variant="subtle" size="sm">New Hire</UBadge>
               </div>
             </template>
@@ -632,7 +404,7 @@ async function enterDemo() {
                 <div class="text-xs text-muted mb-1">Hire date</div>
                 <div class="font-mono text-sm">Jan 15, 2026</div>
               </div>
-              <div class="border-t border-(--ui-border) pt-3">
+              <div class="border-t border-default pt-3">
                 <div class="text-xs text-muted mb-1">Projection</div>
                 <div class="flex items-center gap-1.5">
                   <UIcon name="i-lucide-clock" class="size-4 text-primary" />
@@ -649,7 +421,7 @@ async function enterDemo() {
     </section>
 
     <!-- ── Section 5: Comparison Demo ───────────────────────────────────── -->
-    <section class="py-16 sm:py-20 bg-(--ui-bg)">
+    <section class="py-16 sm:py-20 bg-default">
       <UContainer>
         <div class="text-center mb-10">
           <h2 class="text-2xl sm:text-3xl font-bold tracking-tight mb-3">
@@ -667,7 +439,7 @@ async function enterDemo() {
     </section>
 
     <!-- ── Section 5b: Analytics Demo ────────────────────────────────────── -->
-    <section class="py-16 sm:py-20 bg-(--ui-bg-elevated)">
+    <section class="py-16 sm:py-20 bg-elevated">
       <UContainer>
         <div class="text-center mb-8">
           <h2 class="text-2xl sm:text-3xl font-bold tracking-tight mb-3">
@@ -680,13 +452,7 @@ async function enterDemo() {
 
         <!-- Qualification toggle -->
         <div class="flex justify-center mb-8">
-          <div class="flex rounded-lg border border-(--ui-border) overflow-hidden text-sm font-medium">
-            <button v-for="opt in demoQualOptions" :key="opt.key" class="px-4 py-1.5 transition-colors" :class="demoQual === opt.key
-              ? 'bg-primary text-white'
-              : 'text-muted hover:bg-(--ui-bg)'" @click="demoQual = opt.key">
-              {{ opt.label }}
-            </button>
-          </div>
+          <UTabs v-model="demoSeat" :items="demoSeatOptions" :content="false" size="sm" />
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-5xl mx-auto mb-6">
@@ -721,7 +487,7 @@ async function enterDemo() {
     </section>
 
     <!-- ── Section 6: Data Ownership ────────────────────────────────────── -->
-    <section class="py-16 sm:py-20 bg-(--ui-bg)">
+    <section class="py-16 sm:py-20 bg-default">
       <UContainer>
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-8 max-w-4xl mx-auto">
           <div v-for="item in dataOwnershipItems" :key="item.title" class="flex gap-4">
@@ -738,7 +504,7 @@ async function enterDemo() {
     </section>
 
     <!-- ── Section 8: Feature Cards ─────────────────────────────────────── -->
-    <section class="py-16 sm:py-20 bg-(--ui-bg)">
+    <section class="py-16 sm:py-20 bg-default">
       <UContainer>
         <div class="text-center mb-12">
           <h2 class="text-2xl sm:text-3xl font-bold tracking-tight">
@@ -760,7 +526,7 @@ async function enterDemo() {
 
 
     <!-- ── Section 9: CTA ────────────────────────────────────────────────── -->
-    <section class="py-20 sm:py-28 bg-(--ui-bg-elevated) text-center">
+    <section class="py-20 sm:py-28 bg-elevated text-center">
       <UContainer>
         <div class="max-w-xl mx-auto space-y-6">
           <h2 class="text-2xl sm:text-3xl font-bold tracking-tight">
@@ -791,7 +557,7 @@ async function enterDemo() {
     <!-- Demo setup overlay interstitial -->
     <Transition name="fade">
       <div v-if="demoEntering"
-        class="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-(--ui-bg)/90 backdrop-blur-sm"
+        class="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-default/90 backdrop-blur-sm"
         aria-live="polite" aria-label="Setting up your demo">
         <UIcon name="i-lucide-loader-circle" class="size-12 text-primary animate-spin" />
         <p class="text-lg font-medium">Setting up your demo…</p>

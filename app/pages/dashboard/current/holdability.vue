@@ -10,10 +10,10 @@ const { visibleGroups, seatOptions, selectedSeat, noResultLabel, columnLabels, s
 
 <template>
   <DashboardTabsQualificationsTab
+    v-model:selected-seat="selectedSeat"
     :loading="loading"
     :user-found="userFound"
     :groups="visibleGroups"
-    v-model:selected-seat="selectedSeat"
     :seat-options="seatOptions"
     :no-result-label="noResultLabel"
     :column-labels="columnLabels"

@@ -221,6 +221,8 @@ export interface DemographicsOptions {
 }
 
 export interface UpcomingRetirementFilter {
+  /** Exclusive start of the window; defaults to the As-of Date. */
+  readonly from?: PlainDate
   readonly through: PlainDate
   readonly qualificationScope?: QualificationScope
 }

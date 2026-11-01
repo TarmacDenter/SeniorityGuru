@@ -181,7 +181,7 @@ async function onSave() {
           <div class="sm:hidden text-sm text-muted text-center mb-6">
             Step {{ currentStepIndex + 1 }} of {{ steps.length }}
             <span class="mx-2">&middot;</span>
-            <span class="font-medium text-(--ui-text)">{{ steps[currentStepIndex]?.title }}</span>
+            <span class="font-medium text-default">{{ steps[currentStepIndex]?.title }}</span>
           </div>
 
           <!-- Desktop: full stepper (indicator only — content rendered below) -->
@@ -337,7 +337,7 @@ async function onSave() {
 
             <!-- Step 3: Review & Validate -->
             <div v-else-if="currentStep === 'review'" class="space-y-4">
-              <div class="sticky top-0 z-10 -mx-2 sm:mx-0 px-2 sm:px-0 py-2 bg-(--ui-bg)/95 backdrop-blur supports-[backdrop-filter]:bg-(--ui-bg)/80">
+              <div class="sticky top-0 z-10 -mx-2 sm:mx-0 px-2 sm:px-0 py-2 bg-default/95 backdrop-blur supports-[backdrop-filter]:bg-default/80">
                 <div class="flex justify-end">
                   <UButton
                     :disabled="!canAdvance || upload.progress.busy.value"
@@ -412,11 +412,11 @@ async function onSave() {
 
               <div
                 v-if="activeFilterLabel"
-                class="flex items-center justify-between gap-3 rounded-lg border border-(--ui-border) bg-(--ui-bg-elevated)/40 px-3 py-2"
+                class="flex items-center justify-between gap-3 rounded-lg border border-default bg-elevated/40 px-3 py-2"
               >
                 <p class="text-xs text-muted">
                   Viewing:
-                  <span class="font-medium text-(--ui-text)">{{ activeFilterLabel }}</span>
+                  <span class="font-medium text-default">{{ activeFilterLabel }}</span>
                 </p>
                 <UButton
                   size="xs"
@@ -483,16 +483,18 @@ async function onSave() {
                 <UInput v-model="upload.confirm.title.value" placeholder="e.g. January 2026 Seniority List" class="w-full" />
               </UFormField>
 
-              <div class="bg-elevated rounded-lg p-4 space-y-2 text-sm">
-                <div class="flex justify-between">
-                  <span class="text-muted">Rows</span>
-                  <span class="font-medium">{{ upload.review.entries.value.length }}</span>
-                </div>
-                <div class="flex justify-between">
-                  <span class="text-muted">File</span>
-                  <span class="font-medium">{{ upload.file.fileName.value }}</span>
-                </div>
-              </div>
+              <UCard variant="subtle">
+                <dl class="space-y-2 text-sm">
+                  <div class="flex justify-between gap-4">
+                    <dt class="text-muted">Rows</dt>
+                    <dd class="font-mono font-medium">{{ upload.review.entries.value.length }}</dd>
+                  </div>
+                  <div class="flex justify-between gap-4">
+                    <dt class="text-muted">File</dt>
+                    <dd class="font-medium truncate">{{ upload.file.fileName.value }}</dd>
+                  </div>
+                </dl>
+              </UCard>
             </div>
           </div>
 

@@ -118,12 +118,12 @@ function createLensContext(
   }
 
   const upcomingRetirements = (filter: UpcomingRetirementFilter): readonly UpcomingRetirement[] => {
-    const today = currentDate()
+    const start = filter.from ?? currentDate()
     const predicate = qualificationScopeToEntryPredicate(filter.qualificationScope ?? {})
     return entries
       .filter(entry =>
         !!entry.retire_date
-        && !isRetiredBy(entry.retire_date, today)
+        && !isRetiredBy(entry.retire_date, start)
         && isRetiredBy(entry.retire_date, filter.through)
         && predicate(entry),
       )

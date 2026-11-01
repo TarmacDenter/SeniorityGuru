@@ -121,6 +121,8 @@ export interface HoldabilityDetailAnalysisOptions {
 }
 
 export interface UpcomingRetirementAnalysisOptions {
+  /** Exclusive start of the window; defaults to the As-of Date. */
+  readonly from?: PlainDate
   readonly through: PlainDate
   readonly qualificationScope?: QualificationScope
 }

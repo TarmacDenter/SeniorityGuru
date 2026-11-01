@@ -1,101 +1,101 @@
 <script setup lang="ts">
-import { useLocalStorage } from '@vueuse/core'
 import { useDemographics } from '~/composables/seniority'
+import { useScenario } from '~/composables/useScenario'
 
-// Who holds each Qualification: composition, sizes, age and years of service, filtered by fleet, seat and base.
+// Who holds each Qualification: a grid of cards that follows the scenario's Qualification Scope.
+// Needs no Anchor Pilot; with one, the Years of service card marks the Anchor Pilot's bucket.
+const { qualificationScope } = useScenario()
 const {
-  filter, qualificationLabel, hasResult, qualificationComposition, matchingPilotCount, ageDistribution,
-  captainQualificationThresholds, yearsOfServiceDistribution, yearsOfServiceBuckets, retirementAge, userYos,
-} = useDemographics()
+  hasResult, qualificationComposition, matchingPilotCount, ageDistribution, captainQualificationThresholds,
+  yearsOfServiceDistribution, yearsOfServiceBuckets, hasYearsOfService, retirementAge, userYos,
+} = useDemographics(qualificationScope)
 
 const ready = useDeferredReady()
 const showSections = computed(() => ready.value && hasResult.value)
-const titleSuffix = computed(() => (qualificationLabel.value ? ` — ${qualificationLabel.value}` : ''))
-
-const bannerDismissed = useLocalStorage('qual-projections-banner-dismissed', false)
 </script>
 
 <template>
-  <section aria-labelledby="demographics-heading" class="mt-10 space-y-6">
+  <section aria-labelledby="demographics-heading" class="space-y-4">
     <div>
-      <h2 id="demographics-heading" class="font-serif text-xl font-semibold text-highlighted">Who holds each Qualification</h2>
-      <p class="mt-1 font-serif text-sm italic text-muted">
-        Composition, sizes, age and years of service for the pilots matching the filter.
+      <h2 id="demographics-heading" class="text-lg font-semibold text-highlighted">Who holds each Qualification</h2>
+      <p class="mt-1 text-sm text-muted">
+        Sizes, composition, ages and years of service for the pilots in the Qualification Scope.
       </p>
     </div>
-
-    <AnalyticsQualFilterBar
-      :fleet="filter.selectedFleet.value"
-      :seat="filter.selectedSeat.value"
-      :base="filter.selectedBase.value"
-      :fleets="filter.availableFleets.value"
-      :seats="filter.availableSeats.value"
-      :bases="filter.availableBases.value"
-      @update:fleet="filter.selectedFleet.value = $event"
-      @update:seat="filter.selectedSeat.value = $event"
-      @update:base="filter.selectedBase.value = $event"
-    />
-
-    <AnalyticsAssumptionsBanner
-      :is-banner-dismissed="bannerDismissed"
-      context="position"
-      @dismiss="bannerDismissed = !bannerDismissed"
-    />
 
     <UEmpty
       v-if="showSections && matchingPilotCount === 0"
       icon="i-lucide-users"
-      title="No matching pilots"
-      description="No pilots match the selected qualification filters. Clear or change the filters to explore demographics."
+      title="No pilots in this Qualification Scope"
+      description="No pilots match the selected Qualification Scope. Choose another scope to explore demographics."
       class="py-16"
     />
 
-    <div v-else-if="!showSections" class="space-y-4">
-      <USkeleton class="h-48" />
-      <USkeleton class="h-32" />
+    <div v-else-if="!showSections" class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+      <USkeleton class="h-64" />
+      <USkeleton class="h-64" />
+      <USkeleton class="h-64" />
       <USkeleton class="h-64" />
     </div>
 
-    <template v-else>
-      <section aria-labelledby="junior-captain-heading">
-        <h3 id="junior-captain-heading" class="border-b-2 border-highlighted pb-1 font-serif text-base font-semibold text-highlighted">Most Junior Captain by Qual</h3>
-        <UEmpty
-          v-if="!captainQualificationThresholds.length"
-          icon="i-lucide-users"
-          title="No captains in this scope"
-          description="No captains have a Qualification Threshold in the selected scope. Other demographics include the matching pilots."
-        />
-        <AnalyticsJuniorCaptainTable v-else :rows="captainQualificationThresholds" class="mt-2" />
-      </section>
+    <!-- Two independent columns, so a tall Sizes table does not stretch its neighbor. -->
+    <div v-else class="grid grid-cols-1 items-start gap-6 lg:grid-cols-2">
+      <div class="space-y-6">
+        <AnalyticsQualSizesCard :composition="qualificationComposition" />
 
-      <AnalyticsQualSizesCard :composition="qualificationComposition" />
+        <UCard>
+          <template #header>
+            <h3 class="font-semibold text-highlighted">Composition</h3>
+          </template>
+          <div class="space-y-2">
+            <AnalyticsQualCompositionCard v-for="row in qualificationComposition" :key="row.qualificationLabel" :row="row" />
+          </div>
+        </UCard>
+      </div>
 
-      <section aria-labelledby="composition-heading">
-        <h3 id="composition-heading" class="border-b-2 border-highlighted pb-1 font-serif text-base font-semibold text-highlighted">Qual Composition</h3>
-        <div class="mt-2 space-y-2">
-          <AnalyticsQualCompositionCard v-for="row in qualificationComposition" :key="row.qualificationLabel" :row="row" />
-        </div>
-      </section>
+      <div class="space-y-6">
+        <UCard>
+          <template #header>
+            <h3 class="font-semibold text-highlighted">Ages</h3>
+          </template>
+          <AnalyticsAgeDistributionChart
+            :buckets="ageDistribution.buckets"
+            :null-count="ageDistribution.nullCount"
+            :mandatory-retirement-age="retirementAge"
+          />
+        </UCard>
 
-      <section aria-labelledby="age-heading">
-        <h3 id="age-heading" class="border-b-2 border-highlighted pb-1 font-serif text-base font-semibold text-highlighted">Age Distribution{{ titleSuffix }}</h3>
-        <AnalyticsAgeDistributionChart
-          class="mt-2"
-          :buckets="ageDistribution.buckets"
-          :null-count="ageDistribution.nullCount"
-          :mandatory-retirement-age="retirementAge"
-        />
-      </section>
+        <UCard>
+          <template #header>
+            <h3 class="font-semibold text-highlighted">Years of service</h3>
+          </template>
+          <AnalyticsYearsOfServiceBreakdown
+            v-if="hasYearsOfService"
+            :distribution="yearsOfServiceDistribution"
+            :histogram="yearsOfServiceBuckets"
+            :user-yos="userYos"
+          />
+          <UEmpty
+            v-else
+            icon="i-lucide-calendar"
+            title="Years of service unavailable"
+            description="No hire dates are available for the pilots in this Qualification Scope."
+          />
+        </UCard>
 
-      <section aria-labelledby="yos-heading">
-        <h3 id="yos-heading" class="border-b-2 border-highlighted pb-1 font-serif text-base font-semibold text-highlighted">Years of Service{{ titleSuffix }}</h3>
-        <AnalyticsYearsOfServiceBreakdown
-          class="mt-2"
-          :distribution="yearsOfServiceDistribution"
-          :histogram="yearsOfServiceBuckets"
-          :user-yos="userYos"
-        />
-      </section>
-    </template>
+        <UCard id="junior-captains" :ui="{ body: 'px-0 py-0 sm:px-4 sm:py-3' }">
+          <template #header>
+            <h3 class="font-semibold text-highlighted">Junior captains</h3>
+          </template>
+          <AnalyticsJuniorCaptainTable v-if="captainQualificationThresholds.length" :rows="captainQualificationThresholds" />
+          <UEmpty
+            v-else
+            icon="i-lucide-users"
+            title="No captains in this scope"
+            description="No captains hold a Qualification in the selected Qualification Scope."
+          />
+        </UCard>
+      </div>
+    </div>
   </section>
 </template>

@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { RETIREMENT_HORIZONS, useUpcomingRetirements } from '~/composables/seniority/modules/useUpcomingRetirements'
+import { useUpcomingRetirements } from '~/composables/seniority/modules/useUpcomingRetirements'
 import type { RetirementSortKey } from '~/composables/seniority/modules/useUpcomingRetirements'
 
-// Retirements view of the Lists panel. Filtering, sorting and labels come from the composable.
+// List › Upcoming retirements. Range, scope, filtering, sorting and labels come from the composable.
 const {
-  hasData, hasAnchor, yearsHorizon, seniorOnly, filterBase, filterSeat, filterFleet,
-  baseItems, seatItems, fleetItems, sortKey, sortDir, toggleSort, rows,
+  hasData, hasAnchor, yearsHorizon, horizonMax, horizonLabel, emptyResultLabel, seniorOnly,
+  filterBase, filterSeat, filterFleet, baseItems, seatItems, fleetItems, sortKey, sortDir, toggleSort, rows,
 } = useUpcomingRetirements()
 
 const sortableColumns = computed<{ key: RetirementSortKey; label: string; align: string }[]>(() => [
@@ -32,8 +32,13 @@ function ariaSort(key: RetirementSortKey) {
     />
 
     <template v-else>
+      <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
+        <label for="retiring-within" class="whitespace-nowrap text-sm text-muted">Retiring within</label>
+        <USlider id="retiring-within" v-model="yearsHorizon" :min="1" :max="horizonMax" :step="1" size="sm" class="w-40 sm:w-56" aria-label="Retiring within years" />
+        <span class="whitespace-nowrap font-mono text-sm font-semibold text-highlighted" aria-live="polite">{{ horizonLabel }}</span>
+      </div>
+
       <div class="flex flex-wrap items-center gap-3">
-        <UTabs v-model="yearsHorizon" :items="RETIREMENT_HORIZONS" :content="false" variant="link" size="sm" aria-label="Retirement horizon" />
 
         <label class="flex items-center gap-2 text-sm" :class="hasAnchor ? '' : 'text-muted'">
           <AppSwitch v-model="seniorOnly" :disabled="!hasAnchor" size="sm" />
@@ -47,7 +52,7 @@ function ariaSort(key: RetirementSortKey) {
         </div>
       </div>
 
-      <p v-if="!hasAnchor" class="border-l-2 border-default pl-3 font-serif text-sm italic text-muted">
+      <p v-if="!hasAnchor" class="border-l-2 border-default pl-3 text-sm text-muted">
         Set an employee number that appears in this list in
         <NuxtLink to="/settings" class="underline text-highlighted">Settings</NuxtLink>
         to see rank relative to you and filter by seniority.
@@ -84,10 +89,7 @@ function ariaSort(key: RetirementSortKey) {
 
         <div v-if="rows.length === 0" class="py-12 text-center">
           <p class="font-medium text-highlighted">No retirements found</p>
-          <p class="mt-1 text-sm text-muted">
-            No pilots match the current filters within the {{ yearsHorizon }}-year horizon.
-            Try expanding the time range or adjusting your filters.
-          </p>
+          <p class="mt-1 text-sm text-muted">{{ emptyResultLabel }}</p>
         </div>
       </div>
     </template>

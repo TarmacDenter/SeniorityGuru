@@ -43,5 +43,5 @@ const columns: TableColumn<TableRow>[] = [
 </script>
 
 <template>
-  <UTable :data="rows" :columns="columns" />
+  <UTable :data="rows" :columns="columns" :ui="{ th: 'py-2', td: 'py-1.5' }" />
 </template>

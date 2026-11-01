@@ -3,6 +3,7 @@ import { todayPlainDate } from '~/utils/temporal'
 import { isNoResult, resultOrNull } from '~/utils/seniority'
 import { useTrajectory } from './useTrajectory'
 import { useScenario } from '~/composables/useScenario'
+import { useScopeFilter } from '~/composables/useScopeFilter'
 import { useSeniorityCore } from './useSeniorityCore'
 import { useStanding } from './useStanding'
 
@@ -22,7 +23,7 @@ const formatPercentile = (value: number) => `${value.toFixed(1)}%`
  */
 export function useNextProjections() {
   const { analysis, anchoredAnalysis, listAnalysis, projectionEndDate } = useSeniorityCore()
-  const { growthAssumptions, qualificationScope, scopeLabel } = useScenario()
+  const { growthAssumptions, qualificationScope, scopeLabel, scopeLabels } = useScenario()
   const { rankCard, retirementSnapshot } = useStanding(qualificationScope)
   const trajectory = useTrajectory(growthAssumptions, qualificationScope)
 
@@ -82,6 +83,33 @@ export function useNextProjections() {
   const hasProjection = computed(() => qualificationPositions.value
     .some(position => Math.abs(position.projectedPercentile - position.currentPercentile) > 0.1))
   const rosterSummaryLabel = computed(() => rankCard.value.rosterSummaryLabel)
+  /** The scoped Roster Size the trajectory's Seniority Percentile is measured against. */
+  const percentileScaleLabel = computed(() => rankCard.value.percentileScaleLabel)
+
+  // ── Compare with scope: a second trajectory on the Projection chart's axes ──
+  // Held once so it survives moving between small views; undefined means no overlay.
+  const compareScopeLabel = useState<string | undefined>('trajectoryCompareScopeLabel', () => undefined)
+  const compareScopeItems = computed(() => scopeLabels.value.filter(label => label !== scopeLabel.value))
+  const scopeOptionList = computed(() => listAnalysis.value?.catalog.qualificationScopeOptions ?? [])
+  const { specForLabel } = useScopeFilter(scopeOptionList)
+  const projectionChart = computed(() => {
+    const alone = { label: scopeLabel.value, ...trajectory.chartData.value, overlay: null }
+    const compare = compareScopeLabel.value
+    if (!compare || compare === scopeLabel.value) return alone
+    const comparison = trajectory.computeComparativeTrajectory(qualificationScope.value, specForLabel(compare))
+    if (comparison.labels.length === 0) return alone
+    const named = (label: string, hypotheticalLabel: string | null) => hypotheticalLabel ? `${label} (Hypothetical Placement)` : label
+    return {
+      label: named(scopeLabel.value, comparison.baselineHypotheticalLabel),
+      labels: comparison.labels,
+      data: comparison.baselineData,
+      overlay: {
+        label: named(compare, comparison.comparisonHypotheticalLabel),
+        data: comparison.comparisonData,
+        hypotheticalLabel: comparison.comparisonHypotheticalLabel,
+      },
+    }
+  })
 
   // ── Retirement analysis, in the shared Qualification Scope ───────────────
   const scopeOptions = computed(() => listAnalysis.value?.catalog.qualificationScopeOptions ?? [])
@@ -144,16 +172,6 @@ export function useNextProjections() {
     }
   })
 
-  // ── Rate of change ───────────────────────────────────────────────────────
-  const bestYearLabel = computed(() => {
-    let best: (typeof trajectory.changes.value)[number] | null = null
-    for (const change of trajectory.changes.value) {
-      if (!best || change.percentilePointChange > best.percentilePointChange) best = change
-    }
-    if (!best || best.percentilePointChange <= 0) return null
-    return `Best year: ${best.yearLabel} (+${best.percentilePointChange.toFixed(1)}pp)`
-  })
-
   return {
     ...trajectory,
     scopeOptions,
@@ -164,7 +182,6 @@ export function useNextProjections() {
     snapshot,
     snapshotYears,
     snapshotMaxYears,
-    bestYearLabel,
     projectForward,
     yearsInput,
     projectionYears,
@@ -176,5 +193,9 @@ export function useNextProjections() {
     qualificationPositionsNoResultLabel,
     hasProjection,
     rosterSummaryLabel,
+    percentileScaleLabel,
+    compareScopeLabel,
+    compareScopeItems,
+    projectionChart,
   }
 }
