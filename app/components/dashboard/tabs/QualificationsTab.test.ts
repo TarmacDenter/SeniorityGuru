@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import type { BaseStatusRow, QualificationSeatGroup } from '~/composables/seniority'
 import QualificationsTab from './QualificationsTab.vue'
@@ -20,6 +20,7 @@ const groups: QualificationSeatGroup[] = [{
     row({ baseFleetLabel: 'LAX 777', rankLabel: '40', rosterOfLabel: 'of 90', percentileLabel: '55.6%', hypotheticalLabel: 'Hypothetical Placement in LAX CA 777' }),
   ],
 }]
+vi.mock('vue-chartjs', () => ({ Bar: { template: '<div />' }, Line: { template: '<div />' }, Doughnut: { template: '<div />' } }))
 
 describe('Qualifications panel', () => {
   it('shows Rank, "of N" and percentile as separate cells with the note inside the same stripe', async () => {
@@ -37,5 +38,30 @@ describe('Qualifications panel', () => {
     const wrapper = await mountSuspended(QualificationsTab, { props: { loading: false, userFound: true, groups: [], noResultLabel: 'Anchor Pilot retired' } })
     expect(wrapper.text()).toContain('Anchor Pilot retired')
     expect(wrapper.find('table').exists()).toBe(false)
+  })
+
+  it('keeps every cell of your highlighted line in mark ink so "of N" stays readable in dark mode', async () => {
+    const wrapper = await mountSuspended(QualificationsTab, { props: { loading: false, userFound: true, groups, noResultLabel: null } })
+
+    const mine = wrapper.findAll('tbody')[0]!
+    expect(mine.classes()).toContain('text-mark-ink')
+    const rosterCell = mine.findAll('td')[2]!
+    expect(rosterCell.text()).toBe('of 480')
+    expect(rosterCell.classes()).not.toContain('text-muted')
+    const other = wrapper.findAll('tbody')[1]!.findAll('td')[2]!
+    expect(other.classes()).toContain('text-muted')
+  })
+
+  it('keeps the demographics and scale sections beside the directory', async () => {
+    const wrapper = await mountSuspended(QualificationsTab, { props: { loading: false, userFound: true, groups, noResultLabel: null } })
+    expect(wrapper.text()).toContain('Who holds each Qualification')
+    expect(wrapper.text()).toContain('Seniority Position by Qual')
+  })
+
+  it('still shows demographics when no Employee Number is set', async () => {
+    const wrapper = await mountSuspended(QualificationsTab, { props: { loading: false, userFound: false, groups: [], noResultLabel: null } })
+    expect(wrapper.text()).toContain('No Qualifications yet')
+    expect(wrapper.text()).toContain('Who holds each Qualification')
+    expect(wrapper.text()).not.toContain('Seniority Position by Qual')
   })
 })

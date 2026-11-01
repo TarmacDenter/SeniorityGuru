@@ -83,6 +83,8 @@ defineProps<{
           </div>
         </dl>
 
+        <DashboardNowDetail />
+
         <p v-if="rankCard.percentileScaleLabel" class="mt-3 font-serif text-sm italic text-muted">
           {{ rankCard.percentileScaleLabel }}. A Seniority Percentile of 100 is the most senior end.
         </p>

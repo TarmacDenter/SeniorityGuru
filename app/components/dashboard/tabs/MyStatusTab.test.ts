@@ -1,10 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import { defineComponent, h, ref } from 'vue'
+import { flushPromises } from '@vue/test-utils'
 import { UApp } from '#components'
 import { _resetCoreSingletons, useSeniorityCore } from '~/composables/seniority/modules/useSeniorityCore'
 import { useStanding } from '~/composables/seniority/modules/useStanding'
 import { useListExcerpt } from '~/composables/seniority/modules/useListExcerpt'
+import { useDashboardTabs } from '~/composables/useDashboardTabs'
 import { resetMockStores } from '~/test-utils/seniority-mocks'
 import type { QualificationScope } from '~/utils/seniority'
 import MyStatusTab from './MyStatusTab.vue'
@@ -14,6 +16,8 @@ const mockUserStore = vi.hoisted(() => ({ employeeNumber: null as string | null,
 vi.mock('~/stores/seniority', () => ({ useSeniorityStore: () => mockStore }))
 vi.mock('~/stores/user', () => ({ useUserStore: () => mockUserStore }))
 vi.mock('~/utils/db', () => ({ db: { preferences: { get: vi.fn().mockResolvedValue(undefined), put: vi.fn().mockResolvedValue('key') } } }))
+
+vi.mock('vue-chartjs', () => ({ Bar: { template: '<div />' }, Line: { template: '<div />' }, Doughnut: { template: '<div />' } }))
 
 const { makeEntry } = await import('~/test-utils/factories')
 
@@ -95,5 +99,39 @@ describe('Now panel', () => {
     expect(figureValue(wrapper, 'Rank')).toBe('--')
     expect(figureValue(wrapper, 'Roster Size')).toBe('--')
     expect(figureValue(wrapper, 'Seniority Percentile')).toBe('--')
+  })
+
+  describe('detail restored from the old My Status tab', () => {
+    function seedFive() {
+      mockStore.entries = [1, 2, 3, 4, 5].map(n => makeEntry({ seniority_number: n * 10, employee_number: `E${n}`, name: `Pilot ${n}`, retire_date: n === 1 ? '2027-01-01' : '2050-01-01' }))
+      mockUserStore.employeeNumber = 'E3'
+    }
+
+    it('lists the retirements, base rank and list count beside the Standing figures', async () => {
+      seedFive()
+      const wrapper = await mountSuspended(harness(ref<QualificationScope>({})))
+
+      const glance = wrapper.find('[data-testid="standing-glance"]')
+      expect(glance.exists()).toBe(true)
+      expect(glance.text()).toContain('Retirements (Next 12 mo.)')
+      expect(glance.text()).toContain('Your Base Rank')
+      expect(glance.text()).toContain('Lists Uploaded')
+    })
+
+    it('keeps Status by Base / Seat / Fleet and the improvement rate behind a disclosure', async () => {
+      seedFive()
+      const wrapper = await mountSuspended(harness(ref<QualificationScope>({})))
+      expect(wrapper.text()).not.toContain('Status by Base / Seat / Fleet')
+
+      const toggle = wrapper.findAll('button').find(button => button.text().includes('More detail'))!
+      await toggle.trigger('click')
+      await flushPromises()
+
+      expect(wrapper.text()).toContain('Status by Base / Seat / Fleet')
+      expect(wrapper.text()).toContain('Improvement Rate')
+
+      await wrapper.findAll('button').find(button => button.text().includes('Open Qualifications'))!.trigger('click')
+      expect(useDashboardTabs().activeTab.value).toBe('qualifications')
+    })
   })
 })
