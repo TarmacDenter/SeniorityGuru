@@ -5,6 +5,7 @@ import { UApp } from '#components'
 import { _resetCoreSingletons, useSeniorityCore } from '~/composables/seniority/modules/useSeniorityCore'
 import { useStanding } from '~/composables/seniority/modules/useStanding'
 import { useListExcerpt } from '~/composables/seniority/modules/useListExcerpt'
+import { useDashboardList } from '~/composables/useDashboardList'
 import { resetMockStores } from '~/test-utils/seniority-mocks'
 import { parsePlainDate } from '~/utils/temporal'
 import type { QualificationScope } from '~/utils/seniority'
@@ -56,6 +57,7 @@ beforeEach(() => {
   _resetCoreSingletons()
   resetMockStores(mockStore, mockUserStore)
   useSeniorityCore().newHire.reset()
+  useDashboardList().selectedListId.value = undefined
 })
 
 describe('Now panel', () => {
@@ -138,6 +140,13 @@ describe('Now panel', () => {
       expect(own.text()).toContain('2')
       expect(own.text()).toContain('of 3')
       expect(wrapper.find('a[href="/dashboard/current/holdability"]').text()).toContain('Open Holdability')
+    })
+
+    it('carries the selected historical list into Open Holdability', async () => {
+      seedFive()
+      useDashboardList().selectedListId.value = 12
+      const wrapper = await mountSuspended(harness(ref<QualificationScope>({})))
+      expect(wrapper.find('a[href="/dashboard/current/holdability?list=12"]').text()).toContain('Open Holdability')
     })
 
     it('leaves list counts to List › Uploads', async () => {

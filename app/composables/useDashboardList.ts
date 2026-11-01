@@ -29,5 +29,10 @@ export function useDashboardList() {
     return list ? `${list.title || 'Seniority List'} · effective ${list.effectiveDate}` : undefined
   })
 
-  return { lists, selectedListId, loading, listOptions, isHistorical, selectedList, selectedListLabel, isDemoList, navbarDescription }
+  const holdabilityLink = computed(() => ({
+    path: '/dashboard/current/holdability',
+    query: selectedListId.value ? { list: String(selectedListId.value) } : {},
+  }))
+
+  return { lists, selectedListId, loading, listOptions, isHistorical, selectedList, selectedListLabel, isDemoList, navbarDescription, holdabilityLink }
 }

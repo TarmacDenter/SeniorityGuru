@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import type { GrowthAssumptions } from '~/utils/seniority'
 
+const selectedListId = defineModel<number | undefined>('selectedListId')
 const scopeLabel = defineModel<string>('scopeLabel', { required: true })
 const growthAssumptions = defineModel<GrowthAssumptions>('growthAssumptions', { required: true })
 
 defineProps<{
   scopeLabels: string[]
   asOfLabel: string
-  listLabel: string | null
+  listOptions: { id: number | undefined; label: string; isLatest: boolean }[]
   growthLabel: string
   isDemo: boolean
   isHistorical: boolean
@@ -41,6 +42,18 @@ const open = ref(false)
       class="flex-col gap-3 pt-2 sm:flex sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-6 sm:gap-y-2 sm:pt-0"
       :class="open ? 'flex' : 'hidden'"
     >
+      <USelectMenu
+        v-if="listOptions.length > 0"
+        v-model="selectedListId"
+        :items="listOptions"
+        value-key="id"
+        label-key="label"
+        placeholder="Select list..."
+        size="sm"
+        aria-label="Seniority List"
+        class="w-full sm:w-72"
+      />
+
       <label v-if="scopeLabels.length > 1" class="flex items-center gap-2 text-sm text-muted">
         <span>Qualification Scope</span>
         <USelect v-model="scopeLabel" :items="scopeLabels" size="sm" class="min-w-40" />
@@ -49,7 +62,6 @@ const open = ref(false)
       <p class="flex flex-wrap items-center gap-x-2 text-sm text-muted" data-testid="scenario-as-of">
         <span>As-of Date</span>
         <span class="font-mono text-highlighted">{{ asOfLabel }}</span>
-        <span v-if="listLabel" class="text-muted">· {{ listLabel }}</span>
         <UBadge v-if="isDemo" color="neutral" variant="outline" size="sm">Demo</UBadge>
         <UBadge v-if="isHistorical" color="neutral" variant="outline" size="sm">Historical</UBadge>
       </p>
