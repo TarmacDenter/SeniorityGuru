@@ -65,7 +65,6 @@ All three families are IBM Plex, bundled with `@fontsource`. No CDN.
 
 ## Tools
 
-- **Color inspector.** In development, press Alt+I (or the "Colors" button) and hover any element to see its colors and the tokens that match.
 - **Token playground.** `/dev/theme`.
 
 ## Controls and charts
