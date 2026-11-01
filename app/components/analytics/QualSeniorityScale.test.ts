@@ -17,6 +17,10 @@ function position(overrides: Partial<PresentedQualificationPosition>): Presented
     projectedPercentile: 50,
     currentPercentile: 50,
     modeledHoldable: true,
+    qualificationLabel: '737 FO JFK',
+    holdableYear: 'now',
+    holdableLabel: 'Holdable now',
+    thresholdRelationLabel: null,
     ...overrides,
   }
 }

@@ -194,6 +194,11 @@ export function useLandingDemo() {
       projectedPercentile,
       currentPercentile: CURRENT_PERCENTILE,
       modeledHoldable: projectedPercentile >= scale.plugPercentile,
+      // The landing scale shows no Holdable Year; these complete the presented shape.
+      qualificationLabel: `${scale.fleet} ${scale.seat} ${scale.base}`,
+      holdableYear: null,
+      holdableLabel: '',
+      thresholdRelationLabel: null,
     }))
   })
 

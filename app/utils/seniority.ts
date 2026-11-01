@@ -6,6 +6,7 @@ export type {
   AnchoredSeniorityAnalysis,
   CommonSeniorityAnalysis,
   CreateSeniorityAnalysisOptions,
+  HoldabilityDetailAnalysisOptions,
   PercentileCrossingAnalysisOptions,
   QualificationPositionAnalysisOptions,
   RelativeUpcomingRetirementAnalysisOptions,
@@ -42,6 +43,7 @@ export type {
   UpcomingRetirement,
 } from './seniority-engine/types'
 export type {
+  PresentedHoldabilityDetail,
   PresentedPercentileCrossing,
   PresentedQualificationPosition,
   PresentedQualificationViewerAnalysis,

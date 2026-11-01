@@ -40,7 +40,7 @@ import {
   findCaptainQualificationThresholds,
 } from './demographics'
 import { analyzeRetirementYears } from './retirement-analysis'
-import { analyzeQualificationPositions } from './qualification-position'
+import { analyzeHoldabilityDetail, analyzeQualificationPositions } from './qualification-position'
 import { findPercentileCrossing } from './trajectory-analysis'
 import { isRetiredBy, retiresWithinNextYear } from '~/utils/date'
 import { Temporal } from '~/utils/temporal'
@@ -189,6 +189,7 @@ class AnchoredSeniorityLensImplementation implements AnchoredSeniorityLens {
   readonly seniorityTrajectoryComparison: AnchoredSeniorityLens['seniorityTrajectoryComparison']
   readonly percentileCrossing: AnchoredSeniorityLens['percentileCrossing']
   readonly qualificationPositions: AnchoredSeniorityLens['qualificationPositions']
+  readonly holdabilityDetail: AnchoredSeniorityLens['holdabilityDetail']
   readonly relativeUpcomingRetirements: (filter: RelativeUpcomingRetirementFilter) => readonly RelativeUpcomingRetirement[]
 
   constructor(private readonly context: LensContext, readonly anchor: Readonly<SeniorityEntry>) {
@@ -333,6 +334,18 @@ class AnchoredSeniorityLensImplementation implements AnchoredSeniorityLens {
         seniorityNumber,
         asOfDate(context),
         options.through,
+        options.growthAssumptions,
+      )
+    })
+
+    this.holdabilityDetail = memoizeLast((options) => {
+      const unavailable = noResultFor(asOfDate(context))
+      if (unavailable) return unavailable
+      return analyzeHoldabilityDetail(
+        entries,
+        seniorityNumber,
+        asOfDate(context),
+        options.qualification,
         options.growthAssumptions,
       )
     })

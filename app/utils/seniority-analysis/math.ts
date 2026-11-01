@@ -75,8 +75,13 @@ export interface CalculateRetirementCountProjectionOptions {
 
 /** Returns an inverted percentile where 100 is most senior. */
 export function calculateSeniorityPercentile(rank: number, pilotCount: number): number {
+  return Math.round(calculateUnroundedSeniorityPercentile(rank, pilotCount) * 10) / 10
+}
+
+/** The inverted percentile before display rounding, for comparisons that must not tie on a large roster. */
+export function calculateUnroundedSeniorityPercentile(rank: number, pilotCount: number): number {
   if (pilotCount <= 0) return 0
-  return Math.round(((pilotCount - rank + 1) / pilotCount) * 1000) / 10
+  return ((pilotCount - rank + 1) / pilotCount) * 100
 }
 
 /** Calculates one-based Rank from collection membership. */

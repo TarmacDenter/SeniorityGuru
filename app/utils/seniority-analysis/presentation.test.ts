@@ -219,6 +219,7 @@ describe('seniority presentation', () => {
       currentPercentile: 42,
       projectedPercentile: 61,
       modeledHoldable: true,
+      holdableYear: 'now',
     }]
 
     expect(presentQualificationPositions(positions)).toEqual([{
@@ -235,6 +236,10 @@ describe('seniority presentation', () => {
       currentPercentile: 42,
       projectedPercentile: 61,
       modeledHoldable: true,
+      qualificationLabel: '737 CA JFK',
+      holdableYear: 'now',
+      holdableLabel: 'Holdable now',
+      thresholdRelationLabel: null,
     }])
   })
 
@@ -267,6 +272,7 @@ describe('seniority presentation', () => {
       currentPercentile: 42,
       projectedPercentile: 61,
       modeledHoldable: true,
+      holdableYear: 'now',
     }]
 
     expect(presentAnchoredSeniorityDemographics(demographics, positions)

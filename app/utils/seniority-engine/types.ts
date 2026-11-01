@@ -49,7 +49,7 @@ export interface SenioritySnapshot {
   readonly qualifications: readonly Qualification[]
 }
 
-export type NoResultReason = 'anchor-retired'
+export type NoResultReason = 'anchor-retired' | 'trajectory-ended'
 
 /** Explicit absence of a result: a retired Anchor Pilot has no Rank or projection. */
 export interface NoResult {
@@ -166,11 +166,33 @@ export interface QualificationDistribution {
   readonly percentileDensity: readonly PercentileDensityBucket[]
 }
 
+/**
+ * Holdable Year: "now" when the Anchor Pilot is already senior to the Qualification Threshold, otherwise the first
+ * projection year whose projected Seniority Percentile meets the threshold's As-of Date value, or a no-result when
+ * the trajectory ends first.
+ */
+export type HoldableYear = 'now' | number | NoResult
+
 export interface QualificationPosition {
   readonly distribution: QualificationDistribution
   readonly currentPercentile: number
   readonly projectedPercentile: number
   readonly modeledHoldable: boolean
+  readonly holdableYear: HoldableYear
+}
+
+export interface HoldabilityDetailPoint {
+  readonly date: PlainDate
+  readonly anchorPercentile: number
+  /** Today's threshold pilot; null once they have retired. */
+  readonly thresholdPilotPercentile: number | null
+}
+
+export interface HoldabilityDetail {
+  readonly qualification: Qualification
+  /** The Qualification Threshold's As-of Date value. */
+  readonly thresholdPercentile: number
+  readonly points: readonly HoldabilityDetailPoint[]
 }
 
 export interface PercentileCrossingResult {
@@ -255,6 +277,12 @@ export interface QualificationPositionOptions {
   readonly growthAssumptions?: GrowthAssumptions
 }
 
+/** Company-wide, like Qualification Position. */
+export interface HoldabilityDetailOptions {
+  readonly qualification: Qualification
+  readonly growthAssumptions?: GrowthAssumptions
+}
+
 export interface CommonSeniorityLens {
   readonly snapshot: SenioritySnapshot
   retirementsNext12Months(): number
@@ -275,5 +303,6 @@ export interface AnchoredSeniorityLens extends CommonSeniorityLens {
   seniorityTrajectoryComparison(options: SeniorityTrajectoryComparisonOptions): SeniorityTrajectoryComparison | NoResult
   percentileCrossing(options: PercentileCrossingOptions): PercentileCrossingResult | null | NoResult
   qualificationPositions(options: QualificationPositionOptions): readonly QualificationPosition[] | NoResult
+  holdabilityDetail(options: HoldabilityDetailOptions): HoldabilityDetail | null | NoResult
   relativeUpcomingRetirements(filter: RelativeUpcomingRetirementFilter): readonly RelativeUpcomingRetirement[]
 }

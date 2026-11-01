@@ -1,18 +1,25 @@
 <script setup lang="ts">
-import { useSeniorityCore, useStanding } from '~/composables/seniority'
+import { useHoldability, useSeniorityCore } from '~/composables/seniority'
 import { useDashboardList } from '~/composables/useDashboardList'
 
 const { loading } = useDashboardList()
 const { hasAnchor: userFound } = useSeniorityCore()
-const { qualificationScope } = useScenario()
-const { rankCard, qualificationGroups } = useStanding(qualificationScope)
+const { qualificationScope, growthAssumptions } = useScenario()
+const { visibleGroups, seatOptions, selectedSeat, noResultLabel, columnLabels, selectedKey, select, detail, juniorCaptainsLink } = useHoldability(qualificationScope, growthAssumptions)
 </script>
 
 <template>
   <DashboardTabsQualificationsTab
+    v-model:selected-seat="selectedSeat"
     :loading="loading"
     :user-found="userFound"
-    :groups="qualificationGroups"
-    :no-result-label="rankCard.noResultLabel"
+    :groups="visibleGroups"
+    :seat-options="seatOptions"
+    :no-result-label="noResultLabel"
+    :column-labels="columnLabels"
+    :selected-key="selectedKey"
+    :detail="detail"
+    :junior-captains-link="juniorCaptainsLink"
+    @select="select"
   />
 </template>
