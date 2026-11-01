@@ -478,7 +478,7 @@ async function enterDemo() {
               <p class="text-sm text-muted">
                 The chart shows projected retirements by year.
               </p>
-              <AnalyticsRetirementWaveChart :wave-buckets="demoWaveBuckets" :trajectory-points="[]" qualification-scope="" />
+              <AnalyticsRetirementWaveChart :wave-buckets="demoWaveBuckets" :percentile-series="[]" qualification-scope="" />
             </div>
           </UCard>
         </div>

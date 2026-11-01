@@ -3,7 +3,7 @@ import type { AnchoredSeniorityAnalysis, SeniorityAnalysis } from '~/utils/senio
 import type { ComputedRef, Ref } from 'vue'
 import { createSeniorityAnalysis } from '~/utils/seniority'
 import { computeRetireDateValue } from '~/utils/date'
-import { parsePlainDate, serializePlainDate, todayPlainDate, Temporal, type PlainDate } from '~/utils/temporal'
+import { parsePlainDate, serializePlainDate, todayPlainDate, type PlainDate } from '~/utils/temporal'
 import { normalizeEmployeeNumber } from '~/utils/schemas/seniority-list'
 import { useSeniorityStore } from '~/stores/seniority'
 import { useUserStore } from '~/stores/user'
@@ -239,11 +239,7 @@ export function useSeniorityCore() {
     const userRetireDate = syntheticEntry.value?.retire_date ?? _userEntry!.value?.retire_date
     if (userRetireDate) return userRetireDate
 
-    return seniorityStore.entries.reduce<PlainDate | null>((latest, entry) => {
-      if (!entry.retire_date) return latest
-      if (!latest || Temporal.PlainDate.compare(entry.retire_date, latest) > 0) return entry.retire_date
-      return latest
-    }, null)
+    return listAnalysis.value?.catalog.latestRetirementDate ?? null
   })
 
   return { listAnalysis, analysis, anchoredAnalysis, userEntry, entries, projectionEndDate, hasData, hasAnchor, isNewHireMode, newHire }

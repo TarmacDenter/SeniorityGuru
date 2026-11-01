@@ -199,7 +199,13 @@ export interface PercentileCrossingResult {
   readonly crossingYear: number
 }
 
+export interface AnchoredRetirementCountProjection extends RetirementCountProjection {
+  readonly seniorRetirementCount: number
+}
+
 export interface SeniorityDemographics {
+  readonly matchingPilotCount: number
+  readonly anchorYearsOfService?: number
   readonly ageDistribution: {
     readonly buckets: readonly AgeBucket[]
     readonly unknownAgePilotCount: number
@@ -298,6 +304,7 @@ export interface SeniorityLens extends CommonSeniorityLens {
 
 export interface AnchoredSeniorityLens extends CommonSeniorityLens {
   readonly anchor: Readonly<SeniorityEntry>
+  retirementCountProjection(options: RetirementCountProjectionOptions): AnchoredRetirementCountProjection
   seniorityStanding(options?: SeniorityStandingOptions): SeniorityStanding | NoResult
   seniorityTrajectory(options: SeniorityTrajectoryOptions): SeniorityTrajectory | NoResult
   seniorityTrajectoryComparison(options: SeniorityTrajectoryComparisonOptions): SeniorityTrajectoryComparison | NoResult

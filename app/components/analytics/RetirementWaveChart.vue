@@ -33,21 +33,11 @@ ChartJS.register(
 
 const props = defineProps<{
   waveBuckets: readonly { year: number; retirementCount: number; isRetirementWave: boolean }[]
-  trajectoryPoints: readonly { date: import('~/utils/temporal').PlainDate; rank: number; percentile: number }[]
+  percentileSeries: readonly (number | null)[]
   qualificationScope: string
 }>()
 
 const { defaults, colors } = useChartTheme()
-
-/** The Anchor Pilot's Seniority Percentile at the start of each year the wave covers. */
-const percentileByYear = computed(() => {
-  const byYear = new Map<number, number>()
-  for (const point of props.trajectoryPoints) {
-    const year = Number(point.date.toString().slice(0, 4))
-    if (!byYear.has(year)) byYear.set(year, point.percentile)
-  }
-  return byYear
-})
 
 const chartData = computed(() => ({
   labels: props.waveBuckets.map((b) => String(b.year)),
@@ -62,11 +52,11 @@ const chartData = computed(() => ({
       yAxisID: 'y',
       order: 2,
     },
-    ...(props.trajectoryPoints.length > 0
+    ...(props.percentileSeries.length > 0
       ? [{
           type: 'line' as const,
           label: 'Your Seniority Percentile',
-          data: props.waveBuckets.map((b) => percentileByYear.value.get(b.year) ?? null),
+          data: props.percentileSeries,
           borderColor: colors.mark,
           backgroundColor: colors.mark,
           borderWidth: 3,
@@ -105,7 +95,7 @@ const chartOptions = computed<ChartOptions<'bar'>>(() => ({
       ticks: { ...defaults.scales?.y?.ticks, stepSize: 1 },
     },
     y1: {
-      display: props.trajectoryPoints.length > 0,
+      display: props.percentileSeries.length > 0,
       position: 'right',
       min: 0,
       max: 100,
@@ -119,7 +109,7 @@ const chartOptions = computed<ChartOptions<'bar'>>(() => ({
 <template>
   <div>
     <p class="mb-1 text-xs font-medium text-muted">
-      Retirements per year<template v-if="trajectoryPoints.length > 0"> and your Seniority Percentile</template>{{ qualificationScope ? ` — ${qualificationScope}` : '' }}
+      Retirements per year<template v-if="percentileSeries.length > 0"> and your Seniority Percentile</template>{{ qualificationScope ? ` — ${qualificationScope}` : '' }}
     </p>
     <ClientOnly>
       <div class="relative h-56 sm:h-64">

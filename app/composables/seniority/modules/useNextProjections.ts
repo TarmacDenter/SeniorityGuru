@@ -60,7 +60,10 @@ export function useNextProjections() {
     growthAssumptions: growthAssumptions.value,
     qualificationScope: qualificationScope.value,
   }))
-  const retirementWave = computed(() => analysis.value?.retirementYearAnalysis(scopedScenario.value) ?? [])
+  const retirementWave = computed(() => trajectory.retirementWave.value.buckets.length
+    ? trajectory.retirementWave.value.buckets
+    : analysis.value?.retirementYearAnalysis(scopedScenario.value) ?? [])
+  const wavePercentileSeries = computed(() => trajectory.retirementWave.value.percentileSeries)
   const wavePoints = computed(() => trajectory.fullTrajectory.value)
 
   const targetPercentile = ref(DEFAULT_TARGET_PERCENTILE)
@@ -95,22 +98,15 @@ export function useNextProjections() {
     get: () => Math.min(Math.max(1, yearsChoice.value), seniorMaxYears.value),
     set: (years) => { yearsChoice.value = years },
   })
-  const seniorCount = computed<number | null>(() => {
-    if (!anchoredAnalysis.value) return null
+  const seniorProjection = computed(() => {
     const from = todayPlainDate()
-    return anchoredAnalysis.value.relativeUpcomingRetirements({
-      from,
+    return anchoredAnalysis.value?.retirementCountProjection({
       through: addYearsDate(from, seniorYears.value),
-      qualificationScope: qualificationScope.value,
-      seniorOnly: true,
-    }).length
+      scenario: { qualificationScope: qualificationScope.value },
+    }).presentation ?? null
   })
-  const seniorLabel = computed(() => {
-    const count = seniorCount.value
-    if (count === null) return null
-    const years = seniorYears.value
-    return `${count} ${count === 1 ? 'retirement' : 'retirements'} senior to you in the next ${years === 1 ? 'year' : `${years} years`}`
-  })
+  const seniorCount = computed(() => seniorProjection.value?.seniorRetirementCount ?? null)
+  const seniorLabel = computed(() => seniorProjection.value?.seniorRetirementLabel ?? null)
   const seniorRetirements = { years: seniorYears, maxYears: seniorMaxYears, count: seniorCount, label: seniorLabel }
 
   return {
@@ -119,6 +115,7 @@ export function useNextProjections() {
     scopeSuffix,
     retirementWave,
     wavePoints,
+    wavePercentileSeries,
     threshold,
     seniorRetirements,
     percentileScaleLabel,

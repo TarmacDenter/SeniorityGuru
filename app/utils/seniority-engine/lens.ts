@@ -1,5 +1,6 @@
 import type {
   AnchoredSeniorityLens,
+  AnchoredRetirementCountProjection,
   EntryPredicate,
   CommonSeniorityLens,
   DemographicsOptions,
@@ -42,7 +43,7 @@ import {
 import { analyzeRetirementYears } from './retirement-analysis'
 import { analyzeHoldabilityDetail, analyzeQualificationPositions } from './qualification-position'
 import { findPercentileCrossing } from './trajectory-analysis'
-import { isRetiredBy, retiresWithinNextYear } from '~/utils/date'
+import { computeYOSDate, isRetiredBy, retiresWithinNextYear } from '~/utils/date'
 import { Temporal } from '~/utils/temporal'
 
 export interface CreateSeniorityLensOptions {
@@ -109,6 +110,7 @@ function createLensContext(
     const predicate = qualificationScopeToEntryPredicate(effectiveScenario.qualificationScope)
     const scopedEntries = entries.filter(predicate)
     return {
+      matchingPilotCount: scopedEntries.length,
       ageDistribution: analyzeAgeDistribution(entries, options.mandatoryRetirementAge, predicate, currentDate()),
       yearsOfServiceDistribution: analyzeYearsOfServiceDistribution(entries, predicate, currentDate()),
       yearsOfServiceBuckets: analyzeYearsOfServiceBuckets(entries, predicate, currentDate()),
@@ -365,8 +367,18 @@ class AnchoredSeniorityLensImplementation implements AnchoredSeniorityLens {
 
   readonly retirementsNext12Months = () => this.common.retirementsNext12Months()
   readonly retirementYearAnalysis = (scenario?: Scenario) => this.common.retirementYearAnalysis(scenario)
-  readonly retirementCountProjection = (options: RetirementCountProjectionOptions) => this.common.retirementCountProjection(options)
-  readonly demographics = (options: DemographicsOptions) => this.common.demographics(options)
+  readonly retirementCountProjection = (options: RetirementCountProjectionOptions): AnchoredRetirementCountProjection => ({
+    ...this.common.retirementCountProjection(options),
+    seniorRetirementCount: this.relativeUpcomingRetirements({
+      through: options.through,
+      qualificationScope: options.scenario?.qualificationScope,
+      seniorOnly: true,
+    }).length,
+  })
+  readonly demographics = (options: DemographicsOptions): SeniorityDemographics => ({
+    ...this.common.demographics(options),
+    anchorYearsOfService: computeYOSDate(this.anchor.hire_date, asOfDate(this.context)),
+  })
   readonly upcomingRetirements = (filter: UpcomingRetirementFilter) => this.common.upcomingRetirements(filter)
 }
 

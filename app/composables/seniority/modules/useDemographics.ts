@@ -1,6 +1,4 @@
 import type { QualificationScope } from '~/utils/seniority'
-import { computeYOS } from '~/utils/date'
-import { todayPlainDate } from '~/utils/temporal'
 import { useSeniorityCore } from './useSeniorityCore'
 
 const EMPTY_YOS_DISTRIBUTION = { entryFloor: 0, p10: 0, p25: 0, median: 0, p75: 0, p90: 0, max: 0 }
@@ -19,7 +17,7 @@ export interface QualificationSizeRow {
  * Works without an Anchor Pilot; the Anchor Pilot's years of service are then undefined.
  */
 export function useDemographics(qualificationScope: Ref<QualificationScope>) {
-  const { analysis, anchoredAnalysis, newHire, userEntry } = useSeniorityCore()
+  const { analysis, anchoredAnalysis } = useSeniorityCore()
   const { retirementAge } = useUser()
 
   const result = computed(() => {
@@ -31,17 +29,10 @@ export function useDemographics(qualificationScope: Ref<QualificationScope>) {
   })
 
   const qualificationComposition = computed(() => result.value?.qualificationComposition ?? [])
-  const matchingPilotCount = computed(() => qualificationComposition.value.reduce((total, row) => total + row.total, 0))
-  const qualificationSizes = computed<QualificationSizeRow[]>(() => qualificationComposition.value
-    .flatMap(qual => (qual.byBase?.length ? qual.byBase : [{ base: '—', count: qual.total }])
-      .map(({ base, count }) => ({ fleet: qual.fleet, seat: qual.seat, base, count })))
-    .sort((a, b) => a.seat.localeCompare(b.seat) || a.fleet.localeCompare(b.fleet) || a.base.localeCompare(b.base))
-    .map(({ count, ...row }) => ({ ...row, countLabel: count.toLocaleString() })))
+  const matchingPilotCount = computed(() => result.value?.matchingPilotCount ?? 0)
+  const qualificationSizes = computed<QualificationSizeRow[]>(() => result.value?.qualificationSizes ?? [])
   const yearsOfServiceBuckets = computed(() => result.value?.yearsOfServiceBuckets ?? [])
-  const userYos = computed(() => {
-    const entry = newHire.syntheticEntry.value ?? userEntry.value
-    return entry ? computeYOS(entry.hire_date, todayPlainDate()) : undefined
-  })
+  const userYos = computed(() => result.value?.anchorYearsOfService)
 
   return {
     hasResult: computed(() => result.value !== null),
@@ -52,7 +43,7 @@ export function useDemographics(qualificationScope: Ref<QualificationScope>) {
     captainQualificationThresholds: computed(() => result.value?.captainQualificationThresholds ?? []),
     yearsOfServiceDistribution: computed(() => result.value?.yearsOfServiceDistribution ?? EMPTY_YOS_DISTRIBUTION),
     yearsOfServiceBuckets,
-    hasYearsOfService: computed(() => yearsOfServiceBuckets.value.some(bucket => bucket.count > 0)),
+    hasYearsOfService: computed(() => result.value?.hasYearsOfService ?? false),
     retirementAge,
     userYos,
   }
