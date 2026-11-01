@@ -49,6 +49,16 @@ describe('Trajectory › Retirements', () => {
     expect(wrapper.text()).toContain('Retirements within')
   })
 
+  it('updates the count after the slider rests', async () => {
+    seedRoster()
+    const wrapper = await mountRetirements()
+    const before = wrapper.get('[aria-live="polite"]').text()
+    const thumb = wrapper.get('[role="slider"]')
+    await thumb.trigger('keydown', { key: 'ArrowLeft' })
+    expect(wrapper.get('[aria-live="polite"]').text()).toBe(before)
+    await vi.waitFor(() => expect(wrapper.get('[aria-live="polite"]').text()).not.toBe(before))
+  })
+
   it('keeps the Retirement Wave after the Anchor Pilot retires', async () => {
     seedRoster()
     mockStore.entries = mockStore.entries.map(entry => entry.employee_number === 'E4'

@@ -9,5 +9,6 @@ Components render. Data and actions arrive through composables and props.
 - Do not sort, group, filter, or format domain data in a component or its template. Take the finished list, order, and text from a composable or the facade.
 - Style with semantic tokens only (`bg-default`, `text-muted`, `bg-mark`). No raw hex and no Tailwind palette colors. See [docs/design-system.md](../../docs/design-system.md).
 - Page a `UTable` with `useTableFeatures` and render `ui/TablePagination`. A table never renders every row.
+- Debounce a slider with `useSettledModel`: bind the control to its live ref, and the model commits once it rests.
 - Name displayed concepts with the terms in [CONTEXT.md](../../CONTEXT.md).
 - Cover visible behavior with a mounted test next to the component. Assert text a pilot can read.

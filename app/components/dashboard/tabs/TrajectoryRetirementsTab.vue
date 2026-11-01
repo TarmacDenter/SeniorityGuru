@@ -17,6 +17,9 @@ const {
   retirementWave,
   wavePercentileSeries,
 } = useNextProjections()
+
+// The thumb moves live; the count follows once it rests.
+const years = useSettledModel(seniorRetirements.years)
 </script>
 
 <template>
@@ -44,7 +47,7 @@ const {
               <label for="retirements-within" class="whitespace-nowrap text-sm text-muted">Retirements within</label>
               <USlider
                 id="retirements-within"
-                v-model="seniorRetirements.years.value"
+                v-model="years"
                 :min="1"
                 :max="seniorRetirements.maxYears.value"
                 :step="1"

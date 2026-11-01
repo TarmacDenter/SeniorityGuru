@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { h, resolveComponent } from 'vue'
-import { watchDebounced } from '@vueuse/core'
 import type { TableColumn } from '@nuxt/ui'
 import { useUpcomingRetirements } from '~/composables/seniority/modules/useUpcomingRetirements'
 import type { RetirementRow, RetirementSortKey } from '~/composables/seniority/modules/useUpcomingRetirements'
@@ -15,11 +14,8 @@ const {
 const table = useTableFeatures<RetirementRow>('retirementsTable', { pageSize: 50 })
 
 // The slider and its readout move live; the report follows once the thumb rests.
-const SLIDER_SETTLE_MS = 250
-const sliderYears = ref(yearsHorizon.value)
+const sliderYears = useSettledModel(yearsHorizon)
 const sliderLabel = computed(() => horizonLabelFor(sliderYears.value))
-watch(yearsHorizon, (years) => { sliderYears.value = years })
-watchDebounced(sliderYears, (years) => { yearsHorizon.value = years }, { debounce: SLIDER_SETTLE_MS })
 
 const numeric = { class: { th: 'text-right', td: 'text-right' } }
 
