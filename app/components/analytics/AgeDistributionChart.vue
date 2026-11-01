@@ -27,8 +27,8 @@ const chartData = computed(() => ({
     {
       label: 'Pilots',
       data: props.buckets.map((b) => b.count),
-      backgroundColor: colors.primaryLight,
-      borderColor: colors.primary,
+      backgroundColor: colors.inkFill,
+      borderColor: colors.ink,
       borderWidth: 1,
     },
   ],

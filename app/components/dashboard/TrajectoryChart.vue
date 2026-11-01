@@ -15,8 +15,8 @@ const chartData = computed<ChartData<'line'>>(() => ({
   datasets: [{
     label: 'Seniority %',
     data: props.data.data,
-    borderColor: colors.amber,
-    backgroundColor: colors.amberLight,
+    borderColor: colors.ink,
+    backgroundColor: colors.inkFill,
     fill: true,
     tension: 0.3,
     pointRadius: 0,

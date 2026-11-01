@@ -37,12 +37,8 @@ const chartData = computed(() => ({
     {
       label: 'Percentile Change (pp/yr)',
       data: props.changes.map(change => change.percentilePointChange),
-      backgroundColor: props.changes.map(change =>
-        change.isPeak ? colors.peakHighlight : colors.primaryLight,
-      ),
-      borderColor: props.changes.map(change =>
-        change.isPeak ? colors.peakBorder : colors.primary,
-      ),
+      backgroundColor: props.changes.map(change => change.isPeak ? colors.ink : colors.inkFill),
+      borderColor: colors.ink,
       borderWidth: 1,
     },
   ],

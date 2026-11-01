@@ -52,8 +52,8 @@ const chartData = computed<ChartData<'line'>>(() => {
   const datasets: ChartData<'line'>['datasets'] = [{
     label: `${currentScope.value || 'Company-wide'}${result.baselineHypotheticalLabel ? ' (hypothetical)' : ''}`,
     data: result.baselineData,
-    borderColor: colors.amber,
-    backgroundColor: colors.amberLight,
+    borderColor: colors.ink,
+    backgroundColor: colors.inkFill,
     fill: false,
     tension: 0.3,
     pointRadius: 0,
@@ -64,8 +64,8 @@ const chartData = computed<ChartData<'line'>>(() => {
     datasets.push({
       label: `${compareScope.value}${result.comparisonHypotheticalLabel ? ' (hypothetical)' : ''}`,
       data: result.comparisonData,
-      borderColor: colors.cyan,
-      backgroundColor: colors.cyanLight,
+      borderColor: colors.soft,
+      backgroundColor: colors.softFill,
       fill: false,
       tension: 0.3,
       pointRadius: 0,

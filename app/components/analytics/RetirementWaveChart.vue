@@ -42,12 +42,8 @@ const waveChartData = computed(() => ({
     {
       label: 'Retirements',
       data: props.waveBuckets.map((b) => b.retirementCount),
-      backgroundColor: props.waveBuckets.map((b) =>
-        b.isRetirementWave ? colors.peakHighlight : colors.primaryLight,
-      ),
-      borderColor: props.waveBuckets.map((b) =>
-        b.isRetirementWave ? colors.peakBorder : colors.primary,
-      ),
+      backgroundColor: props.waveBuckets.map(b => b.isRetirementWave ? colors.ink : colors.inkFill),
+      borderColor: colors.ink,
       borderWidth: 1,
     },
   ],
@@ -84,8 +80,8 @@ const trajectoryChartData = computed(() => ({
     {
       label: 'Your Percentile',
       data: props.trajectoryPoints.map((p) => p.percentile),
-      borderColor: colors.primary,
-      backgroundColor: colors.primaryLight,
+      borderColor: colors.ink,
+      backgroundColor: colors.inkFill,
       fill: true,
       tension: 0.3,
       pointRadius: 0,
