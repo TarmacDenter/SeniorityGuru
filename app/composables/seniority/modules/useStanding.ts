@@ -79,7 +79,7 @@ export interface QualificationSeatGroup {
   rows: BaseStatusRow[]
 }
 
-/** A label and figure for the Now dot-leader list; value is a placeholder when no figure exists. */
+/** A headline figure on Current › Status; value is a placeholder when no figure exists. */
 export interface StandingFigure {
   label: string
   value: string
@@ -215,9 +215,10 @@ export function useStanding(qualificationScope?: Ref<QualificationScope> | Compu
     return [
       { label: 'Rank', value: presented?.rankLabel ?? PLACEHOLDER },
       { label: 'Seniority Number', value: String(entry.seniority_number) },
-      { label: 'Roster Size', value: presented?.rosterSizeValueLabel ?? PLACEHOLDER },
+      { label: 'Roster Size', value: presented?.rosterSizeValueLabel ?? PLACEHOLDER, ...(presented?.rosterSizeTrend ? { note: presented.rosterSizeTrend } : {}) },
       { label: 'Seniority Percentile', value: presented?.seniorityPercentileLabel ?? PLACEHOLDER },
       { label: 'Active pilots', value: presented?.activePilotCountLabel ?? PLACEHOLDER },
+      { label: 'Retirements senior to you (next 12 months)', value: presented?.retirementsSeniorToAnchorCountLabel ?? PLACEHOLDER },
     ]
   })
 

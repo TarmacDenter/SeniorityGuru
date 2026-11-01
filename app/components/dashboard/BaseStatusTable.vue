@@ -2,46 +2,28 @@
 import { h, resolveComponent } from 'vue';
 import type { TableColumn } from '@nuxt/ui';
 import { useMediaQuery } from '@vueuse/core';
+import type { BaseStatusRow, QualificationSeatGroup } from '~/composables/seniority';
 
-type BaseStatusRow = {
-  base: string;
-  seat: string;
-  fleet: string;
-  rank: number;
-  publicationPosition: number;
-  rosterSize: number;
-  activePilotCount: number;
-  seniorityPercentile: number;
-  isAnchorCurrentQualification: boolean;
-  /** Set for qualifications you are not in; Rank and Roster Size count you as a modeled pilot there. */
-  hypotheticalLabel?: string | null;
-};
-
+// Status by Base / Seat / Fleet: the Anchor Pilot's Base Rank in every Qualification today.
+// Rows arrive grouped by seat and ordered by the composable; on a phone one seat shows at a time.
 const props = defineProps<{
-  data: BaseStatusRow[];
+  groups: QualificationSeatGroup[];
   /** Why no Rank exists (e.g. "Anchor Pilot retired"); replaces the table when set. */
   noResultLabel?: string | null;
 }>();
 
 const isMobile = useMediaQuery('(max-width: 639px)');
-
-// Mobile seat filter — default to first available seat
-const availableSeats = computed(() => [...new Set(props.data.map(r => r.seat))].sort());
 const mobileSeat = ref<string | undefined>(undefined);
 
-// Auto-select first seat when data loads
-watch(availableSeats, (seats) => {
-  if (seats.length && !mobileSeat.value) mobileSeat.value = seats[0];
+// Open on the seat that holds your own Qualification, so your Base Rank row is visible first.
+watch(() => props.groups, (groups) => {
+  if (groups.some(group => group.seat === mobileSeat.value)) return;
+  mobileSeat.value = (groups.find(group => group.rows.some(row => row.isAnchorCurrentQualification)) ?? groups[0])?.seat;
 }, { immediate: true });
 
-const displayData = computed<BaseStatusRow[]>(() => {
-  const base = props.data;
-  // On mobile, filter by selected seat to reduce rows
-  if (isMobile.value && mobileSeat.value) {
-    return base.filter(r => r.seat === mobileSeat.value);
-  }
-  return base;
-});
+const displayData = computed<BaseStatusRow[]>(() => isMobile.value
+  ? props.groups.find(group => group.seat === mobileSeat.value)?.rows ?? []
+  : props.groups.flatMap(group => group.rows));
 
 function hypotheticalMark(row: BaseStatusRow) {
   return row.hypotheticalLabel
@@ -49,69 +31,64 @@ function hypotheticalMark(row: BaseStatusRow) {
     : null;
 }
 
-function highlightClass(row: BaseStatusRow): string {
-  return row.isAnchorCurrentQualification ? 'font-bold text-primary' : '';
-}
-
+const numeric = { class: { th: 'text-right', td: 'text-right font-mono' } };
 const columns: TableColumn<BaseStatusRow>[] = [
-  { accessorKey: 'base', header: 'Base', cell: ({ row }) => h('span', { class: highlightClass(row.original) }, row.original.base) },
-  { accessorKey: 'seat', header: 'Seat', cell: ({ row }) => h('span', { class: highlightClass(row.original) }, row.original.seat) },
-  { accessorKey: 'fleet', header: 'Fleet', cell: ({ row }) => h('span', { class: highlightClass(row.original) }, row.original.fleet) },
-  { accessorKey: 'rank', header: 'Rank', cell: ({ row }) => h('span', { class: highlightClass(row.original) }, [row.original.rank, hypotheticalMark(row.original)]) },
-  { accessorKey: 'rosterSize', header: 'Roster Size', cell: ({ row }) => h('span', { class: highlightClass(row.original) }, row.original.rosterSize) },
-  { accessorKey: 'seniorityPercentile', header: 'Seniority Percentile', cell: ({ row }) => h('span', { class: highlightClass(row.original) }, `${row.original.seniorityPercentile}%`) },
+  { accessorKey: 'base', header: 'Base' },
+  { accessorKey: 'seat', header: 'Seat' },
+  { accessorKey: 'fleet', header: 'Fleet' },
+  { id: 'rank', header: 'Base Rank', meta: numeric, cell: ({ row }) => h('span', null, [row.original.rankLabel, hypotheticalMark(row.original)]) },
+  { accessorKey: 'rosterOfLabel', header: 'Roster Size', meta: numeric },
+  { accessorKey: 'percentileLabel', header: 'Seniority Percentile', meta: numeric },
 ];
 
-// 4 columns on mobile — Roster Size dropped (Rank + Seniority Percentile convey the same standing)
-const mobileColumns: TableColumn<BaseStatusRow>[] = [
-  { accessorKey: 'base', header: 'Base', cell: ({ row }) => h('span', { class: highlightClass(row.original) }, row.original.base) },
-  { accessorKey: 'fleet', header: 'Fleet', cell: ({ row }) => h('span', { class: highlightClass(row.original) }, row.original.fleet) },
-  { accessorKey: 'rank', header: 'Rank', cell: ({ row }) => h('span', { class: `font-mono ${highlightClass(row.original)}` }, [row.original.rank, hypotheticalMark(row.original)]) },
-  { accessorKey: 'seniorityPercentile', header: 'Seniority Percentile', cell: ({ row }) => h('span', { class: `font-mono ${highlightClass(row.original)}` }, `${row.original.seniorityPercentile}%`) },
-];
+const meta = {
+  class: {
+    tr: (row: { original: BaseStatusRow }) => row.original.isAnchorCurrentQualification ? '[&>td]:font-bold [&>td]:text-highlighted' : '',
+  },
+};
 </script>
 
 <template>
-  <UCard :ui="{ body: 'px-0 py-0 sm:px-4 sm:py-5' }">
+  <UCard :ui="{ body: 'p-0 sm:p-0' }" data-testid="base-status">
     <template #header>
-      <div class="flex items-center justify-between gap-2 flex-wrap">
-        <h3 class="font-semibold text-highlighted">Status by Base / Seat / Fleet</h3>
+      <div class="flex flex-wrap items-center gap-2">
+        <h2 class="text-base font-semibold text-highlighted">Status by Base / Seat / Fleet</h2>
+        <UPopover v-if="!noResultLabel">
+          <UButton icon="i-lucide-info" color="neutral" variant="ghost" size="xs" aria-label="About this table" />
+          <template #content>
+            <p class="max-w-xs p-3 text-sm text-default">
+              Base Rank is your position among active pilots in each Qualification; Roster Size includes retired pilots.
+              Rows marked hypothetical place you in a Qualification you are not in and count you in its Roster Size.
+            </p>
+          </template>
+        </UPopover>
       </div>
     </template>
 
-    <p v-if="noResultLabel" data-testid="no-result" class="px-3 py-4 font-mono font-semibold text-highlighted">{{ noResultLabel }}</p>
+    <p v-if="noResultLabel" data-testid="no-result" class="px-4 py-4 font-mono font-semibold text-highlighted">{{ noResultLabel }}</p>
     <template v-else>
-    <p class="px-3 pt-3 sm:px-0 sm:pt-0 pb-2 text-xs text-muted">
-      Rank is your position among active pilots; Roster Size includes retired pilots.
-      Rows marked hypothetical place you in a qualification you are not in and count you in its Roster Size.
-    </p>
+      <div v-if="isMobile && groups.length > 1" class="flex gap-2 px-3 pt-3 pb-1">
+        <UButton
+          v-for="group in groups"
+          :key="group.seat"
+          size="xs"
+          :variant="mobileSeat === group.seat ? 'solid' : 'outline'"
+          color="neutral"
+          @click="mobileSeat = group.seat"
+        >
+          {{ group.seatLabel }}
+        </UButton>
+      </div>
 
-    <!-- Mobile: seat filter dropdown -->
-    <div v-if="isMobile && availableSeats.length > 1" class="flex gap-2 px-3 pt-3 pb-2">
-      <UButton
-        v-for="seat in availableSeats"
-        :key="seat"
-        size="xs"
-        :variant="mobileSeat === seat ? 'solid' : 'outline'"
-        color="neutral"
-        @click="mobileSeat = seat"
-      >
-        {{ seat === 'CA' ? 'Captain' : seat === 'FO' ? 'First Officer' : seat }}
-      </UButton>
-    </div>
-
-    <!-- Desktop: full table -->
-    <div v-if="!isMobile" class="overflow-x-auto">
-      <UTable :data="displayData" :columns="columns" />
-    </div>
-
-    <!-- Mobile: compact table with fewer columns and tighter cell spacing -->
-    <UTable
-      v-else
-      :data="displayData"
-      :columns="mobileColumns"
-      :ui="{ th: 'px-2 py-2 text-xs font-semibold', td: 'px-2 py-2 text-xs whitespace-nowrap' }"
-    />
+      <div class="overflow-x-auto">
+        <UTable
+          :data="displayData"
+          :columns="columns"
+          :meta="meta"
+          :column-visibility="{ seat: !isMobile, rosterOfLabel: !isMobile }"
+          :ui="{ th: 'px-3 py-1.5 text-xs font-medium text-muted', td: 'px-3 py-1.5 text-sm whitespace-nowrap' }"
+        />
+      </div>
     </template>
   </UCard>
 </template>

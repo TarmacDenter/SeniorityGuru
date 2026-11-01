@@ -55,7 +55,7 @@ Type is IBM Plex, bundled with `@fontsource`. No CDN.
 - **Tabs.** A section's small views use stock `UTabs` in a row under the top bar. On a phone the row scrolls sideways.
 - **Cards.** Each presentation sits in a stock `UCard`.
 - **Tables.** Use stock `UTable`. Rows are not striped.
-- **Your line.** Highlighter background, dark text, bold, and a dark bar on the left edge. No icons or carets. This is the one custom mark on a stock table.
+- **Your line.** Highlighter background, dark text, bold, and an ink bar on the left edge (`--ui-text-highlighted`: dark on light paper, white on night paper, so it shows in both modes). No icons or carets. This is the one custom mark on a stock table.
 - **Short facts.** Figures such as Roster Size and Active pilots are a label with the figure beside or under it. No dot leaders.
 - **Hypothetical Placement.** A stock `UBadge` that reads "Hypothetical Placement in <scope>". Its text meets contrast in both modes. It never uses the highlighter.
 - **About this view.** Explanations sit behind an info icon that opens a `UPopover`. They are not shown inline or in a collapsible.

@@ -1,12 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import { defineComponent, h, ref } from 'vue'
-import { flushPromises } from '@vue/test-utils'
 import { UApp } from '#components'
 import { _resetCoreSingletons, useSeniorityCore } from '~/composables/seniority/modules/useSeniorityCore'
 import { useStanding } from '~/composables/seniority/modules/useStanding'
 import { useListExcerpt } from '~/composables/seniority/modules/useListExcerpt'
 import { resetMockStores } from '~/test-utils/seniority-mocks'
+import { parsePlainDate } from '~/utils/temporal'
 import type { QualificationScope } from '~/utils/seniority'
 import MyStatusTab from './MyStatusTab.vue'
 
@@ -24,17 +24,19 @@ const { makeEntry } = await import('~/test-utils/factories')
 function harness(scope: ReturnType<typeof ref<QualificationScope>>) {
   return defineComponent({
     setup() {
-      const { rankCard, figures } = useStanding(scope as any)
+      const { hasAnchor, isNewHireMode, newHire } = useSeniorityCore()
+      const { rankCard, figures, qualificationGroups } = useStanding(scope as any)
       const { rows } = useListExcerpt(2)
       return () => h(UApp, null, () => h(MyStatusTab, {
         loading: false,
         hasData: true,
-        hasEmployeeNumber: true,
-        userFound: true,
-        isNewHireMode: false,
+        hasEmployeeNumber: !!mockUserStore.employeeNumber || !!newHire.syntheticEntry.value,
+        userFound: hasAnchor.value,
+        isNewHireMode: isNewHireMode.value,
         rankCard: rankCard.value,
         figures: figures.value,
         excerptRows: rows.value,
+        qualificationGroups: qualificationGroups.value,
       }))
     },
   })
@@ -43,6 +45,11 @@ function harness(scope: ReturnType<typeof ref<QualificationScope>>) {
 function figureValue(wrapper: Awaited<ReturnType<typeof mountSuspended>>, label: string): string {
   const item = wrapper.findAll('[data-testid="standing-figures"] > div').find((div: { find: (s: string) => { text: () => string } }) => div.find('dt').text() === label)
   return item!.find('dd').text()
+}
+
+async function openInfo(wrapper: Awaited<ReturnType<typeof mountSuspended>>, name: string, text: string) {
+  await wrapper.find(`button[aria-label="${name}"]`).trigger('click')
+  await vi.waitFor(() => expect(document.body.textContent).toContain(text))
 }
 
 beforeEach(() => {
@@ -77,8 +84,8 @@ describe('Now panel', () => {
     mockUserStore.employeeNumber = 'E3'
     const wrapper = await mountSuspended(harness(ref<QualificationScope>({})))
 
-    expect(wrapper.find('table caption').text()).toBe('Seniority List around your line')
-    const rows = wrapper.findAll('tbody tr')
+    const excerpt = wrapper.findAll('table').find(table => table.find('caption').exists() && table.find('caption').text() === 'Seniority List around your line')!
+    const rows = excerpt.findAll('tbody tr')
     expect(rows.map(row => row.find('td').text())).toEqual(['10', '20', '30', '40', '50'])
     expect(rows.map(row => row.find('td:nth-child(2)').text())).toEqual(['Pilot 1', 'Pilot 2', 'Pilot 3 (Your line)', 'Pilot 4', 'Pilot 5'])
     expect(rows.filter(row => row.text().includes('Your line')).map(row => row.find('td').text())).toEqual(['30'])
@@ -86,6 +93,7 @@ describe('Now panel', () => {
     expect(figureValue(wrapper, 'Seniority Number')).toBe('30')
     expect(figureValue(wrapper, 'Seniority Percentile')).toBe('60.0%')
     expect(figureValue(wrapper, 'Active pilots')).toBe('5')
+    expect(figureValue(wrapper, 'Retirements senior to you (next 12 months)')).toBe('0')
   })
 
   it('labels a retired neighbor in the excerpt', async () => {
@@ -111,35 +119,85 @@ describe('Now panel', () => {
     expect(figureValue(wrapper, 'Seniority Percentile')).toBe('--')
   })
 
-  describe('detail restored from the old My Status tab', () => {
+  describe('one pass over today', () => {
     function seedFive() {
-      mockStore.entries = [1, 2, 3, 4, 5].map(n => makeEntry({ seniority_number: n * 10, employee_number: `E${n}`, name: `Pilot ${n}`, retire_date: n === 1 ? '2027-01-01' : '2050-01-01' }))
+      mockStore.entries = [1, 2, 3, 4, 5].map(n => makeEntry({ seniority_number: n * 10, employee_number: `E${n}`, name: `Pilot ${n}`, base: n % 2 ? 'JFK' : 'BOS', seat: 'FO', fleet: '320', retire_date: n === 1 ? '2027-01-01' : '2050-01-01' }))
       mockUserStore.employeeNumber = 'E3'
     }
 
-    it('lists the retirements, base rank and list count beside the Standing figures', async () => {
+    it('shows Status by Base / Seat / Fleet openly, with your Base Rank', async () => {
       seedFive()
       const wrapper = await mountSuspended(harness(ref<QualificationScope>({})))
 
-      const glance = wrapper.find('[data-testid="standing-glance"]')
-      expect(glance.exists()).toBe(true)
-      expect(glance.text()).toContain('Retirements (Next 12 mo.)')
-      expect(glance.text()).toContain('Your Base Rank')
-      expect(glance.text()).toContain('Lists Uploaded')
+      expect(wrapper.text()).not.toContain('More detail')
+      const table = wrapper.find('[data-testid="base-status"]')
+      expect(table.text()).toContain('Status by Base / Seat / Fleet')
+      expect(table.find('thead').text()).toContain('Base Rank')
+      // E3 is the second of JFK FO 320's three pilots.
+      const own = table.findAll('tbody tr').find(row => row.text().includes('JFK'))!
+      expect(own.text()).toContain('2')
+      expect(own.text()).toContain('of 3')
+      expect(wrapper.find('a[href="/dashboard/current/holdability"]').text()).toContain('Open Holdability')
     })
 
-    it('keeps Status by Base / Seat / Fleet behind a disclosure', async () => {
+    it('leaves list counts to List › Uploads', async () => {
+      seedFive()
+      mockStore.lists = [{ id: 1 }, { id: 2 }]
+      const wrapper = await mountSuspended(harness(ref<QualificationScope>({})))
+
+      expect(wrapper.text()).not.toContain('Lists Uploaded')
+      expect(wrapper.text()).not.toContain('Recent Lists')
+      expect(wrapper.text()).not.toContain('Your Base Rank')
+    })
+
+    it('explains the percentile scale behind an info button', async () => {
       seedFive()
       const wrapper = await mountSuspended(harness(ref<QualificationScope>({})))
+
+      expect(wrapper.text()).not.toContain('Percentile measured against')
+      await openInfo(wrapper, 'About these figures', 'Percentile measured against Roster Size 5')
+    })
+  })
+
+  describe('without an Anchor Pilot', () => {
+    it('shows only the request for an employee number', async () => {
+      mockStore.entries = [1, 2, 3].map(n => makeEntry({ seniority_number: n, employee_number: `E${n}`, retire_date: '2050-01-01' }))
+      mockUserStore.employeeNumber = null
+      const wrapper = await mountSuspended(harness(ref<QualificationScope>({})))
+
+      expect(wrapper.text()).toContain('Enter Your Employee Number')
+      expect(wrapper.find('a[href="/settings"]').text()).toContain('New Hire Mode')
+      expect(wrapper.find('[data-testid="standing-figures"]').exists()).toBe(false)
+      expect(wrapper.find('table').exists()).toBe(false)
       expect(wrapper.text()).not.toContain('Status by Base / Seat / Fleet')
+    })
 
-      const toggle = wrapper.findAll('button').find(button => button.text().includes('More detail'))!
-      await toggle.trigger('click')
-      await flushPromises()
+    it('says when the employee number is not on the list', async () => {
+      mockStore.entries = [1, 2, 3].map(n => makeEntry({ seniority_number: n, employee_number: `E${n}`, retire_date: '2050-01-01' }))
+      mockUserStore.employeeNumber = 'E99'
+      const wrapper = await mountSuspended(harness(ref<QualificationScope>({})))
 
-      expect(wrapper.text()).toContain('Status by Base / Seat / Fleet')
+      expect(wrapper.text()).toContain('is not on this list')
+      expect(wrapper.find('table').exists()).toBe(false)
+    })
 
-      expect(wrapper.find('a[href="/dashboard/current/holdability"]').text()).toContain('Open Holdability')
+    it('keeps the Hypothetical Placement badge in New Hire Mode', async () => {
+      mockStore.entries = [
+        makeEntry({ seniority_number: 10, employee_number: 'E1', base: 'JFK', seat: 'CA', fleet: '737', retire_date: '2050-01-01' }),
+        makeEntry({ seniority_number: 20, employee_number: 'E2', base: 'LAX', seat: 'FO', fleet: '777', retire_date: '2050-01-01' }),
+      ]
+      mockUserStore.employeeNumber = null
+      const { newHire } = useSeniorityCore()
+      newHire.selectedBase.value = 'LAX'
+      newHire.selectedSeat.value = 'FO'
+      newHire.selectedFleet.value = '777'
+      newHire.birthDate.value = parsePlainDate('2000-06-15')
+      newHire.enabled.value = true
+      const wrapper = await mountSuspended(harness(ref<QualificationScope>({ base: 'JFK' })))
+
+      expect(wrapper.find('[data-testid="hypothetical-placement"]').text()).toBe('Hypothetical Placement in JFK')
+      expect(wrapper.find('[data-testid="standing-figures"]').exists()).toBe(true)
+      expect(wrapper.text()).not.toContain('Enter Your Employee Number')
     })
   })
 })

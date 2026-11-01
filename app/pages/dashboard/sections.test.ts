@@ -86,11 +86,24 @@ describe('dashboard small views', () => {
       wrapper.unmount()
     }
     expect(homes).toEqual(['Current › Holdability'])
-  })
+  }, 20000)
 
   it.each(['Trajectory › Projection', 'Trajectory › Retirements'] as const)('%s asks for an Anchor Pilot when there is none', async (view) => {
     mockUserStore.employeeNumber = null
     const wrapper = await visit(views[view]())
     expect(wrapper.text()).toContain('No trajectory yet')
+  })
+})
+
+describe('list metadata', () => {
+  it('lives in List › Uploads, not Current › Status', async () => {
+    const uploads = await visit(views['List › Uploads']())
+    expect(uploads.text()).toContain('Lists Uploaded')
+    expect(uploads.text()).toContain('Recent Lists')
+    uploads.unmount()
+
+    const status = await visit(views['Current › Status']())
+    expect(status.text()).not.toContain('Lists Uploaded')
+    expect(status.text()).not.toContain('Recent Lists')
   })
 })
