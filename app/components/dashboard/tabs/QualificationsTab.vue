@@ -12,22 +12,23 @@ defineProps<{
 </script>
 
 <template>
-  <div class="px-4 sm:px-6 py-4 sm:py-6 max-w-3xl">
+  <div class="px-4 sm:px-6 py-4 sm:py-6 max-w-5xl">
     <div v-if="loading" class="space-y-4">
       <USkeleton class="h-6 w-48" />
       <USkeleton class="h-64" />
     </div>
 
+    <template v-else>
     <UEmpty
-      v-else-if="!userFound"
+      v-if="!userFound"
       icon="i-lucide-layout-list"
       title="No Qualifications yet"
       description="Enter your employee number to see where you stand in every Qualification."
       :actions="[{ label: 'Open Settings', icon: 'i-lucide-settings', to: '/settings', size: 'lg' as const }]"
-      class="py-24"
+      class="py-10"
     />
 
-    <template v-else>
+    <div v-else class="max-w-3xl">
       <h2 class="font-serif text-xl font-semibold text-highlighted">Qualification directory</h2>
       <p class="mt-1 font-serif text-sm italic text-muted">
         Highest Seniority Percentile first. Your own Qualification is marked.
@@ -57,7 +58,7 @@ defineProps<{
             <tr>
               <td class="px-2 pt-2 font-sans" :class="row.hypotheticalLabel ? 'pb-0.5' : 'pb-2'">{{ row.baseFleetLabel }}</td>
               <td class="px-2 pt-2 text-right" :class="row.hypotheticalLabel ? 'pb-0.5' : 'pb-2'">{{ row.rankLabel }}</td>
-              <td class="px-2 pt-2 text-right text-muted" :class="row.hypotheticalLabel ? 'pb-0.5' : 'pb-2'">{{ row.rosterOfLabel }}</td>
+              <td class="px-2 pt-2 text-right" :class="[row.hypotheticalLabel ? 'pb-0.5' : 'pb-2', row.isAnchorCurrentQualification ? '' : 'text-muted']">{{ row.rosterOfLabel }}</td>
               <td class="px-2 pt-2 text-right" :class="row.hypotheticalLabel ? 'pb-0.5' : 'pb-2'">{{ row.percentileLabel }}</td>
             </tr>
             <tr v-if="row.hypotheticalLabel">
@@ -69,6 +70,10 @@ defineProps<{
         </table>
       </section>
       </template>
+    </div>
+
+    <DashboardQualificationPositions v-if="userFound && !noResultLabel" />
+    <DashboardQualificationDemographics />
     </template>
   </div>
 </template>

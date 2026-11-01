@@ -160,6 +160,21 @@ describe('useStanding', () => {
     expect(retirementSnapshot.value).toEqual(realSnapshot)
   })
 
+  it('summarizes the figures not already on Now as a glance list with their trend notes', () => {
+    mockStore.entries = [
+      makeEntry({ seniority_number: 10, employee_number: 'E1', retire_date: '2020-01-01' }),
+      makeEntry({ seniority_number: 40, employee_number: 'E2', retire_date: '2045-01-01' }),
+      makeEntry({ seniority_number: 90, employee_number: 'E3', retire_date: '2050-01-01' }),
+    ]
+    mockStore.lists = [makeList(), makeList()]
+    mockUserStore.employeeNumber = 'E3'
+    const { glance } = useStanding()
+
+    expect(glance.value.map(item => item.label)).toEqual(['Retirements (Next 12 mo.)', 'Your Base Rank', 'Lists Uploaded'])
+    expect(glance.value.find(item => item.label === 'Lists Uploaded')?.value).toBe('2')
+    expect(glance.value.find(item => item.label === 'Your Base Rank')?.note).toContain('on roster')
+  })
+
   describe('Roster Size agreement', () => {
     function enableNewHire() {
       const { newHire } = useSeniorityCore()

@@ -92,6 +92,7 @@ vi.mock('~/composables/seniority/modules/useSeniorityCore', () => ({
     analysis: ref(null),
     anchoredAnalysis: ref(null),
     userEntry: ref(undefined),
+    entries: ref([]),
     projectionEndDate: ref(null),
   }),
 }))
@@ -103,6 +104,7 @@ vi.mock('~/composables/seniority/modules/useStanding', () => ({
       hireDate: '2012-03-01', noResultLabel: null, hypotheticalLabel: null, percentileScaleLabel: null,
     }),
     statCards: ref([]),
+    glance: ref([]),
     retirementSnapshot: ref(null),
     baseStatus: ref([]),
     qualificationGroups: ref([]),

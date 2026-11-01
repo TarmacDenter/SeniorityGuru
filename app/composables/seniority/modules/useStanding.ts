@@ -83,8 +83,11 @@ export interface QualificationSeatGroup {
 export interface StandingFigure {
   label: string
   value: string
+  /** Trend or context shown beside the value, e.g. "42 senior to you"; absent when there is none. */
+  note?: string
 }
 
+const ROSTER_SIZE_ICON = 'i-lucide-users'
 const SEAT_ORDER: Record<string, number> = { CA: 0, FO: 1 }
 
 export interface StatCard {
@@ -112,6 +115,8 @@ export function useStanding(qualificationScope?: Ref<QualificationScope> | Compu
   qualificationGroups: ComputedRef<QualificationSeatGroup[]>
   figures: ComputedRef<StandingFigure[]>
   statCards: ComputedRef<StatCard[]>
+  /** The stat cards that Now's figures do not already show (Roster Size is one of them), as dot-leader rows. */
+  glance: ComputedRef<StandingFigure[]>
   retirementSnapshot: ComputedRef<RetirementSnapshotData | null>
 } {
   const { anchoredAnalysis, projectionEndDate } = useSeniorityCore()
@@ -241,7 +246,7 @@ export function useStanding(qualificationScope?: Ref<QualificationScope> | Compu
         label: presented?.rosterSizeLabel ?? 'Roster Size',
         ...(presented?.rosterSizeTrend ? { trend: presented.rosterSizeTrend } : {}),
         value: presented?.rosterSizeValueLabel ?? PLACEHOLDER,
-        icon: 'i-lucide-users',
+        icon: ROSTER_SIZE_ICON,
       },
       {
         label: 'Retirements (Next 12 mo.)',
@@ -263,6 +268,10 @@ export function useStanding(qualificationScope?: Ref<QualificationScope> | Compu
       },
     ]
   })
+
+  const glance = computed<StandingFigure[]>(() => statCards.value
+    .filter(card => card.icon !== ROSTER_SIZE_ICON)
+    .map(card => ({ label: card.label, value: card.value, ...(card.trend ? { note: card.trend } : {}) })))
 
   const trajectoryOutput = computed(() => projectionEndDate.value
     ? anchoredAnalysis.value?.seniorityTrajectory({
@@ -298,5 +307,5 @@ export function useStanding(qualificationScope?: Ref<QualificationScope> | Compu
     }
   })
 
-  return { rankCard, baseStatus, qualificationGroups, figures, statCards, retirementSnapshot }
+  return { rankCard, baseStatus, qualificationGroups, figures, statCards, glance, retirementSnapshot }
 }

@@ -142,8 +142,8 @@ describe('QualSeniorityScale', () => {
 
     const projectedMarkers = wrapper.findAll('[data-testid="qualification-scale-projected-position"]')
     expect(projectedMarkers).toHaveLength(2)
-    expect(projectedMarkers[0]!.classes()).toContain('bg-[var(--ui-color-success-500)]')
-    expect(projectedMarkers[1]!.classes()).toContain('bg-[var(--ui-color-primary-500)]')
+    expect(projectedMarkers[0]!.classes()).toContain('bg-mark-ink')
+    expect(projectedMarkers[1]!.classes()).toContain('bg-mark-ink')
     expect(projectedMarkers.map(marker => marker.attributes('style'))).toEqual([
       expect.stringContaining('left: 70%'),
       expect.stringContaining('left: 50%'),
@@ -154,5 +154,22 @@ describe('QualSeniorityScale', () => {
       expect.stringContaining('left: 60%'),
       expect.stringContaining('left: 40%'),
     ])
+  })
+
+  it('marks the Qualification Threshold solid ink when holdable and a dashed stamp when not, with no palette colors', async () => {
+    const Scale = await import('./QualSeniorityScale.vue')
+    const wrapper = await mountSuspended(Scale.default, {
+      props: {
+        positions: [
+          position({ qualification: { fleet: '320', seat: 'CA', base: 'JFK' }, modeledHoldable: true }),
+          position({ qualification: { fleet: '737', seat: 'FO', base: 'JFK' }, modeledHoldable: false }),
+        ],
+      },
+    })
+
+    const [holdable, notYet] = wrapper.findAll('[data-testid="qualification-scale-threshold"]')
+    expect(holdable!.classes()).toContain('border-solid')
+    expect(notYet!.classes()).toEqual(expect.arrayContaining(['border-dashed', 'border-stamp']))
+    expect(wrapper.html()).not.toMatch(/ui-color-(success|primary|error)/)
   })
 })
