@@ -45,6 +45,8 @@ describe('RetirementsTab', () => {
     expect(rows[0]).toContain(inMonths(6))
     expect(rows[1]).toContain(inMonths(18))
     expect(wrapper.text()).toContain('Set an employee number that appears in this list')
+    expect(wrapper.findAll('thead th').map(th => th.text())).not.toContain('Rank relative to me')
+    expect(wrapper.get('[role="switch"]').attributes('disabled')).toBeDefined()
   })
 
   it('re-sorts when the Seniority Number heading is pressed', async () => {
@@ -52,6 +54,16 @@ describe('RetirementsTab', () => {
     const wrapper = await mountTab()
     await wrapper.findAll('button').find(b => b.text().includes('Seniority'))!.trigger('click')
     expect(bodyRows(wrapper).map(row => row.slice(0, 1))).toEqual(['1', '2', '3'])
+  })
+
+  it('announces the date sort direction and reverses the retirement order', async () => {
+    mockStore.entries = [pilot(1, 18), pilot(2, 6)]
+    const wrapper = await mountTab()
+
+    await wrapper.get('button[aria-label="Sort by Estimated retirement date, currently ascending"]').trigger('click')
+
+    expect(bodyRows(wrapper)[0]).toContain(inMonths(18))
+    expect(wrapper.find('button[aria-label="Sort by Estimated retirement date, currently descending"]').exists()).toBe(true)
   })
 
   it('shows the signed Rank difference for pilots senior to the Anchor Pilot', async () => {

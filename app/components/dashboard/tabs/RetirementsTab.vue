@@ -1,6 +1,8 @@
 <script setup lang="ts">
+import { h, resolveComponent } from 'vue'
+import type { TableColumn } from '@nuxt/ui'
 import { useUpcomingRetirements } from '~/composables/seniority/modules/useUpcomingRetirements'
-import type { RetirementSortKey } from '~/composables/seniority/modules/useUpcomingRetirements'
+import type { RetirementRow, RetirementSortKey } from '~/composables/seniority/modules/useUpcomingRetirements'
 
 // List › Upcoming retirements. Range, scope, filtering, sorting and labels come from the composable.
 const {
@@ -8,16 +10,33 @@ const {
   filterBase, filterSeat, filterFleet, baseItems, seatItems, fleetItems, sortKey, sortDir, toggleSort, rows,
 } = useUpcomingRetirements()
 
-const sortableColumns = computed<{ key: RetirementSortKey; label: string; align: string }[]>(() => [
-  { key: 'seniorityNumber', label: 'Seniority Number', align: 'text-right' },
-  ...(hasAnchor.value ? [{ key: 'rankRelativeToMe' as const, label: 'Rank relative to me', align: 'text-right' }] : []),
-  { key: 'retirementDate', label: 'Estimated retirement date', align: 'text-right' },
-])
+const numeric = { class: { th: 'text-right', td: 'text-right' } }
 
-function ariaSort(key: RetirementSortKey) {
-  if (sortKey.value !== key) return 'none'
-  return sortDir.value === 'asc' ? 'ascending' : 'descending'
+function sortableColumn(key: RetirementSortKey, label: string, accessorKey: keyof RetirementRow): TableColumn<RetirementRow> {
+  return {
+    id: key,
+    accessorKey,
+    meta: numeric,
+    header: () => h(resolveComponent('UButton'), {
+      color: 'neutral',
+      variant: 'ghost',
+      size: 'xs',
+      label,
+      icon: sortKey.value === key
+        ? sortDir.value === 'asc' ? 'i-lucide-chevron-up' : 'i-lucide-chevron-down'
+        : 'i-lucide-chevrons-up-down',
+      'aria-label': `Sort by ${label}, currently ${sortKey.value !== key ? 'unsorted' : sortDir.value === 'asc' ? 'ascending' : 'descending'}`,
+      onClick: () => toggleSort(key),
+    }),
+  }
 }
+
+const columns = computed<TableColumn<RetirementRow>[]>(() => [
+  sortableColumn('seniorityNumber', 'Seniority Number', 'seniorityNumber'),
+  { accessorKey: 'qualificationLabel', header: 'Qualification' },
+  ...(hasAnchor.value ? [sortableColumn('rankRelativeToMe', 'Rank relative to me', 'relativeLabel')] : []),
+  sortableColumn('retirementDate', 'Estimated retirement date', 'retirementDateLabel'),
+])
 </script>
 
 <template>
@@ -58,40 +77,19 @@ function ariaSort(key: RetirementSortKey) {
         to see rank relative to you and filter by seniority.
       </p>
 
-      <div class="overflow-x-auto">
-        <table class="w-full border-collapse font-mono text-sm sm:text-base" aria-label="Upcoming retirements">
-          <thead>
-            <tr class="border-b border-default font-sans text-xs font-medium text-muted">
-              <th v-for="column in sortableColumns.slice(0, 1)" :key="column.key" scope="col" :aria-sort="ariaSort(column.key)" class="px-2 py-1.5" :class="column.align">
-                <button type="button" class="inline-flex items-center gap-1" @click="toggleSort(column.key)">
-                  {{ column.label }}
-                  <UIcon :name="sortKey === column.key && sortDir === 'desc' ? 'i-lucide-chevron-down' : 'i-lucide-chevron-up'" class="size-3" :class="sortKey === column.key ? 'text-highlighted' : 'text-dimmed'" />
-                </button>
-              </th>
-              <th scope="col" class="px-2 py-1.5 text-left">Qualification</th>
-              <th v-for="column in sortableColumns.slice(1)" :key="column.key" scope="col" :aria-sort="ariaSort(column.key)" class="px-2 py-1.5" :class="column.align">
-                <button type="button" class="inline-flex items-center gap-1" @click="toggleSort(column.key)">
-                  {{ column.label }}
-                  <UIcon :name="sortKey === column.key && sortDir === 'desc' ? 'i-lucide-chevron-down' : 'i-lucide-chevron-up'" class="size-3" :class="sortKey === column.key ? 'text-highlighted' : 'text-dimmed'" />
-                </button>
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="row in rows" :key="row.key" class="even:bg-accented">
-              <td class="px-2 py-2 text-right">{{ row.seniorityNumber }}</td>
-              <td class="px-2 py-2 text-left">{{ row.qualificationLabel }}</td>
-              <td v-if="hasAnchor" class="px-2 py-2 text-right">{{ row.relativeLabel }}</td>
-              <td class="px-2 py-2 text-right">{{ row.retirementDateLabel }}</td>
-            </tr>
-          </tbody>
-        </table>
-
-        <div v-if="rows.length === 0" class="py-12 text-center">
+      <UTable
+        :data="rows"
+        :columns="columns"
+        :get-row-id="row => row.key"
+        :sorting-options="{ manualSorting: true }"
+        :ui="{ td: 'font-mono', caption: 'sr-only' }"
+        caption="Upcoming retirements"
+      >
+        <template #empty>
           <p class="font-medium text-highlighted">No retirements found</p>
           <p class="mt-1 text-sm text-muted">{{ emptyResultLabel }}</p>
-        </div>
-      </div>
+        </template>
+      </UTable>
     </template>
   </div>
 </template>
