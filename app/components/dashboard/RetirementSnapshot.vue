@@ -1,151 +1,90 @@
 <script setup lang="ts">
-import { h } from 'vue'
-import type { TableColumn } from '@nuxt/ui'
-import { formatMonthYear, formatYear } from '~/utils/date'
-
-interface SeniorityTrajectoryPoint {
-  date: string
-  rank: number
-  percentile: number
+interface SnapshotRow {
+  yearLabel: string
+  rankLabel: string
+  percentileLabel: string
+  changeLabel: string
 }
 
-interface PresentedSeniorityTrajectoryPoint extends SeniorityTrajectoryPoint {
-  rankDelta: string
-}
-
-const props = defineProps<{
+defineProps<{
   snapshot: {
-    atRetirement: SeniorityTrajectoryPoint
-    rosterSize: number
-    activePilotCount: number
-    fullTrajectory: PresentedSeniorityTrajectoryPoint[]
-    retireDate: string
-    hypotheticalLabel?: string | null
+    retireDateLabel: string
+    projectedRankLabel: string
+    percentileLabel: string
+    pilotsAheadLabel: string
+    rosterSizeLabel: string
+    activePilotLabel: string
+    hypotheticalLabel: string | null
+    rows: SnapshotRow[]
   }
+  maxYears: number
 }>()
 
-const DEFAULT_YEARS = 5
-const MIN_YEARS = 3
-const MAX_YEARS = 10
-
-const maxYears = computed(() => Math.min(MAX_YEARS, props.snapshot.fullTrajectory.length))
-const yearsToShow = ref(Math.min(DEFAULT_YEARS, maxYears.value))
-
-watch(maxYears, (newMax) => {
-  if (yearsToShow.value > newMax) {
-    yearsToShow.value = newMax
-  }
-  if (yearsToShow.value < MIN_YEARS && newMax >= MIN_YEARS) {
-    yearsToShow.value = MIN_YEARS
-  }
-})
-
-interface TableRow {
-  year: string
-  rank: number
-  percentile: number
-  rankDelta: string
-}
-
-const tableData = computed<TableRow[]>(() => {
-  const trajectory = props.snapshot.fullTrajectory
-  const sliced = trajectory.slice(-yearsToShow.value)
-
-  return sliced.map((point) => {
-    return {
-      year: formatYear(point.date),
-      rank: point.rank,
-      percentile: point.percentile,
-      rankDelta: point.rankDelta,
-    }
-  })
-})
-
-function rankDeltaColorClass(rankDelta: string): string {
-  if (rankDelta.startsWith('-')) return 'text-[var(--ui-color-success-500)]'
-  if (rankDelta.startsWith('+')) return 'text-[var(--ui-color-error-500)]'
-  return 'text-muted'
-}
-
-const columns: TableColumn<TableRow>[] = [
-  { accessorKey: 'year', header: 'Year' },
-  {
-    accessorKey: 'rank',
-    header: 'Rank',
-    cell: ({ row }) => h('span', { class: 'font-mono' }, row.original.rank.toLocaleString()),
-  },
-  {
-    accessorKey: 'percentile',
-    header: 'Seniority Percentile',
-    cell: ({ row }) => h('span', { class: 'font-mono' }, `${row.original.percentile}%`),
-  },
-  {
-    accessorKey: 'rankDelta',
-    header: 'Change',
-    cell: ({ row }) => h('span', { class: `font-mono ${rankDeltaColorClass(row.original.rankDelta)}` }, row.original.rankDelta),
-  },
-]
-
-function formatDate(dateStr: string): string {
-  return formatMonthYear(dateStr)
-}
+const years = defineModel<number>('years', { required: true })
 </script>
 
 <template>
-  <UCard :ui="{ body: 'px-0 py-0 sm:px-4 sm:py-5' }">
-    <template #header>
-      <div class="flex items-center justify-between">
-        <div class="flex items-center gap-3">
-          <div class="flex items-center justify-center size-10 rounded-lg bg-primary/10">
-            <UIcon name="i-lucide-plane-landing" class="size-5 text-primary" />
-          </div>
-          <h3 class="font-semibold text-highlighted">Retirement Snapshot</h3>
-        </div>
-        <UBadge color="primary" variant="subtle" size="sm">
-          {{ formatDate(snapshot.retireDate) }}
-        </UBadge>
-      </div>
-    </template>
+  <section aria-labelledby="retirement-snapshot-heading">
+    <h3 id="retirement-snapshot-heading" class="font-serif text-lg font-semibold text-highlighted">Retirement Snapshot</h3>
 
-    <p v-if="snapshot.hypotheticalLabel" data-testid="hypothetical-placement" class="px-3 pt-3 sm:px-0 sm:pt-0 text-xs font-semibold text-warning">
+    <p
+      v-if="snapshot.hypotheticalLabel"
+      data-testid="snapshot-hypothetical"
+      class="mt-2 inline-block -rotate-1 border-2 border-stamp px-2 py-0.5 font-sans text-sm font-semibold text-stamp"
+    >
       {{ snapshot.hypotheticalLabel }}
     </p>
 
-    <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-4 mb-4 sm:mb-6 px-3 pt-3 sm:px-0 sm:pt-0">
-      <div class="text-center">
-        <p class="text-xs text-muted">Retire Date</p>
-        <p class="text-sm sm:text-lg font-semibold font-mono text-highlighted">{{ formatDate(snapshot.retireDate) }}</p>
+    <dl class="mt-3 grid grid-cols-2 gap-x-6 sm:grid-cols-3">
+      <div class="flex items-baseline gap-2 border-b border-dotted border-default py-1.5">
+        <dt class="text-sm text-muted">Retire Date</dt>
+        <dd class="ml-auto whitespace-nowrap font-mono font-semibold text-highlighted">{{ snapshot.retireDateLabel }}</dd>
       </div>
-      <div class="text-center">
-        <p class="text-xs text-muted">Projected Rank</p>
-        <p class="text-sm sm:text-lg font-semibold font-mono text-highlighted">{{ snapshot.atRetirement.rank.toLocaleString() }}</p>
+      <div class="flex items-baseline gap-2 border-b border-dotted border-default py-1.5">
+        <dt class="text-sm text-muted">Projected Rank</dt>
+        <dd class="ml-auto font-mono font-semibold text-highlighted">{{ snapshot.projectedRankLabel }}</dd>
       </div>
-      <div class="text-center">
-        <p class="text-xs text-muted">Seniority Percentile</p>
-        <p class="text-sm sm:text-lg font-semibold font-mono text-highlighted">{{ snapshot.atRetirement.percentile }}%</p>
+      <div class="flex items-baseline gap-2 border-b border-dotted border-default py-1.5">
+        <dt class="text-sm text-muted">Seniority Percentile</dt>
+        <dd class="ml-auto font-mono font-semibold text-highlighted">{{ snapshot.percentileLabel }}</dd>
       </div>
-      <div class="text-center">
-        <p class="text-xs text-muted">Pilots Ahead</p>
-        <p class="text-sm sm:text-lg font-semibold font-mono text-highlighted">{{ (snapshot.atRetirement.rank - 1).toLocaleString() }}</p>
+      <div class="flex items-baseline gap-2 border-b border-dotted border-default py-1.5">
+        <dt class="text-sm text-muted">Pilots Ahead</dt>
+        <dd class="ml-auto font-mono font-semibold text-highlighted">{{ snapshot.pilotsAheadLabel }}</dd>
       </div>
-      <div class="text-center">
-        <p class="text-xs text-muted">Roster Size today</p>
-        <p class="text-sm sm:text-lg font-semibold font-mono text-highlighted">{{ snapshot.rosterSize.toLocaleString() }}</p>
+      <div class="flex items-baseline gap-2 border-b border-dotted border-default py-1.5">
+        <dt class="text-sm text-muted">Roster Size today</dt>
+        <dd class="ml-auto font-mono font-semibold text-highlighted">{{ snapshot.rosterSizeLabel }}</dd>
       </div>
-      <div class="text-center">
-        <p class="text-xs text-muted">Active pilots</p>
-        <p class="text-sm sm:text-lg font-semibold font-mono text-highlighted">{{ snapshot.activePilotCount.toLocaleString() }}</p>
+      <div class="flex items-baseline gap-2 border-b border-dotted border-default py-1.5">
+        <dt class="text-sm text-muted">Active pilots</dt>
+        <dd class="ml-auto font-mono font-semibold text-highlighted">{{ snapshot.activePilotLabel }}</dd>
       </div>
+    </dl>
+
+    <div class="mt-4 flex items-center gap-3">
+      <label for="snapshot-years" class="whitespace-nowrap text-sm text-muted">Final years</label>
+      <USlider id="snapshot-years" v-model="years" :min="3" :max="maxYears" :step="1" size="sm" class="flex-1" />
+      <span class="w-6 text-right font-mono text-sm font-semibold text-highlighted">{{ years }}</span>
     </div>
 
-    <USeparator class="mb-3 sm:mb-4" />
-
-    <div class="flex items-center gap-3 sm:gap-4 mb-3 sm:mb-4 px-3 sm:px-0">
-      <label class="text-xs sm:text-sm text-muted whitespace-nowrap">Final years</label>
-      <USlider v-model="yearsToShow" :min="3" :max="maxYears" :step="1" size="sm" class="flex-1" />
-      <span class="text-xs sm:text-sm font-mono font-semibold text-highlighted w-5 sm:w-6 text-right">{{ yearsToShow }}</span>
-    </div>
-
-    <UTable :data="tableData" :columns="columns" class="text-xs sm:text-sm" />
-  </UCard>
+    <table class="mt-2 w-full border-collapse font-mono text-sm sm:text-base">
+      <thead>
+        <tr class="border-b border-highlighted font-sans text-xs font-medium text-muted">
+          <th scope="col" class="px-2 py-1.5 text-left">Year</th>
+          <th scope="col" class="px-2 py-1.5 text-right">Rank</th>
+          <th scope="col" class="px-2 py-1.5 text-right">Seniority Percentile</th>
+          <th scope="col" class="px-2 py-1.5 text-right">Change</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr v-for="row in snapshot.rows" :key="row.yearLabel" class="even:bg-accented">
+          <td class="px-2 py-2 text-left">{{ row.yearLabel }}</td>
+          <td class="px-2 py-2 text-right">{{ row.rankLabel }}</td>
+          <td class="px-2 py-2 text-right">{{ row.percentileLabel }}</td>
+          <td class="px-2 py-2 text-right">{{ row.changeLabel }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
 </template>

@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import type { ChartData, ChartOptions } from 'chart.js'
 import type { PresentedTrajectoryChange } from '~/utils/seniority'
-import { formatYear, extractYear } from '~/utils/date'
+import { formatYear } from '~/utils/date'
 
 const props = defineProps<{
   changes: PresentedTrajectoryChange[]
+  /** e.g. "Best year: 2031 (+3.2pp)"; null when no year improves. */
+  bestYearLabel: string | null
 }>()
 
 const { colors } = useChartTheme()
@@ -48,27 +50,14 @@ const chartOptions = computed<ChartOptions>(() => ({
     },
   },
 }))
-
-const bestYear = computed(() => {
-  if (props.changes.length === 0) return null
-  let best = props.changes[0]!
-  for (const change of props.changes) {
-    if (change.percentilePointChange > best.percentilePointChange) best = change
-  }
-  if (best.percentilePointChange <= 0) return null
-  return {
-    year: extractYear(best.date),
-    percentilePointChange: best.percentilePointChange,
-  }
-})
 </script>
 
 <template>
   <UCard>
     <template #header>
       <div class="flex items-center justify-between">
-        <h3 class="font-semibold text-highlighted">Improvement Rate</h3>
-        <UBadge color="primary" variant="subtle" size="sm">YoY</UBadge>
+        <h3 class="font-serif text-lg font-semibold text-highlighted">Improvement Rate</h3>
+        <UBadge color="neutral" variant="outline" size="sm">YoY</UBadge>
       </div>
     </template>
 
@@ -79,8 +68,8 @@ const bestYear = computed(() => {
       </template>
     </ClientOnly>
 
-    <p v-if="bestYear" class="mt-2 text-xs text-[var(--ui-text-muted)]">
-      Best year: {{ bestYear.year }} (+{{ bestYear.percentilePointChange }}pp)
+    <p v-if="bestYearLabel" data-testid="best-year" class="mt-2 font-mono text-xs text-muted">
+      {{ bestYearLabel }}
     </p>
   </UCard>
 </template>
