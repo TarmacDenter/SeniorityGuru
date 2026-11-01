@@ -64,10 +64,10 @@ const columns: TableColumn<SizeRow>[] = [
 </script>
 
 <template>
-  <UCard :ui="{ body: 'px-0 py-0 sm:px-4 sm:py-5' }">
+  <UCard :ui="{ body: 'px-0 py-0 sm:px-4 sm:py-3' }">
     <template #header>
-      <h3 class="font-semibold">Base / Fleet / Seat Sizes</h3>
+      <h3 class="font-semibold text-highlighted">Sizes</h3>
     </template>
-    <UTable :data="rows" :columns="columns" class="text-xs sm:text-sm" />
+    <UTable :data="rows" :columns="columns" :ui="{ th: 'py-2', td: 'py-1.5' }" class="text-xs sm:text-sm" />
   </UCard>
 </template>
