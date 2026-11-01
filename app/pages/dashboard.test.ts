@@ -10,10 +10,12 @@ enableAutoUnmount(afterEach)
 // ---------------------------------------------------------------------------
 // Hoisted mocks
 // ---------------------------------------------------------------------------
-type ListItem = { id: number; title: string | null; effectiveDate: string; createdAt: string }
+type ListItem = { id: number; title: string | null; effectiveDate: string; createdAt: string; isDemo?: boolean }
 
 const {
   mockNavigateTo,
+  mockRoutePath,
+  mockShowDemoBadge,
   mockRouteQuery,
   mockLoadPreferences,
   mockFetchLists,
@@ -24,6 +26,8 @@ const {
   const { ref: vRef } = require('vue')
   return {
     mockNavigateTo: vi.fn(),
+    mockRoutePath: { value: '/dashboard/current/status' },
+    mockShowDemoBadge: { value: false },
     mockRouteQuery: { value: {} as Record<string, string> },
     mockLoadPreferences: vi.fn(),
     mockFetchLists: vi.fn(),
@@ -39,7 +43,7 @@ const {
 mockNuxtImport('navigateTo', () => mockNavigateTo)
 mockNuxtImport('useRoute', () => () => ({
   query: mockRouteQuery.value,
-  path: '/dashboard',
+  path: mockRoutePath.value,
 }))
 
 // ---------------------------------------------------------------------------
@@ -72,7 +76,7 @@ vi.mock('~/composables/seniority/modules/useSeniorityLists', () => ({
 }))
 
 vi.mock('~/composables/useDemoBanner', () => ({
-  useDemoBanner: () => ({ showBanner: ref(false), showBadge: ref(false), hasDemoLists: ref(false), dismiss: vi.fn() }),
+  useDemoBanner: () => ({ showBanner: ref(false), showBadge: ref(mockShowDemoBadge.value), hasDemoLists: ref(false), dismiss: vi.fn() }),
 }))
 
 vi.mock('~/composables/usePwaInstall', () => ({
@@ -141,9 +145,13 @@ function makeList(id: number) {
   }
 }
 
+const stubs = { NuxtPage: { template: '<div data-testid="small-view" />' } }
+
 describe('dashboard.vue — route-synced ref / watcher race condition', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockRoutePath.value = '/dashboard/current/status'
+    mockShowDemoBadge.value = false
     mockHasData.value = false
     mockRouteQuery.value = {}
     mockLists.value = []
@@ -161,7 +169,7 @@ describe('dashboard.vue — route-synced ref / watcher race condition', () => {
     })
 
     const DashboardPage = await import('./dashboard.vue')
-    await mountSuspended(DashboardPage.default)
+    await mountSuspended(DashboardPage.default, { global: { stubs } })
 
     // After full mount cycle, navigateTo must not have been called for list init
     expect(mockNavigateTo).not.toHaveBeenCalled()
@@ -177,7 +185,7 @@ describe('dashboard.vue — route-synced ref / watcher race condition', () => {
     })
 
     const DashboardPage = await import('./dashboard.vue')
-    await mountSuspended(DashboardPage.default)
+    await mountSuspended(DashboardPage.default, { global: { stubs } })
 
     expect(mockFetchEntries).toHaveBeenCalledTimes(1)
     expect(mockFetchEntries).toHaveBeenCalledWith(OLD_ID)
@@ -193,7 +201,7 @@ describe('dashboard.vue — route-synced ref / watcher race condition', () => {
     })
 
     const DashboardPage = await import('./dashboard.vue')
-    await mountSuspended(DashboardPage.default)
+    await mountSuspended(DashboardPage.default, { global: { stubs } })
 
     expect(mockFetchEntries).toHaveBeenCalledTimes(1)
     expect(mockFetchEntries).toHaveBeenCalledWith(LATEST_ID)
@@ -209,7 +217,7 @@ describe('dashboard.vue — route-synced ref / watcher race condition', () => {
     })
 
     const DashboardPage = await import('./dashboard.vue')
-    const wrapper = await mountSuspended(DashboardPage.default)
+    const wrapper = await mountSuspended(DashboardPage.default, { global: { stubs } })
 
     await vi.waitFor(() => {
       expect(mockFetchEntries).toHaveBeenCalledWith(LIST_A)
@@ -228,17 +236,18 @@ describe('dashboard.vue — route-synced ref / watcher race condition', () => {
 
     expect(mockFetchEntries).toHaveBeenCalledWith(LIST_B)
     expect(mockNavigateTo).toHaveBeenCalledWith(
-      expect.objectContaining({ query: expect.objectContaining({ list: String(LIST_B) }) }),
+      expect.objectContaining({ path: '/dashboard/current/status', query: expect.objectContaining({ list: String(LIST_B) }) }),
       expect.objectContaining({ replace: true }),
     )
   })
 })
 
-describe('dashboard.vue — panels', () => {
+describe('dashboard.vue — sections', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockHasData.value = true
-    clearNuxtState('dashboardActiveTab')
+    mockShowDemoBadge.value = false
+    mockRoutePath.value = '/dashboard/current/status'
     mockRouteQuery.value = {}
     mockFetchLists.mockImplementation(() => { mockLists.value = [makeList(1)] })
     mockLoadPreferences.mockResolvedValue(undefined)
@@ -246,47 +255,74 @@ describe('dashboard.vue — panels', () => {
     mockNavigateTo.mockResolvedValue(undefined)
   })
 
-  async function mountDashboard() {
+  async function mountDashboard(path = '/dashboard/current/status') {
+    mockRoutePath.value = path
     const DashboardPage = await import('./dashboard.vue')
-    const wrapper = await mountSuspended(defineComponent({ render: () => h(UApp, null, () => h(DashboardPage.default)) }))
+    const wrapper = await mountSuspended(defineComponent({ render: () => h(UApp, null, () => h(DashboardPage.default)) }), { global: { stubs } })
     await vi.waitFor(() => expect(mockFetchEntries).toHaveBeenCalled())
     await nextTick()
     await nextTick()
     return wrapper
   }
 
-  it('names the four panels and opens Now first', async () => {
-    const wrapper = await mountDashboard()
-    const tabs = wrapper.findAll('[role="tab"]')
-    expect(tabs.map(tab => tab.text())).toEqual(['Now', 'Next', 'Qualifications', 'Lists'])
-    expect(tabs.filter(tab => tab.attributes('aria-selected') === 'true').map(tab => tab.text())).toEqual(['Now'])
-    expect(wrapper.text()).toContain('Your line on the Seniority List')
+  function viewTabs(wrapper: Awaited<ReturnType<typeof mountDashboard>>) {
+    return wrapper.findAll('[aria-label="Section views"] a').map(link => ({ text: link.text(), current: link.attributes('aria-current') === 'page' }))
+  }
+
+  it.each([
+    ['/dashboard/current/status', 'Current', [['Status', true], ['Holdability', false]]],
+    ['/dashboard/current/holdability', 'Current', [['Status', false], ['Holdability', true]]],
+    ['/dashboard/trajectory/projection', 'Trajectory', [['Projection', true], ['Retirements', false]]],
+    ['/dashboard/trajectory/retirements', 'Trajectory', [['Projection', false], ['Retirements', true]]],
+    ['/dashboard/list/full', 'List', [['Full list', true], ['Upcoming retirements', false], ['Compare', false], ['Uploads', false]]],
+    ['/dashboard/list/uploads', 'List', [['Full list', false], ['Upcoming retirements', false], ['Compare', false], ['Uploads', true]]],
+  ] as const)('%s is titled %s with its small views in a tab row', async (path, title, tabs) => {
+    const wrapper = await mountDashboard(path)
+    expect(wrapper.find('h1').text()).toContain(title)
+    expect(viewTabs(wrapper)).toEqual(tabs.map(([text, current]) => ({ text, current })))
   })
 
-  it('shows the scenario strip on Now', async () => {
-    const wrapper = await mountDashboard()
+  it('shows Demographics without a tab row', async () => {
+    const wrapper = await mountDashboard('/dashboard/demographics')
+    expect(wrapper.find('h1').text()).toContain('Demographics')
+    expect(viewTabs(wrapper)).toEqual([])
+  })
+
+  it.each(['/dashboard/current/status', '/dashboard/trajectory/retirements', '/dashboard/demographics'])('shows the scenario toolbar on %s', async (path) => {
+    const wrapper = await mountDashboard(path)
     expect(wrapper.find('[data-testid="scenario-strip"]').exists()).toBe(true)
     expect(wrapper.text()).toContain('As-of Date')
     expect(wrapper.text()).toContain('Growth Assumptions')
+    expect(wrapper.find('[aria-label="Seniority List"]').exists()).toBe(false)
   })
 
-  it.each([
-    ['status', 'Your line on the Seniority List'],
-    ['trajectory', 'Your Seniority Percentile over time'],
-    ['position', 'Qualification directory'],
-    ['demographics', 'Qualification directory'],
-    ['seniority', 'Compare'],
-    ['retirements', 'Compare'],
-    ['nonsense', 'Your line on the Seniority List'],
-  ])('lands an old ?tab=%s link on the matching panel', async (oldTab, expectedText) => {
-    mockRouteQuery.value = { tab: oldTab }
-    const wrapper = await mountDashboard()
-    expect(wrapper.text()).toContain(expectedText)
-  })
-
-  it('hides the scenario strip on Lists, which holds list selection', async () => {
-    mockRouteQuery.value = { tab: 'lists' }
-    const wrapper = await mountDashboard()
+  it('shows only the list picker on List', async () => {
+    const wrapper = await mountDashboard('/dashboard/list/full')
     expect(wrapper.find('[data-testid="scenario-strip"]').exists()).toBe(false)
+    expect(wrapper.find('[aria-label="Seniority List"]').exists()).toBe(true)
+  })
+
+  it.each(['/dashboard/current/status', '/dashboard/list/full'])('marks a historical demo list on %s', async (path) => {
+    mockShowDemoBadge.value = true
+    mockRouteQuery.value = { list: '1' }
+    mockFetchLists.mockImplementation(() => { mockLists.value = [makeList(2), { ...makeList(1), isDemo: true }] })
+    const wrapper = await mountDashboard(path)
+    expect(wrapper.text()).toContain('Historical')
+    expect(wrapper.text()).toContain('Demo')
+  })
+
+  it('renders the small view for the address', async () => {
+    const wrapper = await mountDashboard()
+    expect(wrapper.find('[data-testid="small-view"]').exists()).toBe(true)
+  })
+
+  it('leads to Upload when no list exists', async () => {
+    mockFetchLists.mockImplementation(() => { mockLists.value = [] })
+    mockRoutePath.value = '/dashboard/trajectory/projection'
+    const DashboardPage = await import('./dashboard.vue')
+    const wrapper = await mountSuspended(defineComponent({ render: () => h(UApp, null, () => h(DashboardPage.default)) }), { global: { stubs } })
+    await vi.waitFor(() => expect(wrapper.text()).toContain('No seniority list yet'))
+    expect(wrapper.find('a[href="/seniority/upload"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="small-view"]').exists()).toBe(false)
   })
 })

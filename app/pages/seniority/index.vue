@@ -1,5 +1,7 @@
 <script setup lang="ts">
-definePageMeta({});
-
-navigateTo({ path: '/dashboard', query: { tab: 'seniority' } }, { replace: true });
+navigateTo({ path: '/dashboard/list/full', query: {} }, { replace: true })
 </script>
+
+<template>
+  <div />
+</template>

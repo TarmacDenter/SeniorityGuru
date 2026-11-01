@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { QualificationSeatGroup } from '~/composables/seniority'
 
-// The Qualifications panel: a directory grouped by seat, highest Seniority Percentile first.
+// Current › Holdability: the Qualification directory grouped by seat, highest Seniority Percentile first, then the Qualification scale.
 defineProps<{
   loading: boolean
   userFound: boolean
@@ -73,7 +73,6 @@ defineProps<{
     </div>
 
     <DashboardQualificationPositions v-if="userFound && !noResultLabel" />
-    <DashboardQualificationDemographics />
     </template>
   </div>
 </template>

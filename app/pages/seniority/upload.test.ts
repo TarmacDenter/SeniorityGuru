@@ -105,14 +105,14 @@ describe('upload page onSave', () => {
     mockNavigateTo.mockReset()
   })
 
-  it('calls navigateTo with dashboard/seniority after successful save', async () => {
+  it('opens List › Full list after a successful save', async () => {
     mockSave.mockResolvedValue(42)
     mockNavigateTo.mockResolvedValue(undefined)
 
     const wrapper = await mountSuspended(UploadPage)
     await wrapper.vm.onSave()
 
-    expect(mockNavigateTo).toHaveBeenCalledWith({ path: '/dashboard', query: { tab: 'seniority' } })
+    expect(mockNavigateTo).toHaveBeenCalledWith({ path: '/dashboard/list/full' })
   })
 
   it('awaits navigateTo before onSave resolves', async () => {

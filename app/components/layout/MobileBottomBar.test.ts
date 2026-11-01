@@ -1,76 +1,76 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mountSuspended, mockNuxtImport } from '@nuxt/test-utils/runtime'
-import { ref } from 'vue'
+import { flushPromises } from '@vue/test-utils'
+import { defineComponent, h, ref } from 'vue'
+import { UApp } from '#components'
 import MobileBottomBar from './MobileBottomBar.vue'
 
-const mockRoute = vi.hoisted(() => ({ path: '/dashboard', query: {} }))
+const { mockRoute, mockUnseen } = vi.hoisted(() => ({
+  mockRoute: { path: '/dashboard/current/status', query: {} as Record<string, string> },
+  mockUnseen: { value: false },
+}))
 mockNuxtImport('useRoute', () => () => mockRoute)
-mockNuxtImport('useChangelog', () => () => ({ hasUnseenChanges: ref(false) }))
+mockNuxtImport('useChangelog', () => () => ({ hasUnseenChanges: ref(mockUnseen.value) }))
 
 beforeEach(() => {
-  mockRoute.path = '/dashboard'
+  mockRoute.path = '/dashboard/current/status'
+  mockRoute.query = {}
+  mockUnseen.value = false
+  document.body.innerHTML = ''
 })
 
 // Note: env(safe-area-inset-bottom) is a browser CSS function that happy-dom strips
 // from inline styles. Safe-area padding is verified visually / via Playwright E2E.
 
-describe('MobileBottomBar', () => {
-  it('renders 5 nav items', async () => {
-    const wrapper = await mountSuspended(MobileBottomBar)
-    expect(wrapper.findAll('a')).toHaveLength(5)
-  })
+async function mountBar() {
+  return mountSuspended(defineComponent({ render: () => h(UApp, null, () => h(MobileBottomBar)) }))
+}
 
-  it('has sm:hidden on root nav', async () => {
-    const wrapper = await mountSuspended(MobileBottomBar)
-    expect(wrapper.find('nav').classes()).toContain('sm:hidden')
+function barItems(wrapper: Awaited<ReturnType<typeof mountBar>>) {
+  return wrapper.find('nav').findAll('a, button').map(item => item.text())
+}
+
+describe('MobileBottomBar', () => {
+  it('shows the four sections and More', async () => {
+    const wrapper = await mountBar()
+    expect(barItems(wrapper)).toEqual(['Current', 'Trajectory', 'Demographics', 'List', 'More'])
   })
 
   it('reserves the device safe area below the navigation items', async () => {
-    const wrapper = await mountSuspended(MobileBottomBar)
+    const wrapper = await mountBar()
     expect(wrapper.find('nav').classes()).toContain('pb-[env(safe-area-inset-bottom)]')
   })
 
-  it('sets aria-current="page" on the active link', async () => {
-    const wrapper = await mountSuspended(MobileBottomBar)
-    expect(wrapper.find('a[href="/dashboard"]').attributes('aria-current')).toBe('page')
-    expect(wrapper.find('a[href="/settings"]').attributes('aria-current')).toBeUndefined()
+  it.each([
+    ['/dashboard/current/holdability', 'Current'],
+    ['/dashboard/trajectory/projection', 'Trajectory'],
+    ['/dashboard/demographics', 'Demographics'],
+    ['/dashboard/list/uploads', 'List'],
+  ])('on %s marks %s as the current section', async (path, label) => {
+    mockRoute.path = path
+    const wrapper = await mountBar()
+    const current = wrapper.find('nav').findAll('a').filter(link => link.attributes('aria-current') === 'page')
+    expect(current.map(link => link.text())).toEqual([label])
   })
 
-  it('marks Dashboard active on /dashboard', async () => {
-    const wrapper = await mountSuspended(MobileBottomBar)
-    expect(wrapper.find('a[href="/dashboard"]').classes()).toContain('text-primary')
-    expect(wrapper.find('a[href="/settings"]').classes()).not.toContain('text-primary')
+  it('opens a sheet with Upload, Compare and Settings from More', async () => {
+    const wrapper = await mountBar()
+    expect(document.body.textContent).not.toContain('Upload')
+
+    await wrapper.findAll('button').find(button => button.text() === 'More')!.trigger('click')
+    await flushPromises()
+
+    const links = [...document.body.querySelectorAll('[role="dialog"] a')].map(link => [link.textContent?.trim(), link.getAttribute('href')])
+    expect(links).toEqual([
+      ['Upload', '/seniority/upload'],
+      ['Compare', '/dashboard/list/compare'],
+      ['Settings', '/settings'],
+    ])
   })
 
-  it('marks Lists active on /seniority/lists', async () => {
-    mockRoute.path = '/seniority/lists'
-    const wrapper = await mountSuspended(MobileBottomBar)
-    expect(wrapper.find('a[href="/seniority/lists"]').classes()).toContain('text-primary')
-    expect(wrapper.find('a[href="/dashboard"]').classes()).not.toContain('text-primary')
-  })
-
-  it('marks Upload active on /seniority/upload', async () => {
-    mockRoute.path = '/seniority/upload'
-    const wrapper = await mountSuspended(MobileBottomBar)
-    expect(wrapper.find('a[href="/seniority/upload"]').classes()).toContain('text-primary')
-  })
-
-  it('marks Compare active on /seniority/compare', async () => {
-    mockRoute.path = '/seniority/compare'
-    const wrapper = await mountSuspended(MobileBottomBar)
-    expect(wrapper.find('a[href="/seniority/compare"]').classes()).toContain('text-primary')
-  })
-
-  it('marks Settings active on /settings', async () => {
-    mockRoute.path = '/settings'
-    const wrapper = await mountSuspended(MobileBottomBar)
-    expect(wrapper.find('a[href="/settings"]').classes()).toContain('text-primary')
-  })
-
-  it('marks Upload active on nested path /seniority/upload/step', async () => {
-    mockRoute.path = '/seniority/upload/step'
-    const wrapper = await mountSuspended(MobileBottomBar)
-    expect(wrapper.find('a[href="/seniority/upload"]').classes()).toContain('text-primary')
-    expect(wrapper.find('a[href="/seniority/lists"]').classes()).not.toContain('text-primary')
+  it('marks More when What\'s New has something unseen', async () => {
+    mockUnseen.value = true
+    const wrapper = await mountBar()
+    expect(wrapper.find('[aria-label="More, with unseen updates"]').exists()).toBe(true)
   })
 })

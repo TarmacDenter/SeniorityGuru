@@ -22,7 +22,7 @@ const groups: QualificationSeatGroup[] = [{
 }]
 vi.mock('vue-chartjs', () => ({ Bar: { template: '<div />' }, Line: { template: '<div />' }, Doughnut: { template: '<div />' } }))
 
-describe('Qualifications panel', () => {
+describe('Current › Holdability', () => {
   it('shows Rank, "of N" and percentile as separate cells with the note inside the same stripe', async () => {
     const wrapper = await mountSuspended(QualificationsTab, { props: { loading: false, userFound: true, groups, noResultLabel: null } })
 
@@ -52,16 +52,15 @@ describe('Qualifications panel', () => {
     expect(other.classes()).toContain('text-muted')
   })
 
-  it('keeps the demographics and scale sections beside the directory', async () => {
+  it('is the one home of the Qualification scale, leaving demographics to Demographics', async () => {
     const wrapper = await mountSuspended(QualificationsTab, { props: { loading: false, userFound: true, groups, noResultLabel: null } })
-    expect(wrapper.text()).toContain('Who holds each Qualification')
     expect(wrapper.text()).toContain('Seniority Position by Qual')
+    expect(wrapper.text()).not.toContain('Who holds each Qualification')
   })
 
-  it('still shows demographics when no Employee Number is set', async () => {
+  it('asks for an Employee Number when there is no Anchor Pilot', async () => {
     const wrapper = await mountSuspended(QualificationsTab, { props: { loading: false, userFound: false, groups: [], noResultLabel: null } })
     expect(wrapper.text()).toContain('No Qualifications yet')
-    expect(wrapper.text()).toContain('Who holds each Qualification')
     expect(wrapper.text()).not.toContain('Seniority Position by Qual')
   })
 })

@@ -1,45 +1,37 @@
 <script setup lang="ts">
-import type { Ref } from 'vue'
-import { useSeniorityCore, useStanding, useTrajectory, useListExcerpt, useSeniorityLists } from '~/composables/seniority'
-import { useDashboardTabs } from '~/composables/useDashboardTabs'
+import { useSeniorityCore, useSeniorityLists } from '~/composables/seniority'
+import { useDashboardList } from '~/composables/useDashboardList'
+import { useDashboardSections } from '~/composables/useDashboardSections'
 import { useScenario } from '~/composables/useScenario'
 import { useDemoBanner } from '~/composables/useDemoBanner'
 import { usePwaInstall } from '~/composables/usePwaInstall'
-import { DEFAULT_TAB } from '~/utils/dashboard-tabs'
-import { formatDate } from '~/utils/date'
 
+// The dashboard shell: section title, small-view tabs, scenario toolbar or list picker, and the small view itself.
+// It stays mounted while moving between sections, so the chosen list loads once.
 definePageMeta({ layout: 'dashboard' })
 
-function useDashboardListSelection(activeTab: Ref<string>) {
-  const route = useRoute()
-  const { lists, fetchLists, fetchEntries } = useSeniorityLists()
-  const { loadPreferences } = useUser()
-  const loading = ref(true)
+const route = useRoute()
+const { fetchLists, fetchEntries } = useSeniorityLists()
+const { loadPreferences } = useUser()
+const { lists, selectedListId, loading, listOptions, isHistorical, selectedListLabel, isDemoList, navbarDescription } = useDashboardList()
+const { section, viewItems } = useDashboardSections()
+
+function useListSelectionRoute() {
   const initializing = ref(true)
-  const selectedListId = ref<number | undefined>(route.query.list ? Number(route.query.list) : undefined)
-  const listOptions = computed(() => lists.value.map((list, index) => ({
-    id: list.id,
-    label: list.title ? `${list.title} (${formatDate(list.effectiveDate)})` : formatDate(list.effectiveDate),
-    isLatest: index === 0,
-  })))
-  const isHistorical = computed(() => {
-    if (!selectedListId.value || listOptions.value.length === 0) return false
-    return selectedListId.value !== listOptions.value[0]?.id
-  })
-  const selectedList = computed(() => lists.value.find(list => list.id === selectedListId.value))
-  const navbarDescription = computed(() => {
-    const list = selectedList.value
-    return list ? `${list.title || 'Seniority List'} · effective ${list.effectiveDate}` : undefined
-  })
+  loading.value = true
+  selectedListId.value = route.query.list ? Number(route.query.list) : undefined
 
   async function syncRoute() {
-    const query: Record<string, string> = {}
-    if (activeTab.value !== DEFAULT_TAB) query.tab = activeTab.value
+    const query: Record<string, string> = { ...(route.query as Record<string, string>) }
     if (selectedListId.value) query.list = String(selectedListId.value)
-    await navigateTo({ path: '/dashboard', query }, { replace: true })
+    await navigateTo({ path: route.path, query }, { replace: true })
   }
 
-  watch(activeTab, () => { void syncRoute() })
+  // A link that names a list (e.g. from List › Uploads) selects it while the dashboard is open.
+  watch(() => route.query.list, (raw) => {
+    const id = raw ? Number(raw) : undefined
+    if (!initializing.value && id && id !== selectedListId.value) selectedListId.value = id
+  })
   watch(selectedListId, async (id, previousId) => {
     if (initializing.value || !id || !previousId) return
     loading.value = true
@@ -58,44 +50,36 @@ function useDashboardListSelection(activeTab: Ref<string>) {
     initializing.value = false
     loading.value = false
   })
-
-  return { lists, selectedListId, listOptions, isHistorical, selectedList, navbarDescription, loading }
 }
 
-const { activeTab, tabs } = useDashboardTabs()
-const { lists, selectedListId, listOptions, isHistorical, selectedList, navbarDescription, loading } = useDashboardListSelection(activeTab)
-const { employeeNumber } = useUser()
-const { showBadge: showDemoBadge } = useDemoBanner()
+useListSelectionRoute()
+
 const { showBanner: showInstallBanner } = usePwaInstall()
 const { showBanner: showDemoNotice } = useDemoBanner()
-const { hasData, hasAnchor: userFound, isNewHireMode, newHire } = useSeniorityCore()
-const hasEmployeeNumber = computed(() => !!employeeNumber.value || !!newHire.syntheticEntry.value)
-const { scopeLabel, scopeLabels, qualificationScope, growthAssumptions, growthLabel, asOfLabel } = useScenario()
-const { rankCard, figures, qualificationGroups } = useStanding(qualificationScope)
-const { rows: excerptRows } = useListExcerpt()
-const { chartData: trajectoryChartData, keyChanges, hypotheticalLabel: trajectoryHypotheticalLabel, endedByLabel: trajectoryEndedByLabel } = useTrajectory(growthAssumptions, qualificationScope)
+const { hasData } = useSeniorityCore()
+const { scopeLabel, scopeLabels, growthAssumptions, growthLabel, asOfLabel } = useScenario()
 const compactNoticeDismissed = ref<string | null>(null)
-const selectedListLabel = computed(() => listOptions.value.find(option => option.id === selectedListId.value)?.label ?? null)
-const isDemoList = computed(() => !!selectedList.value?.isDemo && showDemoBadge.value)
-const showScenarioStrip = computed(() => !loading.value && hasData.value && activeTab.value !== 'lists')
+const showScenarioStrip = computed(() => !loading.value && hasData.value && !!section.value?.hasScenario)
+// The list picker serves the List views that read the chosen list; Compare and Uploads pick their own.
+const showListPicker = computed(() => route.path === '/dashboard/list/full' || route.path === '/dashboard/list/retirements')
 const compactNotice = computed(() => {
   if (showInstallBanner.value && compactNoticeDismissed.value !== 'install') return 'install'
   if (showDemoNotice.value && compactNoticeDismissed.value !== 'demo') return 'demo'
   return null
 })
-// The Lists panel fills the body and scrolls its own table; the other panels scroll the body.
+// List › Full list fills the body and scrolls its own table; the other views scroll the body.
 const panelUi = computed(() => ({
-  body: `flex flex-col flex-1 sm:overflow-y-auto p-0 sm:p-0${activeTab.value === 'lists' ? ' gap-0 sm:gap-0 sm:overflow-hidden' : ''}`,
+  body: `flex flex-col flex-1 sm:overflow-y-auto p-0 sm:p-0${route.path === '/dashboard/list/full' ? ' gap-0 sm:gap-0 sm:overflow-hidden' : ''}`,
 }))
 </script>
 
 <template>
   <UDashboardPanel :ui="panelUi">
     <template #header>
-      <SeniorityNavbar title="Dashboard" :description="navbarDescription" />
+      <SeniorityNavbar :title="section?.label ?? 'Dashboard'" :description="navbarDescription" />
 
-      <UDashboardToolbar class="overflow-y-hidden">
-        <UTabs v-model="activeTab" :items="tabs" :content="false" variant="link" aria-label="Dashboard panels" />
+      <UDashboardToolbar v-if="viewItems.length > 0" class="overflow-x-auto overflow-y-hidden">
+        <UNavigationMenu :items="viewItems" highlight aria-label="Section views" class="-mx-1 flex-1" :ui="{ link: 'whitespace-nowrap' }" />
       </UDashboardToolbar>
     </template>
 
@@ -140,46 +124,15 @@ const panelUi = computed(() => ({
           :is-demo="isDemoList"
           :is-historical="isHistorical"
         />
-
-        <DashboardTabsMyStatusTab
-          v-if="activeTab === 'now'"
-          :loading="loading"
-          :has-data="hasData"
-          :has-employee-number="hasEmployeeNumber"
-          :user-found="userFound"
-          :is-new-hire-mode="isNewHireMode"
-          :rank-card="rankCard"
-          :figures="figures"
-          :excerpt-rows="excerptRows"
-        />
-
-        <DashboardTabsNextTab
-          v-else-if="activeTab === 'next'"
-          :loading="loading"
-          :has-data="hasData"
-          :user-found="userFound"
-          :chart-data="trajectoryChartData"
-          :ended-by-label="trajectoryEndedByLabel"
-          :key-changes="keyChanges"
-          :hypothetical-label="trajectoryHypotheticalLabel"
-        />
-
-        <DashboardTabsQualificationsTab
-          v-else-if="activeTab === 'qualifications'"
-          :loading="loading"
-          :user-found="userFound"
-          :groups="qualificationGroups"
-          :no-result-label="rankCard.noResultLabel"
-        />
-
-        <DashboardTabsSeniorityListTab
-          v-else
+        <DashboardListPicker
+          v-if="showListPicker"
           v-model:selected-list-id="selectedListId"
-          :loading="loading"
           :list-options="listOptions"
           :is-demo="isDemoList"
           :is-historical="isHistorical"
         />
+
+        <NuxtPage />
       </template>
     </template>
   </UDashboardPanel>

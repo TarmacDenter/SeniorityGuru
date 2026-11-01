@@ -75,6 +75,16 @@ A modeled outcome in which an Anchor Pilot's projected Seniority Percentile meet
 **Retirement Wave**:
 A retirement year with a notable concentration of scheduled retirements relative to other years in the same analysis.
 
+## Dashboard Language
+
+**Dashboard Section**:
+One of four parts of the dashboard, split by subject (the Anchor Pilot or the list) and time (today or the future): **Current** (where the Anchor Pilot stands today), **Trajectory** (where the Anchor Pilot is heading), **Demographics** (what the list looks like) and **List** (the line items).
+_Avoid_: Tab, Panel
+
+**Small View**:
+A page inside a Dashboard Section, reached from the section's tab row. Current has **Status** and **Holdability**. Trajectory has **Projection** and **Retirements**. Demographics has none. List has **Full list**, **Upcoming retirements**, **Compare** and **Uploads**. Each presentation lives in exactly one Small View.
+_Avoid_: Subtab
+
 ## Seniority List Import Language
 
 **Import Plugin**: A compiled-in definition that prepares an airline format or Generic spreadsheet and may transform mapped entries. Avoid: pre-parser, parser framework.
