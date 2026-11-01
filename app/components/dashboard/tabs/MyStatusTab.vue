@@ -30,7 +30,7 @@ const excerptColumns: TableColumn<ListExcerptRow>[] = [
     header: 'Name',
     meta: { class: { td: '[overflow-wrap:anywhere]' } },
     cell: ({ row }) => row.original.status === 'retired'
-      ? h('span', null, [row.original.nameLabel, ' ', h(resolveComponent('UBadge'), { color: 'neutral', variant: 'outline', size: 'sm', class: 'no-underline' }, () => 'retired')])
+      ? h('span', null, [row.original.nameLabel, ' ', h(resolveComponent('UBadge'), { color: 'neutral', variant: 'outline', size: 'sm', class: 'no-underline bg-transparent' }, () => 'retired')])
       : row.original.nameLabel,
   },
   { accessorKey: 'rankLabel', header: 'Rank', meta: numeric },
