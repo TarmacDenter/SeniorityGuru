@@ -60,6 +60,16 @@ describe('createSenioritySnapshot', () => {
     expect(snap.entriesByQualification.get('ATL|CA|320')?.length).toBe(2)
   })
 
+  it('does not merge qualifications whose values contain delimiters', () => {
+    const snap = createSenioritySnapshot([
+      makeDomainEntry({ seniority_number: 1, employee_number: 'E1', base: 'A|B', seat: 'C', fleet: 'D' }),
+      makeDomainEntry({ seniority_number: 2, employee_number: 'E2', base: 'A', seat: 'B', fleet: 'C|D' }),
+      makeDomainEntry({ seniority_number: 3, employee_number: 'E3', base: 'A%7CB', seat: 'C', fleet: 'D' }),
+    ])
+    expect(snap.entriesByQualification.size).toBe(3)
+    expect(snap.qualifications).toHaveLength(3)
+  })
+
   it('throws InvalidSenioritySnapshotDataError for entries with missing base/seat/fleet', () => {
     const withNull = [...entries, makeDomainEntry({ seniority_number: 4, employee_number: 'E4', base: '' as unknown as string, seat: 'CA', fleet: '737' })]
     expect(() => createSenioritySnapshot(withNull)).toThrow(InvalidSenioritySnapshotDataError)

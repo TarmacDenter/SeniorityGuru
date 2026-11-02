@@ -83,7 +83,7 @@ export function analyzeYearsOfServiceBuckets(
   const values = scopedEntries.map(entry => computeYOSDate(entry.hire_date, asOfDate))
   const counts = new Array<number>(Math.max(Math.ceil(Math.max(...values)) + 1, 1)).fill(0)
   for (const years of values) {
-    const index = Math.min(Math.floor(years), counts.length - 1)
+    const index = Math.max(0, Math.min(Math.floor(years), counts.length - 1))
     counts[index] = counts[index]! + 1
   }
   return counts.map((pilotCount, minimumYears) => ({
@@ -120,7 +120,7 @@ export function analyzeYearsOfServiceDistribution(
 export function analyzeQualificationComposition(entries: readonly SeniorityEntry[]): readonly QualificationComposition[] {
   const byFleetAndSeat = new Map<string, SeniorityEntry[]>()
   for (const entry of entries) {
-    const key = `${entry.fleet}|${entry.seat}`
+    const key = JSON.stringify([entry.fleet, entry.seat])
     const group = byFleetAndSeat.get(key) ?? []
     group.push(entry)
     byFleetAndSeat.set(key, group)

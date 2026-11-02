@@ -101,6 +101,25 @@ describe('demographic domain analysis', () => {
     expect(buckets[6]).not.toHaveProperty('label')
   })
 
+  it('includes future hires in the zero-year service bucket', () => {
+    const buckets = analyzeYearsOfServiceBuckets([
+      makeEntry({ hire_date: '2027-01-01' }),
+      makeEntry({ hire_date: '2026-01-01' }),
+    ], undefined, asOfDate)
+    expect(buckets[0]?.pilotCount).toBe(2)
+  })
+
+  it('keeps fleet and seat combinations distinct when they contain delimiters', () => {
+    const result = analyzeQualificationComposition([
+      makeEntry({ fleet: 'A|B', seat: 'C' }),
+      makeEntry({ fleet: 'A', seat: 'B|C' }),
+    ])
+    expect(result.map(({ fleet, seat, pilotCount }) => ({ fleet, seat, pilotCount }))).toEqual([
+      { fleet: 'A|B', seat: 'C', pilotCount: 1 },
+      { fleet: 'A', seat: 'B|C', pilotCount: 1 },
+    ])
+  })
+
   it('preserves Qualification composition counts and base percentages', () => {
     const result = analyzeQualificationComposition([
       makeEntry({ fleet: '737', seat: 'CA', base: 'JFK' }),
