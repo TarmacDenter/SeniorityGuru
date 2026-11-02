@@ -26,7 +26,7 @@ const { hasUnseenChanges } = useChangelog()
       </div>
     </template>
 
-    <p class="text-sm text-(--ui-text-muted)">
+    <p class="text-sm text-muted">
       See the latest features, improvements, and fixes.
     </p>
   </UCard>

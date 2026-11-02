@@ -8,11 +8,11 @@ const stubs = { DashboardChart: true, InfoIcon: true }
 describe('TrajectoryChart', () => {
   it('says why the trajectory ends when it stops at the Anchor Pilot retirement', async () => {
     const wrapper = await mountSuspended(TrajectoryChart, {
-      props: { data, endedByLabel: 'Anchor Pilot retired' },
+      props: { data, endedByLabel: 'Projection ends at your retirement' },
       global: { stubs },
     })
 
-    expect(wrapper.get('[data-testid="trajectory-ended-by"]').text()).toBe('Anchor Pilot retired')
+    expect(wrapper.get('[data-testid="trajectory-ended-by"]').text()).toBe('Projection ends at your retirement')
   })
 
   it('shows no end reason when the trajectory runs its full window', async () => {

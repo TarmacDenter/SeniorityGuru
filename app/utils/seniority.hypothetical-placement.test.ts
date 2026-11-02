@@ -234,7 +234,7 @@ describe('Hypothetical Placement and retirement', () => {
     expect(trajectory.points.map(point => point.date.toString())).toEqual(['2026-06-15', '2027-06-15'])
     expect(trajectory.endedBy).toMatchObject({ reason: 'anchor-retired' })
     expect(trajectory.isHypothetical).toBe(true)
-    expect(resultOf(output.presentation)).toMatchObject({ endedByLabel: 'Anchor Pilot retired', hypotheticalLabel: 'Hypothetical Placement in BOS' })
+    expect(resultOf(output.presentation)).toMatchObject({ endedByLabel: 'Projection ends at your retirement', hypotheticalLabel: 'Hypothetical Placement in BOS' })
   })
 })
 

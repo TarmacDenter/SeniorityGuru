@@ -24,7 +24,7 @@ const birthDateModel = computed({
   >
     <template #actions>
       <div class="flex items-center gap-2">
-        <USwitch
+        <AppSwitch
           v-model="newHireMode.enabled.value"
           label="Enable New Hire Mode"
           description="See projected data as a new hire appended to the bottom of the seniority list."
@@ -43,7 +43,7 @@ const birthDateModel = computed({
       description="Data is approximate. Other new hires may be added ahead of you, and your actual assignment may differ."
     >
       <template #actions>
-        <USwitch
+        <AppSwitch
           v-model="newHireMode.enabled.value"
           label="Disable"
           size="xs"

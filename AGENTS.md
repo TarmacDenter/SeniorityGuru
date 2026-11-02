@@ -23,6 +23,7 @@ Search the layer for an existing module before writing a new one. Extend it.
 ## References
 
 - **Domain language:** Read [CONTEXT.md](CONTEXT.md) before naming anything a pilot sees or a domain value.
+- **Visual design:** Read [docs/design-system.md](docs/design-system.md) before changing styles, tokens, or layout. Layering rules in `app/AGENTS.md` apply to every UI change.
 - **Decisions:** Read the matching record in `docs/adr/` before changing a behavior it governs.
 - **Import plugin work:** Read [docs/import-plugins.md](docs/import-plugins.md) before adding or changing an airline upload type.
 - **Contribution workflow:** Read [WORKFLOW.md](WORKFLOW.md) before creating a branch or opening a pull request.

@@ -29,6 +29,20 @@ export default withNuxt(
     },
   },
   {
+    // Layering: components and pages reach data through composables, and analysis through the facade.
+    files: ['app/components/**/*.{vue,ts}', 'app/pages/**/*.{vue,ts}'],
+    ignores: ['**/*.test.ts'],
+    rules: {
+      'no-restricted-imports': ['error', {
+        patterns: [
+          { regex: '^(~|@)/stores(/|$)', message: 'Components and pages reach stores through composables (app/AGENTS.md).' },
+          { regex: '^(~|@)/utils/db(-adapters)?$', message: 'Components and pages do not import Dexie. Use a composable.' },
+          { regex: '^(~|@)/utils/seniority-(engine|analysis|api)(/|$)', message: 'Import seniority analysis only from ~/utils/seniority.' },
+        ],
+      }],
+    },
+  },
+  {
     files: ['supabase/scripts/**'],
     rules: {
       'no-console': 'off',

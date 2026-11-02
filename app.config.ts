@@ -13,7 +13,7 @@ export default defineAppConfig({
       // Retirement timeline proximity
       past: 'red',
       imminent: 'orange',
-      soon: 'yellow'
+      soon: 'teal'
     },
     card: {
       defaultVariants: {

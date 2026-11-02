@@ -27,7 +27,7 @@ onMounted(() => {
         >
           <UIcon
             name="i-lucide-loader-2"
-            class="size-6 animate-spin text-(--ui-text-muted)"
+            class="size-6 animate-spin text-muted"
           />
         </div>
       </div>

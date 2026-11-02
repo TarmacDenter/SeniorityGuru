@@ -34,7 +34,7 @@ defineExpose({ onToggle, onReset })
           <h2 class="text-lg font-semibold">New Hire Mode</h2>
           <p class="text-sm text-muted mt-0.5">Preview your projected seniority as a new hire.</p>
         </div>
-        <USwitch
+        <AppSwitch
           :model-value="newHireMode.enabled.value"
           :disabled="newHireMode.realUserFound.value"
           @update:model-value="onToggle"

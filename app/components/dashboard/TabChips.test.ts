@@ -2,58 +2,36 @@ import { describe, it, expect } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import DashboardTabChips from './TabChips.vue'
 
-const tabs = [
-  { label: 'My Status', value: 'status', icon: 'i-lucide-user' },
-  { label: 'Demographics', value: 'demographics', icon: 'i-lucide-users' },
-  { label: 'Trajectory', value: 'trajectory', icon: 'i-lucide-trending-up' },
+const panels = [
+  { label: 'Now', value: 'now', icon: 'i-lucide-crosshair' },
+  { label: 'Next', value: 'next', icon: 'i-lucide-trending-up' },
+  { label: 'Qualifications', value: 'qualifications', icon: 'i-lucide-layout-list' },
+  { label: 'Lists', value: 'lists', icon: 'i-lucide-list-ordered' },
 ]
 
 describe('DashboardTabChips', () => {
-  it('has overflow-x-auto and sm:hidden on wrapper', async () => {
-    const wrapper = await mountSuspended(DashboardTabChips, {
-      props: { tabs, modelValue: 'status' },
-    })
-    const root = wrapper.find('div')
-    expect(root.classes()).toContain('overflow-x-auto')
-    expect(root.classes()).toContain('sm:hidden')
+  it('names the four dashboard panels', async () => {
+    const wrapper = await mountSuspended(DashboardTabChips, { props: { tabs: panels, modelValue: 'now' } })
+    expect(wrapper.findAll('[role="tab"]').map(tab => tab.text())).toEqual(['Now', 'Next', 'Qualifications', 'Lists'])
   })
 
-  it('renders all provided tabs', async () => {
-    const wrapper = await mountSuspended(DashboardTabChips, {
-      props: { tabs, modelValue: 'status' },
-    })
-    expect(wrapper.text()).toContain('My Status')
-    expect(wrapper.text()).toContain('Demographics')
-    expect(wrapper.text()).toContain('Trajectory')
+  it('exposes only the selected panel as selected', async () => {
+    const wrapper = await mountSuspended(DashboardTabChips, { props: { tabs: panels, modelValue: 'qualifications' } })
+    const selected = wrapper.findAll('[role="tab"]').filter(tab => tab.attributes('aria-selected') === 'true')
+    expect(selected.map(tab => tab.text())).toEqual(['Qualifications'])
   })
 
-  it('applies active class to the modelValue tab', async () => {
-    const wrapper = await mountSuspended(DashboardTabChips, {
-      props: { tabs, modelValue: 'demographics' },
-    })
-    const buttons = wrapper.findAll('button')
-    const demographicsBtn = buttons.find(b => b.text().includes('Demographics'))
-    expect(demographicsBtn?.classes()).toContain('text-primary')
+  it('emits the panel that was clicked', async () => {
+    const wrapper = await mountSuspended(DashboardTabChips, { props: { tabs: panels, modelValue: 'now' } })
+    await wrapper.findAll('[role="tab"]').find(tab => tab.text() === 'Next')?.trigger('click')
+    expect(wrapper.emitted('update:modelValue')?.[0]).toEqual(['next'])
   })
 
-  it('inactive tabs do not have the active class', async () => {
-    const wrapper = await mountSuspended(DashboardTabChips, {
-      props: { tabs, modelValue: 'demographics' },
-    })
-    const buttons = wrapper.findAll('button')
-    const statusBtn = buttons.find(b => b.text().includes('My Status'))
-    const trajectoryBtn = buttons.find(b => b.text().includes('Trajectory'))
-    expect(statusBtn?.classes()).not.toContain('text-primary')
-    expect(trajectoryBtn?.classes()).not.toContain('text-primary')
-  })
-
-  it('emits update:modelValue when a tab is clicked', async () => {
-    const wrapper = await mountSuspended(DashboardTabChips, {
-      props: { tabs, modelValue: 'status' },
-    })
-    const buttons = wrapper.findAll('button')
-    const trajectoryBtn = buttons.find(b => b.text().includes('Trajectory'))
-    await trajectoryBtn?.trigger('click')
-    expect(wrapper.emitted('update:modelValue')?.[0]).toEqual(['trajectory'])
+  it('moves between panels with the arrow keys', async () => {
+    const wrapper = await mountSuspended(DashboardTabChips, { props: { tabs: panels, modelValue: 'now' } })
+    const tabs = wrapper.findAll('[role="tab"]')
+    await tabs[0]!.trigger('keydown', { key: 'ArrowRight' })
+    await tabs[0]!.trigger('keydown', { key: 'ArrowLeft' })
+    expect(wrapper.emitted('update:modelValue')).toEqual([['next'], ['lists']])
   })
 })

@@ -45,6 +45,7 @@ describe('public Seniority Analysis interface', () => {
       'AnchorNotFoundError',
       'DEFAULT_SENIORITY_GROWTH_ASSUMPTIONS',
       'InvalidSenioritySnapshotDataError',
+      'formatGrowthAssumptions',
       'isNoResult',
       'resultOrNull',
       'createSeniorityAnalysis',
@@ -254,13 +255,6 @@ describe('presented Standing labels', () => {
     expect(presentation.rosterSizeLabel).toBe('Roster Size (hypothetical)')
     expect(presentation.rosterSizeTrend).toBe('includes you')
   })
-
-  it('describes each Qualification row with its own roster and active counts', () => {
-    const rows = resultOf(createAnalysis().withAnchor('125').seniorityStanding().presentation).qualificationStandings
-    const own = rows.find(row => row.isAnchorCurrentQualification)!
-
-    expect(own.rosterTrendLabel).toBe('CA/737/JFK · of 3 on roster · 2 active')
-  })
 })
 
 describe('Standing for a scope with no real pilots', () => {
@@ -306,5 +300,113 @@ describe('presented Standing display values', () => {
       .seniorityStanding({ scenario: { qualificationScope: { base: 'ATL' } } }).presentation)
 
     expect(presentation.rosterSummaryLabel).toBe('Roster Size 3 · Active pilots 3')
+  })
+})
+
+
+describe('completed trajectory dashboard values', () => {
+  it('selects the first best year and aligns percentiles with all retirement years', () => {
+    const output = createAnalysis().withAnchor('125').seniorityTrajectory({ through: Temporal.PlainDate.from('2045-01-01') })
+    const presented = resultOf(output.presentation)
+    expect(presented.bestYearLabel).toBe('Best year: 2027 (+20.0pp)')
+    expect(presented.retirementWave).toEqual({
+      buckets: [
+        { year: 2025, retirementCount: 1, isRetirementWave: false },
+        { year: 2026, retirementCount: 1, isRetirementWave: false },
+        { year: 2040, retirementCount: 1, isRetirementWave: false },
+        { year: 2045, retirementCount: 1, isRetirementWave: false },
+        { year: 2050, retirementCount: 1, isRetirementWave: false },
+      ],
+      percentileSeries: [null, 60, 100, null, null],
+    })
+  })
+})
+
+
+describe('completed demographics values', () => {
+  it('returns matching counts, sorted formatted sizes and As-of Date years of service', () => {
+    const analysis = seniority.createSeniorityAnalysis({
+      entries: entries.map(entry => ({ ...entry, hire_date: Temporal.PlainDate.from('2010-06-15') })), asOfDate,
+    })
+    const output = analysis.withAnchor('125').demographics({ mandatoryRetirementAge: 65, scenario: { qualificationScope: { seat: 'CA' } } })
+    expect(output.domain.matchingPilotCount).toBe(3)
+    expect(output.domain.anchorYearsOfService).toBe(16)
+    expect(output.presentation).toMatchObject({
+      matchingPilotCount: 3,
+      anchorYearsOfService: 16,
+      hasYearsOfService: true,
+      qualificationSizes: [{ fleet: '737', seat: 'CA', base: 'JFK', countLabel: '3' }],
+    })
+    expect(analysis.demographics({ mandatoryRetirementAge: 65 }).presentation.anchorYearsOfService).toBeUndefined()
+  })
+})
+
+
+describe('completed senior retirement readout', () => {
+  it('counts senior scoped retirements and supplies singular and plural window wording', () => {
+    const analysis = createAnalysis().withAnchor('125')
+    const oneYear = analysis.retirementCountProjection({ through: asOfDate.add({ years: 1 }) })
+    expect(oneYear.domain.seniorRetirementCount).toBe(1)
+    expect(oneYear.presentation.seniorRetirementLabel).toBe('1 retirement senior to you in the next year')
+    const scoped = analysis.retirementCountProjection({ through: asOfDate.add({ years: 5 }), scenario: { qualificationScope: { base: 'ATL' } } })
+    expect(scoped.presentation.seniorRetirementCount).toBe(0)
+    expect(scoped.presentation.seniorRetirementLabel).toBe('0 retirements senior to you in the next 5 years')
+  })
+})
+
+
+describe('senior retirement window boundaries', () => {
+  it('excludes retirements on the As-of Date and includes the Projection Through Date', () => {
+    const analysis = seniority.createSeniorityAnalysis({ asOfDate, entries: [
+      makeEntry({ seniority_number: 1, employee_number: 'start', retire_date: '2026-06-15' }),
+      makeEntry({ seniority_number: 2, employee_number: 'through', retire_date: '2027-06-15' }),
+      makeEntry({ seniority_number: 3, employee_number: 'after', retire_date: '2027-06-16' }),
+      makeEntry({ seniority_number: 4, employee_number: 'anchor', retire_date: '2040-01-01' }),
+    ] }).withAnchor('anchor')
+    expect(analysis.retirementCountProjection({ through: asOfDate.add({ years: 1 }) }).presentation)
+      .toMatchObject({ seniorRetirementCount: 1, seniorRetirementLabel: '1 retirement senior to you in the next year' })
+  })
+})
+
+describe('completed Holdability and retirement catalog values', () => {
+  it('provides seat summary wording for owned and hypothetical Qualifications', () => {
+    const presented = resultOf(createAnalysis().withAnchor('125').seniorityStanding().presentation)
+    expect(presented.holdabilitySummaryBySeat).toEqual({ CA: null, FO: 'Hypothetical Placement in all First Officer Qualifications' })
+    const withAnotherCaptain = seniority.createSeniorityAnalysis({ entries: [...entries,
+      makeEntry({ seniority_number: 150, employee_number: 'E150', base: 'LAX', seat: 'CA', fleet: '737' }),
+    ], asOfDate })
+    expect(resultOf(withAnotherCaptain.withAnchor('125').seniorityStanding().presentation).holdabilitySummaryBySeat.CA)
+      .toBe('Hypothetical Placement in the other Captain Qualifications')
+  })
+
+  it('shares the latest scheduled retirement, including past dates, and keeps the empty fallback', () => {
+    expect(createAnalysis().catalog.latestRetirementDate?.toString()).toBe('2050-01-01')
+    expect(seniority.createSeniorityAnalysis({ entries: [], asOfDate }).catalog.latestRetirementDate).toBeNull()
+    expect(seniority.createSeniorityAnalysis({ entries: [entries[0]!], asOfDate }).catalog.latestRetirementDate?.toString()).toBe('2025-06-01')
+  })
+})
+
+
+describe('unimproving trajectory caption', () => {
+  it('has no best year for an active Anchor Pilot whose percentile never improves', () => {
+    const analysis = seniority.createSeniorityAnalysis({ asOfDate, entries: [
+      makeEntry({ seniority_number: 1, employee_number: 'anchor', retire_date: '2040-01-01' }),
+    ] }).withAnchor('anchor')
+    const output = analysis.seniorityTrajectory({ through: Temporal.PlainDate.from('2030-01-01') })
+    expect(resultOf(output.presentation).bestYearLabel).toBeNull()
+  })
+})
+
+
+describe('Qualification projection horizon fallback', () => {
+  it('keeps the As-of Date sample when the undated Anchor Pilot outlasts all scheduled retirements', () => {
+    const qualification = { base: 'JFK', seat: 'CA', fleet: '737' }
+    const analysis = seniority.createSeniorityAnalysis({ asOfDate, entries: [
+      makeEntry({ seniority_number: 1, employee_number: 'retired', ...qualification, retire_date: '2025-01-01' }),
+      makeEntry({ seniority_number: 2, employee_number: 'anchor', ...qualification, retire_date: undefined }),
+    ] }).withAnchor('anchor')
+    const detail = resultOf(analysis.holdabilityDetail({ qualification }).presentation)
+    expect(detail?.labels).toEqual(['2026-06-15'])
+    expect(detail?.anchorSeries).toEqual([100])
   })
 })

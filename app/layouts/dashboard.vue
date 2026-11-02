@@ -25,8 +25,10 @@ const sidebarOpen = useState<boolean>('dashboardSidebarOpen', () => false); // s
       </UDashboardSidebar>
     </div>
 
+    <!-- On phones the fixed bottom bar owns the last 4rem: the panel ends above it
+         (min-h-0 overrides the panel's min-h-svh) so its own scroller never runs under the bar. -->
     <div
-      class="flex flex-col flex-1 min-w-0 overflow-y-auto sm:overflow-hidden pb-[calc(4rem+env(safe-area-inset-bottom))] sm:pb-0">
+      class="flex flex-col flex-1 min-w-0 overflow-y-auto sm:overflow-hidden max-sm:mb-[calc(4rem+env(safe-area-inset-bottom))] max-sm:[&>*]:min-h-0!">
       <slot />
     </div>
 

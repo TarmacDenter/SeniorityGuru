@@ -27,8 +27,8 @@ const chartData = computed(() => ({
     {
       label: 'Pilots',
       data: props.buckets.map((b) => b.count),
-      backgroundColor: colors.primaryLight,
-      borderColor: colors.primary,
+      backgroundColor: colors.inkFill,
+      borderColor: colors.ink,
       borderWidth: 1,
     },
   ],
@@ -68,7 +68,7 @@ const chartOptions = computed<ChartOptions<'bar'>>(() => ({
       v-else
       icon="i-lucide-calendar"
       title="Age data unavailable"
-      description="No ages are available for the matching pilots."
+      description="No ages are available for the pilots in this Qualification Scope."
     />
     <p v-if="nullCount > 0" class="mt-2 text-xs text-[var(--ui-text-muted)]">
       * {{ nullCount }} pilot{{ nullCount === 1 ? '' : 's' }} excluded (no retirement date on file).

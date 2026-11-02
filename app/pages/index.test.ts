@@ -1,4 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
+import { nextTick } from 'vue'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 
 vi.mock('~/composables/usePwaInstall', () => ({
@@ -61,5 +62,29 @@ describe('index.vue — CTA rendering', () => {
     const wrapper = await mountSuspended(IndexPage.default)
     expect(wrapper.text()).toContain('Dig')
     expect(wrapper.html()).toContain('href="/dashboard"')
+  })
+
+  it('names the New Hire sample after the Current › Status view', async () => {
+    const IndexPage = await import('./index.vue')
+    const text = (await mountSuspended(IndexPage.default)).text()
+    expect(text).toContain('Current › Status')
+    expect(text).not.toContain('My Status')
+  })
+
+  it('offers the retirement timing seats as tabs', async () => {
+    const IndexPage = await import('./index.vue')
+    const wrapper = await mountSuspended(IndexPage.default)
+    expect(wrapper.findAll('[role="tab"]').map(tab => tab.text())).toEqual(['All Pilots', 'FO', 'CA'])
+  })
+
+  it('shows the Generic sample file with full column names once opened', async () => {
+    const IndexPage = await import('./index.vue')
+    const wrapper = await mountSuspended(IndexPage.default)
+    const toggle = wrapper.findAll('button').find(button => button.text() === 'Required Data Format (Generic)')
+    await toggle!.trigger('click')
+    await nextTick()
+    expect(wrapper.find('table').findAll('th').map(th => th.text())).toEqual([
+      'Seniority Number', 'Employee Number', 'Seat', 'Base', 'Fleet', 'Hire Date', 'Retire Date',
+    ])
   })
 })

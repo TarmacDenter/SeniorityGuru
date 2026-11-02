@@ -20,6 +20,7 @@ defineProps<{
 
     <template #right>
       <slot name="right" />
+      <UColorModeButton color="neutral" variant="ghost" />
     </template>
   </UDashboardNavbar>
 </template>

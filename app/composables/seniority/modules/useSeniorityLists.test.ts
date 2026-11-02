@@ -16,6 +16,7 @@ vi.mock('~/stores/seniority', () => ({
 }))
 
 const { useSeniorityLists } = await import('./useSeniorityLists')
+const { parsePlainDate, Temporal } = await import('~/utils/temporal')
 
 describe('useSeniorityLists', () => {
   beforeEach(() => {
@@ -70,5 +71,26 @@ describe('useSeniorityLists', () => {
     const { fetchEntries } = useSeniorityLists()
     await fetchEntries(3)
     expect(mockStore.fetchEntries).toHaveBeenCalledWith(3)
+  })
+})
+
+describe('List › Uploads summary', () => {
+  function list(id: number, effective: string, uploaded: string, title?: string) {
+    return { id, title, effectiveDate: parsePlainDate(effective), createdAt: Temporal.Instant.from(uploaded) }
+  }
+
+  it('counts the lists uploaded', () => {
+    mockStore.lists = [list(1, '2025-01-01', '2025-01-02T00:00:00Z'), list(2, '2025-02-01', '2025-02-02T00:00:00Z')]
+    expect(useSeniorityLists().listCountLabel.value).toBe('2')
+  })
+
+  it('lists the five most recent uploads, newest first, named by title or Effective Date', () => {
+    mockStore.lists = [1, 2, 3, 4, 5, 6].map(n => list(n, `2025-0${n}-01`, `2025-0${n}-15T12:00:00Z`, n === 6 ? 'June list' : undefined))
+    const recent = useSeniorityLists().recentLists.value
+
+    expect(recent.map(item => item.id)).toEqual([6, 5, 4, 3, 2])
+    expect(recent[0]).toMatchObject({ title: 'June list', description: 'Effective 2025-06-01' })
+    expect(recent[1]).toMatchObject({ title: '2025-05-01', description: 'Effective 2025-05-01' })
+    expect(recent[0]!.date).toMatch(/2025/)
   })
 })

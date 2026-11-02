@@ -70,7 +70,7 @@ describe('Anchor Pilot retires during the projection window', () => {
     const presented = output.presentation
     if (isNoResult(presented)) throw new Error('expected a presented trajectory')
     expect(presented.chartData.labels).toEqual(['2026-06-15', '2027-06-15'])
-    expect(presented.endedByLabel).toBe('Anchor Pilot retired')
+    expect(presented.endedByLabel).toBe('Projection ends at your retirement')
   })
 
   it('does not report an end reason when the projection finishes before retirement', () => {

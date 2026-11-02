@@ -30,6 +30,7 @@ export interface PreferenceMap {
   'pwa-dismissed': boolean
   'pwa-snoozed-until': string
   demoBannerDismissed: boolean
+  trajectoryAssumptionsDismissed: boolean
   lastUploadType: string
   importMappings: Record<string, ImportMappingPreference>
 }
@@ -62,6 +63,7 @@ export const PREFERENCE_SERIALIZERS: { [K in keyof PreferenceMap]: (v: Preferenc
   'pwa-dismissed': (v) => String(v),
   'pwa-snoozed-until': (v) => v,
   demoBannerDismissed: (v) => String(v),
+  trajectoryAssumptionsDismissed: (v) => String(v),
   lastUploadType: (v) => v,
   importMappings: (v) => JSON.stringify(v),
 }
@@ -75,6 +77,7 @@ export const PREFERENCE_DESERIALIZERS: { [K in keyof PreferenceMap]: (raw: strin
   'pwa-dismissed': (raw) => raw === 'true',
   'pwa-snoozed-until': (raw) => raw,
   demoBannerDismissed: (raw) => raw === 'true',
+  trajectoryAssumptionsDismissed: (raw) => raw === 'true',
   lastUploadType: (raw) => raw,
   importMappings: (raw) => ImportMappingsSchema.catch({}).parse(JSON.parse(raw)),
 }
