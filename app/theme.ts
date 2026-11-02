@@ -2,9 +2,10 @@ export const appTheme = {
   card: {
     root: 'backdrop-blur-sm'
   },
-  // Header bar sits above the page like a raised sheet: lighter surface, hairline rule, soft drop shadow.
+  // The header, the view tabs and the scenario strip share one raised sheet (bg-elevated) over the
+  // page, divided by hairline rules.
   dashboardNavbar: {
-    root: 'relative z-20 bg-elevated border-b-0 shadow-[0_1px_0_var(--ui-border),0_8px_16px_-10px_rgb(0_0_0/0.45)]'
+    root: 'relative z-20 bg-elevated short:h-11 short:px-4'
   },
   // Ruler slider: tick marks along the track and a highlighter thumb.
   slider: {
@@ -14,7 +15,7 @@ export const appTheme = {
   },
   // On/Off switch: square-cornered ink toggle. The On/Off word is rendered by AppSwitch.
   switch: {
-    base: 'rounded-sm border border-default data-[state=unchecked]:bg-accented data-[state=checked]:bg-primary',
+    base: 'rounded-sm border border-accented data-[state=unchecked]:bg-(color:--ui-bg-track) data-[state=checked]:bg-primary',
     thumb: 'rounded-xs bg-default shadow-none'
   },
   dashboardSidebar: {

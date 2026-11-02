@@ -170,17 +170,19 @@ function scrollToUserRow() {
 
 <template>
   <div class="flex flex-col h-full min-h-0 min-w-0">
-    <div class="shrink-0 border-b border-default p-2 sm:p-3">
-      <UButton
-        v-if="isCompact"
-        variant="outline"
-        color="neutral"
-        icon="i-lucide-sliders-horizontal"
-        size="sm"
-        :aria-expanded="compactControlsOpen"
-        :aria-controls="compactControlsId"
-        @click="compactControlsOpen = !compactControlsOpen"
-      >Controls</UButton>
+    <div class="shrink-0 border-b border-default p-2 sm:p-3 short:px-4 short:py-1">
+      <div v-if="isCompact" class="flex items-center gap-2">
+        <UButton
+          variant="outline"
+          color="neutral"
+          icon="i-lucide-sliders-horizontal"
+          size="sm"
+          :aria-expanded="compactControlsOpen"
+          :aria-controls="compactControlsId"
+          @click="compactControlsOpen = !compactControlsOpen"
+        >Controls</UButton>
+        <slot name="compact-lead" />
+      </div>
       <div v-if="isCompact && compactControlsOpen" :id="compactControlsId" class="space-y-2 pt-2">
         <div class="flex flex-wrap items-center gap-2">
           <USelect v-model="selectedQualKey" :items="qualOptions" value-key="value" label-key="label" class="min-w-44 flex-1" placeholder="Company-wide" aria-label="Qualification" />
@@ -204,12 +206,12 @@ function scrollToUserRow() {
     </div>
 
     <div class="flex-1 min-h-0 overflow-hidden">
-      <div :class="isCompact ? 'h-full min-h-0 p-0 flex flex-col' : 'h-full min-h-0 sm:p-6 flex flex-col'">
+      <div :class="isCompact ? 'h-full min-h-0 p-0 short:px-4 flex flex-col' : 'h-full min-h-0 sm:p-6 flex flex-col'">
         <UEmpty v-if="!latestList && !isLoading" icon="i-lucide-list-ordered" title="No Seniority List Yet" description="Upload your airline's seniority list to view your position." :actions="[{ label: 'Upload Seniority List', icon: 'i-lucide-upload', to: '/seniority/upload', size: 'lg' as const }]" class="py-24" />
         <template v-else>
           <p v-if="latestList && !isCompact" class="shrink-0 text-sm text-muted mb-4">{{ isQualMode ? `${qualificationScope.base}-${qualificationScope.fleet}-${qualificationScope.seat}` : 'Company-wide' }} · {{ projected.rosterSize }} on roster · {{ projected.activePilotCount }} active</p>
           <div class="flex min-h-0 flex-1 flex-col">
-            <SeniorityAnchoredTable ref="table" v-model:global-filter="globalFilter" v-model:pagination="pagination" v-model:expanded="expanded" v-model:column-visibility="columnVisibility" mark-column="name" :row-class="rowClass" :data="tableData" :columns="columns" :loading="isLoading" :pagination-options="{ getPaginationRowModel: getPaginationRowModel() }" sticky :expanded-options="{ getRowCanExpand: () => true }" :ui="{ thead: 'bg-default', ...(isCompact ? { th: 'px-2 py-2 text-xs', td: 'px-2 py-1.5 text-xs' } : {}) }" class="min-h-0 w-full flex-1 overscroll-contain text-xs sm:text-base">
+            <SeniorityAnchoredTable ref="table" v-model:global-filter="globalFilter" v-model:pagination="pagination" v-model:expanded="expanded" v-model:column-visibility="columnVisibility" mark-column="name" :row-class="rowClass" :data="tableData" :columns="columns" :loading="isLoading" :pagination-options="{ getPaginationRowModel: getPaginationRowModel() }" sticky :expanded-options="{ getRowCanExpand: () => true }" :ui="{ thead: 'bg-default', ...(isCompact ? { th: 'px-2 py-2 text-xs short:py-1', td: 'px-2 py-1.5 text-xs' } : {}) }" class="min-h-0 w-full flex-1 overscroll-contain text-xs sm:text-base">
               <template #expanded="{ row }">
                 <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 px-4 py-3 text-xs">
                   <div><p class="text-muted mb-0.5">Employee number</p><p>{{ row.original.employeeNumber }}</p></div>
@@ -226,7 +228,7 @@ function scrollToUserRow() {
       </div>
     </div>
 
-    <div v-if="latestList" class="shrink-0 py-2 sm:py-3 border-t border-default">
+    <div v-if="latestList" class="shrink-0 px-3 py-2 sm:px-6 sm:py-3 short:px-4 short:py-0.5 border-t border-default [&>div]:px-0">
       <TablePagination :current-page="currentPage" :page-count="pageCount" :total-rows="totalEntryCount" :page-size="pagination.pageSize" @update:page="(p: number) => table?.tableApi?.setPageIndex(p - 1)" />
     </div>
   </div>

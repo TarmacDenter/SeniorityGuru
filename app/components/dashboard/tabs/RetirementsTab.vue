@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { h, resolveComponent } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
+import { useDashboardList } from '~/composables/useDashboardList'
 import { useUpcomingRetirements } from '~/composables/seniority/modules/useUpcomingRetirements'
 import type { RetirementRow, RetirementSortKey } from '~/composables/seniority/modules/useUpcomingRetirements'
 
@@ -9,6 +10,11 @@ const {
   hasData, hasAnchor, yearsHorizon, horizonMax, horizonLabelFor, emptyResultLabel, seniorOnly,
   filterBase, filterSeat, filterFleet, baseItems, seatItems, fleetItems, sortKey, sortDir, toggleSort, rows,
 } = useUpcomingRetirements()
+
+const { selectedListId, listOptions, isDemoList, isHistorical } = useDashboardList()
+// On a short screen the slider and filters collapse behind a Controls toggle beside the list picker.
+const controlsOpen = ref(false)
+const controlsId = useId()
 
 // Client-side paging keeps the DOM to one page of rows.
 const table = useTableFeatures<RetirementRow>('retirementsTable', { pageSize: 50 })
@@ -47,7 +53,7 @@ const columns = computed<TableColumn<RetirementRow>[]>(() => [
 </script>
 
 <template>
-  <div class="space-y-4">
+  <div class="space-y-4 short:space-y-2">
     <UEmpty
       v-if="!hasData"
       icon="i-lucide-calendar-x"
@@ -58,6 +64,27 @@ const columns = computed<TableColumn<RetirementRow>[]>(() => [
     />
 
     <template v-else>
+      <div class="hidden items-center gap-2 short:flex">
+        <UButton
+          variant="outline"
+          color="neutral"
+          icon="i-lucide-sliders-horizontal"
+          size="sm"
+          :aria-expanded="controlsOpen"
+          :aria-controls="controlsId"
+          @click="controlsOpen = !controlsOpen"
+        >Controls</UButton>
+        <DashboardListPicker
+          v-model:selected-list-id="selectedListId"
+          inline
+          class="flex-1"
+          :list-options="listOptions"
+          :is-demo="isDemoList"
+          :is-historical="isHistorical"
+        />
+      </div>
+
+      <div :id="controlsId" class="space-y-4 short:space-y-2" :class="controlsOpen ? '' : 'short:hidden'">
       <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
         <label for="retiring-within" class="whitespace-nowrap text-sm text-muted">Retiring within</label>
         <USlider id="retiring-within" v-model="sliderYears" :min="1" :max="horizonMax" :step="1" size="sm" class="w-40 sm:w-56" aria-label="Retiring within years" />
@@ -76,6 +103,7 @@ const columns = computed<TableColumn<RetirementRow>[]>(() => [
           <USelectMenu v-model="filterSeat" :items="seatItems" value-key="value" label-key="label" placeholder="Seat" size="sm" class="w-24" aria-label="Seat" />
           <USelectMenu v-model="filterFleet" :items="fleetItems" value-key="value" label-key="label" placeholder="Fleet" size="sm" class="w-28" aria-label="Fleet" />
         </div>
+      </div>
       </div>
 
       <p v-if="!hasAnchor" class="border-l-2 border-default pl-3 text-sm text-muted">

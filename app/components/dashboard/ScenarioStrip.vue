@@ -14,7 +14,8 @@ defineProps<{
   isHistorical: boolean
 }>()
 
-// On a phone the strip collapses to one summary line; from sm up the controls are always shown.
+// On a phone, and on any short screen such as a phone in landscape, the strip collapses to one
+// summary line that scrolls away with the page; wide, tall screens show the controls pinned.
 const open = ref(false)
 </script>
 
@@ -22,11 +23,11 @@ const open = ref(false)
   <section
     aria-label="Scenario"
     data-testid="scenario-strip"
-    class="sticky top-0 z-10 border-b border-default bg-elevated px-4 sm:px-6 py-2"
+    class="tall:sticky top-0 z-10 border-b border-default bg-elevated px-4 sm:px-6 py-2 short:px-4 short:py-0.5"
   >
     <button
       type="button"
-      class="sm:hidden flex w-full min-h-11 items-center justify-between gap-2 text-left text-sm"
+      class="sm:tall:hidden flex w-full min-h-11 short:min-h-9 items-center justify-between gap-2 text-left text-sm"
       :aria-expanded="open"
       aria-controls="scenario-strip-controls"
       @click="open = !open"
@@ -39,7 +40,7 @@ const open = ref(false)
 
     <div
       id="scenario-strip-controls"
-      class="flex-col gap-3 pt-2 sm:flex sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-6 sm:gap-y-2 sm:pt-0"
+      class="flex-col gap-3 pt-2 sm:tall:flex sm:tall:flex-row sm:tall:flex-wrap sm:tall:items-center sm:tall:gap-x-6 sm:tall:gap-y-2 sm:tall:pt-0"
       :class="open ? 'flex' : 'hidden'"
     >
       <USelectMenu
@@ -51,7 +52,7 @@ const open = ref(false)
         placeholder="Select list..."
         size="sm"
         aria-label="Seniority List"
-        class="w-full sm:w-72"
+        class="w-full sm:tall:w-72"
       />
 
       <label v-if="scopeLabels.length > 1" class="flex items-center gap-2 text-sm text-muted">

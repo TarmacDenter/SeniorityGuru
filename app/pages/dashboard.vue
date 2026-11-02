@@ -5,6 +5,7 @@ import { useDashboardSections } from '~/composables/useDashboardSections'
 import { useScenario } from '~/composables/useScenario'
 import { useDemoBanner } from '~/composables/useDemoBanner'
 import { usePwaInstall } from '~/composables/usePwaInstall'
+import { useMediaQuery } from '@vueuse/core'
 
 // The dashboard shell: section title, small-view tabs, scenario toolbar or list picker, and the small view itself.
 // It stays mounted while moving between sections, so the chosen list loads once.
@@ -15,6 +16,8 @@ const { fetchLists, fetchEntries } = useSeniorityLists()
 const { loadPreferences } = useUser()
 const { lists, selectedListId, loading, listOptions, isHistorical, isDemoList, navbarDescription } = useDashboardList()
 const { section, viewItems } = useDashboardSections()
+// On a short screen (a phone in landscape) the view tabs move into the header bar, which saves a row.
+const isShort = useMediaQuery('(max-height: 32rem)')
 
 function useListSelectionRoute() {
   const initializing = ref(true)
@@ -80,10 +83,14 @@ const panelUi = computed(() => ({
 <template>
   <UDashboardPanel :ui="panelUi">
     <template #header>
-      <SeniorityNavbar :title="section?.label ?? 'Dashboard'" :description="navbarDescription" />
+      <SeniorityNavbar :title="section?.label ?? 'Dashboard'" :description="navbarDescription">
+        <template v-if="isShort && viewItems.length > 0" #right>
+          <UNavigationMenu :items="viewItems" highlight aria-label="Section views" class="min-w-0 overflow-x-auto" :ui="{ link: 'whitespace-nowrap py-1' }" />
+        </template>
+      </SeniorityNavbar>
 
-      <UDashboardToolbar v-if="viewItems.length > 0" class="overflow-x-auto overflow-y-hidden">
-        <UNavigationMenu :items="viewItems" highlight aria-label="Section views" class="-mx-1 flex-1" :ui="{ link: 'whitespace-nowrap' }" />
+      <UDashboardToolbar v-if="viewItems.length > 0 && !isShort" class="overflow-x-auto overflow-y-hidden bg-elevated short:min-h-9 short:px-4">
+        <UNavigationMenu :items="viewItems" highlight aria-label="Section views" class="-mx-1 flex-1" :ui="{ item: 'short:py-0', link: 'whitespace-nowrap short:py-1' }" />
       </UDashboardToolbar>
     </template>
 
@@ -132,6 +139,7 @@ const panelUi = computed(() => ({
         <DashboardListPicker
           v-if="showListPicker"
           v-model:selected-list-id="selectedListId"
+          class="short:hidden"
           :list-options="listOptions"
           :is-demo="isDemoList"
           :is-historical="isHistorical"

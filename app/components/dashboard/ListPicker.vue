@@ -3,6 +3,8 @@
 const selectedListId = defineModel<number | undefined>('selectedListId')
 
 defineProps<{
+  /** Sits inside another control row: no rule or padding of its own. */
+  inline?: boolean
   listOptions: { id: number | undefined; label: string; isLatest: boolean }[]
   isDemo: boolean
   isHistorical: boolean
@@ -10,7 +12,10 @@ defineProps<{
 </script>
 
 <template>
-  <div class="flex flex-wrap items-center gap-2 border-b border-default px-4 sm:px-6 py-3">
+  <div
+    class="flex flex-wrap items-center gap-2"
+    :class="inline ? 'min-w-0' : 'border-b border-default px-4 sm:px-6 py-3 short:px-4 short:py-1'"
+  >
     <USelectMenu
       v-if="listOptions.length > 0"
       v-model="selectedListId"
@@ -20,7 +25,8 @@ defineProps<{
       placeholder="Select list..."
       size="sm"
       aria-label="Seniority List"
-      class="w-full sm:w-72"
+      class="min-w-0"
+      :class="inline ? 'flex-1' : 'w-full sm:w-72'"
     />
     <UBadge v-if="isDemo" color="neutral" variant="outline" size="sm">Demo</UBadge>
     <UBadge v-if="isHistorical" color="neutral" variant="outline" size="sm">Historical</UBadge>
