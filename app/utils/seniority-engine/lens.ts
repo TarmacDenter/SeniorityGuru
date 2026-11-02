@@ -199,8 +199,24 @@ class AnchoredSeniorityLensImplementation implements AnchoredSeniorityLens {
     const entries = context.snapshot.entries
     const seniorityNumber = anchor.seniority_number
     /** Dynamic Rank: Publication Position minus pilots senior to the given number who have already retired. */
-    const dynamicRank = (number: number): number =>
-      calculateSeniorityRank(entries, number) - countRetiredPilotsSeniorTo(entries, number, asOfDate(context))
+    // One pass over the roster, then a binary search per lookup: the Retirements reports ask for the
+    // Dynamic Rank of every retiring pilot, so a scan per lookup grows with retirees × roster.
+    const bySeniority = entries.toSorted((a, b) => a.seniority_number - b.seniority_number)
+    const date = asOfDate(context)
+    const retiredBefore = [0]
+    for (const entry of bySeniority) {
+      retiredBefore.push(retiredBefore.at(-1)! + (entry.retire_date && isRetiredBy(entry.retire_date, date) ? 1 : 0))
+    }
+    const dynamicRank = (number: number): number => {
+      let low = 0
+      let high = bySeniority.length
+      while (low < high) {
+        const mid = (low + high) >>> 1
+        if (bySeniority[mid]!.seniority_number < number) low = mid + 1
+        else high = mid
+      }
+      return low + 1 - retiredBefore[low]!
+    }
     const anchorDynamicRank = dynamicRank(seniorityNumber)
 
     /** Only a retired Anchor Pilot has no result; an out-of-scope Anchor Pilot gets a Hypothetical Placement. */
