@@ -33,8 +33,8 @@ const chartData = computed<ChartData<'bar'>>(() => {
   const datasets: ChartData<'bar'>['datasets'] = [{
     label: currentScope.value || 'Company-wide',
     data: currentData,
-    backgroundColor: 'rgba(56, 189, 248, 0.5)',
-    borderColor: colors.primary,
+    backgroundColor: colors.inkFill,
+    borderColor: colors.ink,
     borderWidth: 1,
     borderRadius: 4,
   }]
@@ -48,8 +48,8 @@ const chartData = computed<ChartData<'bar'>>(() => {
     datasets.push({
       label: compareScope.value,
       data: compareData,
-      backgroundColor: colors.cyanLight,
-      borderColor: colors.cyan,
+      backgroundColor: colors.softFill,
+      borderColor: colors.soft,
       borderWidth: 1,
       borderRadius: 4,
     })
@@ -75,7 +75,7 @@ const chartOptions = computed(() => ({
           <h3 class="font-semibold text-highlighted">Retirement Projections</h3>
           <div class="flex items-center gap-2">
             <span class="text-xs text-muted">Retirement rate</span>
-            <USwitch v-model="showPercentage" size="xs" />
+            <AppSwitch v-model="showPercentage" size="xs" />
           </div>
         </div>
         <div class="flex items-center gap-2">

@@ -20,6 +20,9 @@ The company-assigned ordering number for a pilot. A smaller number means greater
 A one-based position in publication order after removing the pilots who have retired by the As-of Date. It changes as the As-of Date moves, and it is shown beside the Seniority Number wherever a pilot's position appears. Rank, not Seniority Number, measures positional distance.
 _Avoid_: List Rank, Raw Rank, Adjusted Rank
 
+**Base Rank**:
+The Anchor Pilot's Rank among the pilots of one Qualification (base, seat and fleet). Where the Anchor Pilot is not in that Qualification, it is a Hypothetical Placement.
+
 **Publication Position**:
 A one-based position in the Seniority List's published order, retired pilots included. It is static and is shown beside Rank, never in place of it.
 _Avoid_: List Rank, Raw Rank, Static Rank
@@ -72,8 +75,22 @@ _Avoid_: Plug
 **Holdable**:
 A modeled outcome in which an Anchor Pilot's projected Seniority Percentile meets a Qualification Threshold. It does not imply contractual certainty.
 
+**Holdable Year**:
+The first projection year in which the Anchor Pilot's projected Seniority Percentile meets a Qualification Threshold's As-of Date value. It is "now" when the Anchor Pilot is already senior to the Qualification's most junior active pilot, and there is none when the projection ends at the Anchor Pilot's retirement first.
+_Avoid_: Hold date, Bid year
+
 **Retirement Wave**:
 A retirement year with a notable concentration of scheduled retirements relative to other years in the same analysis.
+
+## Dashboard Language
+
+**Dashboard Section**:
+One of four parts of the dashboard, split by subject (the Anchor Pilot or the list) and time (today or the future): **Current** (where the Anchor Pilot stands today), **Trajectory** (where the Anchor Pilot is heading), **Demographics** (what the list looks like) and **List** (the line items).
+_Avoid_: Tab, Panel
+
+**Small View**:
+A page inside a Dashboard Section, reached from the section's tab row. Current has **Status** and **Holdability**. Trajectory has **Projection** and **Retirements**. Demographics has none. List has **Full list**, **Upcoming retirements**, **Compare** and **Uploads**. Each presentation lives in exactly one Small View.
+_Avoid_: Subtab
 
 ## Seniority List Import Language
 

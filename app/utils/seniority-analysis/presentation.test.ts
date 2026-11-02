@@ -11,7 +11,10 @@ import type {
 import {
   formatQualification,
   formatQualificationScope,
+  formatGrowthAssumptions,
+  formatSeatLabel,
   formatSeniorityCount,
+  formatSeniorityPercentile,
   formatSeniorityRankChange,
   presentAnchoredSeniorityDemographics,
   presentAgeBucket,
@@ -44,14 +47,16 @@ describe('seniority presentation', () => {
     }
 
     expect(presentSeniorityTrajectory(trajectory)).toEqual({
+      bestYearLabel: null,
+      retirementWave: { buckets: [], percentileSeries: [] },
       chartData: {
         labels: ['2026-01-01', '2027-01-01', '2028-01-01', '2029-01-01'],
         data: [10, 12, 19, 22],
       },
       changes: [
-        { date: date('2027-01-01'), percentile: 12, percentilePointChange: 2, isPeak: false },
-        { date: date('2028-01-01'), percentile: 19, percentilePointChange: 7, isPeak: true },
-        { date: date('2029-01-01'), percentile: 22, percentilePointChange: 3, isPeak: false },
+        { date: date('2027-01-01'), percentile: 12, percentilePointChange: 2, isPeak: false, yearLabel: '2027', percentileLabel: '12.0%', changeLabel: '+2.0 pp' },
+        { date: date('2028-01-01'), percentile: 19, percentilePointChange: 7, isPeak: true, yearLabel: '2028', percentileLabel: '19.0%', changeLabel: '+7.0 pp' },
+        { date: date('2029-01-01'), percentile: 22, percentilePointChange: 3, isPeak: false, yearLabel: '2029', percentileLabel: '22.0%', changeLabel: '+3.0 pp' },
       ],
       endedByLabel: null,
       hypotheticalLabel: null,
@@ -130,6 +135,7 @@ describe('seniority presentation', () => {
 
   it('adapts constructed demographic domain values without changing their calculations', () => {
     const demographics: SeniorityDemographics = {
+      matchingPilotCount: 10,
       ageDistribution: {
         buckets: [{ minimumAge: 50, maximumAge: 54, pilotCount: 2 }],
         unknownAgePilotCount: 1,
@@ -162,6 +168,10 @@ describe('seniority presentation', () => {
     }
 
     expect(presentSeniorityDemographics(demographics)).toEqual({
+      matchingPilotCount: 10,
+      anchorYearsOfService: undefined,
+      hasYearsOfService: true,
+      qualificationSizes: [{ fleet: '737', seat: 'CA', base: 'JFK', countLabel: '6' }],
       ageDistribution: {
         buckets: [{ label: '50–54', count: 2 }],
         nullCount: 1,
@@ -216,6 +226,7 @@ describe('seniority presentation', () => {
       currentPercentile: 42,
       projectedPercentile: 61,
       modeledHoldable: true,
+      holdableYear: 'now',
     }]
 
     expect(presentQualificationPositions(positions)).toEqual([{
@@ -232,11 +243,16 @@ describe('seniority presentation', () => {
       currentPercentile: 42,
       projectedPercentile: 61,
       modeledHoldable: true,
+      qualificationLabel: '737 CA JFK',
+      holdableYear: 'now',
+      holdableLabel: 'Holdable now',
+      thresholdRelationLabel: null,
     }])
   })
 
   it('joins modeled Holdable state into a completed anchored demographics presentation', () => {
     const demographics: SeniorityDemographics = {
+      matchingPilotCount: 0,
       ageDistribution: { buckets: [], unknownAgePilotCount: 0 },
       yearsOfServiceDistribution: { entryFloor: 0, p10: 0, p25: 0, median: 0, p75: 0, p90: 0, maximum: 0 },
       yearsOfServiceBuckets: [],
@@ -264,9 +280,29 @@ describe('seniority presentation', () => {
       currentPercentile: 42,
       projectedPercentile: 61,
       modeledHoldable: true,
+      holdableYear: 'now',
     }]
 
     expect(presentAnchoredSeniorityDemographics(demographics, positions)
       .captainQualificationThresholds[0]?.modeledHoldable).toBe(true)
+  })
+})
+
+describe('display formats', () => {
+  it('always shows Seniority Percentile with one decimal and a placeholder when absent', () => {
+    expect(formatSeniorityPercentile(2)).toBe('2.0%')
+    expect(formatSeniorityPercentile(98.25)).toBe('98.3%')
+    expect(formatSeniorityPercentile(null)).toBe('--')
+  })
+
+  it('phrases Growth Assumptions', () => {
+    expect(formatGrowthAssumptions({ enabled: false, annualGrowthRate: 0.03 })).toBe('Retirements only')
+    expect(formatGrowthAssumptions({ enabled: true, annualGrowthRate: 0.035 })).toBe('3.5% annual growth')
+  })
+
+  it('names seats', () => {
+    expect(formatSeatLabel('CA')).toBe('Captain')
+    expect(formatSeatLabel('FO')).toBe('First Officer')
+    expect(formatSeatLabel('XX')).toBe('XX')
   })
 })

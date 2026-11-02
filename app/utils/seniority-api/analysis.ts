@@ -5,9 +5,12 @@ import { createSeniorityLens } from '~/utils/seniority-engine/lens'
 import { createSeniorityScenario } from '~/utils/seniority-engine/scenario'
 import type {
   AnchoredSeniorityLens,
+  AnchoredRetirementCountProjection,
   DemographicsOptions,
+  HoldabilityDetail,
   NoResult,
   PercentileCrossingResult,
+  Qualification,
   QualificationPosition,
   RelativeUpcomingRetirement,
   RetirementCountProjection,
@@ -22,9 +25,14 @@ import type {
 } from '~/utils/seniority-engine/types'
 import type { GrowthAssumptions } from '../seniority-analysis/growth'
 import { analyzeSeniorityQualificationViewer, type QualificationViewerAnalysis } from '~/utils/seniority-engine/qual-viewer'
+import { findLatestRetirementDate } from '~/utils/seniority-engine/retirement-analysis'
+import { findBestTrajectoryChange } from '~/utils/seniority-engine/trajectory-analysis'
 import { isNoResult } from '~/utils/seniority-engine/types'
 import { enumerateQualificationScopes, type QualificationScope } from '~/utils/seniority-engine/qualification-scope'
 import {
+  presentHoldabilityDetail,
+  presentAnchoredRetirementCountProjection,
+  type PresentedAnchoredRetirementCountProjection,
   presentPercentileCrossing,
   presentAnchoredSeniorityDemographics,
   presentQualificationPositions,
@@ -34,6 +42,7 @@ import {
   presentSeniorityStanding,
   presentSeniorityTrajectory,
   presentSeniorityTrajectoryComparison,
+  type PresentedHoldabilityDetail,
   type PresentedPercentileCrossing,
   type PresentedQualificationPosition,
   type PresentedRetirementCountProjection,
@@ -64,6 +73,7 @@ export interface SeniorityQualificationScopeOption {
 }
 
 export interface SeniorityCatalog {
+  readonly latestRetirementDate: PlainDate | null
   readonly bases: readonly string[]
   readonly seats: readonly string[]
   readonly fleets: readonly string[]
@@ -110,7 +120,15 @@ export interface QualificationPositionAnalysisOptions {
   readonly growthAssumptions?: GrowthAssumptions
 }
 
+/** Company-wide, like Qualification Position. */
+export interface HoldabilityDetailAnalysisOptions {
+  readonly qualification: Qualification
+  readonly growthAssumptions?: GrowthAssumptions
+}
+
 export interface UpcomingRetirementAnalysisOptions {
+  /** Exclusive start of the window; defaults to the As-of Date. */
+  readonly from?: PlainDate
   readonly through: PlainDate
   readonly qualificationScope?: QualificationScope
 }
@@ -141,6 +159,9 @@ export interface SeniorityAnalysis extends CommonSeniorityAnalysis {
 
 export interface AnchoredSeniorityAnalysis extends CommonSeniorityAnalysis {
   readonly anchor: Readonly<SeniorityEntry>
+  retirementCountProjection(
+    options: RetirementCountProjectionAnalysisOptions,
+  ): SeniorityOutput<AnchoredRetirementCountProjection, PresentedAnchoredRetirementCountProjection>
   demographics(
     options: SeniorityDemographicsAnalysisOptions,
   ): SeniorityOutput<SeniorityDemographics, PresentedSeniorityDemographics>
@@ -157,6 +178,10 @@ export interface AnchoredSeniorityAnalysis extends CommonSeniorityAnalysis {
   qualificationPositions(
     options: QualificationPositionAnalysisOptions,
   ): SeniorityOutput<readonly QualificationPosition[] | NoResult, readonly PresentedQualificationPosition[] | NoResult>
+  /** The Anchor Pilot against one Qualification Threshold, with today's threshold pilot as a reference series. */
+  holdabilityDetail(
+    options: HoldabilityDetailAnalysisOptions,
+  ): SeniorityOutput<HoldabilityDetail | null | NoResult, PresentedHoldabilityDetail | null | NoResult>
   relativeUpcomingRetirements(
     options: RelativeUpcomingRetirementAnalysisOptions,
   ): readonly RelativeUpcomingRetirement[]
@@ -180,6 +205,7 @@ function commonSeniorityAnalysis(
   const entries = lens.snapshot.entries
   return {
     catalog: {
+      latestRetirementDate: findLatestRetirementDate(entries),
       bases: lens.snapshot.bases,
       seats: lens.snapshot.seats,
       fleets: lens.snapshot.fleets,
@@ -213,6 +239,10 @@ function anchoredSeniorityAnalysis(lens: AnchoredSeniorityLens, asOfDate: PlainD
   return {
     ...commonSeniorityAnalysis(lens, asOfDate),
     anchor: lens.anchor,
+    retirementCountProjection: (options) => {
+      const domain = lens.retirementCountProjection({ through: options.through, scenario: createSeniorityScenario(options.scenario) })
+      return seniorityOutput(domain, value => presentAnchoredRetirementCountProjection(value, asOfDate, options.through))
+    },
     demographics: (options) => {
       const scenario = createSeniorityScenario(options.scenario)
       const domain = lens.demographics({
@@ -236,7 +266,12 @@ function anchoredSeniorityAnalysis(lens: AnchoredSeniorityLens, asOfDate: PlainD
     seniorityTrajectory: (options) => {
       const scenario = createSeniorityScenario(options.scenario)
       const domain = lens.seniorityTrajectory({ through: options.through, scenario })
-      return seniorityOutput(domain, value => presentSeniorityTrajectory(value, scenario.qualificationScope))
+      return seniorityOutput(domain, value => presentSeniorityTrajectory(
+        value,
+        scenario.qualificationScope,
+        isNoResult(value) ? null : findBestTrajectoryChange(value.changes),
+        lens.retirementYearAnalysis(scenario),
+      ))
     },
     seniorityTrajectoryComparison: (options) => {
       const baselineScenario = createSeniorityScenario(options.baselineScenario)
@@ -259,6 +294,7 @@ function anchoredSeniorityAnalysis(lens: AnchoredSeniorityLens, asOfDate: PlainD
       const domain = lens.qualificationPositions(options)
       return seniorityOutput(domain, presentQualificationPositions)
     },
+    holdabilityDetail: options => seniorityOutput(lens.holdabilityDetail(options), presentHoldabilityDetail),
     relativeUpcomingRetirements: options => lens.relativeUpcomingRetirements(options),
   }
 }

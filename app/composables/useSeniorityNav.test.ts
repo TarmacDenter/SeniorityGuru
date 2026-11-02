@@ -1,53 +1,62 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mockNuxtImport } from '@nuxt/test-utils/runtime'
+import type { NavigationMenuItem } from '@nuxt/ui'
 
-vi.mock('@vueuse/core', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@vueuse/core')>()
-  return {
-    ...actual,
-    useMediaQuery: () => ({ value: false }), // non-mobile by default
-    useLocalStorage: () => ({ value: '' }),
-  }
-})
-
-vi.mock('~/composables/useDashboardTabs', () => ({
-  useDashboardTabs: () => ({ activeTab: { value: 'status' }, tabs: [] }),
-  DASHBOARD_TABS: [],
+const { mockRoute, mockUnseen } = vi.hoisted(() => ({
+  mockRoute: { path: '/dashboard/current/status', query: {} as Record<string, string> },
+  mockUnseen: { value: false },
 }))
 
-// Mock Nuxt composables used by useSeniorityNav
-mockNuxtImport('useRoute', () => () => ({ path: '/', query: {} }))
-mockNuxtImport('useState', () => (_key: string, init?: () => unknown) => ({ value: init?.() }))
+mockNuxtImport('useRoute', () => () => mockRoute)
+mockNuxtImport('useChangelog', () => () => ({ hasUnseenChanges: mockUnseen }))
+
+beforeEach(() => {
+  mockRoute.path = '/dashboard/current/status'
+  mockRoute.query = {}
+  mockUnseen.value = false
+})
+
+async function nav() {
+  const { useSeniorityNav } = await import('./useSeniorityNav')
+  return useSeniorityNav().value as NavigationMenuItem[][]
+}
 
 describe('useSeniorityNav', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
+  it('shows the four sections, then Upload, Compare and Settings below a divider', async () => {
+    const groups = await nav()
+    expect(groups.map(group => group.map(item => item.label))).toEqual([
+      ['Current', 'Trajectory', 'Demographics', 'List'],
+      ['Upload', 'Compare', 'Settings'],
+    ])
   })
 
-  it('returns navigation items including Dashboard, My Lists, Upload, Compare, What\'s New, Settings', async () => {
-    const { useSeniorityNav } = await import('./useSeniorityNav')
-    const nav = useSeniorityNav()
-    const items = nav.value
-    const labels = items.map((i) => i.label)
-    expect(labels).toContain('Dashboard')
-    expect(labels).toContain('My Lists')
-    expect(labels).toContain('Upload')
-    expect(labels).toContain('Compare')
-    expect(labels).toContain("What's New")
-    expect(labels).toContain('Settings')
+  it('leaves What\'s New to Settings and marks Settings when there is something new', async () => {
+    mockUnseen.value = true
+    const groups = await nav()
+    expect(groups.flat().some(item => item.label === "What's New")).toBe(false)
+    expect(groups[1]!.find(item => item.label === 'Settings')!.chip).toBeTruthy()
   })
 
-  it('does not include an Admin item', async () => {
-    const { useSeniorityNav } = await import('./useSeniorityNav')
-    const nav = useSeniorityNav()
-    const items = nav.value
-    const adminItem = items.find((i) => i.label === 'Admin')
-    expect(adminItem).toBeUndefined()
+  it.each([
+    ['/dashboard/current/holdability', 'Current'],
+    ['/dashboard/trajectory/retirements', 'Trajectory'],
+    ['/dashboard/demographics', 'Demographics'],
+    ['/dashboard/list/uploads', 'List'],
+    ['/settings', undefined],
+  ])('on %s marks %s as the current section', async (path, label) => {
+    mockRoute.path = path
+    const groups = await nav()
+    expect(groups[0]!.filter(item => item.active).map(item => item.label)).toEqual(label ? [label] : [])
   })
 
-  it('returns 6 top-level items', async () => {
-    const { useSeniorityNav } = await import('./useSeniorityNav')
-    const nav = useSeniorityNav()
-    expect(nav.value).toHaveLength(6)
+  it('opens each section at its first small view, keeping the chosen list', async () => {
+    mockRoute.query = { list: '4' }
+    const groups = await nav()
+    expect(groups[0]!.map(item => item.to)).toEqual([
+      { path: '/dashboard/current/status', query: { list: '4' } },
+      { path: '/dashboard/trajectory/projection', query: { list: '4' } },
+      { path: '/dashboard/demographics', query: { list: '4' } },
+      { path: '/dashboard/list/full', query: { list: '4' } },
+    ])
   })
 })

@@ -45,7 +45,7 @@ describe('useTrajectory', () => {
     mockUserStore.employeeNumber = 'E2'
 
     const { endedByLabel } = useTrajectory()
-    expect(endedByLabel.value).toBe('Anchor Pilot retired')
+    expect(endedByLabel.value).toBe('Projection ends at your retirement')
   })
 
   it('has no end reason without an Anchor Pilot', () => {
@@ -173,5 +173,42 @@ describe('useTrajectory', () => {
     const midWithoutGrowth = withoutGrowth.value[midIdx]!
     // With growth, the total is larger so percentile improvement is dampened
     expect(midWithGrowth.percentile).not.toBe(midWithoutGrowth.percentile)
+  })
+
+  it('lists every yearly change within the Qualification Scope, with its best year', () => {
+    mockStore.entries = [
+      makeEntry({ seniority_number: 1, employee_number: 'E1', base: 'JFK', seat: 'CA', fleet: '737', retire_date: '2030-06-15' }),
+      makeEntry({ seniority_number: 2, employee_number: 'E2', base: 'BOS', seat: 'FO', fleet: '320', retire_date: '2033-06-15' }),
+      makeEntry({ seniority_number: 3, employee_number: 'E3', base: 'BOS', seat: 'FO', fleet: '320', retire_date: '2045-06-15' }),
+    ]
+    mockUserStore.employeeNumber = 'E3'
+
+    const companyWide = useTrajectory()
+    expect(companyWide.bestYearLabel.value).toMatch(/^Best year: 2030 \(\+\d+\.\dpp\)$/)
+
+    const scoped = useTrajectory(undefined, ref({ base: 'BOS', seat: 'FO', fleet: '320' }))
+    const moving = scoped.changes.value.filter(change => change.percentilePointChange !== 0)
+    expect(moving.map(change => change.yearLabel)).toEqual(['2033'])
+    expect(moving[0]!.changeLabel).toMatch(/^\+\d+\.\d pp$/)
+    expect(moving[0]!.percentileLabel).toMatch(/^\d+\.\d%$/)
+    expect(scoped.changes.value.length).toBeGreaterThan(moving.length)
+    expect(scoped.bestYearLabel.value).toMatch(/^Best year: 2033 \(\+\d+\.\dpp\)$/)
+  })
+
+  it('has no best year when the Seniority Percentile never improves', () => {
+    expect(useTrajectory().bestYearLabel.value).toBeNull()
+  })
+
+  it('follows the Qualification Scope and labels a Hypothetical Placement', () => {
+    mockStore.entries = [
+      makeEntry({ seniority_number: 1, employee_number: 'E1', base: 'JFK', seat: 'FO', fleet: '320', retire_date: '2030-06-15' }),
+      makeEntry({ seniority_number: 2, employee_number: 'E2', base: 'JFK', seat: 'FO', fleet: '320', retire_date: '2035-06-15' }),
+      makeEntry({ seniority_number: 3, employee_number: 'E3', base: 'BOS', seat: 'CA', fleet: '220', retire_date: '2040-06-15' }),
+    ]
+    mockUserStore.employeeNumber = 'E3'
+
+    expect(useTrajectory().hypotheticalLabel.value).toBeNull()
+    const scoped = useTrajectory(undefined, ref({ base: 'JFK', seat: 'FO', fleet: '320' }))
+    expect(scoped.hypotheticalLabel.value).toBe('Hypothetical Placement in JFK FO 320')
   })
 })

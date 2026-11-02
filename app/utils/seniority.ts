@@ -6,6 +6,7 @@ export type {
   AnchoredSeniorityAnalysis,
   CommonSeniorityAnalysis,
   CreateSeniorityAnalysisOptions,
+  HoldabilityDetailAnalysisOptions,
   PercentileCrossingAnalysisOptions,
   QualificationPositionAnalysisOptions,
   RelativeUpcomingRetirementAnalysisOptions,
@@ -25,6 +26,7 @@ export type {
 export { DEFAULT_SENIORITY_GROWTH_ASSUMPTIONS } from './seniority-analysis/growth'
 export type { GrowthAssumptions } from './seniority-analysis/growth'
 
+export { formatGrowthAssumptions } from './seniority-analysis/presentation'
 export { isNoResult, resultOrNull } from './seniority-engine/types'
 export { AnchorNotFoundError } from './seniority-engine/lens'
 export { InvalidSenioritySnapshotDataError } from './seniority-engine/snapshot'
@@ -34,6 +36,7 @@ export type {
   QualificationViewerStatus,
 } from './seniority-engine/qual-viewer'
 export type {
+  AnchoredRetirementCountProjection,
   NoResult,
   NoResultReason,
   QualificationScope,
@@ -41,6 +44,8 @@ export type {
   UpcomingRetirement,
 } from './seniority-engine/types'
 export type {
+  PresentedHoldabilityDetail,
+  PresentedAnchoredRetirementCountProjection,
   PresentedPercentileCrossing,
   PresentedQualificationPosition,
   PresentedQualificationViewerAnalysis,

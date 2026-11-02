@@ -1,98 +1,116 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { mountSuspended, mockNuxtImport } from '@nuxt/test-utils/runtime'
-import type { UpcomingRetirement } from '~/utils/seniority'
-import { parsePlainDate } from '~/utils/temporal'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { mountSuspended } from '@nuxt/test-utils/runtime'
+import { defineComponent, h } from 'vue'
+import { UApp } from '#components'
+import { _resetCoreSingletons, useSeniorityCore } from '~/composables/seniority/modules/useSeniorityCore'
+import { resetMockStores } from '~/test-utils/seniority-mocks'
+import { Temporal } from '~/utils/temporal'
+import RetirementsTab from './RetirementsTab.vue'
 
-const mockUpcomingRetirements = vi.fn()
+const mockStore = vi.hoisted(() => ({ entries: [] as any[], lists: [] as any[] }))
+const mockUserStore = vi.hoisted(() => ({ employeeNumber: null as string | null, retirementAge: 65, getPreference: vi.fn().mockResolvedValue(null), savePreference: vi.fn().mockResolvedValue(undefined) }))
+vi.mock('~/stores/seniority', () => ({ useSeniorityStore: () => mockStore }))
+vi.mock('~/stores/user', () => ({ useUserStore: () => mockUserStore }))
+vi.mock('~/utils/db', () => ({ db: { preferences: { get: vi.fn().mockResolvedValue(undefined), put: vi.fn().mockResolvedValue('key') } } }))
 
-const { mockHasData, mockHasAnchor, mockAnalysis, mockAnchoredAnalysis } = vi.hoisted(() => {
-  const { ref: vRef } = require('vue')
-  return {
-    mockHasData: vRef(false) as { value: boolean },
-    mockHasAnchor: vRef(false) as { value: boolean },
-    mockAnalysis: vRef(null) as { value: { upcomingRetirements: ReturnType<typeof vi.fn> } | null },
-    mockAnchoredAnalysis: vRef(null) as { value: { relativeUpcomingRetirements: ReturnType<typeof vi.fn> } | null },
-  }
-})
+const { makeEntry } = await import('~/test-utils/factories')
 
-const mockStoreState = { employeeNumber: null as string | null, entries: [] as unknown[] }
+const inMonths = (months: number) => Temporal.Now.plainDateISO().add({ months }).toString()
+const pilot = (n: number, months: number) => makeEntry({ seniority_number: n, employee_number: `E${n}`, name: `Pilot ${n}`, retire_date: inMonths(months) })
 
-mockNuxtImport('useSeniorityCore', () => () => ({
-  hasData: mockHasData,
-  hasAnchor: mockHasAnchor,
-  listAnalysis: { value: null },
-  analysis: mockAnalysis,
-  anchoredAnalysis: mockAnchoredAnalysis,
-  get entries() { return { value: mockStoreState.entries } },
-}))
+async function mountTab() {
+  return mountSuspended(defineComponent({ setup: () => () => h(UApp, null, () => h(RetirementsTab)) }))
+}
 
-mockNuxtImport('useUser', () => () => ({
-  get employeeNumber() { return { value: mockStoreState.employeeNumber } },
-}))
-
-const sampleRows: UpcomingRetirement[] = [
-  {
-    seniorityNumber: 2,
-    employeeNumber: 'E2',
-    qualification: { base: 'JFK', seat: 'CA', fleet: '737' },
-    retirementDate: parsePlainDate('2027-06-01'),
-  },
-  {
-    seniorityNumber: 5,
-    employeeNumber: 'E5',
-    qualification: { base: 'ATL', seat: 'FO', fleet: '320' },
-    retirementDate: parsePlainDate('2028-03-15'),
-  },
-]
+const bodyRows = (wrapper: Awaited<ReturnType<typeof mountTab>>) => wrapper.findAll('tbody tr').map(tr => tr.text())
 
 describe('RetirementsTab', () => {
   beforeEach(() => {
-    mockHasData.value = false
-    mockHasAnchor.value = false
-    mockAnalysis.value = null
-    mockAnchoredAnalysis.value = null
-    mockStoreState.employeeNumber = null
-    mockStoreState.entries = []
-    mockUpcomingRetirements.mockReturnValue([])
+    _resetCoreSingletons()
+    resetMockStores(mockStore, mockUserStore)
+    useSeniorityCore().newHire.reset()
   })
 
-  it('shows empty state with CTA when no list is loaded', async () => {
-    const Comp = await import('./RetirementsTab.vue')
-    const wrapper = await mountSuspended(Comp.default)
+  it('shows an empty state with an import link when no list is loaded', async () => {
+    const wrapper = await mountTab()
     expect(wrapper.text()).toContain('No seniority list loaded')
     expect(wrapper.find('a[href="/seniority/upload"]').exists()).toBe(true)
   })
 
-  it('renders table rows when data is available', async () => {
-    mockHasData.value = true
-    mockAnalysis.value = { upcomingRetirements: mockUpcomingRetirements }
-    mockUpcomingRetirements.mockReturnValue(sampleRows)
-    const Comp = await import('./RetirementsTab.vue')
-    const wrapper = await mountSuspended(Comp.default)
-    expect(wrapper.text()).toContain('2027-06-01')
-    expect(wrapper.text()).toContain('2028-03-15')
-  })
-
-  it('calls upcomingRetirements with a two-year through date', async () => {
-    mockHasData.value = true
-    mockAnalysis.value = { upcomingRetirements: mockUpcomingRetirements }
-    mockUpcomingRetirements.mockReturnValue([])
-    const Comp = await import('./RetirementsTab.vue')
-    await mountSuspended(Comp.default)
-    expect(mockUpcomingRetirements).toHaveBeenCalledWith(
-      expect.objectContaining({
-        qualificationScope: {},
-        through: expect.any(Object),
-      }),
-    )
-  })
-
-  it('shows employee number prompt when no employee number is set', async () => {
-    mockHasData.value = true
-    mockAnalysis.value = { upcomingRetirements: mockUpcomingRetirements }
-    mockStoreState.employeeNumber = null
-    const Comp = await import('./RetirementsTab.vue')
-    const wrapper = await mountSuspended(Comp.default)
+  it('lists upcoming retirements by date and asks for an employee number', async () => {
+    mockStore.entries = [pilot(1, 18), pilot(2, 6), pilot(3, 600)]
+    const wrapper = await mountTab()
+    const rows = bodyRows(wrapper)
+    expect(rows).toHaveLength(2)
+    expect(rows[0]).toContain(inMonths(6))
+    expect(rows[1]).toContain(inMonths(18))
     expect(wrapper.text()).toContain('Set an employee number that appears in this list')
+    expect(wrapper.findAll('thead th').map(th => th.text())).not.toContain('Rank relative to me')
+    expect(wrapper.get('[role="switch"]').attributes('disabled')).toBeDefined()
+  })
+
+  it('re-sorts when the Seniority Number heading is pressed', async () => {
+    mockStore.entries = [pilot(1, 18), pilot(2, 6), pilot(3, 12)]
+    const wrapper = await mountTab()
+    await wrapper.findAll('button').find(b => b.text().includes('Seniority'))!.trigger('click')
+    expect(bodyRows(wrapper).map(row => row.slice(0, 1))).toEqual(['1', '2', '3'])
+  })
+
+  it('announces the date sort direction and reverses the retirement order', async () => {
+    mockStore.entries = [pilot(1, 18), pilot(2, 6)]
+    const wrapper = await mountTab()
+
+    await wrapper.get('button[aria-label="Sort by Estimated retirement date, currently ascending"]').trigger('click')
+
+    expect(bodyRows(wrapper)[0]).toContain(inMonths(18))
+    expect(wrapper.find('button[aria-label="Sort by Estimated retirement date, currently descending"]').exists()).toBe(true)
+  })
+
+  it('shows the signed Rank difference for pilots senior to the Anchor Pilot', async () => {
+    mockStore.entries = [pilot(1, 6), pilot(2, 7), pilot(3, 600)]
+    mockUserStore.employeeNumber = 'E3'
+    const wrapper = await mountTab()
+    expect(wrapper.text()).toContain('Senior to me only')
+    expect(wrapper.text()).toContain('+2')
+    expect(wrapper.text()).not.toContain('Set an employee number that appears in this list')
+  })
+
+  it('explains an empty result', async () => {
+    mockStore.entries = [pilot(1, 600)]
+    const wrapper = await mountTab()
+    expect(wrapper.text()).toContain('No retirements found')
+    expect(wrapper.text()).toContain('No pilots match the current filters within 2 years')
+  })
+
+  it('reads out the chosen years and shows later retirements as the slider moves', async () => {
+    mockStore.entries = [pilot(1, 6), pilot(2, 30)]
+    const wrapper = await mountTab()
+    expect(wrapper.text()).toContain('Retiring within')
+    expect(wrapper.text()).toContain(`2 years · through ${inMonths(24)}`)
+    expect(bodyRows(wrapper)).toHaveLength(1)
+
+    await wrapper.find('[role="slider"]').trigger('keydown', { key: 'ArrowRight' })
+    expect(wrapper.text()).toContain(`3 years · through ${inMonths(36)}`)
+    expect(bodyRows(wrapper)).toHaveLength(1)
+    await vi.waitFor(() => expect(bodyRows(wrapper)[1]).toContain(inMonths(30)))
+  })
+
+  it('renders one page of rows and moves to the next page', async () => {
+    mockStore.entries = Array.from({ length: 120 }, (_, i) => pilot(i + 1, 1 + (i % 20)))
+    const wrapper = await mountTab()
+    expect(bodyRows(wrapper)).toHaveLength(50)
+    expect(wrapper.text()).toContain('120 results')
+    await wrapper.get('button[aria-label="Next Page"]').trigger('click')
+    await vi.waitFor(() => expect(wrapper.text()).toContain('Page 2 of 3'))
+    expect(bodyRows(wrapper)).toHaveLength(50)
+  })
+
+  it('returns to the first page when the sort changes', async () => {
+    mockStore.entries = Array.from({ length: 120 }, (_, i) => pilot(i + 1, 1 + (i % 20)))
+    const wrapper = await mountTab()
+    await wrapper.get('button[aria-label="Next Page"]').trigger('click')
+    await vi.waitFor(() => expect(wrapper.text()).toContain('Page 2 of 3'))
+    await wrapper.get('button[aria-label^="Sort by Estimated retirement date"]').trigger('click')
+    await vi.waitFor(() => expect(wrapper.text()).toContain('Page 1 of 3'))
   })
 })

@@ -33,11 +33,20 @@ function emptyComparison(noResultLabel: string | null): ComparativeTrajectory {
   }
 }
 
-export function useTrajectory(growthAssumptions?: Ref<GrowthAssumptions>): {
+export function useTrajectory(
+  growthAssumptions?: Ref<GrowthAssumptions>,
+  qualificationScope?: Ref<QualificationScope> | ComputedRef<QualificationScope>,
+): {
   chartData: ComputedRef<{ labels: string[]; data: number[] }>
+  /** One row per projection year within the Qualification Scope: the yearly-change table and its header chart. */
   changes: ComputedRef<PresentedTrajectoryChange[]>
+  /** e.g. "Best year: 2031 (+3.2pp)"; null when no year improves. */
+  bestYearLabel: ComputedRef<string | null>
+  /** "Hypothetical Placement in <scope>" when the Anchor Pilot is outside the Qualification Scope; otherwise null. */
+  hypotheticalLabel: ComputedRef<string | null>
   /** Why the samples stop early, e.g. "Anchor Pilot retired"; null when the window completes. */
   endedByLabel: ComputedRef<string | null>
+  retirementWave: ComputedRef<{ buckets: readonly { year: number; retirementCount: number; isRetirementWave: boolean }[]; percentileSeries: (number | null)[] }>
   fullTrajectory: ComputedRef<readonly SeniorityTrajectoryPoint[]>
   computeRetirementProjection: (scope?: QualificationScope) => PresentedRetirementCountProjection
   computeComparativeTrajectory: (baseline: QualificationScope, comparison: QualificationScope) => ComparativeTrajectory
@@ -51,7 +60,10 @@ export function useTrajectory(growthAssumptions?: Ref<GrowthAssumptions>): {
     return through
       ? anchoredAnalysis.value?.seniorityTrajectory({
           through,
-          scenario: { growthAssumptions: effectiveAssumptions.value },
+          scenario: {
+            growthAssumptions: effectiveAssumptions.value,
+            qualificationScope: qualificationScope?.value ?? {},
+          },
         }) ?? null
       : null
   })
@@ -60,6 +72,9 @@ export function useTrajectory(growthAssumptions?: Ref<GrowthAssumptions>): {
   const chartData = computed(() => presented.value?.chartData ?? { labels: [], data: [] })
   const fullTrajectory = computed(() => domain.value?.points ?? [])
   const changes = computed(() => presented.value?.changes ?? [])
+  const bestYearLabel = computed(() => presented.value?.bestYearLabel ?? null)
+  const retirementWave = computed(() => presented.value?.retirementWave ?? { buckets: [], percentileSeries: [] })
+  const hypotheticalLabel = computed(() => presented.value?.hypotheticalLabel ?? null)
   const endedByLabel = computed(() => presented.value?.endedByLabel ?? null)
 
   function computeRetirementProjection(scope: QualificationScope = {}): PresentedRetirementCountProjection {
@@ -95,6 +110,9 @@ export function useTrajectory(growthAssumptions?: Ref<GrowthAssumptions>): {
   return {
     chartData,
     changes,
+    bestYearLabel,
+    retirementWave,
+    hypotheticalLabel,
     endedByLabel,
     fullTrajectory,
     computeRetirementProjection,

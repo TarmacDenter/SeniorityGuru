@@ -1,12 +1,27 @@
 import type { SeniorityEntry } from '~/utils/schemas/seniority-list'
 import type { GrowthAssumptions } from '~/utils/seniority-analysis/growth'
 import { calculateAdditionalSeniorityPilots } from '~/utils/seniority-analysis/growth'
-import { calculateSeniorityPercentile } from '~/utils/seniority-analysis/math'
-import type { PercentileDensityBucket, QualificationDistribution, QualificationPosition } from './types'
+import {
+  calculateSeniorityPercentile,
+  calculateSeniorityTrajectory,
+  calculateUnroundedSeniorityPercentile,
+} from '~/utils/seniority-analysis/math'
+import type { SeniorityTrajectoryPoint } from '~/utils/seniority-analysis/math'
+import type {
+  HoldabilityDetail,
+  HoldableYear,
+  NoResult,
+  PercentileDensityBucket,
+  Qualification,
+  QualificationDistribution,
+  QualificationPosition,
+} from './types'
+import { findPercentileCrossing } from './trajectory-analysis'
 import { qualificationKey } from './qualification-key'
 import { percentileValue } from './percentile-value'
+import { findLatestRetirementDate } from './retirement-analysis'
 import { isRetiredBy } from '~/utils/date'
-import type { PlainDate } from '~/utils/temporal'
+import { Temporal, type PlainDate } from '~/utils/temporal'
 
 function isActiveAt(entry: SeniorityEntry, date: PlainDate): boolean {
   return !entry.retire_date || !isRetiredBy(entry.retire_date, date)
@@ -23,7 +38,66 @@ function companyPercentile(seniorityNumber: number, sortedNumbers: readonly numb
   return calculateSeniorityPercentile(low + 1, rosterSize)
 }
 
-function analyzeQualificationDistributions(
+const TRAJECTORY_ENDED: NoResult = {
+  kind: 'no-result',
+  reason: 'trajectory-ended',
+  label: 'Trajectory ended before the Qualification Threshold',
+}
+
+/**
+ * Holdable Year: "now" when the Anchor Pilot is senior to (or is) the threshold pilot; otherwise the first projection
+ * year whose projected Seniority Percentile meets the threshold's As-of Date value. Percentiles are compared before
+ * display rounding, so a pilot a few Ranks junior on a large roster is not counted as meeting the threshold.
+ */
+function findHoldableYear(
+  entries: readonly SeniorityEntry[],
+  anchorSeniorityNumber: number,
+  distribution: QualificationDistribution,
+  asOfDate: PlainDate,
+  trajectory: readonly SeniorityTrajectoryPoint[],
+  growthAssumptions?: GrowthAssumptions,
+): HoldableYear {
+  if (anchorSeniorityNumber <= distribution.thresholdSeniorityNumber) return 'now'
+  const thresholdRank = entries.filter(entry =>
+    entry.seniority_number < distribution.thresholdSeniorityNumber && isActiveAt(entry, asOfDate),
+  ).length + 1
+  const rosterSizeAt = (date: PlainDate) => entries.length + (growthAssumptions?.enabled
+    ? calculateAdditionalSeniorityPilots(entries.length, growthAssumptions.annualGrowthRate, asOfDate, date)
+    : 0)
+  const unrounded = trajectory.map(point => ({
+    ...point,
+    percentile: calculateUnroundedSeniorityPercentile(point.rank, rosterSizeAt(point.date)),
+  }))
+  const target = calculateUnroundedSeniorityPercentile(thresholdRank, entries.length)
+  return findPercentileCrossing(unrounded, target)?.crossingYear ?? TRAJECTORY_ENDED
+}
+
+/** The last date a projection can reach: the pilot's retirement, or the list's last scheduled retirement. */
+export function projectionHorizon(entries: readonly SeniorityEntry[], retireDate: PlainDate | null | undefined, asOfDate: PlainDate): PlainDate {
+  if (retireDate) return retireDate
+  const latest = findLatestRetirementDate(entries)
+  return latest && Temporal.PlainDate.compare(latest, asOfDate) > 0 ? latest : asOfDate
+}
+
+/** A pilot's company-wide Seniority Percentile by year from the As-of Date until they retire. */
+export function companyTrajectoryThroughRetirement(
+  entries: readonly SeniorityEntry[],
+  seniorityNumber: number,
+  asOfDate: PlainDate,
+  growthAssumptions?: GrowthAssumptions,
+): readonly SeniorityTrajectoryPoint[] {
+  const retireDate = entries.find(entry => entry.seniority_number === seniorityNumber)?.retire_date
+  return calculateSeniorityTrajectory({
+    entries,
+    seniorityNumber,
+    from: asOfDate,
+    through: projectionHorizon(entries, retireDate, asOfDate),
+    growthAssumptions,
+    anchorRetireDate: retireDate ?? undefined,
+  }).points
+}
+
+export function analyzeQualificationDistributions(
   entries: readonly SeniorityEntry[],
   asOfDate: PlainDate,
 ): readonly QualificationDistribution[] {
@@ -91,11 +165,44 @@ export function analyzeQualificationPositions(
     : 0
   const currentPercentile = calculateSeniorityPercentile(currentRank, entries.length)
   const projectedPercentile = calculateSeniorityPercentile(projectedRank, entries.length + addedPilots)
+  const trajectory = companyTrajectoryThroughRetirement(entries, anchorSeniorityNumber, asOfDate, growthAssumptions)
 
   return distributions.map(distribution => ({
     distribution,
     currentPercentile,
     projectedPercentile,
     modeledHoldable: projectedPercentile >= distribution.thresholdPercentile,
+    holdableYear: findHoldableYear(entries, anchorSeniorityNumber, distribution, asOfDate, trajectory, growthAssumptions),
   }))
+}
+
+/**
+ * The Anchor Pilot's projected company Seniority Percentile against one Qualification Threshold, with today's
+ * threshold pilot projected alongside under the same Growth Assumptions. Null when the Qualification has no active pilot.
+ */
+export function analyzeHoldabilityDetail(
+  entries: readonly SeniorityEntry[],
+  anchorSeniorityNumber: number,
+  asOfDate: PlainDate,
+  qualification: Qualification,
+  growthAssumptions?: GrowthAssumptions,
+): HoldabilityDetail | null {
+  const key = qualificationKey(qualification)
+  const distribution = analyzeQualificationDistributions(entries, asOfDate)
+    .find(candidate => qualificationKey(candidate.qualification) === key)
+  if (!distribution) return null
+  const anchor = companyTrajectoryThroughRetirement(entries, anchorSeniorityNumber, asOfDate, growthAssumptions)
+  const thresholdPilot = new Map(
+    companyTrajectoryThroughRetirement(entries, distribution.thresholdSeniorityNumber, asOfDate, growthAssumptions)
+      .map(point => [point.date.toString(), point.percentile]),
+  )
+  return {
+    qualification: distribution.qualification,
+    thresholdPercentile: distribution.thresholdPercentile,
+    points: anchor.map(point => ({
+      date: point.date,
+      anchorPercentile: point.percentile,
+      thresholdPilotPercentile: thresholdPilot.get(point.date.toString()) ?? null,
+    })),
+  }
 }

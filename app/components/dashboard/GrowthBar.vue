@@ -26,8 +26,8 @@ onUnmounted(() => {
 
 <template>
   <div class="shrink-0 flex items-center gap-3 px-4 sm:px-6 py-2.5 bg-[var(--ui-bg)] border-b border-[var(--ui-border)] flex-wrap">
-    <span class="text-xs font-semibold text-[var(--ui-text-muted)] uppercase tracking-wide">Growth assumption</span>
-    <USwitch v-model="enabled" size="xs" />
+    <span class="text-xs font-semibold text-[var(--ui-text-muted)] uppercase tracking-wide">Growth Assumptions</span>
+    <AppSwitch v-model="enabled" size="xs" />
     <template v-if="enabled">
       <USlider v-model="sliderValue" :min="1" :max="20" :step="1" class="w-32" />
       <UBadge color="primary" variant="subtle" size="sm" class="font-mono">

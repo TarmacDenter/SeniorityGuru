@@ -13,8 +13,14 @@ const state = vi.hoisted(() => {
     entriesLoading: vRef(false),
     employeeNumber: vRef(null),
     isNewHireMode: vRef(false),
+    isCompact: vRef(false),
   }
 })
+
+vi.mock('@vueuse/core', async (importOriginal) => ({
+  ...await importOriginal<typeof import('@vueuse/core')>(),
+  useMediaQuery: () => state.isCompact,
+}))
 
 vi.mock('~/composables/seniority', () => ({
   useSeniorityLists: () => ({ lists: state.lists, entriesLoading: state.entriesLoading }),
@@ -59,11 +65,15 @@ const stubs = {
         setGlobalFilter: vi.fn(),
         setPageIndex: vi.fn(),
       }
-      const cellText = (column: any, row: any) => {
-        const value = column.cell ? column.cell({ row: { original: row } }) : row[column.accessorKey]
-        const text = value && typeof value === 'object' ? value.children : value
-        return text === null || text === undefined ? '' : String(text)
+      const vnodeText = (value: any): string => {
+        if (value === null || value === undefined) return ''
+        if (Array.isArray(value)) return value.map(vnodeText).join('')
+        if (typeof value === 'object') return vnodeText(value.children)
+        return String(value)
       }
+      const cellText = (column: any, row: any) => vnodeText(column.cell
+        ? column.cell({ row: { original: row }, getValue: () => row[column.accessorKey] })
+        : row[column.accessorKey])
       return { tableApi, cellText }
     },
     template: `<div data-testid="table">
@@ -93,6 +103,44 @@ describe('SeniorityListViewer', () => {
     state.entriesLoading.value = false
     state.employeeNumber.value = null
     state.isNewHireMode.value = false
+    state.isCompact.value = false
+  })
+
+  it('opens compact controls accessibly and preserves the selected Qualification when reopened', async () => {
+    state.isCompact.value = true
+    state.lists.value = [makeList()]
+    state.employeeNumber.value = 'E1'
+    state.entries.value = [
+      makeDomainEntry({ seniority_number: 1, employee_number: 'E1', name: 'First', base: 'JFK', fleet: '737', seat: 'CA' }),
+      makeDomainEntry({ seniority_number: 2, employee_number: 'E2', name: 'Second', base: 'LAX', fleet: '320', seat: 'FO' }),
+    ]
+    const Component = (await import('./SeniorityListViewer.vue')).default
+    const wrapper = await mountSuspended(Component, { global: { stubs } })
+
+    const controls = wrapper.findAll('button').find(button => button.text() === 'Controls')
+    expect(controls, 'phone users can reach the controls').toBeDefined()
+    expect(controls!.attributes('aria-expanded')).toBe('false')
+    expect(wrapper.find('select').exists()).toBe(false)
+
+    await controls!.trigger('click')
+
+    expect(controls!.attributes('aria-expanded')).toBe('true')
+    expect(wrapper.get(`#${controls!.attributes('aria-controls')}`).attributes('id')).toBe(controls!.attributes('aria-controls'))
+    expect(wrapper.get('input').attributes('placeholder')).toBe('Search by name or employee number...')
+    expect(wrapper.get('select').attributes('aria-label')).toBe('Qualification')
+    await wrapper.get('select').setValue('["LAX","FO","320"]')
+    expect(wrapper.text()).toContain('Second|E2|1|2|active')
+    expect(wrapper.text()).not.toContain('First|E1|')
+
+    await wrapper.findAll('button').find(button => button.text() === 'Insert yourself')!.trigger('click')
+    expect(wrapper.get('[data-testid="cell-E1-name"]').text()).toBe('First (Your line)')
+    expect(wrapper.text()).toContain('First|E1|1|1|inserted|anchor')
+
+    await controls!.trigger('click')
+    await controls!.trigger('click')
+    expect((wrapper.get('select').element as HTMLSelectElement).value).toBe('["LAX","FO","320"]')
+    expect(wrapper.get('[data-testid="cell-E1-name"]').text()).toBe('First (Your line)')
+    expect(wrapper.text()).toContain('First|E1|1|1|inserted|anchor')
   })
 
   it('keeps the table loading while the parent is loading', async () => {
@@ -125,7 +173,6 @@ describe('SeniorityListViewer', () => {
       'Qualification Rank',
       'Qualification percentile',
     ]))
-    expect(wrapper.find('div.flex-1.min-h-0.overflow-auto').exists()).toBe(true)
 
     await wrapper.find('button').trigger('click')
 
@@ -204,5 +251,18 @@ describe('SeniorityListViewer', () => {
     await wrapper.find('button').trigger('click')
 
     expect(wrapper.text()).toContain('Pilot 51|E51|51|51|active|anchor')
+  })
+
+  it('marks only the pilot\'s own line', async () => {
+    state.lists.value = [makeList()]
+    state.employeeNumber.value = 'E2'
+    state.entries.value = [1, 2, 3].map(n => makeDomainEntry({ seniority_number: n, employee_number: `E${n}`, name: `Pilot ${n}` }))
+    const Component = (await import('./SeniorityListViewer.vue')).default
+    const wrapper = await mountSuspended(Component, { global: { stubs } })
+    const name = (employee: string) => wrapper.get(`[data-testid="cell-${employee}-name"]`).text()
+
+    expect(name('E2')).toBe('Pilot 2 (Your line)')
+    expect(name('E1')).toBe('Pilot 1')
+    expect(name('E3')).toBe('Pilot 3')
   })
 })

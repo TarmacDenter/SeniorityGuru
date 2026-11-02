@@ -55,7 +55,7 @@ function isProjecting(position: PresentedQualificationPosition) {
     <div
       v-for="position in sortedPositions"
       :key="`${position.qualification.fleet} ${position.qualification.seat} ${position.qualification.base}`"
-      class="flex items-center gap-3 py-2 border-b border-[var(--ui-border)] last:border-0"
+      class="flex items-center gap-3 py-2 border-b border-default last:border-0"
     >
       <div class="w-24 sm:w-28 shrink-0 text-sm font-medium">
         <div class="truncate">
@@ -68,24 +68,24 @@ function isProjecting(position: PresentedQualificationPosition) {
       </div>
 
       <div class="flex-1 relative h-10 min-w-[200px]">
-        <div class="absolute inset-x-0 bottom-0 h-px bg-[var(--ui-border)]" />
+        <div class="absolute inset-x-0 bottom-0 border-b border-default" />
 
         <div
           v-for="bucket in position.percentileDensity"
           :key="bucket.minimumPercentile"
-          class="absolute bottom-0 opacity-40"
-          :class="position.modeledHoldable ? 'bg-[var(--ui-color-success-500)]' : 'bg-[var(--ui-color-primary-500)]'"
+          class="absolute bottom-0 bg-inverted opacity-30"
           :style="densityBarStyle(position, bucket)"
         />
 
         <div
-          class="absolute bottom-0 w-0.5 bg-[var(--ui-text-muted)] opacity-50"
+          class="absolute bottom-0 w-0.5 bg-inverted opacity-50"
           :style="{ left: `${position.medianPercentile}%`, height: '100%' }"
         />
 
         <div
-          class="absolute bottom-0 w-0.5 border-l-2 border-dashed"
-          :class="position.modeledHoldable ? 'border-[var(--ui-color-success-500)]' : 'border-[var(--ui-color-error-500)]'"
+          data-testid="qualification-scale-threshold"
+          class="absolute bottom-0 w-0.5 border-l-2"
+          :class="position.modeledHoldable ? 'border-solid border-inverted' : 'border-dashed border-inverted'"
           :style="{ left: `${position.thresholdPercentile}%`, height: '100%' }"
         />
 
@@ -93,11 +93,11 @@ function isProjecting(position: PresentedQualificationPosition) {
         <template v-if="isProjecting(position)">
           <div
             data-testid="qualification-scale-current-position"
-            class="absolute bottom-0 w-0.5 z-5 bg-[var(--ui-text-muted)] opacity-30"
+            class="absolute bottom-0 w-0.5 z-5 bg-inverted opacity-30"
             :style="{ left: `${clamp(position.currentPercentile)}%`, height: '100%', transform: 'translateX(-50%)' }"
           />
           <div
-            class="absolute w-3 h-3 rounded-full border-2 border-[var(--ui-bg)] z-5 bg-[var(--ui-text-muted)] opacity-40"
+            class="absolute w-3 h-3 rounded-full border-2 border-default z-5 bg-inverted opacity-40"
             :style="{ left: `${clamp(position.currentPercentile)}%`, top: '0', transform: 'translate(-50%, -25%)' }"
           />
         </template>
@@ -105,13 +105,11 @@ function isProjecting(position: PresentedQualificationPosition) {
         <!-- Projected (or current) user position -->
         <div
           data-testid="qualification-scale-projected-position"
-          class="absolute bottom-0 w-0.5 z-10"
-          :class="position.modeledHoldable ? 'bg-[var(--ui-color-success-500)]' : 'bg-[var(--ui-color-primary-500)]'"
+          class="absolute bottom-0 w-0.5 z-10 bg-mark-ink"
           :style="{ left: `${clamp(position.projectedPercentile)}%`, height: '100%', transform: 'translateX(-50%)' }"
         />
         <div
-          class="absolute w-3 h-3 rounded-full border-2 border-[var(--ui-bg)] z-20"
-          :class="position.modeledHoldable ? 'bg-[var(--ui-color-success-500)]' : 'bg-[var(--ui-color-primary-500)]'"
+          class="absolute w-3 h-3 rounded-full border-2 border-mark-ink bg-mark z-20"
           :style="{ left: `${clamp(position.projectedPercentile)}%`, top: '0', transform: 'translate(-50%, -25%)' }"
         />
       </div>

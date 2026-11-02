@@ -1,0 +1,163 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { useSeniorityCore, _resetCoreSingletons } from './useSeniorityCore'
+import { useNextProjections } from './useNextProjections'
+import { useScenario } from '~/composables/useScenario'
+import { resetMockStores } from '~/test-utils/seniority-mocks'
+
+const mockStore = vi.hoisted(() => ({ entries: [] as any[], lists: [] as any[] }))
+const mockUserStore = vi.hoisted(() => ({ employeeNumber: null as string | null, retirementAge: 65, getPreference: vi.fn().mockResolvedValue(null), savePreference: vi.fn().mockResolvedValue(undefined) }))
+vi.mock('~/stores/seniority', () => ({ useSeniorityStore: () => mockStore }))
+vi.mock('~/stores/user', () => ({ useUserStore: () => mockUserStore }))
+vi.mock('~/utils/db', () => ({ db: { preferences: { get: vi.fn().mockResolvedValue(undefined), put: vi.fn().mockResolvedValue('key') } } }))
+
+const { makeEntry } = await import('~/test-utils/factories')
+
+function seedRoster() {
+  mockStore.entries = [
+    makeEntry({ seniority_number: 1, employee_number: 'E1', base: 'JFK', seat: 'CA', fleet: '737', retire_date: '2030-06-15' }),
+    makeEntry({ seniority_number: 2, employee_number: 'E2', base: 'JFK', seat: 'CA', fleet: '737', retire_date: '2032-06-15' }),
+    makeEntry({ seniority_number: 3, employee_number: 'E3', base: 'BOS', seat: 'FO', fleet: '320', retire_date: '2034-06-15' }),
+    makeEntry({ seniority_number: 4, employee_number: 'E4', base: 'BOS', seat: 'FO', fleet: '320', retire_date: '2045-06-15' }),
+    makeEntry({ seniority_number: 5, employee_number: 'E5', base: 'JFK', seat: 'FO', fleet: '737', retire_date: '2046-06-15' }),
+  ]
+  mockUserStore.employeeNumber = 'E4'
+}
+
+beforeEach(() => {
+  _resetCoreSingletons()
+  resetMockStores(mockStore, mockUserStore)
+  useSeniorityCore().newHire.reset()
+  const { scopeLabel, growthAssumptions } = useScenario()
+  scopeLabel.value = 'Company-wide'
+  growthAssumptions.value = { enabled: false, annualGrowthRate: 0.02 }
+  useState('trajectoryCompareScopeLabel').value = undefined
+})
+
+describe('useNextProjections: retirement analysis', () => {
+  it('lists the Retirement Wave for the shared Qualification Scope and names the scope', () => {
+    seedRoster()
+    const projections = useNextProjections()
+    expect(projections.retirementWave.value.length).toBeGreaterThan(0)
+    expect(projections.scopeSuffix.value).toBe('')
+
+    useScenario().scopeLabel.value = 'JFK CA 737'
+    expect(projections.scopeSuffix.value).toBe(' — JFK CA 737')
+  })
+
+  it('keeps the Percentile Threshold target inside the trajectory and finds the year it is reached', () => {
+    seedRoster()
+    const projections = useNextProjections()
+
+    const { target, min, max } = projections.threshold
+    expect(target.value).toBeGreaterThanOrEqual(min.value)
+    expect(target.value).toBeLessThanOrEqual(max.value)
+    target.value = max.value
+    expect(projections.threshold.result.value?.year).toMatch(/^\d{4}/)
+  })
+
+  it('counts retirements senior to the Anchor Pilot within the chosen number of years', () => {
+    seedRoster()
+    const { seniorRetirements } = useNextProjections()
+    const thisYear = new Date().getFullYear()
+    // E1, E2 and E3 retire in 2030, 2032 and 2034; the Anchor Pilot E4 in 2045.
+    seniorRetirements.years.value = 2030 - thisYear + 1
+    expect(seniorRetirements.count.value).toBe(1)
+    expect(seniorRetirements.label.value).toBe(`1 retirement senior to you in the next ${seniorRetirements.years.value} years`)
+
+    seniorRetirements.years.value = 2034 - thisYear + 1
+    expect(seniorRetirements.count.value).toBe(3)
+    expect(seniorRetirements.label.value).toMatch(/^3 retirements senior to you in the next \d+ years$/)
+  })
+
+  it('counts only retirements senior to the Anchor Pilot, inside the shared Qualification Scope', () => {
+    seedRoster()
+    const { seniorRetirements } = useNextProjections()
+    seniorRetirements.years.value = seniorRetirements.maxYears.value
+    expect(seniorRetirements.count.value).toBe(3)
+
+    useScenario().scopeLabel.value = 'JFK CA 737'
+    expect(seniorRetirements.count.value).toBe(2)
+  })
+
+  it('offers 1 to the years until the Anchor Pilot retires, starting at 5 years or fewer', () => {
+    seedRoster()
+    const { seniorRetirements } = useNextProjections()
+    const untilRetirement = 2045 - new Date().getFullYear()
+
+    expect(seniorRetirements.maxYears.value).toBeGreaterThanOrEqual(untilRetirement)
+    expect(seniorRetirements.years.value).toBe(5)
+    seniorRetirements.years.value = 999
+    expect(seniorRetirements.years.value).toBe(seniorRetirements.maxYears.value)
+  })
+
+  it('says "1 year" in the singular', () => {
+    seedRoster()
+    const { seniorRetirements } = useNextProjections()
+    seniorRetirements.years.value = 1
+    expect(seniorRetirements.label.value).toMatch(/in the next year$/)
+  })
+
+  it('has no count without an Anchor Pilot', () => {
+    const { seniorRetirements } = useNextProjections()
+    expect(seniorRetirements.count.value).toBeNull()
+    expect(seniorRetirements.label.value).toBeNull()
+  })
+
+  it('names the best year of improvement', () => {
+    seedRoster()
+    const projections = useNextProjections()
+    expect(projections.bestYearLabel.value).toMatch(/^Best year: \d{4} \(\+\d+(\.\d+)?pp\)$/)
+  })
+
+  it('names no best year without improvement data', () => {
+    expect(useNextProjections().bestYearLabel.value).toBeNull()
+  })
+})
+
+describe('useNextProjections: Trajectory › Projection', () => {
+  it('overlays the trajectory within another Qualification Scope on the same axes', () => {
+    seedRoster()
+    const projections = useNextProjections()
+    const alone = projections.projectionChart.value
+    expect(alone.overlay).toBeNull()
+    expect(alone.label).toBe('Company-wide')
+    expect(projections.compareScopeItems.value).not.toContain('Company-wide')
+    expect(projections.compareScopeItems.value).toContain('JFK CA 737')
+
+    projections.compareScopeLabel.value = 'JFK CA 737'
+    const compared = projections.projectionChart.value
+    expect(compared.labels).toEqual(alone.labels)
+    expect(compared.data).toEqual(alone.data)
+    expect(compared.overlay).toMatchObject({
+      label: 'JFK CA 737 (Hypothetical Placement)',
+      hypotheticalLabel: 'Hypothetical Placement in JFK CA 737',
+    })
+    expect(compared.overlay!.data).toHaveLength(alone.labels.length)
+    expect(compared.overlay!.data).not.toEqual(alone.data)
+  })
+
+  it('drops the overlay when it names the scenario scope', () => {
+    seedRoster()
+    const projections = useNextProjections()
+    projections.compareScopeLabel.value = 'BOS FO 320'
+    useScenario().scopeLabel.value = 'BOS FO 320'
+
+    expect(projections.projectionChart.value.overlay).toBeNull()
+    expect(projections.projectionChart.value.label).toBe('BOS FO 320')
+  })
+
+  it('names the Roster Size the scoped projection is measured against', () => {
+    seedRoster()
+    const projections = useNextProjections()
+    expect(projections.percentileScaleLabel.value).toBe('Percentile measured against Roster Size 5 · Active pilots 5')
+
+    useScenario().scopeLabel.value = 'BOS FO 320'
+    expect(projections.percentileScaleLabel.value).toBe('Percentile measured against Roster Size 2 · Active pilots 2')
+  })
+
+  it('says the scoped trajectory ends at the Anchor Pilot retirement', () => {
+    seedRoster()
+    useScenario().scopeLabel.value = 'BOS FO 320'
+    expect(useNextProjections().endedByLabel.value).toBe('Projection ends at your retirement')
+  })
+})

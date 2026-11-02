@@ -7,27 +7,37 @@ test.describe('dashboard', () => {
     await uploadTestList(page)
   })
 
-  test('tabs navigate and show content', async ({ page }) => {
+  test('sections navigate and show their small views', async ({ page }) => {
     await page.goto('/dashboard')
-    await expect(page.getByRole('heading', { name: /Dashboard Seniority List · effective/ })).toBeVisible()
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText(/Current/)
 
-    const tabs = ['Demographics', 'Position', 'Trajectory', 'Seniority List', 'Retirements']
-    for (const tab of tabs) {
-      await page.getByRole('tab', { name: tab }).click()
-      await expect(page.getByRole('tab', { name: tab })).toHaveAttribute('data-state', 'active')
+    for (const [section, path] of [['Demographics', '/dashboard/demographics'], ['Trajectory', '/dashboard/trajectory/projection'], ['List', '/dashboard/list/full'], ['Current', '/dashboard/current/status']] as const) {
+      await page.getByRole('link', { name: section, exact: true }).first().click()
+      await expect(page).toHaveURL(new RegExp(path))
+      await expect(page.getByRole('heading', { level: 1 })).toHaveText(new RegExp(section))
     }
-
-    // Navigate back to first tab
-    await page.getByRole('tab', { name: 'My Status' }).click()
-    await expect(page.getByRole('tab', { name: 'My Status' })).toBeVisible()
   })
 
-  test('list selector is visible', async ({ page }) => {
-    await page.goto('/dashboard')
+  test('List small views are a tab row', async ({ page }) => {
+    await page.goto('/dashboard/list/full')
+    const views = page.getByRole('navigation', { name: 'Section views' })
+    for (const view of ['Full list', 'Upcoming retirements', 'Compare', 'Uploads']) {
+      await expect(views.getByRole('link', { name: view })).toBeVisible()
+    }
+    await views.getByRole('link', { name: 'Upcoming retirements' }).click()
+    await expect(page).toHaveURL(/\/dashboard\/list\/retirements/)
+    await expect(views.getByRole('link', { name: 'Upcoming retirements' })).toHaveAttribute('aria-current', 'page')
+  })
 
-    // The list selector should show at least one list
-    const listSelector = page.getByRole('button', { name: 'Show popup' })
-    await expect(listSelector).toBeVisible()
+  test('Current asks for an employee number and shows no scenario toolbar', async ({ page }) => {
+    await page.goto('/dashboard/current/status')
+    await expect(page.getByText('Enter your employee number', { exact: false }).first()).toBeVisible()
+    await expect(page.getByText('Qualification Scope')).toBeHidden()
+  })
+
+  test('list selector is visible on List', async ({ page }) => {
+    await page.goto('/dashboard/list/full')
+    await expect(page.getByLabel('Seniority List')).toBeVisible()
   })
 
   test('View Demo selects the current demo list even when a newer list exists', async ({ page }) => {
@@ -35,8 +45,9 @@ test.describe('dashboard', () => {
     await page.getByRole('button', { name: 'View Demo' }).click()
     await page.waitForURL(/\/dashboard/)
 
-    await expect(page.getByRole('heading', { name: /Dashboard Demo — Current List · effective/ })).toBeVisible()
-    await expect(page.getByText('Your Seniority Number', { exact: true })).toBeVisible()
+    await expect(page.getByRole('heading', { level: 1, name: /Current/ })).toBeVisible()
+    await expect(page.getByText(/Demo — Current List · effective/).first()).toBeVisible()
+    await expect(page.getByText('Seniority Number', { exact: true }).first()).toBeVisible()
   })
 
   test('settings page renders all cards', async ({ page }) => {

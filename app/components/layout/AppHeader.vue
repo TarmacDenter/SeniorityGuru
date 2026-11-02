@@ -10,6 +10,7 @@
       <slot name="left" />
     </template>
     <template #right>
+      <UColorModeButton color="neutral" variant="ghost" />
       <UButton to="/dashboard" variant="ghost" size="sm">Go to Dashboard</UButton>
     </template>
   </UHeader>
