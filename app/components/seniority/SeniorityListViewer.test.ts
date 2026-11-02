@@ -106,7 +106,7 @@ describe('SeniorityListViewer', () => {
     state.isCompact.value = false
   })
 
-  it('opens compact controls accessibly and preserves the selected Qualification when reopened', async () => {
+  it('keeps Qualification, Insert yourself and search reachable on a phone', async () => {
     state.isCompact.value = true
     state.lists.value = [makeList()]
     state.employeeNumber.value = 'E1'
@@ -117,15 +117,7 @@ describe('SeniorityListViewer', () => {
     const Component = (await import('./SeniorityListViewer.vue')).default
     const wrapper = await mountSuspended(Component, { global: { stubs } })
 
-    const controls = wrapper.findAll('button').find(button => button.text() === 'Controls')
-    expect(controls, 'phone users can reach the controls').toBeDefined()
-    expect(controls!.attributes('aria-expanded')).toBe('false')
-    expect(wrapper.find('select').exists()).toBe(false)
-
-    await controls!.trigger('click')
-
-    expect(controls!.attributes('aria-expanded')).toBe('true')
-    expect(wrapper.get(`#${controls!.attributes('aria-controls')}`).attributes('id')).toBe(controls!.attributes('aria-controls'))
+    // Without a dashboard shell to host a sheet, the controls stay inline.
     expect(wrapper.get('input').attributes('placeholder')).toBe('Search by name or employee number...')
     expect(wrapper.get('select').attributes('aria-label')).toBe('Qualification')
     await wrapper.get('select').setValue('["LAX","FO","320"]')
@@ -133,12 +125,6 @@ describe('SeniorityListViewer', () => {
     expect(wrapper.text()).not.toContain('First|E1|')
 
     await wrapper.findAll('button').find(button => button.text() === 'Insert yourself')!.trigger('click')
-    expect(wrapper.get('[data-testid="cell-E1-name"]').text()).toBe('First (Your line)')
-    expect(wrapper.text()).toContain('First|E1|1|1|inserted|anchor')
-
-    await controls!.trigger('click')
-    await controls!.trigger('click')
-    expect((wrapper.get('select').element as HTMLSelectElement).value).toBe('["LAX","FO","320"]')
     expect(wrapper.get('[data-testid="cell-E1-name"]').text()).toBe('First (Your line)')
     expect(wrapper.text()).toContain('First|E1|1|1|inserted|anchor')
   })

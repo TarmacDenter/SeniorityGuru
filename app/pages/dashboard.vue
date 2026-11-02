@@ -6,6 +6,7 @@ import { useScenario } from '~/composables/useScenario'
 import { useDemoBanner } from '~/composables/useDemoBanner'
 import { usePwaInstall } from '~/composables/usePwaInstall'
 import { useMediaQuery } from '@vueuse/core'
+import { provideDashboardControls, SHORT_VIEWPORT_QUERY } from '~/composables/useDashboardControls'
 
 // The dashboard shell: section title, small-view tabs, scenario toolbar or list picker, and the small view itself.
 // It stays mounted while moving between sections, so the chosen list loads once.
@@ -17,7 +18,8 @@ const { loadPreferences } = useUser()
 const { lists, selectedListId, loading, listOptions, isHistorical, isDemoList, navbarDescription } = useDashboardList()
 const { section, viewItems } = useDashboardSections()
 // On a short screen (a phone in landscape) the view tabs move into the header bar, which saves a row.
-const isShort = useMediaQuery('(max-height: 32rem)')
+const isShort = useMediaQuery(SHORT_VIEWPORT_QUERY)
+provideDashboardControls()
 
 function useListSelectionRoute() {
   const initializing = ref(true)
@@ -84,8 +86,9 @@ const panelUi = computed(() => ({
   <UDashboardPanel :ui="panelUi">
     <template #header>
       <SeniorityNavbar :title="section?.label ?? 'Dashboard'" :description="navbarDescription">
-        <template v-if="isShort && viewItems.length > 0" #right>
-          <UNavigationMenu :items="viewItems" highlight aria-label="Section views" class="min-w-0 overflow-x-auto" :ui="{ link: 'whitespace-nowrap py-1' }" />
+        <template #right>
+          <UNavigationMenu v-if="isShort && viewItems.length > 0" :items="viewItems" highlight aria-label="Section views" class="min-w-0 overflow-x-auto" :ui="{ link: 'whitespace-nowrap py-1' }" />
+          <DashboardControlsSheet />
         </template>
       </SeniorityNavbar>
 

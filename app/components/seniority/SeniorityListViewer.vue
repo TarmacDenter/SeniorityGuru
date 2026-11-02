@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { h, resolveComponent } from 'vue'
 import { useMediaQuery } from '@vueuse/core'
+import { COMPACT_VIEWPORT_QUERY } from '~/composables/useDashboardControls'
 import { getPaginationRowModel } from '@tanstack/vue-table'
 import type { Table } from '@tanstack/vue-table'
 import type { TableColumn } from '@nuxt/ui'
@@ -20,9 +21,7 @@ const { lists, entriesLoading } = useSeniorityLists()
 const { listAnalysis, isNewHireMode } = useSeniorityCore()
 const { employeeNumber } = useUser()
 const table = useTemplateRef<{ tableApi: Table<SeniorityRow> }>('table')
-const isCompact = useMediaQuery('(max-width: 639px), (max-height: 499px)')
-const compactControlsOpen = ref(false)
-const compactControlsId = useId()
+const isCompact = useMediaQuery(COMPACT_VIEWPORT_QUERY)
 const globalFilter = ref('')
 const expanded = ref({})
 const selectedQualKey = ref('')
@@ -102,7 +101,7 @@ const columnVisibility = computed(() => ({
 const columns: TableColumn<SeniorityRow>[] = [
   {
     id: 'expand', header: '', cell: ({ row }) => h(resolveComponent('UButton'), {
-      icon: row.getIsExpanded() ? 'i-lucide-chevron-down' : 'i-lucide-chevron-right', variant: 'ghost', color: 'neutral', size: 'xs',
+      icon: row.getIsExpanded() ? 'i-lucide-chevron-down' : 'i-lucide-chevron-right', variant: 'ghost', color: 'neutral', size: 'xs', class: 'short:p-1',
       'aria-label': 'Expand row', onClick: row.getToggleExpandedHandler(),
     }),
   },
@@ -170,40 +169,20 @@ function scrollToUserRow() {
 
 <template>
   <div class="flex flex-col h-full min-h-0 min-w-0">
-    <div class="shrink-0 border-b border-default p-2 sm:p-3 short:px-4 short:py-1">
-      <div v-if="isCompact" class="flex items-center gap-2">
-        <UButton
-          variant="outline"
-          color="neutral"
-          icon="i-lucide-sliders-horizontal"
-          size="sm"
-          :aria-expanded="compactControlsOpen"
-          :aria-controls="compactControlsId"
-          @click="compactControlsOpen = !compactControlsOpen"
-        >Controls</UButton>
-        <slot name="compact-lead" />
-      </div>
-      <div v-if="isCompact && compactControlsOpen" :id="compactControlsId" class="space-y-2 pt-2">
-        <div class="flex flex-wrap items-center gap-2">
-          <USelect v-model="selectedQualKey" :items="qualOptions" value-key="value" label-key="label" class="min-w-44 flex-1" placeholder="Company-wide" aria-label="Qualification" />
-          <UButton :variant="insertSelf ? 'solid' : 'outline'" :disabled="!canInsert" icon="i-lucide-user-plus" size="sm" @click="toggleInsert">Insert yourself</UButton>
+    <DashboardControls v-slot="{ sheet }">
+      <div :class="sheet ? '' : 'shrink-0 border-b border-default p-2 sm:p-3'">
+        <div class="space-y-2">
+          <div class="flex flex-wrap items-center gap-2">
+            <USelect v-model="selectedQualKey" :items="qualOptions" value-key="value" label-key="label" class="min-w-44" :class="sheet ? 'flex-1' : ''" placeholder="Company-wide" aria-label="Qualification" />
+            <UButton :variant="insertSelf ? 'solid' : 'outline'" :disabled="!canInsert" icon="i-lucide-user-plus" size="sm" @click="toggleInsert">Insert yourself</UButton>
+            <span v-if="!canInsert" class="text-xs text-muted" :class="sheet ? 'basis-full' : ''">{{ insertDisabledReason }}</span>
+          </div>
+          <UInput v-model="globalFilter" icon="i-lucide-search" placeholder="Search by name or employee number..." class="w-full text-xs sm:text-sm">
+            <template v-if="globalFilter" #trailing><UButton icon="i-lucide-x" variant="link" color="neutral" size="xs" aria-label="Clear search" @click="globalFilter = ''" /></template>
+          </UInput>
         </div>
-        <span v-if="!canInsert" class="block text-xs text-muted">{{ insertDisabledReason }}</span>
-        <UInput v-model="globalFilter" icon="i-lucide-search" placeholder="Search by name or employee number..." class="w-full text-xs sm:text-sm">
-          <template v-if="globalFilter" #trailing><UButton icon="i-lucide-x" variant="link" color="neutral" size="xs" aria-label="Clear search" @click="globalFilter = ''" /></template>
-        </UInput>
       </div>
-      <div v-else-if="!isCompact" class="space-y-2">
-        <div class="flex flex-wrap items-center gap-2">
-          <USelect v-model="selectedQualKey" :items="qualOptions" value-key="value" label-key="label" class="min-w-44" placeholder="Company-wide" aria-label="Qualification" />
-          <UButton :variant="insertSelf ? 'solid' : 'outline'" :disabled="!canInsert" icon="i-lucide-user-plus" size="sm" @click="toggleInsert">Insert yourself</UButton>
-          <span v-if="!canInsert" class="text-xs text-muted">{{ insertDisabledReason }}</span>
-        </div>
-        <UInput v-model="globalFilter" icon="i-lucide-search" placeholder="Search by name or employee number..." class="w-full text-xs sm:text-sm">
-          <template v-if="globalFilter" #trailing><UButton icon="i-lucide-x" variant="link" color="neutral" size="xs" aria-label="Clear search" @click="globalFilter = ''" /></template>
-        </UInput>
-      </div>
-    </div>
+    </DashboardControls>
 
     <div class="flex-1 min-h-0 overflow-hidden">
       <div :class="isCompact ? 'h-full min-h-0 p-0 short:px-4 flex flex-col' : 'h-full min-h-0 sm:p-6 flex flex-col'">
@@ -211,7 +190,7 @@ function scrollToUserRow() {
         <template v-else>
           <p v-if="latestList && !isCompact" class="shrink-0 text-sm text-muted mb-4">{{ isQualMode ? `${qualificationScope.base}-${qualificationScope.fleet}-${qualificationScope.seat}` : 'Company-wide' }} · {{ projected.rosterSize }} on roster · {{ projected.activePilotCount }} active</p>
           <div class="flex min-h-0 flex-1 flex-col">
-            <SeniorityAnchoredTable ref="table" v-model:global-filter="globalFilter" v-model:pagination="pagination" v-model:expanded="expanded" v-model:column-visibility="columnVisibility" mark-column="name" :row-class="rowClass" :data="tableData" :columns="columns" :loading="isLoading" :pagination-options="{ getPaginationRowModel: getPaginationRowModel() }" sticky :expanded-options="{ getRowCanExpand: () => true }" :ui="{ thead: 'bg-default', ...(isCompact ? { th: 'px-2 py-2 text-xs short:py-1', td: 'px-2 py-1.5 text-xs' } : {}) }" class="min-h-0 w-full flex-1 overscroll-contain text-xs sm:text-base">
+            <SeniorityAnchoredTable ref="table" v-model:global-filter="globalFilter" v-model:pagination="pagination" v-model:expanded="expanded" v-model:column-visibility="columnVisibility" mark-column="name" :row-class="rowClass" :data="tableData" :columns="columns" :loading="isLoading" :pagination-options="{ getPaginationRowModel: getPaginationRowModel() }" sticky :expanded-options="{ getRowCanExpand: () => true }" :ui="{ thead: 'bg-default', ...(isCompact ? { th: 'px-2 py-2 text-xs short:py-1', td: 'px-2 py-1.5 text-xs short:py-1' } : {}) }" class="min-h-0 w-full flex-1 overscroll-contain text-xs sm:text-base">
               <template #expanded="{ row }">
                 <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 px-4 py-3 text-xs">
                   <div><p class="text-muted mb-0.5">Employee number</p><p>{{ row.original.employeeNumber }}</p></div>

@@ -13,61 +13,45 @@ defineProps<{
   isDemo: boolean
   isHistorical: boolean
 }>()
-
-// On a phone, and on any short screen such as a phone in landscape, the strip collapses to one
-// summary line that scrolls away with the page; wide, tall screens show the controls pinned.
-const open = ref(false)
 </script>
 
 <template>
-  <section
-    aria-label="Scenario"
-    data-testid="scenario-strip"
-    class="tall:sticky top-0 z-10 border-b border-default bg-elevated px-4 sm:px-6 py-2 short:px-4 short:py-0.5"
-  >
-    <button
-      type="button"
-      class="sm:tall:hidden flex w-full min-h-11 short:min-h-9 items-center justify-between gap-2 text-left text-sm"
-      :aria-expanded="open"
-      aria-controls="scenario-strip-controls"
-      @click="open = !open"
+  <DashboardControls v-slot="{ sheet }">
+    <section
+      aria-label="Scenario"
+      data-testid="scenario-strip"
+      :class="sheet ? '' : 'sticky top-0 z-10 border-b border-default bg-elevated px-4 sm:px-6 py-2'"
     >
-      <span class="truncate text-highlighted" data-testid="scenario-summary">
-        {{ scopeLabel }} · As of {{ asOfLabel }} · {{ growthLabel }}
-      </span>
-      <UIcon :name="open ? 'i-lucide-chevron-up' : 'i-lucide-chevron-down'" class="size-4 shrink-0 text-muted" />
-    </button>
+      <div
+        class="flex"
+        :class="sheet ? 'flex-col gap-3' : 'flex-wrap items-center gap-x-6 gap-y-2'"
+      >
+        <USelectMenu
+          v-if="listOptions.length > 0"
+          v-model="selectedListId"
+          :items="listOptions"
+          value-key="id"
+          label-key="label"
+          placeholder="Select list..."
+          size="sm"
+          aria-label="Seniority List"
+          :class="sheet ? 'w-full' : 'w-72'"
+        />
 
-    <div
-      id="scenario-strip-controls"
-      class="flex-col gap-3 pt-2 sm:tall:flex sm:tall:flex-row sm:tall:flex-wrap sm:tall:items-center sm:tall:gap-x-6 sm:tall:gap-y-2 sm:tall:pt-0"
-      :class="open ? 'flex' : 'hidden'"
-    >
-      <USelectMenu
-        v-if="listOptions.length > 0"
-        v-model="selectedListId"
-        :items="listOptions"
-        value-key="id"
-        label-key="label"
-        placeholder="Select list..."
-        size="sm"
-        aria-label="Seniority List"
-        class="w-full sm:tall:w-72"
-      />
+        <label v-if="scopeLabels.length > 1" class="flex items-center gap-2 text-sm text-muted">
+          <span>Qualification Scope</span>
+          <USelect v-model="scopeLabel" :items="scopeLabels" size="sm" class="min-w-40" />
+        </label>
 
-      <label v-if="scopeLabels.length > 1" class="flex items-center gap-2 text-sm text-muted">
-        <span>Qualification Scope</span>
-        <USelect v-model="scopeLabel" :items="scopeLabels" size="sm" class="min-w-40" />
-      </label>
+        <p class="flex flex-wrap items-center gap-x-2 text-sm text-muted" data-testid="scenario-as-of">
+          <span>As-of Date</span>
+          <span class="font-mono text-highlighted">{{ asOfLabel }}</span>
+          <UBadge v-if="isDemo" color="neutral" variant="outline" size="sm">Demo</UBadge>
+          <UBadge v-if="isHistorical" color="neutral" variant="outline" size="sm">Historical</UBadge>
+        </p>
 
-      <p class="flex flex-wrap items-center gap-x-2 text-sm text-muted" data-testid="scenario-as-of">
-        <span>As-of Date</span>
-        <span class="font-mono text-highlighted">{{ asOfLabel }}</span>
-        <UBadge v-if="isDemo" color="neutral" variant="outline" size="sm">Demo</UBadge>
-        <UBadge v-if="isHistorical" color="neutral" variant="outline" size="sm">Historical</UBadge>
-      </p>
-
-      <DashboardGrowthBar v-model="growthAssumptions" class="!border-0 !p-0 !bg-transparent" />
-    </div>
-  </section>
+        <DashboardGrowthBar v-model="growthAssumptions" class="!border-0 !p-0 !bg-transparent" />
+      </div>
+    </section>
+  </DashboardControls>
 </template>

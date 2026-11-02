@@ -315,7 +315,6 @@ describe('dashboard.vue — sections', () => {
       mockLists.value = [{ ...makeList(2), title: 'Latest list' }, { ...makeList(1), title: 'Historical list', isDemo: true }]
     })
     const wrapper = await mountDashboard()
-    await wrapper.find('[aria-controls="scenario-strip-controls"]').trigger('click')
     await wrapper.find('[aria-label="Seniority List"]').trigger('click')
     await vi.waitFor(() => expect(document.body.querySelector('[role="option"]')).not.toBeNull())
     const historical = Array.from(document.body.querySelectorAll<HTMLElement>('[role="option"]')).find(option => option.textContent?.includes('Historical list'))!
