@@ -3,6 +3,14 @@ title: "What's New"
 latestDate: "2026-08-12"
 ---
 
+## November 01, 2026
+
+- Big UI redesign. Had a bit of time on leave to finish my plans for the UI. Moved towards an old school 
+aviation roster style colorset. 
+- Reorganized the widgets by temporal concept (current, projections, retirements, etc) and added more slicing options for reviewing data. This makes things easier to drill down and compare instead of having pre-filled ranges and slices.
+- Some engine and projection improvements under the hood that will set up for large list -> list comparisons down the road.
+
+
 ## August 12, 2026
 
 - Added the Seniority Slicer: select a base, fleet, and seat to view company and in-qualification seniority together
