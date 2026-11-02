@@ -66,4 +66,13 @@ describe('Qualification Scope', () => {
   it('orders scopes deterministically regardless of entry order', () => {
     expect(enumerateQualificationScopes([...entries].reverse())).toEqual(enumerateQualificationScopes(entries))
   })
+
+  it('preserves distinct qualifications containing delimiters', () => {
+    const scopes = enumerateQualificationScopes([
+      makeDomainEntry({ base: 'A|B', seat: 'C', fleet: 'D' }),
+      makeDomainEntry({ base: 'A', seat: 'B', fleet: 'C|D' }),
+    ])
+    expect(scopes).toContainEqual({ base: 'A|B', seat: 'C', fleet: 'D' })
+    expect(scopes).toContainEqual({ base: 'A', seat: 'B', fleet: 'C|D' })
+  })
 })

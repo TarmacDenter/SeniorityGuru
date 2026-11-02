@@ -32,7 +32,7 @@ function scopeSortKey(scope: QualificationScope): string {
 export function enumerateQualificationScopes(entries: readonly SeniorityEntry[]): readonly QualificationScope[] {
   if (entries.length === 0) return [{}]
 
-  const existingQualifications = new Set(entries.map(qualificationKey))
+  const existingQualifications = new Map(entries.map(entry => [qualificationKey(entry), entry]))
   const bases = [...new Set(entries.map(entry => entry.base))].sort()
   const seats = [...new Set(entries.map(entry => entry.seat))].sort()
   const fleets = [...new Set(entries.map(entry => entry.fleet))].sort()
@@ -56,8 +56,7 @@ export function enumerateQualificationScopes(entries: readonly SeniorityEntry[])
     }
   }
 
-  for (const key of existingQualifications) {
-    const [base, seat, fleet] = key.split('|') as [string, string, string]
+  for (const { base, seat, fleet } of existingQualifications.values()) {
     scopes.push({ base, seat, fleet })
   }
 

@@ -168,7 +168,10 @@ export function calculateRetirementCountProjection(
   options: CalculateRetirementCountProjectionOptions,
 ): RetirementCountProjection {
   const scopedEntries = options.predicate ? options.entries.filter(options.predicate) : [...options.entries]
-  const dates = generateAnnualSeniorityDates(options.from, options.through)
+  const dates = [...generateAnnualSeniorityDates(options.from, options.through)]
+  if (dates.length > 0 && Temporal.PlainDate.compare(dates.at(-1)!, options.through) < 0) {
+    dates.push(options.through)
+  }
   const buckets = dates.map((through, index): RetirementCountBucket => {
     const bucketStart = index === 0 ? options.from : dates[index - 1]!
     const retirementCount = scopedEntries.filter(entry =>

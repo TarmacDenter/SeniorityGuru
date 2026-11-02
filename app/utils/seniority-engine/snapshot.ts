@@ -155,14 +155,10 @@ export function createSenioritySnapshot(entries: readonly SeniorityEntry[]): Sen
   const seats = getSeniorityEntryValues(entriesBySeniority, 'seat')
   const fleets = getSeniorityEntryValues(entriesBySeniority, 'fleet')
 
-  const qualSet = new Set<string>()
-  const qualifications: Qualification[] = []
-  for (const e of entries) {
-    const key = qualificationKey(e)
-    if (qualSet.has(key)) continue
-    qualSet.add(key)
-    qualifications.push({ seat: e.seat, fleet: e.fleet, base: e.base })
-  }
+  const qualifications: Qualification[] = Array.from(entriesByQualification.values(), (group) => {
+    const e = group[0]!
+    return { seat: e.seat, fleet: e.fleet, base: e.base }
+  })
   qualifications.sort((a, b) => qualificationKey(a).localeCompare(qualificationKey(b)))
 
   return {

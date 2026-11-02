@@ -258,6 +258,21 @@ describe('calculateSeniorityTrajectoryComparison', () => {
 })
 
 describe('calculateRetirementCountProjection', () => {
+  it('counts retirements through a non-anniversary endpoint', () => {
+    const projection = calculateRetirementCountProjection({
+      entries: [
+        makeEntry({ retire_date: '2027-05-01' }),
+        makeEntry({ retire_date: '2027-06-01' }),
+        makeEntry({ retire_date: '2027-06-02' }),
+      ],
+      from: date('2026-01-01'),
+      through: date('2027-06-01'),
+    })
+    expect(projection.buckets.map(bucket => [bucket.through.toString(), bucket.retirementCount])).toEqual([
+      ['2026-01-01', 0], ['2027-01-01', 0], ['2027-06-01', 2],
+    ])
+  })
+
   it('returns explicit dated count buckets without chart labels or arrays', () => {
     const entries = [
       makeEntry({ seniority_number: 100, base: 'JFK', retire_date: '2026-06-01' }),
