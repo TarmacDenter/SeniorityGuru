@@ -55,6 +55,24 @@ describe('useNextProjections: retirement analysis', () => {
     expect(projections.threshold.result.value?.year).toMatch(/^\d{4}/)
   })
 
+  it('bounds the Percentile Threshold slider to whole percents between the Anchor Pilot\'s percentile today and the best attainable', () => {
+    seedRoster()
+    const projections = useNextProjections()
+    const { target, min, max } = projections.threshold
+    const points = projections.wavePoints.value
+    const today = points[0]!.percentile
+    const best = points.at(-1)!.percentile
+
+    expect(Number.isInteger(min.value)).toBe(true)
+    expect(Number.isInteger(max.value)).toBe(true)
+    // Never offers a percentile below today's or above the best attainable.
+    expect(min.value).toBe(Math.ceil(today))
+    expect(max.value).toBe(Math.max(min.value, Math.floor(best)))
+    expect(min.value).toBeGreaterThanOrEqual(today)
+    expect(max.value).toBeLessThanOrEqual(Math.max(Math.ceil(today), best))
+    expect(Number.isInteger(target.value)).toBe(true)
+  })
+
   it('counts retirements senior to the Anchor Pilot within the chosen number of years', () => {
     seedRoster()
     const { seniorRetirements } = useNextProjections()

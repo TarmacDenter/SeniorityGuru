@@ -58,7 +58,7 @@ onUnmounted(() => {
           :model-value="sliderValue"
           :min="minPercentile"
           :max="maxPercentile"
-          :step="0.5"
+          :step="1"
           aria-label="Target percentile"
           @update:model-value="handlePercentileChange"
         />

@@ -67,10 +67,12 @@ export function useNextProjections() {
   const wavePoints = computed(() => trajectory.fullTrajectory.value)
 
   const targetPercentile = ref(DEFAULT_TARGET_PERCENTILE)
-  const targetMin = computed(() => wavePoints.value[0]?.percentile ?? 0)
-  const targetMax = computed(() => Math.max(targetMin.value, wavePoints.value.at(-1)?.percentile ?? targetMin.value))
+  // Whole-percent bounds: the first integer at or above today's percentile through the last at or
+  // below the best attainable one. Collapses to a single value when no whole percent lies between.
+  const targetMin = computed(() => Math.ceil(wavePoints.value[0]?.percentile ?? 0))
+  const targetMax = computed(() => Math.max(targetMin.value, Math.floor(wavePoints.value.at(-1)?.percentile ?? targetMin.value)))
   watch([targetMin, targetMax], ([min, max]) => {
-    targetPercentile.value = Math.min(Math.max(targetPercentile.value, min), max)
+    targetPercentile.value = Math.min(Math.max(Math.round(targetPercentile.value), min), max)
   }, { immediate: true })
   const thresholdOutput = computed(() => projectionEndDate.value
     ? anchoredAnalysis.value?.percentileCrossing({
