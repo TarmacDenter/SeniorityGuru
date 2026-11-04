@@ -53,7 +53,7 @@ describe('MobileBottomBar', () => {
     expect(current.map(link => link.text())).toEqual([label])
   })
 
-  it('opens a sheet with Upload, Compare and Settings from More', async () => {
+  it('opens a sheet with Upload, Compare, Settings and How it works from More', async () => {
     const wrapper = await mountBar()
     expect(document.body.textContent).not.toContain('Upload')
 
@@ -65,6 +65,7 @@ describe('MobileBottomBar', () => {
       ['Upload', '/seniority/upload'],
       ['Compare', '/dashboard/list/compare'],
       ['Settings', '/settings'],
+      ['How it works', '/how-it-works'],
     ])
   })
 

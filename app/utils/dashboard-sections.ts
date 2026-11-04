@@ -75,6 +75,11 @@ export const DASHBOARD_ACTIONS = [
   { label: 'Settings', icon: 'i-lucide-settings', to: '/settings' },
 ] as const
 
+/** Reference pages outside the dashboard, reachable from the sidebar and the phone More sheet. */
+export const DASHBOARD_INFO_LINKS = [
+  { label: 'How it works', icon: 'i-lucide-circle-help', to: '/how-it-works' },
+] as const
+
 export const DEFAULT_DASHBOARD_PATH = '/dashboard/current/status'
 
 /** Old `?tab=` values (the six-tab and four-panel dashboards) and the small view that now holds each one's content. */
