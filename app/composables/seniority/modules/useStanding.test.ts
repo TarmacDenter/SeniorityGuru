@@ -442,7 +442,7 @@ describe('useStanding', () => {
 
       // E1 and E3 retire within 12 months; only E1 is senior to the Anchor Pilot.
       expect(useStanding().figures.value).toEqual([
-        { label: 'Rank', value: '2' },
+        { label: 'Rank today', value: '2', note: 'Publication Position 2 · none retired ahead' },
         { label: 'Seniority Number', value: '2' },
         { label: 'Roster Size', value: '4' },
         { label: 'Seniority Percentile', value: '75.0%' },
@@ -471,7 +471,7 @@ describe('useStanding', () => {
       mockUserStore.employeeNumber = 'E1'
 
       const values = Object.fromEntries(useStanding().figures.value.map(f => [f.label, f.value]))
-      expect(values).toMatchObject({ Rank: '--', 'Roster Size': '--', 'Seniority Percentile': '--', 'Active pilots': '--', [RETIREMENTS]: '--' })
+      expect(values).toMatchObject({ 'Rank today': '--', 'Roster Size': '--', 'Seniority Percentile': '--', 'Active pilots': '--', [RETIREMENTS]: '--' })
     })
 
     it('is empty without an Anchor Pilot', () => {

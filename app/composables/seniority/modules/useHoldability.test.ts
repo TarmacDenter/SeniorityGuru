@@ -43,7 +43,7 @@ function rowsByQualification(holdability: ReturnType<typeof useHoldability>) {
 describe('useHoldability', () => {
   it('labels the Rank column as Today\'s Rank', () => {
     seed()
-    expect(useHoldability().columnLabels.rank).toBe('Today\'s Rank')
+    expect(useHoldability().columnLabels.rank).toBe('Rank today')
   })
 
   it('gives every Qualification row its Holdable Year status', () => {

@@ -31,10 +31,10 @@ export interface HoldabilityDetailView extends PresentedHoldabilityDetail {
   holdableLabel: string
 }
 
-/** Rank is today's: it already drops pilots who retired since the list was published. */
+/** Rank is today's: it already drops pilots who retired since the list was published, so the label says so. */
 const COLUMN_LABELS = {
   qualification: 'Qualification',
-  rank: 'Today\'s Rank',
+  rank: 'Rank today',
   rosterSize: 'Roster Size',
   percentile: 'Seniority Percentile',
   status: 'Holdable',

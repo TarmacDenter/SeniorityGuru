@@ -91,11 +91,25 @@ describe('Now panel', () => {
     expect(rows.map(row => row.find('td').text())).toEqual(['10', '20', '30', '40', '50'])
     expect(rows.map(row => row.find('td:nth-child(2)').text())).toEqual(['Pilot 1', 'Pilot 2', 'Pilot 3 (Your line)', 'Pilot 4', 'Pilot 5'])
     expect(rows.filter(row => row.text().includes('Your line')).map(row => row.find('td').text())).toEqual(['30'])
-    expect(figureValue(wrapper, 'Rank')).toBe('3')
+    expect(figureValue(wrapper, 'Rank today')).toBe('3')
     expect(figureValue(wrapper, 'Seniority Number')).toBe('30')
     expect(figureValue(wrapper, 'Seniority Percentile')).toBe('60.0%')
     expect(figureValue(wrapper, 'Active pilots')).toBe('5')
     expect(figureValue(wrapper, 'Retirements senior to you (next 12 months)')).toBe('0')
+  })
+
+  it('labels Rank as today\'s and shows the retired pilots it leaves out', async () => {
+    mockStore.entries = [
+      makeEntry({ seniority_number: 10, employee_number: 'E1', retire_date: '2020-01-01' }),
+      makeEntry({ seniority_number: 20, employee_number: 'E2', retire_date: '2021-01-01' }),
+      makeEntry({ seniority_number: 30, employee_number: 'E3', retire_date: '2050-01-01' }),
+      makeEntry({ seniority_number: 40, employee_number: 'E4', retire_date: '2050-01-01' }),
+    ]
+    mockUserStore.employeeNumber = 'E4'
+    const wrapper = await mountSuspended(harness(ref<QualificationScope>({})))
+
+    expect(figureValue(wrapper, 'Rank today')).toBe('2')
+    expect(wrapper.find('[data-testid="standing-figures"]').text()).toContain('Publication Position 4 · 2 retired ahead')
   })
 
   it('labels a retired neighbor in the excerpt', async () => {
@@ -116,7 +130,7 @@ describe('Now panel', () => {
     const wrapper = await mountSuspended(harness(ref<QualificationScope>({})))
 
     expect(wrapper.text()).toContain('Anchor Pilot retired')
-    expect(figureValue(wrapper, 'Rank')).toBe('--')
+    expect(figureValue(wrapper, 'Rank today')).toBe('--')
     expect(figureValue(wrapper, 'Roster Size')).toBe('--')
     expect(figureValue(wrapper, 'Seniority Percentile')).toBe('--')
   })

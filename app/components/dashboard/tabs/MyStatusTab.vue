@@ -33,7 +33,7 @@ const excerptColumns: TableColumn<ListExcerptRow>[] = [
       ? h('span', null, [row.original.nameLabel, ' ', h(resolveComponent('UBadge'), { color: 'neutral', variant: 'outline', size: 'sm', class: 'no-underline bg-transparent' }, () => 'retired')])
       : row.original.nameLabel,
   },
-  { accessorKey: 'rankLabel', header: 'Rank', meta: numeric },
+  { accessorKey: 'rankLabel', header: 'Rank today', meta: numeric },
   { accessorKey: 'publicationPositionLabel', header: 'Publication Position', meta: numeric },
 ]
 </script>

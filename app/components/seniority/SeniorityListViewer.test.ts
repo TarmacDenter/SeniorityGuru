@@ -156,7 +156,7 @@ describe('SeniorityListViewer', () => {
     expect(wrapper.text()).toContain('JFK-737-CA · 2 on roster · 2 active')
     expect(wrapper.text()).toContain('First|E1|1|1|active')
     expect(wrapper.findAll('[data-testid="visible-column"]').map(column => column.text())).toEqual(expect.arrayContaining([
-      'Qualification Rank',
+      'Qualification Rank today',
       'Qualification percentile',
     ]))
 
@@ -167,7 +167,7 @@ describe('SeniorityListViewer', () => {
     expect(wrapper.text()).toContain('Company-wide · 3 on roster · 3 active')
     expect(wrapper.text()).toContain('First|E1|1|1|active|anchor')
     expect(wrapper.findAll('[data-testid="visible-column"]').map(column => column.text())).not.toEqual(expect.arrayContaining([
-      'Qualification Rank',
+      'Qualification Rank today',
       'Qualification percentile',
     ]))
   })
@@ -184,7 +184,7 @@ describe('SeniorityListViewer', () => {
 
     expect(wrapper.text()).toContain('2 on roster · 1 active')
     const headers = wrapper.findAll('[data-testid="visible-column"]').map(column => column.text())
-    expect(headers.indexOf('Seniority Number')).toBe(headers.indexOf('Company Rank') - 1)
+    expect(headers.indexOf('Seniority Number')).toBe(headers.indexOf('Company Rank today') - 1)
     expect(headers).toContain('Publication Position')
     expect(cell('R1', 'companyRank')).toBe('—')
     expect(cell('R1', 'companyPercentile')).toBe('—')
