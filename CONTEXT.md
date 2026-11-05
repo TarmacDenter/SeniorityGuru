@@ -17,7 +17,7 @@ One validated pilot record in a Seniority List.
 The company-assigned ordering number for a pilot. A smaller number means greater company seniority, but numeric gaps do not represent positional distance.
 
 **Rank**:
-A one-based position in publication order after removing the pilots who have retired by the As-of Date. It changes as the As-of Date moves, and it is shown beside the Seniority Number wherever a pilot's position appears. Rank, not Seniority Number, measures positional distance.
+A one-based position in publication order after removing the pilots who have retired by the As-of Date. It changes as the As-of Date moves, and it is shown beside the Seniority Number wherever a pilot's position appears. Rank, not Seniority Number, measures positional distance. The dashboard's As-of Date is today, so its labels read "Rank today" ("Base Rank today", "Company Rank today") so a pilot never mistakes it for the published position.
 _Avoid_: List Rank, Raw Rank, Adjusted Rank
 
 **Base Rank**:

@@ -253,6 +253,14 @@ function holdabilitySummaryBySeat(standing: SeniorityStanding): Record<string, s
     : `Hypothetical Placement in ${group.hypothetical === group.count ? 'all' : 'the other'} ${formatSeatLabel(seat)} Qualifications`]))
 }
 
+/** How today's Rank follows from the published list, e.g. "Publication Position 50 · 3 retired ahead". */
+function rankNote(standing: SeniorityStanding): string {
+  const position = `Publication Position ${formatSeniorityCount(standing.publicationPosition)}`
+  return standing.retiredPilotsSeniorToAnchor === 0
+    ? `${position} · none retired ahead`
+    : `${position} · ${formatSeniorityCount(standing.retiredPilotsSeniorToAnchor)} retired ahead`
+}
+
 export function presentSeniorityStanding(standing: SeniorityStanding | NoResult, scope: QualificationScope = {}) {
   if (isNoResult(standing)) return standing
   const qualifiers = rosterSizeNotes(standing, 'modeled', 'hypothetical')
@@ -269,6 +277,7 @@ export function presentSeniorityStanding(standing: SeniorityStanding | NoResult,
     percentileScaleLabel: `Percentile measured against ${rosterSummary}`,
     hypotheticalLabel: hypotheticalPlacementLabel(standing.isHypothetical, scope),
     rankLabel: formatSeniorityCount(standing.rank),
+    rankNoteLabel: rankNote(standing),
     publicationPositionLabel: formatSeniorityCount(standing.publicationPosition),
     activePilotCountLabel: formatSeniorityCount(standing.activePilotCount),
     seniorityPercentileLabel: formatSeniorityPercentile(standing.seniorityPercentile),

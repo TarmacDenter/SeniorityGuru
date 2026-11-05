@@ -295,6 +295,12 @@ describe('presented Standing display values', () => {
     expect(own.rankLabel).toBe('2')
   })
 
+  it('explains Rank through the Publication Position and the retired pilots ahead', () => {
+    const presentation = resultOf(createAnalysis().withAnchor('125').seniorityStanding().presentation)
+
+    expect(presentation.rankNoteLabel).toBe('Publication Position 4 · 1 retired ahead')
+  })
+
   it('follows the scope in the summaries', () => {
     const presentation = resultOf(createAnalysis().withAnchor('125')
       .seniorityStanding({ scenario: { qualificationScope: { base: 'ATL' } } }).presentation)

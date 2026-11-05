@@ -189,7 +189,7 @@ export function useStanding(qualificationScope?: Ref<QualificationScope> | Compu
     if (!entry) return []
     const presented = standingOutput.value?.presentation
     return [
-      { label: 'Rank', value: presented?.rankLabel ?? PLACEHOLDER },
+      { label: 'Rank today', value: presented?.rankLabel ?? PLACEHOLDER, ...(presented ? { note: presented.rankNoteLabel } : {}) },
       { label: 'Seniority Number', value: String(entry.seniority_number) },
       { label: 'Roster Size', value: presented?.rosterSizeValueLabel ?? PLACEHOLDER, ...(presented?.rosterSizeTrend ? { note: presented.rosterSizeTrend } : {}) },
       { label: 'Seniority Percentile', value: presented?.seniorityPercentileLabel ?? PLACEHOLDER },

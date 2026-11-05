@@ -389,7 +389,7 @@ async function enterDemo() {
                 <div class="font-mono text-xl font-bold">4892</div>
               </div>
               <div>
-                <div class="text-xs text-muted mb-1">Rank</div>
+                <div class="text-xs text-muted mb-1">Rank today</div>
                 <div class="font-mono text-xl font-bold">4,892 <span class="text-sm font-normal text-muted">of 4,892
                     on roster</span></div>
               </div>
