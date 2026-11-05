@@ -19,6 +19,20 @@ describe('how-it-works.vue copy', () => {
     const text = (await mountSuspended(Page.default)).text()
     expect(text).toContain("active incumbent's Rank against Roster Size")
   })
+
+  it('uses the current dashboard and domain language', async () => {
+    const Page = await import('./how-it-works.vue')
+    const text = (await mountSuspended(Page.default)).text()
+    expect(text).toContain('Hypothetical Placement in <scope>')
+    expect(text).toContain('Holdable Year')
+    expect(text).toContain('Projection Through Date')
+    expect(text).toContain('Trajectory › Projection')
+    expect(text).toContain('Upload Type')
+    expect(text).not.toContain('Import Plugin')
+    expect(text).not.toContain('Position view')
+    expect(text).not.toContain('50th, 75th, or 90th')
+    expect(text).not.toContain('qualification filter')
+  })
 })
 
 describe('how-it-works.vue page', () => {
