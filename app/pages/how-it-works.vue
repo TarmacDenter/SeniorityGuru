@@ -82,7 +82,10 @@ const requiredColumns = [
           <div class="space-y-3 text-sm text-default">
             <p>
               <strong>Rank</strong> is dynamic. It is your one-based position among pilots still active at the
-              As-of Date, so more-senior pilots who have retired by then are removed from it.
+              As-of Date, so more-senior pilots who have retired by then are removed from it. The dashboard uses
+              today as the As-of Date, so Rank appears as <strong>Rank today</strong> (and Base Rank today, Company
+              Rank today, Qualification Rank today), with your Publication Position and the number of retired
+              pilots ahead of you beside it.
             </p>
             <p>
               <strong>Publication Position</strong> is static. It is your position in the list as published, with

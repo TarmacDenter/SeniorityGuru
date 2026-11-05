@@ -36,7 +36,7 @@ const columns: TableColumn<BaseStatusRow>[] = [
   { accessorKey: 'base', header: 'Base' },
   { accessorKey: 'seat', header: 'Seat' },
   { accessorKey: 'fleet', header: 'Fleet' },
-  { id: 'rank', header: 'Base Rank', meta: numeric, cell: ({ row }) => h('span', null, [row.original.rankLabel, hypotheticalMark(row.original)]) },
+  { id: 'rank', header: 'Base Rank today', meta: numeric, cell: ({ row }) => h('span', null, [row.original.rankLabel, hypotheticalMark(row.original)]) },
   { accessorKey: 'rosterOfLabel', header: 'Roster Size', meta: numeric },
   { accessorKey: 'percentileLabel', header: 'Seniority Percentile', meta: numeric },
 ];
@@ -57,7 +57,7 @@ const meta = {
           <UButton icon="i-lucide-info" color="neutral" variant="ghost" size="xs" aria-label="About this table" />
           <template #content>
             <p class="max-w-xs p-3 text-sm text-default">
-              Base Rank is your position among active pilots in each Qualification; Roster Size includes retired pilots.
+              Base Rank today is your position in each Qualification after removing pilots who have retired by today; Roster Size includes retired pilots.
               Rows marked hypothetical place you in a Qualification you are not in and count you in its Roster Size.
             </p>
           </template>
