@@ -34,7 +34,7 @@ const groups: HoldabilitySeatGroup[] = [{
   ],
 }]
 
-const columnLabels = { qualification: 'Qualification', rank: 'Today\'s Rank', rosterSize: 'Roster Size', percentile: 'Seniority Percentile', status: 'Holdable' }
+const columnLabels = { qualification: 'Qualification', rank: 'Rank today', rosterSize: 'Roster Size', percentile: 'Seniority Percentile', status: 'Holdable' }
 
 const detail: HoldabilityDetailView = {
   qualificationLabel: '777 CA LAX',
@@ -63,11 +63,11 @@ const global = {
 }
 
 describe('Current › Holdability', () => {
-  it('heads the Rank column "Today\'s Rank" and shows every Qualification\'s Holdable status', async () => {
+  it('heads the Rank column "Rank today" and shows every Qualification\'s Holdable status', async () => {
     const wrapper = await mountSuspended(QualificationsTab, { props: props(), global })
     const text = wrapper.text()
 
-    expect(text).toContain('Today\'s Rank')
+    expect(text).toContain('Rank today')
     expect(text).toContain('Holdable now')
     expect(text).toContain('Holdable from 2029')
     expect(text).toContain('Not before your retirement')
@@ -129,6 +129,6 @@ describe('Current › Holdability', () => {
   it('asks for an Employee Number when there is no Anchor Pilot', async () => {
     const wrapper = await mountSuspended(QualificationsTab, { props: props({ userFound: false, groups: [] }), global })
     expect(wrapper.text()).toContain('No Qualifications yet')
-    expect(wrapper.text()).not.toContain('Today\'s Rank')
+    expect(wrapper.text()).not.toContain('Rank today')
   })
 })

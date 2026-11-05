@@ -111,7 +111,7 @@ vi.mock('~/composables/seniority/modules/useStanding', () => ({
     }),
     baseStatus: ref([]),
     qualificationGroups: ref([]),
-    figures: ref([{ label: 'Rank', value: '3' }]),
+    figures: ref([{ label: 'Rank today', value: '3' }]),
   }),
 }))
 

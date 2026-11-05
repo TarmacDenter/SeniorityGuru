@@ -65,7 +65,7 @@ const rowId = (row: HoldabilityRow) => row.key
                   <div class="max-w-xs space-y-2 p-3 text-sm text-muted">
                     <p>Holdable is a modeled outcome, not a vacancy or an award.</p>
                     <p>A Qualification is Holdable from the first year your projected company Seniority Percentile meets its Qualification Threshold as of today. Future occupancy, vacancies, bids, transfers and awards are not modeled.</p>
-                    <p>Today's Rank already leaves out pilots who have retired since the list was published.</p>
+                    <p>Rank today already leaves out pilots who have retired since the list was published.</p>
                     <NuxtLink to="/how-it-works#holdability" class="text-highlighted underline">Learn more about Holdable and Qualification Thresholds</NuxtLink>
                   </div>
                 </template>
