@@ -2,7 +2,7 @@
 // Phone navigation: the four dashboard sections, plus More for Upload, Compare and Settings.
 const nav = useSeniorityNav()
 const sections = computed(() => nav.value[0] ?? [])
-const actions = computed(() => nav.value[1] ?? [])
+const actions = computed(() => nav.value.slice(1).flat())
 const { hasUnseenChanges } = useChangelog()
 const moreOpen = ref(false)
 </script>
