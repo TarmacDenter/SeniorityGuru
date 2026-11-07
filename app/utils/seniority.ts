@@ -11,6 +11,7 @@ export type {
   QualificationPositionAnalysisOptions,
   RelativeUpcomingRetirementAnalysisOptions,
   RetirementCountProjectionAnalysisOptions,
+  RetirementHeatmapAnalysisOptions,
   SeniorityAnalysis,
   SeniorityCatalog,
   SeniorityDemographicsAnalysisOptions,
@@ -41,6 +42,8 @@ export type {
   NoResultReason,
   QualificationScope,
   RelativeUpcomingRetirement,
+  RetirementHeatmap,
+  RetirementHeatmapDimension,
   UpcomingRetirement,
 } from './seniority-engine/types'
 export type {
@@ -51,6 +54,9 @@ export type {
   PresentedQualificationViewerAnalysis,
   PresentedQualificationViewerEntry,
   PresentedRetirementCountProjection,
+  PresentedRetirementHeatmap,
+  PresentedRetirementHeatmapCell,
+  PresentedRetirementHeatmapRow,
   PresentedSeniorityDemographics,
   PresentedSeniorityStanding,
   PresentedSeniorityTrajectory,

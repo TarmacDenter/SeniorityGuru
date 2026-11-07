@@ -146,6 +146,35 @@ export interface RetirementYearAnalysis {
   readonly isRetirementWave: boolean
 }
 
+/** A Qualification dimension the Retirement Heatmap can group rows by. */
+export type RetirementHeatmapDimension = 'base' | 'seat' | 'fleet'
+
+export interface RetirementHeatmapOptions {
+  /** Dimensions that split rows, in any combination; none gives one row for the whole scope. */
+  readonly groupBy: readonly RetirementHeatmapDimension[]
+  /** The Qualification Scope filters pilots before grouping. */
+  readonly scenario?: Scenario
+}
+
+/** One group's scheduled retirements by year, aligned with `RetirementHeatmap.years`. */
+export interface RetirementHeatmapRow {
+  /** The group's values for the grouped dimensions only. */
+  readonly group: QualificationScope
+  /** Pilots in the group not retired by the As-of Date. */
+  readonly activePilotCount: number
+  readonly retirementCounts: readonly number[]
+  readonly totalRetirementCount: number
+}
+
+export interface RetirementHeatmap {
+  /** Contiguous years from the As-of Date's year through the last scheduled retirement. */
+  readonly years: readonly number[]
+  readonly rows: readonly RetirementHeatmapRow[]
+  readonly maxRetirementCount: number
+  /** Active pilots in the scope without a retirement date; they appear in no cell. */
+  readonly undatedPilotCount: number
+}
+
 export interface PercentileDensityBucket {
   readonly minimumPercentile: number
   readonly maximumPercentile: number
@@ -296,6 +325,7 @@ export interface CommonSeniorityLens {
   retirementCountProjection(options: RetirementCountProjectionOptions): RetirementCountProjection
   demographics(options: DemographicsOptions): SeniorityDemographics
   upcomingRetirements(filter: UpcomingRetirementFilter): readonly UpcomingRetirement[]
+  retirementHeatmap(options: RetirementHeatmapOptions): RetirementHeatmap
 }
 
 export interface SeniorityLens extends CommonSeniorityLens {

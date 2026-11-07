@@ -14,6 +14,8 @@ import type {
   QualificationPosition,
   RelativeUpcomingRetirement,
   RetirementCountProjection,
+  RetirementHeatmap,
+  RetirementHeatmapDimension,
   RetirementYearAnalysis,
   ScenarioOptions,
   SeniorityDemographics,
@@ -37,6 +39,8 @@ import {
   presentAnchoredSeniorityDemographics,
   presentQualificationPositions,
   presentRetirementCountProjection,
+  presentRetirementHeatmap,
+  type PresentedRetirementHeatmap,
   presentSeniorityDemographics,
   presentSeniorityQualificationViewer,
   presentSeniorityStanding,
@@ -92,6 +96,11 @@ export interface RetirementCountProjectionAnalysisOptions {
 }
 
 export interface SeniorityDemographicsAnalysisOptions extends Omit<DemographicsOptions, 'scenario'> {
+  readonly scenario?: ScenarioOptions
+}
+
+export interface RetirementHeatmapAnalysisOptions {
+  readonly groupBy: readonly RetirementHeatmapDimension[]
   readonly scenario?: ScenarioOptions
 }
 
@@ -151,6 +160,10 @@ export interface CommonSeniorityAnalysis {
     options: SeniorityDemographicsAnalysisOptions,
   ): SeniorityOutput<SeniorityDemographics, PresentedSeniorityDemographics>
   upcomingRetirements(options: UpcomingRetirementAnalysisOptions): readonly UpcomingRetirement[]
+  /** Scheduled retirements of active pilots by group (Base, Seat, Fleet in any combination) and year. */
+  retirementHeatmap(
+    options: RetirementHeatmapAnalysisOptions,
+  ): SeniorityOutput<RetirementHeatmap, PresentedRetirementHeatmap>
 }
 
 export interface SeniorityAnalysis extends CommonSeniorityAnalysis {
@@ -232,6 +245,11 @@ function commonSeniorityAnalysis(
       return seniorityOutput(domain, presentSeniorityDemographics)
     },
     upcomingRetirements: options => lens.upcomingRetirements(options),
+    retirementHeatmap: (options) => {
+      const scenario = createSeniorityScenario(options.scenario)
+      const domain = lens.retirementHeatmap({ groupBy: options.groupBy, scenario })
+      return seniorityOutput(domain, value => presentRetirementHeatmap(value, scenario.qualificationScope))
+    },
   }
 }
 

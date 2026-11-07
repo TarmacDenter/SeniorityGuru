@@ -53,7 +53,7 @@ export function useHoldability(
   growthAssumptions?: Ref<GrowthAssumptions>,
 ) {
   const { selectedListId } = useDashboardList()
-  const juniorCaptainsLink = computed(() => `/dashboard/demographics${selectedListId.value ? `?list=${selectedListId.value}` : ''}#junior-captains`)
+  const juniorCaptainsLink = computed(() => `/dashboard/demographics/overview${selectedListId.value ? `?list=${selectedListId.value}` : ''}#junior-captains`)
   const assumptions = growthAssumptions ?? ref<GrowthAssumptions>({ ...DEFAULT_SENIORITY_GROWTH_ASSUMPTIONS })
   const { anchoredAnalysis } = useSeniorityCore()
   const { rankCard, qualificationGroups } = useStanding(qualificationScope)

@@ -7,7 +7,7 @@ describe('dashboard sections', () => {
     expect(DASHBOARD_SECTIONS.map(section => [section.label, section.views.map(view => view.label)])).toEqual([
       ['Current', ['Status', 'Holdability']],
       ['Trajectory', ['Projection', 'Retirements']],
-      ['Demographics', []],
+      ['Demographics', ['Overview', 'Retirement heatmap']],
       ['List', ['Full list', 'Upcoming retirements', 'Compare', 'Uploads']],
     ])
   })
@@ -29,7 +29,7 @@ describe('dashboard sections', () => {
       ['trajectory', '/dashboard/trajectory/projection'],
       ['projections', '/dashboard/trajectory/projection'],
       ['position', '/dashboard/current/holdability'],
-      ['demographics', '/dashboard/demographics'],
+      ['demographics', '/dashboard/demographics/overview'],
       ['seniority', '/dashboard/list/full'],
       ['retirements', '/dashboard/list/retirements'],
     ])('sends ?tab=%s to %s', (tab, path) => {
@@ -45,7 +45,7 @@ describe('dashboard sections', () => {
     it.each([
       ['current', '/dashboard/current/status'],
       ['trajectory', '/dashboard/trajectory/projection'],
-      ['demographics', '/dashboard/demographics'],
+      ['demographics', '/dashboard/demographics/overview'],
       ['list', '/dashboard/list/full'],
       ['nonsense', '/dashboard/current/status'],
       [undefined, '/dashboard/current/status'],

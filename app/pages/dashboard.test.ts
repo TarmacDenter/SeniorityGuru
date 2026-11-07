@@ -286,6 +286,8 @@ describe('dashboard.vue — sections', () => {
     ['/dashboard/current/holdability', 'Current', [['Status', false], ['Holdability', true]]],
     ['/dashboard/trajectory/projection', 'Trajectory', [['Projection', true], ['Retirements', false]]],
     ['/dashboard/trajectory/retirements', 'Trajectory', [['Projection', false], ['Retirements', true]]],
+    ['/dashboard/demographics/overview', 'Demographics', [['Overview', true], ['Retirement heatmap', false]]],
+    ['/dashboard/demographics/retirement-heatmap', 'Demographics', [['Overview', false], ['Retirement heatmap', true]]],
     ['/dashboard/list/full', 'List', [['Full list', true], ['Upcoming retirements', false], ['Compare', false], ['Uploads', false]]],
     ['/dashboard/list/uploads', 'List', [['Full list', false], ['Upcoming retirements', false], ['Compare', false], ['Uploads', true]]],
   ] as const)('%s is titled %s with its small views in a tab row', async (path, title, tabs) => {
@@ -294,13 +296,8 @@ describe('dashboard.vue — sections', () => {
     expect(viewTabs(wrapper)).toEqual(tabs.map(([text, current]) => ({ text, current })))
   })
 
-  it('shows Demographics without a tab row', async () => {
-    const wrapper = await mountDashboard('/dashboard/demographics')
-    expect(wrapper.find('h1').text()).toContain('Demographics')
-    expect(viewTabs(wrapper)).toEqual([])
-  })
 
-  it.each(['/dashboard/current/status', '/dashboard/trajectory/retirements', '/dashboard/demographics'])('shows the scenario toolbar on %s', async (path) => {
+  it.each(['/dashboard/current/status', '/dashboard/trajectory/retirements', '/dashboard/demographics/overview', '/dashboard/demographics/retirement-heatmap'])('shows the scenario toolbar on %s', async (path) => {
     const wrapper = await mountDashboard(path)
     expect(wrapper.find('[data-testid="scenario-strip"]').exists()).toBe(true)
     expect(wrapper.text()).toContain('As-of Date')

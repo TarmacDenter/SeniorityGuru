@@ -12,6 +12,7 @@ import type {
   SeniorityTrajectory,
   SeniorityTrajectoryComparison,
   RetirementYearAnalysis,
+  RetirementHeatmap,
 } from '~/utils/seniority-engine/types'
 import type { QualificationViewerAnalysis, QualificationViewerEntry } from '~/utils/seniority-engine/qual-viewer'
 import { isNoResult } from '~/utils/seniority-engine/types'
@@ -463,5 +464,84 @@ export function presentHoldabilityDetail(detail: HoldabilityDetail | null | NoRe
     labels: detail.points.map(point => point.date.toString()),
     anchorSeries: detail.points.map(point => point.anchorPercentile),
     thresholdPilotSeries: detail.points.map(point => point.thresholdPilotPercentile),
+  }
+}
+
+export interface PresentedRetirementHeatmapCell {
+  readonly year: number
+  readonly retirementCount: number
+  /** Share of the group's active pilots retiring that year. */
+  readonly percent: number
+  readonly countLabel: string
+  readonly percentLabel: string
+  /** 0–1 against the busiest cell in each mode, for shading. */
+  readonly countIntensity: number
+  readonly percentIntensity: number
+  /** Readable sentence for a tooltip or screen reader. */
+  readonly description: string
+}
+
+export interface PresentedRetirementHeatmapRow {
+  readonly key: string
+  readonly label: string
+  readonly activePilotCountLabel: string
+  readonly totalLabel: string
+  readonly cells: readonly PresentedRetirementHeatmapCell[]
+}
+
+export interface PresentedRetirementHeatmap {
+  readonly yearLabels: readonly string[]
+  /** Busiest group first, then by label. */
+  readonly rows: readonly PresentedRetirementHeatmapRow[]
+  readonly isEmpty: boolean
+  readonly undatedPilotNote: string | null
+}
+
+function pluralRetirements(count: number): string {
+  return `${formatSeniorityCount(count)} ${count === 1 ? 'retirement' : 'retirements'}`
+}
+
+/** Labels, percents and shading for the Retirement Heatmap. An ungrouped row is named after the Qualification Scope. */
+export function presentRetirementHeatmap(heatmap: RetirementHeatmap, scope: QualificationScope = {}): PresentedRetirementHeatmap {
+  const percentOf = (count: number, active: number) => active > 0 ? (count / active) * 100 : 0
+  const maxPercent = heatmap.rows.reduce((max, row) =>
+    Math.max(max, ...row.retirementCounts.map(count => percentOf(count, row.activePilotCount))), 0)
+
+  const rows = heatmap.rows.map((row) => {
+    const label = Object.keys(row.group).length ? formatQualificationScope(row.group) : formatQualificationScope(scope)
+    const activePilots = `${formatSeniorityCount(row.activePilotCount)} active ${row.activePilotCount === 1 ? 'pilot' : 'pilots'}`
+    return {
+      key: label,
+      label,
+      total: row.totalRetirementCount,
+      activePilotCountLabel: activePilots,
+      totalLabel: pluralRetirements(row.totalRetirementCount),
+      cells: row.retirementCounts.map((retirementCount, index) => {
+        const year = heatmap.years[index]!
+        const percent = percentOf(retirementCount, row.activePilotCount)
+        const percentLabel = `${percent.toFixed(1)}%`
+        return {
+          year,
+          retirementCount,
+          percent,
+          countLabel: formatSeniorityCount(retirementCount),
+          percentLabel,
+          countIntensity: heatmap.maxRetirementCount > 0 ? retirementCount / heatmap.maxRetirementCount : 0,
+          percentIntensity: maxPercent > 0 ? percent / maxPercent : 0,
+          description: `${label} · ${year} · ${pluralRetirements(retirementCount)} (${percentLabel} of ${activePilots})`,
+        }
+      }),
+    }
+  })
+
+  return {
+    yearLabels: heatmap.years.map(String),
+    rows: rows
+      .toSorted((a, b) => b.total - a.total || a.label.localeCompare(b.label))
+      .map(({ total: _total, ...row }) => row),
+    isEmpty: heatmap.maxRetirementCount === 0,
+    undatedPilotNote: heatmap.undatedPilotCount > 0
+      ? `${formatSeniorityCount(heatmap.undatedPilotCount)} active ${heatmap.undatedPilotCount === 1 ? 'pilot has' : 'pilots have'} no retirement date and ${heatmap.undatedPilotCount === 1 ? 'is' : 'are'} not shown.`
+      : null,
   }
 }

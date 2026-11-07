@@ -104,7 +104,7 @@ describe('useHoldability', () => {
 
   it('links each Qualification to Junior captains in Demographics', () => {
     seed()
-    expect(useHoldability().juniorCaptainsLink.value).toBe('/dashboard/demographics#junior-captains')
+    expect(useHoldability().juniorCaptainsLink.value).toBe('/dashboard/demographics/overview#junior-captains')
   })
 
   it('keeps the selected list in Junior captains links as the shared selection changes', async () => {
@@ -112,11 +112,11 @@ describe('useHoldability', () => {
     const { selectedListId } = useDashboardList()
     selectedListId.value = 12
     const holdability = useHoldability()
-    expect(holdability.juniorCaptainsLink.value).toBe('/dashboard/demographics?list=12#junior-captains')
+    expect(holdability.juniorCaptainsLink.value).toBe('/dashboard/demographics/overview?list=12#junior-captains')
 
     selectedListId.value = 20
     await nextTick()
-    expect(holdability.juniorCaptainsLink.value).toBe('/dashboard/demographics?list=20#junior-captains')
+    expect(holdability.juniorCaptainsLink.value).toBe('/dashboard/demographics/overview?list=20#junior-captains')
   })
 
   it('says why there are no rows when the Anchor Pilot has retired', () => {
