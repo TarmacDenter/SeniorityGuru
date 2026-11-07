@@ -10,6 +10,7 @@ export type {
   PercentileCrossingAnalysisOptions,
   QualificationPositionAnalysisOptions,
   RelativeUpcomingRetirementAnalysisOptions,
+  PresentedRelativeUpcomingRetirement,
   RetirementCountProjectionAnalysisOptions,
   RetirementHeatmapAnalysisOptions,
   SeniorityAnalysis,

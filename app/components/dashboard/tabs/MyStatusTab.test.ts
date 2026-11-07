@@ -110,6 +110,10 @@ describe('Now panel', () => {
 
     expect(figureValue(wrapper, 'Rank today')).toBe('2')
     expect(wrapper.find('[data-testid="standing-figures"]').text()).toContain('Publication Position 4 · 2 retired ahead')
+    const link = wrapper.find('[data-testid="standing-figures"] a')
+    expect(link.text()).toBe('Publication Position 4 · 2 retired ahead')
+    expect(link.attributes('href')).toContain('/dashboard/list/retirements')
+    expect(link.attributes('href')).toContain('view=retired')
   })
 
   it('labels a retired neighbor in the excerpt', async () => {

@@ -85,6 +85,8 @@ export interface StandingFigure {
   value: string
   /** Trend or context shown beside the value, e.g. "42 senior to you"; absent when there is none. */
   note?: string
+  /** The note links to the pilots it counts: `retiredAhead` opens the "Retired ahead of you" list. */
+  noteLink?: 'retiredAhead'
 }
 
 const SEAT_ORDER: Record<string, number> = { CA: 0, FO: 1 }
@@ -189,7 +191,12 @@ export function useStanding(qualificationScope?: Ref<QualificationScope> | Compu
     if (!entry) return []
     const presented = standingOutput.value?.presentation
     return [
-      { label: 'Rank today', value: presented?.rankLabel ?? PLACEHOLDER, ...(presented ? { note: presented.rankNoteLabel } : {}) },
+      {
+        label: 'Rank today',
+        value: presented?.rankLabel ?? PLACEHOLDER,
+        ...(presented ? { note: presented.rankNoteLabel } : {}),
+        ...(presented && presented.retiredPilotsSeniorToAnchor > 0 ? { noteLink: 'retiredAhead' as const } : {}),
+      },
       { label: 'Seniority Number', value: String(entry.seniority_number) },
       { label: 'Roster Size', value: presented?.rosterSizeValueLabel ?? PLACEHOLDER, ...(presented?.rosterSizeTrend ? { note: presented.rosterSizeTrend } : {}) },
       { label: 'Seniority Percentile', value: presented?.seniorityPercentileLabel ?? PLACEHOLDER },

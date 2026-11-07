@@ -19,7 +19,7 @@ defineProps<{
   qualificationGroups: QualificationSeatGroup[]
 }>()
 
-const { holdabilityLink } = useDashboardList()
+const { holdabilityLink, retiredAheadLink } = useDashboardList()
 
 const isCompact = useMediaQuery('(max-width: 639px)')
 const numeric = { class: { th: 'text-right', td: 'text-right' } }
@@ -99,7 +99,10 @@ const excerptColumns: TableColumn<ListExcerptRow>[] = [
             <div v-for="figure in figures" :key="figure.label" class="px-4 py-3">
               <dt class="text-xs text-muted">{{ figure.label }}</dt>
               <dd class="mt-0.5 font-mono text-xl font-semibold text-highlighted">{{ figure.value }}</dd>
-              <dd v-if="figure.note" class="text-xs text-muted">{{ figure.note }}</dd>
+              <dd v-if="figure.note" class="text-xs text-muted">
+                <ULink v-if="figure.noteLink === 'retiredAhead'" :to="retiredAheadLink" class="underline">{{ figure.note }}</ULink>
+                <template v-else>{{ figure.note }}</template>
+              </dd>
             </div>
           </dl>
         </UCard>

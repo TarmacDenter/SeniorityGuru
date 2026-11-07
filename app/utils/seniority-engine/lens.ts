@@ -16,6 +16,7 @@ import type {
   UpcomingRetirement,
   UpcomingRetirementFilter,
   RetirementHeatmapOptions,
+  RetiredSeniorToAnchorFilter,
 } from './types'
 import type { SeniorityEntry } from '~/utils/schemas/seniority-list'
 import { normalizeEmployeeNumber } from '~/utils/schemas/seniority-list'
@@ -26,6 +27,7 @@ import {
   calculateSeniorityTrajectory,
   calculateSeniorityTrajectoryComparison,
   countRetiredPilotsSeniorTo,
+  retiredPilotsSeniorTo,
 } from '~/utils/seniority-analysis/math'
 import { createSeniorityScenario } from './scenario'
 import { isNoResult } from './types'
@@ -65,6 +67,15 @@ interface LensContext {
   readonly snapshot: SenioritySnapshot
   readonly modeledEmployeeNumber: string | null
   readonly asOfDate: Temporal.PlainDate
+}
+
+function toUpcomingRetirement(entry: SeniorityEntry): UpcomingRetirement {
+  return {
+    seniorityNumber: entry.seniority_number,
+    employeeNumber: entry.employee_number,
+    qualification: { base: entry.base, seat: entry.seat, fleet: entry.fleet },
+    retirementDate: entry.retire_date!,
+  }
 }
 
 /** The operations shared by both lenses, memoized per lens. */
@@ -123,12 +134,7 @@ function createCommonLens(context: LensContext): CommonSeniorityLens {
         && predicate(entry),
       )
       .toSorted((a, b) => Temporal.PlainDate.compare(a.retire_date!, b.retire_date!))
-      .map(entry => ({
-        seniorityNumber: entry.seniority_number,
-        employeeNumber: entry.employee_number,
-        qualification: { base: entry.base, seat: entry.seat, fleet: entry.fleet },
-        retirementDate: entry.retire_date!,
-      }))
+      .map(toUpcomingRetirement)
   }
 
   return {
@@ -171,6 +177,7 @@ class AnchoredSeniorityLensImplementation implements AnchoredSeniorityLens {
   readonly qualificationPositions: AnchoredSeniorityLens['qualificationPositions']
   readonly holdabilityDetail: AnchoredSeniorityLens['holdabilityDetail']
   readonly relativeUpcomingRetirements: (filter: RelativeUpcomingRetirementFilter) => readonly RelativeUpcomingRetirement[]
+  readonly retiredPilotsSeniorToAnchor: (filter?: RetiredSeniorToAnchorFilter) => readonly UpcomingRetirement[]
 
   constructor(
     private readonly context: LensContext,
@@ -357,6 +364,14 @@ class AnchoredSeniorityLensImplementation implements AnchoredSeniorityLens {
           anchorDynamicRank - dynamicRank(row.seniorityNumber),
       }))
       .filter(row => !filter.seniorOnly || row.positionsSeniorToAnchor > 0))
+
+    // The same population and predicate as Standing's `retiredPilotsSeniorToAnchor`, so the count and the list agree.
+    this.retiredPilotsSeniorToAnchor = memoizeLast((filter?: RetiredSeniorToAnchorFilter) => noResultFor(date)
+      ? []
+      : retiredPilotsSeniorTo(entries, seniorityNumber, date, scopePredicateIncludingAnchor(filter?.qualificationScope ?? {}))
+          .toSorted((a, b) => a.seniority_number - b.seniority_number)
+          .map(toUpcomingRetirement),
+    filter => `retired-senior:${stableStringify(filter?.qualificationScope ?? {})}`)
   }
 
   get snapshot(): SenioritySnapshot {

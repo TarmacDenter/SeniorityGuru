@@ -34,5 +34,11 @@ export function useDashboardList() {
     query: selectedListId.value ? { list: String(selectedListId.value) } : {},
   }))
 
-  return { lists, selectedListId, loading, listOptions, isHistorical, selectedList, selectedListLabel, isDemoList, navbarDescription, holdabilityLink }
+  /** List › Upcoming retirements opened on the pilots counted as "retired ahead" in Rank today. */
+  const retiredAheadLink = computed(() => ({
+    path: '/dashboard/list/retirements',
+    query: { ...(selectedListId.value ? { list: String(selectedListId.value) } : {}), view: 'retired' },
+  }))
+
+  return { lists, selectedListId, loading, listOptions, isHistorical, selectedList, selectedListLabel, isDemoList, navbarDescription, holdabilityLink, retiredAheadLink }
 }

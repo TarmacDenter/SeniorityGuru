@@ -292,6 +292,10 @@ export interface RelativeUpcomingRetirement extends UpcomingRetirement {
   readonly positionsSeniorToAnchor: number
 }
 
+export interface RetiredSeniorToAnchorFilter {
+  readonly qualificationScope?: QualificationScope
+}
+
 export function isNoResult(value: unknown): value is NoResult {
   return typeof value === 'object' && value !== null && (value as { kind?: unknown }).kind === 'no-result'
 }
@@ -356,4 +360,6 @@ export interface AnchoredSeniorityLens extends CommonSeniorityLens {
   qualificationPositions(options: QualificationPositionOptions): readonly QualificationPosition[] | NoResult
   holdabilityDetail(options: HoldabilityDetailOptions): HoldabilityDetail | null | NoResult
   relativeUpcomingRetirements(filter: RelativeUpcomingRetirementFilter): readonly RelativeUpcomingRetirement[]
+  /** The pilots behind Standing's `retiredPilotsSeniorToAnchor`, most senior first. */
+  retiredPilotsSeniorToAnchor(filter?: RetiredSeniorToAnchorFilter): readonly UpcomingRetirement[]
 }

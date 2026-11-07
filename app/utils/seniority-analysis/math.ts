@@ -89,18 +89,28 @@ export function calculateSeniorityRank(entries: readonly SeniorityEntry[], senio
   return entries.filter(entry => entry.seniority_number < seniorityNumber).length + 1
 }
 
+/** Pilots senior to the given Seniority Number who have retired by the As-of Date, whenever they retired. */
+export function retiredPilotsSeniorTo(
+  entries: readonly SeniorityEntry[],
+  seniorityNumber: number,
+  asOfDate: PlainDate,
+  predicate?: EntryPredicate,
+): readonly SeniorityEntry[] {
+  return entries.filter(entry =>
+    entry.seniority_number < seniorityNumber
+    && !!entry.retire_date
+    && isRetiredBy(entry.retire_date, asOfDate)
+    && (!predicate || predicate(entry)),
+  )
+}
+
 export function countRetiredPilotsSeniorTo(
   entries: readonly SeniorityEntry[],
   seniorityNumber: number,
   asOfDate: PlainDate,
   predicate?: EntryPredicate,
 ): number {
-  return entries.filter(entry =>
-    entry.seniority_number < seniorityNumber
-    && !!entry.retire_date
-    && isRetiredBy(entry.retire_date, asOfDate)
-    && (!predicate || predicate(entry)),
-  ).length
+  return retiredPilotsSeniorTo(entries, seniorityNumber, asOfDate, predicate).length
 }
 
 /** Generates annual samples from `from` through the inclusive bound. */

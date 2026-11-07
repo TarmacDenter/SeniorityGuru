@@ -1,12 +1,13 @@
-import { createSeniorityAnalysis, type AnchoredSeniorityAnalysis, type QualificationScope, type RelativeUpcomingRetirement, type UpcomingRetirement } from '~/utils/seniority'
+import type { PresentedRelativeUpcomingRetirement, QualificationScope, UpcomingRetirement } from '~/utils/seniority'
 import { addYearsDate, diffDateYears } from '~/utils/date'
 import { Temporal, todayPlainDate } from '~/utils/temporal'
-import { useSeniorityStore } from '~/stores/seniority'
 import { useScenario } from '~/composables/useScenario'
 import { useSeniorityCore } from './useSeniorityCore'
 
 export type RetirementSortKey = 'retirementDate' | 'seniorityNumber' | 'rankRelativeToMe'
 export type RetirementSortDir = 'asc' | 'desc'
+/** `upcoming`: retirements after today. `retired`: the pilots counted as "retired ahead" in Current's Rank today. */
+export type RetirementView = 'upcoming' | 'retired'
 
 /** One scheduled retirement with display text ready to render. */
 export interface RetirementRow {
@@ -14,7 +15,7 @@ export interface RetirementRow {
   seniorityNumber: number
   qualificationLabel: string
   retirementDateLabel: string
-  /** Signed Rank difference to the Anchor Pilot (`+3` is senior); null without an Anchor Pilot. */
+  /** Positions ahead of the Anchor Pilot in Rank ("3", "2 behind"); null without an Anchor Pilot or for a retired pilot. */
   relativeLabel: string | null
 }
 
@@ -22,14 +23,10 @@ export interface RetirementFilterItem { label: string; value: string | null }
 
 const DEFAULT_HORIZON_YEARS = 2
 
-type Raw = UpcomingRetirement | RelativeUpcomingRetirement
+type Raw = UpcomingRetirement | PresentedRelativeUpcomingRetirement
 
 function relativeOf(row: Raw): number | null {
   return 'positionsSeniorToAnchor' in row ? row.positionsSeniorToAnchor : null
-}
-
-function signed(value: number): string {
-  return value > 0 ? `+${value}` : String(value)
 }
 
 function filterItems(allLabel: string, values: readonly string[] | undefined): RetirementFilterItem[] {
@@ -41,23 +38,18 @@ function filterItems(allLabel: string, values: readonly string[] | undefined): R
  * Qualification and (with an Anchor Pilot) by seniority, sorted, with display text ready to render.
  */
 export function useUpcomingRetirements() {
-  const { listAnalysis, analysis, anchoredAnalysis: todayAnchored, hasData, hasAnchor, newHire } = useSeniorityCore()
-  const seniorityStore = useSeniorityStore()
+  const { listAnalysis, analysis, anchoredAnalysis, hasData, hasAnchor } = useSeniorityCore()
   const { qualificationScope: scenarioScope } = useScenario()
+  const route = useRoute()
 
-  /** The selected list's As-of Date (its effective date); today when no list is selected. */
-  const asOfDate = computed(() =>
-    seniorityStore.lists.find(list => list.id === seniorityStore.currentListId)?.effectiveDate ?? todayPlainDate())
+  /** The dashboard's As-of Date: today, the same date Current's Rank today uses. */
+  const asOfDate = computed(() => todayPlainDate())
 
-  /** The Anchor Pilot's analysis as of the As-of Date, so Rank relative to me follows a historical list rather than today. */
-  const anchoredAnalysis = computed<AnchoredSeniorityAnalysis | null>(() => {
-    const current = todayAnchored.value
-    if (!current || Temporal.PlainDate.compare(asOfDate.value, todayPlainDate()) === 0) return current
-    return createSeniorityAnalysis({
-      entries: seniorityStore.entries,
-      modeledEntry: newHire.syntheticEntry.value ?? undefined,
-      asOfDate: asOfDate.value,
-    }).withAnchor(current.anchor.employee_number)
+  const viewChoice = ref<RetirementView>(route.query.view === 'retired' ? 'retired' : 'upcoming')
+  /** The retired view needs an Anchor Pilot; without one the table falls back to upcoming retirements. */
+  const view = computed<RetirementView>({
+    get: () => hasAnchor.value ? viewChoice.value : 'upcoming',
+    set: (value) => { viewChoice.value = value },
   })
 
   /** Whole years from the As-of Date to the last scheduled retirement on the list (at least 1). */
@@ -80,8 +72,9 @@ export function useUpcomingRetirements() {
   /** Readout text for any year count, so the slider can show its live position before `yearsHorizon` settles. */
   const horizonLabelFor = (years: number) => `${yearsLabel(years)} · through ${addYearsDate(asOfDate.value, years)}`
   const horizonLabel = computed(() => horizonLabelFor(yearsHorizon.value))
-  const emptyResultLabel = computed(() =>
-    `No pilots match the current filters within ${yearsLabel(yearsHorizon.value)}. Try more years or other filters.`)
+  const emptyResultLabel = computed(() => view.value === 'retired'
+    ? 'No pilots senior to you have retired by today in this scope.'
+    : `No pilots match the current filters within ${yearsLabel(yearsHorizon.value)}. Try more years or other filters.`)
 
   const seniorOnly = ref(true)
 
@@ -115,16 +108,29 @@ export function useUpcomingRetirements() {
   const seatItems = computed(() => filterItems('All seats', listAnalysis.value?.catalog.seats))
   const fleetItems = computed(() => filterItems('All fleets', listAnalysis.value?.catalog.fleets))
 
+  const retiredAhead = computed<readonly UpcomingRetirement[]>(() =>
+    anchoredAnalysis.value?.retiredPilotsSeniorToAnchor({ qualificationScope: qualificationScope.value }) ?? [])
+
+  const viewItems = computed(() => [
+    { label: 'Upcoming', value: 'upcoming' as const },
+    { label: `Retired ahead of you · ${retiredAhead.value.length.toLocaleString()}`, value: 'retired' as const },
+  ])
+
   const rows = computed<RetirementRow[]>(() => {
     if (!hasData.value || !analysis.value) return []
-    const filter = {
-      from: asOfDate.value,
-      through: throughDate.value,
-      qualificationScope: qualificationScope.value,
+    let raw: readonly Raw[]
+    if (view.value === 'retired') {
+      raw = retiredAhead.value
+    } else {
+      const filter = {
+        from: asOfDate.value,
+        through: throughDate.value,
+        qualificationScope: qualificationScope.value,
+      }
+      raw = anchoredAnalysis.value
+        ? anchoredAnalysis.value.relativeUpcomingRetirements({ ...filter, seniorOnly: seniorOnly.value })
+        : analysis.value.upcomingRetirements(filter)
     }
-    const raw: readonly Raw[] = anchoredAnalysis.value
-      ? anchoredAnalysis.value.relativeUpcomingRetirements({ ...filter, seniorOnly: seniorOnly.value })
-      : analysis.value.upcomingRetirements(filter)
 
     const direction = sortDir.value === 'asc' ? 1 : -1
     const compare = (a: Raw, b: Raw) => {
@@ -134,13 +140,12 @@ export function useUpcomingRetirements() {
     }
 
     return [...raw].sort((a, b) => direction * compare(a, b)).map((row) => {
-      const relative = relativeOf(row)
       return {
         key: `${row.employeeNumber}-${row.seniorityNumber}`,
         seniorityNumber: row.seniorityNumber,
         qualificationLabel: `${row.qualification.base} · ${row.qualification.seat} / ${row.qualification.fleet}`,
         retirementDateLabel: row.retirementDate.toString(),
-        relativeLabel: relative === null ? null : signed(relative),
+        relativeLabel: 'positionsAheadLabel' in row ? row.positionsAheadLabel : null,
       }
     })
   })
@@ -148,6 +153,8 @@ export function useUpcomingRetirements() {
   return {
     hasData,
     hasAnchor,
+    view,
+    viewItems,
     yearsHorizon,
     horizonMax,
     horizonLabel,

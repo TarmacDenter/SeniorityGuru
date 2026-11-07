@@ -66,13 +66,28 @@ describe('RetirementsTab', () => {
     expect(wrapper.find('button[aria-label="Sort by Estimated retirement date, currently descending"]').exists()).toBe(true)
   })
 
-  it('shows the signed Rank difference for pilots senior to the Anchor Pilot', async () => {
+  it('shows positions ahead of you for pilots senior to the Anchor Pilot', async () => {
     mockStore.entries = [pilot(1, 6), pilot(2, 7), pilot(3, 600)]
     mockUserStore.employeeNumber = 'E3'
     const wrapper = await mountTab()
     expect(wrapper.text()).toContain('Senior to me only')
-    expect(wrapper.text()).toContain('+2')
+    expect(wrapper.findAll('thead th').map(th => th.text())).toContain('Positions ahead of you')
+    expect(bodyRows(wrapper)[0]).toContain('2')
+    expect(wrapper.text()).not.toContain('+2')
     expect(wrapper.text()).not.toContain('Set an employee number that appears in this list')
+  })
+
+  it('switches to the pilots retired ahead of you, hiding the horizon and positions column', async () => {
+    mockStore.entries = [pilot(1, -30), pilot(2, -1), pilot(3, 600), pilot(4, 6)]
+    mockUserStore.employeeNumber = 'E3'
+    const wrapper = await mountTab()
+    const toggle = wrapper.findAll('button').find(b => b.text().startsWith('Retired ahead of you'))!
+    expect(toggle.text()).toBe('Retired ahead of you · 2')
+    await toggle.trigger('click')
+    expect(bodyRows(wrapper)).toHaveLength(2)
+    expect(bodyRows(wrapper)[0]).toContain(inMonths(-30))
+    expect(wrapper.findAll('thead th').map(th => th.text())).not.toContain('Positions ahead of you')
+    expect(wrapper.text()).not.toContain('Retiring within')
   })
 
   it('explains an empty result', async () => {

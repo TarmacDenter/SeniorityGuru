@@ -321,4 +321,19 @@ describe('anchored analysis', () => {
 
     expect(rows.find(row => row.employeeNumber === 'G105')?.positionsSeniorToAnchor).toBe(1)
   })
+
+  it('lists the pilots behind Standing\'s retired-ahead count, scoped the same way, not as upcoming retirements', () => {
+    const anchoredAt125 = createOrganizationLens().withAnchor('E125')
+    const standing = resultOf(anchoredAt125.seniorityStanding())
+    const retired = anchoredAt125.retiredPilotsSeniorToAnchor()
+
+    expect(retired.map(row => row.employeeNumber)).toEqual(['E100'])
+    expect(retired).toHaveLength(standing.retiredPilotsSeniorToAnchor)
+    expect(anchoredAt125.upcomingRetirements({ through }).map(row => row.employeeNumber)).not.toContain('E100')
+
+    const scope = { base: 'ATL' }
+    const scoped = resultOf(anchoredAt125.seniorityStanding({ scenario: createSeniorityScenario({ qualificationScope: scope }) }))
+    expect(anchoredAt125.retiredPilotsSeniorToAnchor({ qualificationScope: scope })).toHaveLength(scoped.retiredPilotsSeniorToAnchor)
+    expect(scoped.retiredPilotsSeniorToAnchor).toBe(0)
+  })
 })

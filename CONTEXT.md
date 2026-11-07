@@ -17,8 +17,15 @@ One validated pilot record in a Seniority List.
 The company-assigned ordering number for a pilot. A smaller number means greater company seniority, but numeric gaps do not represent positional distance.
 
 **Rank**:
-A one-based position in publication order after removing the pilots who have retired by the As-of Date. It changes as the As-of Date moves, and it is shown beside the Seniority Number wherever a pilot's position appears. Rank, not Seniority Number, measures positional distance. The dashboard's As-of Date is today, so its labels read "Rank today" ("Base Rank today", "Company Rank today") so a pilot never mistakes it for the published position.
+A one-based position in publication order after removing the pilots who have retired by the As-of Date. It changes as the As-of Date moves, and it is shown beside the Seniority Number wherever a pilot's position appears. Rank, not Seniority Number, measures positional distance. The dashboard's As-of Date is today, so its labels read "Rank today" ("Base Rank today", "Company Rank today") so a pilot never mistakes it for the published position. Every Dashboard Section uses the same As-of Date (today); no Small View keeps its own.
 _Avoid_: List Rank, Raw Rank, Adjusted Rank
+
+**Retired ahead**:
+The pilots senior to the Anchor Pilot whose retirement date is on or before the As-of Date, whenever they retired, including pilots still printed on the list whose date has passed. Publication Position minus Retired ahead is Rank. The count always links to the list of those pilots.
+
+**Positions ahead of you**:
+The difference in Rank between a pilot and the Anchor Pilot. Shown unsigned for senior pilots and as "N behind" for junior pilots.
+_Avoid_: Rank relative to me, signed Rank difference
 
 **Base Rank**:
 The Anchor Pilot's Rank among the pilots of one Qualification (base, seat and fleet). Where the Anchor Pilot is not in that Qualification, it is a Hypothetical Placement.
