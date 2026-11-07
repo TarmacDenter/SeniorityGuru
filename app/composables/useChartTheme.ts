@@ -22,6 +22,8 @@ function buildColors() {
     mark: readToken('--mark'),
     markInk: readToken('--mark-ink'),
     rule: readToken('--ui-border'),
+    /** Heatmap cells: the strongest ink, shaded by alpha so the paper shows through. */
+    heat: readToken('--ui-text-highlighted'),
   }
 }
 

@@ -1,7 +1,11 @@
 ---
 title: "What's New"
-latestDate: "2026-08-12"
+latestDate: "2026-11-07"
 ---
+
+## November 07, 2026
+
+- Added a Retirement heatmap tab in Demographics: see retirements by year, grouped by any mix of base, seat and fleet, and sort rows by qualification, most retirements, or % of the group retiring.
 
 ## November 01, 2026
 

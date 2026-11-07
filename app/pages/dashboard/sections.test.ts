@@ -15,7 +15,7 @@ const mockUserStore = vi.hoisted(() => ({ employeeNumber: null as string | null,
 vi.mock('~/stores/seniority', () => ({ useSeniorityStore: () => mockStore }))
 vi.mock('~/stores/user', () => ({ useUserStore: () => mockUserStore }))
 vi.mock('~/utils/db', () => ({ db: { preferences: { get: vi.fn().mockResolvedValue(undefined), put: vi.fn().mockResolvedValue('key') } } }))
-vi.mock('vue-chartjs', () => ({ Bar: { template: '<div />' }, Line: { template: '<div />' }, Doughnut: { template: '<div />' } }))
+vi.mock('vue-chartjs', () => ({ Bar: { template: '<div />' }, Line: { template: '<div />' }, Doughnut: { template: '<div />' }, Chart: { template: '<div />' } }))
 vi.mock('~/composables/seniority/modules/useSeniorityCompare', () => ({
   useSeniorityCompare: () => ({ loading: ref(false), error: ref(null), comparison: ref(null) }),
 }))
@@ -55,7 +55,8 @@ const views = {
   'Current › Holdability': () => import('./current/holdability.vue'),
   'Trajectory › Projection': () => import('./trajectory/projection.vue'),
   'Trajectory › Retirements': () => import('./trajectory/retirements.vue'),
-  'Demographics': () => import('./demographics.vue'),
+  'Demographics › Overview': () => import('./demographics/overview.vue'),
+  'Demographics › Retirement heatmap': () => import('./demographics/retirement-heatmap.vue'),
   'List › Full list': () => import('./list/full.vue'),
   'List › Upcoming retirements': () => import('./list/retirements.vue'),
   'List › Compare': () => import('./list/compare.vue'),
@@ -68,7 +69,8 @@ describe('dashboard small views', () => {
     ['Current › Holdability', 'When can you hold each Qualification?'],
     ['Trajectory › Projection', 'Your Seniority Percentile over time'],
     ['Trajectory › Retirements', 'Retirement Projections'],
-    ['Demographics', 'Who holds each Qualification'],
+    ['Demographics › Overview', 'Who holds each Qualification'],
+    ['Demographics › Retirement heatmap', 'Retirement heatmap'],
     ['List › Full list', 'Pilot Four'],
     ['List › Upcoming retirements', 'Senior to me only'],
     ['List › Compare', 'Older List'],

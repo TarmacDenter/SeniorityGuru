@@ -41,7 +41,7 @@ describe('useSeniorityNav', () => {
   it.each([
     ['/dashboard/current/holdability', 'Current'],
     ['/dashboard/trajectory/retirements', 'Trajectory'],
-    ['/dashboard/demographics', 'Demographics'],
+    ['/dashboard/demographics/retirement-heatmap', 'Demographics'],
     ['/dashboard/list/uploads', 'List'],
     ['/settings', undefined],
   ])('on %s marks %s as the current section', async (path, label) => {
@@ -56,7 +56,7 @@ describe('useSeniorityNav', () => {
     expect(groups[0]!.map(item => item.to)).toEqual([
       { path: '/dashboard/current/status', query: { list: '4' } },
       { path: '/dashboard/trajectory/projection', query: { list: '4' } },
-      { path: '/dashboard/demographics', query: { list: '4' } },
+      { path: '/dashboard/demographics/overview', query: { list: '4' } },
       { path: '/dashboard/list/full', query: { list: '4' } },
     ])
   })

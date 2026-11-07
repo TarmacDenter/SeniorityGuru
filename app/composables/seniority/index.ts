@@ -18,3 +18,5 @@ export type { HoldabilityRow, HoldabilitySeatGroup, HoldabilityDetailView, Holda
 export { useUpcomingRetirements } from './modules/useUpcomingRetirements'
 export type { RetirementRow, RetirementSortKey, RetirementSortDir, RetirementFilterItem } from './modules/useUpcomingRetirements'
 export { useNextProjections } from './modules/useNextProjections'
+export { useRetirementHeatmap } from './modules/useRetirementHeatmap'
+export type { RetirementHeatmapPoint } from './modules/useRetirementHeatmap'
