@@ -6,6 +6,8 @@ latestDate: "2026-11-07"
 ## November 07, 2026
 
 - Added a Retirement heatmap tab in Demographics: see retirements by year, grouped by any mix of base, seat and fleet, and sort rows by qualification, most retirements, or % of the group retiring.
+- Seniority Position by Qual (Holdability) now lets you pick the histogram bucket size (1%, 2%, 5% or 10%) and explains what each bar counts.
+- Added quantile markers to the same chart. Pick any of Q5 to Q95 to see the Seniority Percentile at that point in each qualification and how far you are from it.
 
 ## November 01, 2026
 
