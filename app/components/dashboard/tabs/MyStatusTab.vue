@@ -19,7 +19,8 @@ defineProps<{
   qualificationGroups: QualificationSeatGroup[]
 }>()
 
-const { holdabilityLink, retiredAheadLink } = useDashboardList()
+const { holdabilityLink, retiredAheadLink, seniorRetirementsNextYearLink } = useDashboardList()
+const noteLinks = { retiredAhead: retiredAheadLink, seniorRetirementsNextYear: seniorRetirementsNextYearLink }
 
 const isCompact = useMediaQuery('(max-width: 639px)')
 const numeric = { class: { th: 'text-right', td: 'text-right' } }
@@ -100,7 +101,7 @@ const excerptColumns: TableColumn<ListExcerptRow>[] = [
               <dt class="text-xs text-muted">{{ figure.label }}</dt>
               <dd class="mt-0.5 font-mono text-xl font-semibold text-highlighted">{{ figure.value }}</dd>
               <dd v-if="figure.note" class="text-xs text-muted">
-                <ULink v-if="figure.noteLink === 'retiredAhead'" :to="retiredAheadLink" class="underline">{{ figure.note }}</ULink>
+                <ULink v-if="figure.noteLink" :to="noteLinks[figure.noteLink].value" class="underline">{{ figure.note }}</ULink>
                 <template v-else>{{ figure.note }}</template>
               </dd>
             </div>

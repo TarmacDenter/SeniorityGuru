@@ -61,7 +61,9 @@ export function useUpcomingRetirements() {
   })
 
   // The pilot's choice; held apart from the range so a shorter list clamps it without losing it.
-  const yearsChoice = ref(DEFAULT_HORIZON_YEARS)
+  // `?years=1` opens the horizon behind Current's "Retirements senior to you (next 12 months)".
+  const queryYears = Number(route.query.years)
+  const yearsChoice = ref(Number.isInteger(queryYears) && queryYears > 0 ? queryYears : DEFAULT_HORIZON_YEARS)
   const yearsHorizon = computed<number>({
     get: () => Math.min(Math.max(1, yearsChoice.value), horizonMax.value),
     set: (years) => { yearsChoice.value = years },

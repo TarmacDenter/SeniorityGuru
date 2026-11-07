@@ -85,8 +85,11 @@ export interface StandingFigure {
   value: string
   /** Trend or context shown beside the value, e.g. "42 senior to you"; absent when there is none. */
   note?: string
-  /** The note links to the pilots it counts: `retiredAhead` opens the "Retired ahead of you" list. */
-  noteLink?: 'retiredAhead'
+  /**
+   * The note links to the pilots the figure counts (ADR 0012): `retiredAhead` opens "Retired ahead of you";
+   * `seniorRetirementsNextYear` opens Upcoming retirements over one year, senior to you.
+   */
+  noteLink?: 'retiredAhead' | 'seniorRetirementsNextYear'
 }
 
 const SEAT_ORDER: Record<string, number> = { CA: 0, FO: 1 }
@@ -201,7 +204,13 @@ export function useStanding(qualificationScope?: Ref<QualificationScope> | Compu
       { label: 'Roster Size', value: presented?.rosterSizeValueLabel ?? PLACEHOLDER, ...(presented?.rosterSizeTrend ? { note: presented.rosterSizeTrend } : {}) },
       { label: 'Seniority Percentile', value: presented?.seniorityPercentileLabel ?? PLACEHOLDER },
       { label: 'Active pilots', value: presented?.activePilotCountLabel ?? PLACEHOLDER },
-      { label: 'Retirements senior to you (next 12 months)', value: presented?.retirementsSeniorToAnchorCountLabel ?? PLACEHOLDER },
+      {
+        label: 'Retirements senior to you (next 12 months)',
+        value: presented?.retirementsSeniorToAnchorCountLabel ?? PLACEHOLDER,
+        ...(presented && presented.rollingNext12MonthRetirementsSeniorToAnchor > 0
+          ? { note: 'Show these pilots', noteLink: 'seniorRetirementsNextYear' as const }
+          : {}),
+      },
     ]
   })
 

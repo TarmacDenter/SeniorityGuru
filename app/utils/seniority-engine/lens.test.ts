@@ -336,4 +336,19 @@ describe('anchored analysis', () => {
     expect(anchoredAt125.retiredPilotsSeniorToAnchor({ qualificationScope: scope })).toHaveLength(scoped.retiredPilotsSeniorToAnchor)
     expect(scoped.retiredPilotsSeniorToAnchor).toBe(0)
   })
+
+  it('derives every next-12-month count from the list Upcoming retirements shows (ADR 0012)', () => {
+    const lens = createOrganizationLens()
+    const nextYear = asOfDate.add({ years: 1 })
+    expect(lens.retirementsNext12Months()).toBe(lens.upcomingRetirements({ through: nextYear }).length)
+
+    const anchoredAt125 = lens.withAnchor('E125')
+    for (const qualificationScope of [{}, { base: 'JFK' }, { base: 'ATL' }]) {
+      const standing = resultOf(anchoredAt125.seniorityStanding({ scenario: createSeniorityScenario({ qualificationScope }) }))
+      expect(standing.rollingNext12MonthRetirements)
+        .toBe(anchoredAt125.upcomingRetirements({ through: nextYear, qualificationScope }).length)
+      expect(standing.rollingNext12MonthRetirementsSeniorToAnchor)
+        .toBe(anchoredAt125.relativeUpcomingRetirements({ through: nextYear, qualificationScope, seniorOnly: true }).length)
+    }
+  })
 })

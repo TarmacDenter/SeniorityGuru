@@ -44,7 +44,7 @@ import {
 import { analyzeRetirementHeatmap, analyzeRetirementYears } from './retirement-analysis'
 import { analyzeHoldabilityDetail, analyzeQualificationPositions } from './qualification-position'
 import { findPercentileCrossing } from './trajectory-analysis'
-import { computeYOSDate, isRetiredBy, retiresWithinNextYear } from '~/utils/date'
+import { addYearsDate, computeYOSDate, isRetiredBy } from '~/utils/date'
 import { Temporal } from '~/utils/temporal'
 
 export interface CreateSeniorityLensOptions {
@@ -83,10 +83,8 @@ function createCommonLens(context: LensContext): CommonSeniorityLens {
   const { snapshot, asOfDate } = context
   const entries = snapshot.entries
 
-  const retirementsNext12Months = () => entries.filter(entry =>
-    !!entry.retire_date
-    && retiresWithinNextYear(entry.retire_date.toString(), asOfDate.toString()),
-  ).length
+  // ADR 0012: the count is the length of the list Upcoming retirements shows for a one-year horizon.
+  const retirementsNext12Months = () => upcomingRetirements({ through: addYearsDate(asOfDate, 1) }).length
 
   const retirementYearAnalysis = (scenario?: Scenario) => {
     const effectiveScenario = scenario ?? createSeniorityScenario()
@@ -265,12 +263,11 @@ class AnchoredSeniorityLensImplementation implements AnchoredSeniorityLens {
         entry.retire_date && isRetiredBy(entry.retire_date, today),
       ).length
       const rank = publicationPosition - retiredPilotsSeniorToAnchor
-      const retiringWithinNextYear = entries.filter(entry =>
-        inScope(entry) && !!entry.retire_date && retiresWithinNextYear(entry.retire_date.toString(), today.toString()),
-      )
-      const rollingNext12MonthRetirementsSeniorToAnchor = retiringWithinNextYear.filter(entry =>
-        entry.seniority_number < seniorityNumber,
-      ).length
+      // ADR 0012: both rolling counts are the lengths of the lists Upcoming retirements shows for a one-year horizon.
+      const nextYearWindow = { through: addYearsDate(today, 1), qualificationScope: scenario.qualificationScope }
+      const rollingNext12MonthRetirements = this.common.upcomingRetirements(nextYearWindow).length
+      const rollingNext12MonthRetirementsSeniorToAnchor =
+        this.relativeUpcomingRetirements({ ...nextYearWindow, seniorOnly: true }).length
 
       return {
         rank,
@@ -280,7 +277,7 @@ class AnchoredSeniorityLensImplementation implements AnchoredSeniorityLens {
         activePilotCount: scopedEntries.length - scopedRetiredCount,
         seniorityPercentile: calculateSeniorityPercentile(rank, scopedEntries.length),
         retiredPilotsSeniorToAnchor,
-        rollingNext12MonthRetirements: retiringWithinNextYear.length,
+        rollingNext12MonthRetirements,
         rollingNext12MonthRetirementsSeniorToAnchor,
         qualificationStandings,
         isHypothetical: isHypothetical(scenario.qualificationScope),

@@ -40,5 +40,11 @@ export function useDashboardList() {
     query: { ...(selectedListId.value ? { list: String(selectedListId.value) } : {}), view: 'retired' },
   }))
 
-  return { lists, selectedListId, loading, listOptions, isHistorical, selectedList, selectedListLabel, isDemoList, navbarDescription, holdabilityLink, retiredAheadLink }
+  /** List › Upcoming retirements over one year, senior to you: the pilots behind "Retirements senior to you (next 12 months)". */
+  const seniorRetirementsNextYearLink = computed(() => ({
+    path: '/dashboard/list/retirements',
+    query: { ...(selectedListId.value ? { list: String(selectedListId.value) } : {}), years: '1' },
+  }))
+
+  return { lists, selectedListId, loading, listOptions, isHistorical, selectedList, selectedListLabel, isDemoList, navbarDescription, holdabilityLink, retiredAheadLink, seniorRetirementsNextYearLink }
 }

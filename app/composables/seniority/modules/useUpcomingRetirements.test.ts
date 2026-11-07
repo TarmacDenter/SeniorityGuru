@@ -168,6 +168,20 @@ describe('useUpcomingRetirements', () => {
     expect(rows.value.map(row => row.seniorityNumber)).toEqual([2])
   })
 
+  it('opens on the horizon a link asks for, as Current\'s next-12-month count does', async () => {
+    mockStore.entries = [pilot(1, 6), pilot(2, 18), pilot(3, 600)]
+    mockUserStore.employeeNumber = 'E3'
+    await useRouter().push({ path: '/', query: { years: '1' } })
+
+    const { yearsHorizon, rows, seniorOnly } = useUpcomingRetirements()
+    expect(yearsHorizon.value).toBe(1)
+    expect(seniorOnly.value).toBe(true)
+    const standing = useSeniorityCore().anchoredAnalysis.value!.seniorityStanding().domain as { rollingNext12MonthRetirementsSeniorToAnchor: number }
+    expect(rows.value.map(row => row.seniorityNumber)).toEqual([1])
+    expect(rows.value).toHaveLength(standing.rollingNext12MonthRetirementsSeniorToAnchor)
+    await useRouter().push('/')
+  })
+
   it('is empty without a list', () => {
     const { rows, hasData } = useUpcomingRetirements()
     expect(hasData.value).toBe(false)

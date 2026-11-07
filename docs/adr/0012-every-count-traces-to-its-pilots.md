@@ -11,9 +11,8 @@ Every count of pilots shown to a user is the length of a list the engine can ret
 
 - A new count is added as an engine list first, with a test asserting `count === list.length` for the same inputs. See `math.test.ts` and `lens.test.ts` (`retiredPilotsSeniorToAnchor`).
 - The facade returns the list as `domain` and its heading as `presentation`. Composables do not format counts themselves.
-- Existing counts still computed by separate filters are to be brought under this rule when next changed:
-  - `retirementsNext12Months`
-  - Standing's `rollingNext12MonthRetirements` and `rollingNext12MonthRetirementsSeniorToAnchor`
-
-  The senior count currently matches Upcoming retirements with a one-year horizon and "Senior to me only" by construction, not by shared code.
-- Trajectory's `seniorRetirementCount` already uses `relativeUpcomingRetirements` and complies.
+- Every retirement count derives from one of three lists: `upcomingRetirements`, `relativeUpcomingRetirements`, or `retiredPilotsSeniorToAnchor`.
+  - `retirementsNext12Months` and Standing's `rollingNext12MonthRetirements` are `upcomingRetirements` over a one-year window.
+  - `rollingNext12MonthRetirementsSeniorToAnchor` and Trajectory's `seniorRetirementCount` are `relativeUpcomingRetirements` with `seniorOnly`.
+  - `lens.test.ts` asserts each equality.
+- On Current, "N retired ahead" opens Retired ahead of you, and "Retirements senior to you (next 12 months)" opens Upcoming retirements with a one-year horizon and "Senior to me only" (`?years=1`).
