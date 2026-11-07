@@ -8,6 +8,7 @@ Composables coordinate. They call stores and the seniority analysis facade and e
 - Take every rank, percentile, count, and label from the facade's `domain` and `presentation` values. When a value is missing, add it to the engine and expose it through the facade.
 - A figure that needs a Rank or Roster Size is `null` when the Anchor Pilot has none (retired); components render a placeholder. Never zero-fill.
 - Text a composable assembles for display (trend lines, captions) is presentation. Build it in `seniority-analysis/presentation.ts` and return it from the facade.
+- Read the As-of Date from `useSeniorityCore`'s analysis. Never build a second analysis with another date ([ADR 0010](../../docs/adr/0010-one-as-of-date-for-the-dashboard.md)). Show a count with the list it counts ([ADR 0012](../../docs/adr/0012-every-count-traces-to-its-pilots.md)).
 - Cover behavior with a test through the composable's public return value.
 
 ## Existing code to extend
