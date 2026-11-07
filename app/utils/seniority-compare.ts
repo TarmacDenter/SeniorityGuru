@@ -1,5 +1,5 @@
 import { normalizeEmployeeNumber, type SeniorityEntry } from '~/utils/schemas/seniority-list'
-import { Temporal } from '~/utils/temporal'
+import { isRetiredBy } from '~/utils/date'
 
 type Entry = SeniorityEntry
 
@@ -90,7 +90,7 @@ export function computeComparison(
 
   for (const [empNum, old] of olderMap) {
     if (!newerMap.has(empNum)) {
-      if (old.retire_date && Temporal.PlainDate.compare(old.retire_date, Temporal.PlainDate.from(newerEffectiveDate)) <= 0) {
+      if (old.retire_date && isRetiredBy(old.retire_date, newerEffectiveDate)) {
         retired.push({
           employee_number: old.employee_number,
           name: old.name,

@@ -58,6 +58,7 @@ import {
   type PresentedSeniorityTrajectoryComparison,
   formatQualificationScope,
   formatPositionsAheadLabel,
+  presentRetiredPilotsSeniorToAnchor,
 } from '../seniority-analysis/presentation'
 
 export interface CreateSeniorityAnalysisOptions {
@@ -210,7 +211,9 @@ export interface AnchoredSeniorityAnalysis extends CommonSeniorityAnalysis {
     options: RelativeUpcomingRetirementAnalysisOptions,
   ): readonly PresentedRelativeUpcomingRetirement[]
   /** The pilots counted as "retired ahead" in Standing, most senior first. */
-  retiredPilotsSeniorToAnchor(options?: { readonly qualificationScope?: QualificationScope }): readonly UpcomingRetirement[]
+  retiredPilotsSeniorToAnchor(
+    options?: { readonly qualificationScope?: QualificationScope },
+  ): SeniorityOutput<readonly UpcomingRetirement[], { readonly viewLabel: string }>
 }
 
 function seniorityOutput<TDomain, TPresentation>(
@@ -328,7 +331,8 @@ function anchoredSeniorityAnalysis(lens: AnchoredSeniorityLens, asOfDate: PlainD
     holdabilityDetail: options => seniorityOutput(lens.holdabilityDetail(options), presentHoldabilityDetail),
     relativeUpcomingRetirements: options => lens.relativeUpcomingRetirements(options)
       .map(row => ({ ...row, positionsAheadLabel: formatPositionsAheadLabel(row.positionsSeniorToAnchor) })),
-    retiredPilotsSeniorToAnchor: options => lens.retiredPilotsSeniorToAnchor(options),
+    retiredPilotsSeniorToAnchor: options =>
+      seniorityOutput(lens.retiredPilotsSeniorToAnchor(options), presentRetiredPilotsSeniorToAnchor),
   }
 }
 

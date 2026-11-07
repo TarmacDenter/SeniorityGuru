@@ -108,19 +108,19 @@ export function useUpcomingRetirements() {
   const seatItems = computed(() => filterItems('All seats', listAnalysis.value?.catalog.seats))
   const fleetItems = computed(() => filterItems('All fleets', listAnalysis.value?.catalog.fleets))
 
-  const retiredAhead = computed<readonly UpcomingRetirement[]>(() =>
-    anchoredAnalysis.value?.retiredPilotsSeniorToAnchor({ qualificationScope: qualificationScope.value }) ?? [])
+  const retiredAhead = computed(() =>
+    anchoredAnalysis.value?.retiredPilotsSeniorToAnchor({ qualificationScope: qualificationScope.value }) ?? null)
 
   const viewItems = computed(() => [
     { label: 'Upcoming', value: 'upcoming' as const },
-    { label: `Retired ahead of you · ${retiredAhead.value.length.toLocaleString()}`, value: 'retired' as const },
+    ...(retiredAhead.value ? [{ label: retiredAhead.value.presentation.viewLabel, value: 'retired' as const }] : []),
   ])
 
   const rows = computed<RetirementRow[]>(() => {
     if (!hasData.value || !analysis.value) return []
     let raw: readonly Raw[]
     if (view.value === 'retired') {
-      raw = retiredAhead.value
+      raw = retiredAhead.value?.domain ?? []
     } else {
       const filter = {
         from: asOfDate.value,

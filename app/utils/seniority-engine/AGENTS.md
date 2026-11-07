@@ -5,6 +5,7 @@ Pure analytics over validated `SeniorityEntry` values: snapshots, lenses, As-of 
 - Clients reach this layer through the facade ([seniority-api](../seniority-api/AGENTS.md)). Add a capability here, then expose it there.
 - Seniority Percentile is Rank measured against Roster Size ([ADR 0007](../../../docs/adr/0007-measure-percentile-against-roster-size.md)). Pick the denominator in one place per operation so Standing, trajectory, and Qualification Position reconcile.
 - Use the terms in [CONTEXT.md](../../../CONTEXT.md).
+- Retired status and windows follow [ADR 0011](../../../docs/adr/0011-retirement-date-decides-retired-status.md) (`isRetiredBy`, exclusive-start windows). Every count is the length of a list ([ADR 0012](../../../docs/adr/0012-every-count-traces-to-its-pilots.md)). Distance between pilots is dynamic Rank ([ADR 0013](../../../docs/adr/0013-measure-distance-between-pilots-in-rank.md)).
 
 ## Existing code to extend
 
