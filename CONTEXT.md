@@ -89,7 +89,7 @@ One of four parts of the dashboard, split by subject (the Anchor Pilot or the li
 _Avoid_: Tab, Panel
 
 **Small View**:
-A page inside a Dashboard Section, reached from the section's tab row. Current has **Status** and **Holdability**. Trajectory has **Projection** and **Retirements**. Demographics has none. List has **Full list**, **Upcoming retirements**, **Compare** and **Uploads**. Each presentation lives in exactly one Small View.
+A page inside a Dashboard Section, reached from the section's tab row. Current has **Status** and **Holdability**. Trajectory has **Projection** and **Retirements**. Demographics has **Overview** and **Retirement heatmap**. List has **Full list**, **Upcoming retirements**, **Compare** and **Uploads**. Each presentation lives in exactly one Small View.
 _Avoid_: Subtab
 
 ## Seniority List Import Language

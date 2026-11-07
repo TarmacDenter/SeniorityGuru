@@ -15,6 +15,7 @@ import type {
   SenioritySnapshot,
   UpcomingRetirement,
   UpcomingRetirementFilter,
+  RetirementHeatmapOptions,
 } from './types'
 import type { SeniorityEntry } from '~/utils/schemas/seniority-list'
 import { normalizeEmployeeNumber } from '~/utils/schemas/seniority-list'
@@ -38,7 +39,7 @@ import {
   analyzeYearsOfServiceDistribution,
   findCaptainQualificationThresholds,
 } from './demographics'
-import { analyzeRetirementYears } from './retirement-analysis'
+import { analyzeRetirementHeatmap, analyzeRetirementYears } from './retirement-analysis'
 import { analyzeHoldabilityDetail, analyzeQualificationPositions } from './qualification-position'
 import { findPercentileCrossing } from './trajectory-analysis'
 import { computeYOSDate, isRetiredBy, retiresWithinNextYear } from '~/utils/date'
@@ -80,6 +81,12 @@ function createCommonLens(context: LensContext): CommonSeniorityLens {
     const effectiveScenario = scenario ?? createSeniorityScenario()
     return analyzeRetirementYears(entries, qualificationScopeToEntryPredicate(effectiveScenario.qualificationScope))
   }
+
+  const retirementHeatmap = (options: RetirementHeatmapOptions) => analyzeRetirementHeatmap(entries, {
+    groupBy: options.groupBy,
+    predicate: qualificationScopeToEntryPredicate((options.scenario ?? createSeniorityScenario()).qualificationScope),
+    asOfDate,
+  })
 
   const retirementCountProjection = (options: RetirementCountProjectionOptions) => {
     const effectiveScenario = options.scenario ?? createSeniorityScenario()
@@ -131,6 +138,7 @@ function createCommonLens(context: LensContext): CommonSeniorityLens {
     retirementCountProjection: memoizeLast(retirementCountProjection),
     demographics: memoizeLast(demographics),
     upcomingRetirements: memoizeLast(upcomingRetirements),
+    retirementHeatmap: memoizeLast(retirementHeatmap),
   }
 }
 
@@ -146,6 +154,7 @@ class SeniorityLensImplementation implements SeniorityLens {
   readonly retirementCountProjection = (options: RetirementCountProjectionOptions) => this.common.retirementCountProjection(options)
   readonly demographics = (options: DemographicsOptions) => this.common.demographics(options)
   readonly upcomingRetirements = (filter: UpcomingRetirementFilter) => this.common.upcomingRetirements(filter)
+  readonly retirementHeatmap = (options: RetirementHeatmapOptions) => this.common.retirementHeatmap(options)
 
   withAnchor(employeeNumber: string): AnchoredSeniorityLens {
     const anchor = this.context.snapshot.entriesByEmployeeNumber.get(normalizeEmployeeNumber(employeeNumber))
@@ -368,6 +377,7 @@ class AnchoredSeniorityLensImplementation implements AnchoredSeniorityLens {
     anchorYearsOfService: computeYOSDate(this.anchor.hire_date, this.context.asOfDate),
   })
   readonly upcomingRetirements = (filter: UpcomingRetirementFilter) => this.common.upcomingRetirements(filter)
+  readonly retirementHeatmap = (options: RetirementHeatmapOptions) => this.common.retirementHeatmap(options)
 }
 
 export function createSeniorityLens(

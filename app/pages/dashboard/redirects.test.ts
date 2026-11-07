@@ -31,7 +31,7 @@ describe('old /dashboard links', () => {
     ['trajectory', '/dashboard/trajectory/projection'],
     ['projections', '/dashboard/trajectory/projection'],
     ['position', '/dashboard/current/holdability'],
-    ['demographics', '/dashboard/demographics'],
+    ['demographics', '/dashboard/demographics/overview'],
     ['seniority', '/dashboard/list/full'],
     ['retirements', '/dashboard/list/retirements'],
     ['nonsense', '/dashboard/current/status'],
@@ -48,6 +48,7 @@ describe('old /dashboard links', () => {
   it.each([
     [['current'], '/dashboard/current/status'],
     [['trajectory'], '/dashboard/trajectory/projection'],
+    [['demographics'], '/dashboard/demographics/overview'],
     [['list'], '/dashboard/list/full'],
     [['nonsense'], '/dashboard/current/status'],
     [['current', 'nonsense'], '/dashboard/current/status'],

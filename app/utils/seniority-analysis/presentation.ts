@@ -12,6 +12,7 @@ import type {
   SeniorityTrajectory,
   SeniorityTrajectoryComparison,
   RetirementYearAnalysis,
+  RetirementHeatmap,
 } from '~/utils/seniority-engine/types'
 import type { QualificationViewerAnalysis, QualificationViewerEntry } from '~/utils/seniority-engine/qual-viewer'
 import { isNoResult } from '~/utils/seniority-engine/types'
@@ -463,5 +464,142 @@ export function presentHoldabilityDetail(detail: HoldabilityDetail | null | NoRe
     labels: detail.points.map(point => point.date.toString()),
     anchorSeries: detail.points.map(point => point.anchorPercentile),
     thresholdPilotSeries: detail.points.map(point => point.thresholdPilotPercentile),
+  }
+}
+
+export interface PresentedRetirementHeatmapCell {
+  readonly year: number
+  readonly retirementCount: number
+  /** Share of the group's active pilots retiring that year. */
+  readonly percent: number
+  readonly countLabel: string
+  readonly percentLabel: string
+  /** 0–1 against the busiest cell in each mode, for shading. */
+  readonly countIntensity: number
+  readonly percentIntensity: number
+  /** Readable sentence for a tooltip or screen reader. */
+  readonly description: string
+}
+
+export interface PresentedRetirementHeatmapRow {
+  readonly key: string
+  readonly label: string
+  /** The row's name on the chart axis, with the figure it is sorted by when that is not Qualification. */
+  readonly axisLabel: string
+  readonly activePilotCountLabel: string
+  /** Retirements across the shown years. */
+  readonly totalLabel: string
+  /** Share of the group's active pilots retiring across the shown years. */
+  readonly totalPercentLabel: string
+  readonly cells: readonly PresentedRetirementHeatmapCell[]
+}
+
+/** Qualification orders rows by Base, then Fleet, then Seat. The others put the largest figure across the shown years first. */
+export type RetirementHeatmapSort = 'qualification' | 'retirements' | 'percent'
+
+export interface RetirementHeatmapPresentationOptions {
+  readonly sortBy?: RetirementHeatmapSort
+  /** How many years to show from the As-of Date's year; all when omitted. */
+  readonly years?: number
+}
+
+export interface PresentedRetirementHeatmap {
+  readonly yearLabels: readonly string[]
+  /** Every year with a scheduled retirement, for the years control's upper bound. */
+  readonly availableYearCount: number
+  /** "2026–2035", the shown years. */
+  readonly yearRangeLabel: string
+  /** In the requested order. */
+  readonly rows: readonly PresentedRetirementHeatmapRow[]
+  readonly isEmpty: boolean
+  readonly undatedPilotNote: string | null
+}
+
+function pluralRetirements(count: number): string {
+  return `${formatSeniorityCount(count)} ${count === 1 ? 'retirement' : 'retirements'}`
+}
+
+const numericCollator = new Intl.Collator(undefined, { numeric: true })
+
+/** Base, then Fleet, then Seat; a dimension that is not grouped compares equal. */
+function compareQualificationGroups(a: QualificationScope, b: QualificationScope): number {
+  return numericCollator.compare(a.base ?? '', b.base ?? '')
+    || numericCollator.compare(a.fleet ?? '', b.fleet ?? '')
+    || numericCollator.compare(a.seat ?? '', b.seat ?? '')
+}
+
+function formatShare(percent: number): string {
+  return `${percent.toFixed(1)}%`
+}
+
+/** Labels, percents, shading and row order for the Retirement Heatmap. An ungrouped row is named after the Qualification Scope. */
+export function presentRetirementHeatmap(
+  heatmap: RetirementHeatmap,
+  scope: QualificationScope = {},
+  options: RetirementHeatmapPresentationOptions = {},
+): PresentedRetirementHeatmap {
+  const sortBy = options.sortBy ?? 'qualification'
+  const yearCount = Math.max(0, Math.min(heatmap.years.length, options.years ?? heatmap.years.length))
+  const years = heatmap.years.slice(0, yearCount)
+  const percentOf = (count: number, active: number) => active > 0 ? (count / active) * 100 : 0
+  const shown = heatmap.rows.map(row => ({ row, counts: row.retirementCounts.slice(0, yearCount) }))
+  const maxCount = shown.reduce((max, { counts }) => Math.max(max, ...counts), 0)
+  const maxPercent = shown.reduce((max, { row, counts }) =>
+    Math.max(max, ...counts.map(count => percentOf(count, row.activePilotCount))), 0)
+
+  const rows = shown.map(({ row, counts }) => {
+    const label = Object.keys(row.group).length ? formatQualificationScope(row.group) : formatQualificationScope(scope)
+    const activePilots = `${formatSeniorityCount(row.activePilotCount)} active ${row.activePilotCount === 1 ? 'pilot' : 'pilots'}`
+    const total = counts.reduce((sum, count) => sum + count, 0)
+    const totalPercent = percentOf(total, row.activePilotCount)
+    const totalLabel = pluralRetirements(total)
+    const totalPercentLabel = formatShare(totalPercent)
+    const axisLabel = sortBy === 'retirements' ? `${label} · ${formatSeniorityCount(total)}`
+      : sortBy === 'percent' ? `${label} · ${totalPercentLabel}`
+        : label
+    return {
+      group: row.group,
+      total,
+      totalPercent,
+      key: label,
+      label,
+      axisLabel,
+      activePilotCountLabel: activePilots,
+      totalLabel,
+      totalPercentLabel,
+      cells: counts.map((retirementCount, index) => {
+        const year = years[index]!
+        const percent = percentOf(retirementCount, row.activePilotCount)
+        const percentLabel = formatShare(percent)
+        return {
+          year,
+          retirementCount,
+          percent,
+          countLabel: formatSeniorityCount(retirementCount),
+          percentLabel,
+          countIntensity: maxCount > 0 ? retirementCount / maxCount : 0,
+          percentIntensity: maxPercent > 0 ? percent / maxPercent : 0,
+          description: `${label} · ${year} · ${pluralRetirements(retirementCount)} (${percentLabel} of ${activePilots})`,
+        }
+      }),
+    }
+  })
+
+  const byQualification = (a: typeof rows[number], b: typeof rows[number]) => compareQualificationGroups(a.group, b.group)
+  const order = {
+    qualification: byQualification,
+    retirements: (a: typeof rows[number], b: typeof rows[number]) => b.total - a.total || byQualification(a, b),
+    percent: (a: typeof rows[number], b: typeof rows[number]) => b.totalPercent - a.totalPercent || byQualification(a, b),
+  }[sortBy]
+
+  return {
+    yearLabels: years.map(String),
+    availableYearCount: heatmap.years.length,
+    yearRangeLabel: years.length ? `${years[0]}\u2013${years.at(-1)}` : '',
+    rows: rows.toSorted(order).map(({ group: _group, total: _total, totalPercent: _totalPercent, ...row }) => row),
+    isEmpty: maxCount === 0,
+    undatedPilotNote: heatmap.undatedPilotCount > 0
+      ? `${formatSeniorityCount(heatmap.undatedPilotCount)} active ${heatmap.undatedPilotCount === 1 ? 'pilot has' : 'pilots have'} no retirement date and ${heatmap.undatedPilotCount === 1 ? 'is' : 'are'} not shown.`
+      : null,
   }
 }
