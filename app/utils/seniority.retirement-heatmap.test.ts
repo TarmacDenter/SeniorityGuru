@@ -42,4 +42,14 @@ describe('public Retirement Heatmap', () => {
     const { presentation } = analysis.retirementHeatmap({ groupBy: ['base', 'seat'] })
     expect(presentation.rows.map(row => row.label)).toEqual(['JFK CA', 'JFK FO', 'LAX CA'])
   })
+  it('sorts within the shown years and labels the axis with the sort figure', () => {
+    const { presentation } = analysis.retirementHeatmap({ groupBy: ['base'], years: 2, sortBy: 'percent' })
+    expect(presentation.yearLabels).toEqual(['2026', '2027'])
+    expect(presentation.yearRangeLabel).toBe('2026\u20132027')
+    expect(presentation.availableYearCount).toBe(15)
+    expect(presentation.rows.map(row => [row.axisLabel, row.totalLabel, row.totalPercentLabel])).toEqual([
+      ['LAX · 100.0%', '1 retirement', '100.0%'],
+      ['JFK · 50.0%', '2 retirements', '50.0%'],
+    ])
+  })
 })

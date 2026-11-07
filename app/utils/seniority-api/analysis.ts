@@ -41,6 +41,7 @@ import {
   presentRetirementCountProjection,
   presentRetirementHeatmap,
   type PresentedRetirementHeatmap,
+  type RetirementHeatmapPresentationOptions,
   presentSeniorityDemographics,
   presentSeniorityQualificationViewer,
   presentSeniorityStanding,
@@ -99,7 +100,7 @@ export interface SeniorityDemographicsAnalysisOptions extends Omit<DemographicsO
   readonly scenario?: ScenarioOptions
 }
 
-export interface RetirementHeatmapAnalysisOptions {
+export interface RetirementHeatmapAnalysisOptions extends RetirementHeatmapPresentationOptions {
   readonly groupBy: readonly RetirementHeatmapDimension[]
   readonly scenario?: ScenarioOptions
 }
@@ -248,7 +249,7 @@ function commonSeniorityAnalysis(
     retirementHeatmap: (options) => {
       const scenario = createSeniorityScenario(options.scenario)
       const domain = lens.retirementHeatmap({ groupBy: options.groupBy, scenario })
-      return seniorityOutput(domain, value => presentRetirementHeatmap(value, scenario.qualificationScope))
+      return seniorityOutput(domain, value => presentRetirementHeatmap(value, scenario.qualificationScope, { sortBy: options.sortBy, years: options.years }))
     },
   }
 }

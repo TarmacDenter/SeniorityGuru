@@ -12,7 +12,12 @@ ChartJS.register(MatrixController, MatrixElement, CategoryScale, Tooltip)
 const {
   hasData, dimensions, toggleDimension, showPercent, scopeLabel, groupedByLabel, isEmpty,
   undatedPilotNote, yearLabels, rowLabels, points, valueLegend, summaryLabel,
+  sortBy, sortItems, years, maxYears, yearsLabelFor, yearRangeLabel,
 } = useRetirementHeatmap()
+
+// The thumb and its readout move live; the chart follows once it rests.
+const sliderYears = useSettledModel(years)
+const sliderLabel = computed(() => yearsLabelFor(sliderYears.value))
 
 const { defaults, colors } = useChartTheme()
 
@@ -93,7 +98,7 @@ const chartOptions = computed<ChartOptions<'matrix'>>(() => ({
       <div class="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
         <div>
           <h2 class="text-lg font-semibold text-highlighted">Retirement heatmap</h2>
-          <p class="text-sm text-muted">{{ scopeLabel }} · {{ groupedByLabel }}</p>
+          <p class="text-sm text-muted">{{ scopeLabel }} · {{ groupedByLabel }} · {{ yearRangeLabel }}</p>
         </div>
         <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
           <div role="group" aria-label="Group rows by" class="flex items-center gap-1.5">
@@ -109,10 +114,18 @@ const chartOptions = computed<ChartOptions<'matrix'>>(() => ({
               @click="toggleDimension(dimension.value)"
             />
           </div>
+          <div class="flex items-center gap-1.5">
+            <label for="heatmap-sort" class="text-sm text-muted">Sort rows</label>
+            <USelect id="heatmap-sort" v-model="sortBy" :items="[...sortItems]" value-key="value" label-key="label" size="xs" class="w-44" />
+          </div>
           <label class="flex items-center gap-2 text-sm text-muted">
             <AppSwitch v-model="showPercent" size="xs" />
-            % of group
+            Cells as % of group
           </label>
+          <div class="flex items-center gap-x-3">
+            <USlider v-model="sliderYears" :min="1" :max="maxYears" :step="1" size="sm" class="w-32 sm:w-44" aria-label="Years shown" />
+            <span class="whitespace-nowrap font-mono text-sm font-semibold text-highlighted" aria-live="polite">{{ sliderLabel }}</span>
+          </div>
         </div>
       </div>
     </template>

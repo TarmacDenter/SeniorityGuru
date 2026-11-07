@@ -30,7 +30,7 @@ describe('Retirement heatmap', () => {
 
   it('shows the scope, grouping, and pilots it cannot place, and regroups on demand', async () => {
     mockStore.entries = [
-      makeEntry({ employee_number: 'E1', base: 'JFK', seat: 'CA', retire_date: '2050-01-01' }),
+      makeEntry({ employee_number: 'E1', base: 'JFK', seat: 'CA', retire_date: '2028-01-01' }),
       makeEntry({ employee_number: 'E2', base: 'LAX', seat: 'FO', retire_date: undefined }),
     ]
     const wrapper = await mountSuspended(RetirementHeatmap)

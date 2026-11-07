@@ -57,6 +57,7 @@ export type {
   PresentedRetirementHeatmap,
   PresentedRetirementHeatmapCell,
   PresentedRetirementHeatmapRow,
+  RetirementHeatmapSort,
   PresentedSeniorityDemographics,
   PresentedSeniorityStanding,
   PresentedSeniorityTrajectory,

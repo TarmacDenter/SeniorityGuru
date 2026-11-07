@@ -1,4 +1,4 @@
-import type { PresentedRetirementHeatmap, RetirementHeatmapDimension } from '~/utils/seniority'
+import type { PresentedRetirementHeatmap, RetirementHeatmapDimension, RetirementHeatmapSort } from '~/utils/seniority'
 import { useScenario } from '~/composables/useScenario'
 import { useSeniorityCore } from './useSeniorityCore'
 
@@ -7,6 +7,14 @@ const DIMENSIONS: readonly { value: RetirementHeatmapDimension; label: string }[
   { value: 'seat', label: 'Seat' },
   { value: 'fleet', label: 'Fleet' },
 ]
+
+const SORTS: readonly { value: RetirementHeatmapSort; label: string }[] = [
+  { value: 'qualification', label: 'Base, Fleet, Seat' },
+  { value: 'retirements', label: 'Most retirements' },
+  { value: 'percent', label: 'Highest % of group' },
+]
+
+const DEFAULT_YEARS = 10
 
 /** One shaded cell of the heatmap: a year (x) of a group (y). */
 export interface RetirementHeatmapPoint {
@@ -19,7 +27,7 @@ export interface RetirementHeatmapPoint {
   description: string
 }
 
-const EMPTY: PresentedRetirementHeatmap = { yearLabels: [], rows: [], isEmpty: true, undatedPilotNote: null }
+const EMPTY: PresentedRetirementHeatmap = { yearLabels: [], availableYearCount: 0, yearRangeLabel: '', rows: [], isEmpty: true, undatedPilotNote: null }
 
 /**
  * Demographics › Retirement heatmap: scheduled retirements of active pilots by group and year.
@@ -32,6 +40,8 @@ export function useRetirementHeatmap() {
 
   const groupBy = useState<RetirementHeatmapDimension[]>('retirementHeatmapGroupBy', () => ['base'])
   const showPercent = useState<boolean>('retirementHeatmapShowPercent', () => false)
+  const sortBy = useState<RetirementHeatmapSort>('retirementHeatmapSortBy', () => 'qualification')
+  const yearsChoice = useState<number>('retirementHeatmapYears', () => DEFAULT_YEARS)
 
   const dimensions = computed(() => DIMENSIONS.map(dimension => ({ ...dimension, selected: groupBy.value.includes(dimension.value) })))
   function toggleDimension(dimension: RetirementHeatmapDimension) {
@@ -40,14 +50,24 @@ export function useRetirementHeatmap() {
       : [...groupBy.value, dimension]
   }
 
-  const heatmap = computed(() => listAnalysis.value?.retirementHeatmap({
+  const output = (years?: number) => listAnalysis.value?.retirementHeatmap({
     groupBy: groupBy.value,
     scenario: { qualificationScope: qualificationScope.value },
-  }).presentation ?? EMPTY)
+    sortBy: sortBy.value,
+    years,
+  }).presentation ?? EMPTY
+  /** Years with a scheduled retirement in the scope; the years control stops there. */
+  const maxYears = computed(() => Math.max(1, output().availableYearCount))
+  const years = computed<number>({
+    get: () => Math.min(Math.max(1, yearsChoice.value), maxYears.value),
+    set: (value) => { yearsChoice.value = value },
+  })
+  const heatmap = computed(() => output(years.value))
+  const yearsLabelFor = (count: number) => `Next ${count} ${count === 1 ? 'year' : 'years'}`
 
   const points = computed<RetirementHeatmapPoint[]>(() => heatmap.value.rows.flatMap(row => row.cells.map(cell => ({
     x: String(cell.year),
-    y: row.label,
+    y: row.axisLabel,
     label: showPercent.value ? cell.percentLabel : cell.countLabel,
     intensity: showPercent.value ? cell.percentIntensity : cell.countIntensity,
     description: cell.description,
@@ -60,11 +80,12 @@ export function useRetirementHeatmap() {
 
   const valueLegend = computed(() => showPercent.value ? 'Share of the group\u2019s active pilots retiring that year' : 'Retirements scheduled that year')
   const yearLabels = computed(() => heatmap.value.yearLabels)
-  const rowLabels = computed(() => heatmap.value.rows.map(row => row.label))
+  const rowLabels = computed(() => heatmap.value.rows.map(row => row.axisLabel))
   /** What the chart shows, for screen readers. */
   const summaryLabel = computed(() => {
     const groups = `${rowLabels.value.length} ${rowLabels.value.length === 1 ? 'group' : 'groups'}`
-    return `Retirement heatmap, ${scopeLabel.value}, ${groupedByLabel.value.toLowerCase()}: ${groups} from ${yearLabels.value[0]} to ${yearLabels.value.at(-1)}. ${valueLegend.value}.`
+    const sort = SORTS.find(item => item.value === sortBy.value)!.label
+    return `Retirement heatmap, ${scopeLabel.value}, ${groupedByLabel.value.toLowerCase()}, sorted by ${sort}: ${groups} from ${yearLabels.value[0]} to ${yearLabels.value.at(-1)}. ${valueLegend.value}.`
   })
 
   return {
@@ -72,6 +93,12 @@ export function useRetirementHeatmap() {
     dimensions,
     toggleDimension,
     showPercent,
+    sortBy,
+    sortItems: SORTS,
+    years,
+    maxYears,
+    yearsLabelFor,
+    yearRangeLabel: computed(() => heatmap.value.yearRangeLabel),
     scopeLabel,
     groupedByLabel,
     isEmpty: computed(() => heatmap.value.isEmpty),
