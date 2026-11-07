@@ -404,6 +404,8 @@ export interface PresentedQualificationPosition {
     readonly maximumPercentile: number
     readonly pilotCount: number
   }[]
+  /** Selected Qualification Quantiles, ascending, each with the Anchor Pilot's distance from it. */
+  readonly quantileMarkers: readonly PresentedQualificationQuantileMarker[]
   readonly currentPercentile: number
   readonly projectedPercentile: number
   readonly modeledHoldable: boolean
@@ -414,6 +416,33 @@ export interface PresentedQualificationPosition {
   readonly holdableLabel: string
   /** Set when the Anchor Pilot is junior to the Qualification's most junior active pilot today. */
   readonly thresholdRelationLabel: string | null
+}
+
+export interface PresentedQualificationQuantileMarker {
+  readonly quantile: number
+  readonly percentile: number
+  /** "Q20". */
+  readonly label: string
+  /** "Q20 61.2%: you are 3.1 pp senior". */
+  readonly description: string
+}
+
+/** The Anchor Pilot's distance from a Qualification Quantile in percentile points, read from their projected position. */
+export function presentQualificationQuantileMarker(
+  marker: { readonly quantile: number; readonly percentile: number },
+  anchorPercentile: number,
+): PresentedQualificationQuantileMarker {
+  const label = `Q${marker.quantile}`
+  const distance = anchorPercentile - marker.percentile
+  const relation = Math.abs(distance) < 0.05
+    ? 'you are at it'
+    : `you are ${Math.abs(distance).toFixed(1)} pp ${distance > 0 ? 'senior' : 'junior'}`
+  return {
+    quantile: marker.quantile,
+    percentile: marker.percentile,
+    label,
+    description: `${label} ${formatSeniorityPercentile(marker.percentile)}: ${relation}`,
+  }
 }
 
 const NOT_BEFORE_RETIREMENT_LABEL = 'Not before your retirement'
@@ -430,6 +459,8 @@ export function presentQualificationPositions(
   if (isNoResult(positions)) return positions
   return positions.map(position => ({
     ...position.distribution,
+    quantileMarkers: position.distribution.quantileMarkers
+      .map(marker => presentQualificationQuantileMarker(marker, position.projectedPercentile)),
     currentPercentile: position.currentPercentile,
     projectedPercentile: position.projectedPercentile,
     modeledHoldable: position.modeledHoldable,

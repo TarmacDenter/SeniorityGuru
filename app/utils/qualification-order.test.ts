@@ -15,6 +15,7 @@ function position(overrides: Partial<PresentedQualificationPosition>): Presented
     percentile75: 75,
     maximumPercentile: 100,
     percentileDensity: [],
+    quantileMarkers: [],
     projectedPercentile: 50,
     currentPercentile: 50,
     modeledHoldable: true,

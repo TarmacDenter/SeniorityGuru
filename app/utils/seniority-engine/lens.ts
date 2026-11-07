@@ -334,6 +334,7 @@ class AnchoredSeniorityLensImplementation implements AnchoredSeniorityLens {
         context.asOfDate,
         options.through,
         options.growthAssumptions,
+        { densityBucketWidth: options.densityBucketWidth, quantiles: options.quantiles },
       )
     })
 

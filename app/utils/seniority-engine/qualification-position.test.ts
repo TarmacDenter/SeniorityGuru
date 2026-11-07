@@ -36,6 +36,33 @@ describe('Qualification Position analysis', () => {
     })
   })
 
+  it('buckets density by the requested width and marks the requested Qualification Quantiles', () => {
+    const entries = Array.from({ length: 10 }, (_, index) => makeDomainEntry({
+      seniority_number: index + 1,
+      employee_number: `EMP${index + 1}`,
+    }))
+    const [position] = analyzeQualificationPositions(entries, 1, asOfDate, asOfDate, undefined, {
+      densityBucketWidth: 10,
+      quantiles: [50, 20, 20],
+    })
+
+    expect(position!.distribution.percentileDensity).toHaveLength(10)
+    expect(position!.distribution.percentileDensity[0]).toEqual({ minimumPercentile: 0, maximumPercentile: 10, pilotCount: 0 })
+    expect(position!.distribution.percentileDensity.at(-1)).toEqual({ minimumPercentile: 90, maximumPercentile: 100, pilotCount: 2 })
+    expect(position!.distribution.percentileDensity.reduce((sum, bucket) => sum + bucket.pilotCount, 0)).toBe(10)
+    // Percentiles 10..100 ascending: Q20 is the nearest lower of index 1.8, Q50 of index 4.5.
+    expect(position!.distribution.quantileMarkers).toEqual([
+      { quantile: 20, percentile: 20 },
+      { quantile: 50, percentile: 50 },
+    ])
+  })
+
+  it('marks the median in 5% buckets by default', () => {
+    const [position] = analyzeQualificationPositions([makeDomainEntry({ seniority_number: 1 })], 1, asOfDate, asOfDate)
+    expect(position!.distribution.percentileDensity).toHaveLength(20)
+    expect(position!.distribution.quantileMarkers).toEqual([{ quantile: 50, percentile: 100 }])
+  })
+
   it('returns no positions when every entry is retired at the As-of Date', () => {
     expect(analyzeQualificationPositions([
       makeDomainEntry({ retire_date: '2025-01-01' }),
