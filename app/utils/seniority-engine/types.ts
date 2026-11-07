@@ -164,6 +164,20 @@ export interface QualificationDistribution {
   readonly percentile75: number
   readonly maximumPercentile: number
   readonly percentileDensity: readonly PercentileDensityBucket[]
+  /** The company Seniority Percentile at each requested Qualification Quantile, ascending by quantile. */
+  readonly quantileMarkers: readonly QualificationQuantileMarker[]
+}
+
+/** The company Seniority Percentile with `quantile` percent of a Qualification's active pilots junior to it. */
+export interface QualificationQuantileMarker {
+  readonly quantile: number
+  readonly percentile: number
+}
+
+/** How a Qualification's distribution is summarized: density bucket width and Qualification Quantiles, both in percent. */
+export interface QualificationDistributionOptions {
+  readonly densityBucketWidth?: number
+  readonly quantiles?: readonly number[]
 }
 
 /**
@@ -278,7 +292,7 @@ export interface PercentileCrossingOptions extends SeniorityTrajectoryOptions {
 }
 
 /** Qualification Position is company-wide so the percentile and the Qualification Thresholds share one scale. */
-export interface QualificationPositionOptions {
+export interface QualificationPositionOptions extends QualificationDistributionOptions {
   readonly through: PlainDate
   readonly growthAssumptions?: GrowthAssumptions
 }

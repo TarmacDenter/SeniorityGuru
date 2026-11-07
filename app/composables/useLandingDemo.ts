@@ -191,6 +191,8 @@ export function useLandingDemo() {
         maximumPercentile: bucket.start + 5,
         pilotCount: bucket.count,
       })),
+      // The landing scale marks the median only and shows no distance text.
+      quantileMarkers: [{ quantile: 50, percentile: scale.median, label: 'Q50', description: '' }],
       projectedPercentile,
       currentPercentile: CURRENT_PERCENTILE,
       modeledHoldable: projectedPercentile >= scale.plugPercentile,

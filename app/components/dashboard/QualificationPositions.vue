@@ -3,7 +3,19 @@ import { useQualificationPositions } from '~/composables/seniority'
 
 // Where the Anchor Pilot stands in every Qualification, today or projected forward under the shared Growth Assumptions.
 const { growthAssumptions } = useScenario()
-const { positions, noResultLabel, projectForward, years, projectionLabel, sliderMax } = useQualificationPositions(growthAssumptions)
+const {
+  positions,
+  noResultLabel,
+  projectForward,
+  years,
+  projectionLabel,
+  sliderMax,
+  densityBucketWidth,
+  densityBucketWidthOptions,
+  densityBucketLabel,
+  quantiles,
+  quantileOptions,
+} = useQualificationPositions(growthAssumptions)
 </script>
 
 <template>
@@ -39,7 +51,39 @@ const { positions, noResultLabel, projectForward, years, projectionLabel, slider
         <span class="font-mono text-sm text-muted">{{ projectionLabel }}</span>
       </div>
 
-      <AnalyticsQualSeniorityScale :positions="positions" />
+      <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
+        <label class="flex items-center gap-2 text-sm text-muted">
+          <span>Bucket size</span>
+          <USelect
+            v-model="densityBucketWidth"
+            :items="densityBucketWidthOptions"
+            value-key="value"
+            label-key="label"
+            size="sm"
+            class="w-20"
+            aria-label="Bucket size"
+            data-testid="qualification-scale-bucket-size"
+          />
+        </label>
+        <label class="flex items-center gap-2 text-sm text-muted">
+          <span>Quantiles</span>
+          <USelectMenu
+            v-model="quantiles"
+            :items="quantileOptions"
+            value-key="value"
+            label-key="label"
+            multiple
+            :search-input="false"
+            size="sm"
+            class="min-w-32"
+            placeholder="None"
+            aria-label="Quantiles"
+            data-testid="qualification-scale-quantiles"
+          />
+        </label>
+      </div>
+
+      <AnalyticsQualSeniorityScale :positions="positions" :density-bucket-label="densityBucketLabel" />
     </div>
   </UCard>
 </template>

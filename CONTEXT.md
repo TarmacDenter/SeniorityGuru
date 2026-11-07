@@ -72,6 +72,9 @@ _Avoid_: Growth Config
 The most junior active position in a Qualification, expressed as a Seniority Number and Seniority Percentile.
 _Avoid_: Plug
 
+**Qualification Quantile**:
+The company Seniority Percentile with a given share of a Qualification's active pilots junior to it, labeled "Q20" for 20%. Q0 is the Qualification Threshold.
+
 **Holdable**:
 A modeled outcome in which an Anchor Pilot's projected Seniority Percentile meets a Qualification Threshold. It does not imply contractual certainty.
 

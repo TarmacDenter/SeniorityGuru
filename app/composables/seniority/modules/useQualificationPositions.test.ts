@@ -53,6 +53,24 @@ describe('useQualificationPositions', () => {
     expect(positions.projectionLabel.value).toMatch(/^As of \d{4}-\d{2}-\d{2}$/)
   })
 
+  it('rebuckets density and marks chosen Qualification Quantiles with the distance from the Anchor Pilot', async () => {
+    seed()
+    const positions = useQualificationPositions()
+    expect(positions.densityBucketLabel.value).toBe('5%')
+    expect(positions.positions.value[0]!.percentileDensity).toHaveLength(20)
+    expect(positions.positions.value[0]!.quantileMarkers.map(marker => marker.label)).toEqual(['Q50'])
+
+    positions.densityBucketWidth.value = 10
+    positions.quantiles.value = [50, 20]
+    await nextTick()
+
+    expect(positions.densityBucketLabel.value).toBe('10%')
+    const jfk = positions.positions.value.find(position => position.qualification.base === 'JFK')!
+    expect(jfk.percentileDensity).toHaveLength(10)
+    expect(jfk.quantileMarkers.map(marker => marker.label)).toEqual(['Q20', 'Q50'])
+    expect(jfk.quantileMarkers[0]!.description).toMatch(/^Q20 \d+\.\d%: you are (at it|\d+\.\d pp (senior|junior))$/)
+  })
+
   it('says why there are no positions when the Anchor Pilot has retired', () => {
     seed('2020-01-01')
     const positions = useQualificationPositions()

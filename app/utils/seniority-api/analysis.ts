@@ -118,6 +118,10 @@ export interface PercentileCrossingAnalysisOptions extends SeniorityTrajectoryAn
 export interface QualificationPositionAnalysisOptions {
   readonly through: PlainDate
   readonly growthAssumptions?: GrowthAssumptions
+  /** Width of each density bucket in Seniority Percentile points; defaults to 5. */
+  readonly densityBucketWidth?: number
+  /** Qualification Quantiles (0-100) to mark; defaults to the median. */
+  readonly quantiles?: readonly number[]
 }
 
 /** Company-wide, like Qualification Position. */

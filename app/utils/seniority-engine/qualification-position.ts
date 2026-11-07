@@ -14,6 +14,7 @@ import type {
   PercentileDensityBucket,
   Qualification,
   QualificationDistribution,
+  QualificationDistributionOptions,
   QualificationPosition,
 } from './types'
 import { findPercentileCrossing } from './trajectory-analysis'
@@ -97,10 +98,32 @@ export function companyTrajectoryThroughRetirement(
   }).points
 }
 
+export const DEFAULT_DENSITY_BUCKET_WIDTH = 5
+export const DEFAULT_QUALIFICATION_QUANTILES: readonly number[] = [50]
+
+/** Buckets of `width` percentile points across 0-100; the last bucket is clipped at 100 and includes it. */
+function percentileDensity(sortedPercentiles: readonly number[], width: number): PercentileDensityBucket[] {
+  const bucketWidth = Number.isFinite(width) && width > 0 ? Math.min(width, 100) : DEFAULT_DENSITY_BUCKET_WIDTH
+  const counts = new Array<number>(Math.ceil(100 / bucketWidth)).fill(0)
+  for (const percentile of sortedPercentiles) {
+    const index = Math.min(Math.floor(percentile / bucketWidth), counts.length - 1)
+    counts[index] = counts[index]! + 1
+  }
+  return counts.map((pilotCount, index) => ({
+    minimumPercentile: index * bucketWidth,
+    maximumPercentile: Math.min((index + 1) * bucketWidth, 100),
+    pilotCount,
+  }))
+}
+
 export function analyzeQualificationDistributions(
   entries: readonly SeniorityEntry[],
   asOfDate: PlainDate,
+  options: QualificationDistributionOptions = {},
 ): readonly QualificationDistribution[] {
+  const quantiles = [...new Set(options.quantiles ?? DEFAULT_QUALIFICATION_QUANTILES)]
+    .filter(quantile => Number.isFinite(quantile) && quantile >= 0 && quantile <= 100)
+    .sort((a, b) => a - b)
   const activeEntries = entries.filter(entry => isActiveAt(entry, asOfDate))
   if (activeEntries.length === 0) return []
   const sortedNumbers = activeEntries.map(entry => entry.seniority_number).sort((a, b) => a - b)
@@ -117,16 +140,6 @@ export function analyzeQualificationDistributions(
     const percentiles = qualificationEntries
       .map(entry => companyPercentile(entry.seniority_number, sortedNumbers, entries.length))
       .sort((a, b) => a - b)
-    const bucketCounts = new Array<number>(20).fill(0)
-    for (const percentile of percentiles) {
-      const index = Math.min(Math.floor(percentile / 5), bucketCounts.length - 1)
-      bucketCounts[index] = bucketCounts[index]! + 1
-    }
-    const percentileDensity: PercentileDensityBucket[] = bucketCounts.map((pilotCount, index) => ({
-      minimumPercentile: index * 5,
-      maximumPercentile: (index + 1) * 5,
-      pilotCount,
-    }))
     return {
       qualification: { base: first.base, seat: first.seat, fleet: first.fleet },
       activePilotCount: qualificationEntries.length,
@@ -137,7 +150,8 @@ export function analyzeQualificationDistributions(
       medianPercentile: percentileValue(percentiles, 50),
       percentile75: percentileValue(percentiles, 75),
       maximumPercentile: percentiles.at(-1) ?? 0,
-      percentileDensity,
+      percentileDensity: percentileDensity(percentiles, options.densityBucketWidth ?? DEFAULT_DENSITY_BUCKET_WIDTH),
+      quantileMarkers: quantiles.map(quantile => ({ quantile, percentile: percentileValue(percentiles, quantile) })),
     }
   })
 }
@@ -148,8 +162,9 @@ export function analyzeQualificationPositions(
   asOfDate: PlainDate,
   through: PlainDate,
   growthAssumptions?: GrowthAssumptions,
+  distributionOptions?: QualificationDistributionOptions,
 ): readonly QualificationPosition[] {
-  const distributions = analyzeQualificationDistributions(entries, asOfDate)
+  const distributions = analyzeQualificationDistributions(entries, asOfDate, distributionOptions)
   if (distributions.length === 0) return []
 
   const pilotsSeniorToAnchor = entries.filter(entry => entry.seniority_number < anchorSeniorityNumber)

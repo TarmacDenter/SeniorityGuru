@@ -14,6 +14,7 @@ function position(overrides: Partial<PresentedQualificationPosition>): Presented
     percentile75: 75,
     maximumPercentile: 100,
     percentileDensity: [],
+    quantileMarkers: [],
     projectedPercentile: 50,
     currentPercentile: 50,
     modeledHoldable: true,
@@ -176,5 +177,28 @@ describe('QualSeniorityScale', () => {
     expect(notYet!.classes()).toEqual(expect.arrayContaining(['border-dashed', 'border-inverted']))
     expect(notYet!.classes()).not.toContain('border-stamp')
     expect(wrapper.html()).not.toMatch(/ui-color-(success|primary|error)/)
+  })
+
+  it('states the bucket size and marks each Qualification Quantile with the distance from the Anchor Pilot', async () => {
+    const Scale = await import('./QualSeniorityScale.vue')
+    const wrapper = await mountSuspended(Scale.default, {
+      props: {
+        densityBucketLabel: '10%',
+        positions: [position({
+          percentileDensity: [{ minimumPercentile: 40, maximumPercentile: 50, pilotCount: 3 }],
+          quantileMarkers: [
+            { quantile: 20, percentile: 44, label: 'Q20', description: 'Q20 44.0%: you are 6.0 pp senior' },
+            { quantile: 50, percentile: 52, label: 'Q50', description: 'Q50 52.0%: you are 2.0 pp junior' },
+          ],
+        })],
+      },
+    })
+
+    expect(wrapper.get('[data-testid="qualification-scale-legend"]').text()).toContain('10% Seniority Percentile bucket')
+    const markers = wrapper.findAll('[data-testid="qualification-scale-quantile"]')
+    expect(markers.map(marker => marker.text())).toEqual(['Q20', 'Q50'])
+    expect(markers[0]!.attributes('style')).toContain('left: 44%')
+    expect(wrapper.get('[data-testid="qualification-scale-quantile-distances"]').text())
+      .toContain('Q20 44.0%: you are 6.0 pp senior')
   })
 })
