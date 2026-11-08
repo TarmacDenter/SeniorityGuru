@@ -12,6 +12,7 @@ import {
   calculateTrajectoryChanges,
   countRetiredPilotsSeniorTo,
   generateAnnualSeniorityDates,
+  retiredPilotsSeniorTo,
 } from './math'
 
 const date = (value: string) => parsePlainDate(value)
@@ -44,6 +45,19 @@ describe('countRetiredPilotsSeniorTo', () => {
     ]
 
     expect(countRetiredPilotsSeniorTo(entries, 110, asOfDate)).toBe(2)
+  })
+
+  it('counts exactly the pilots retiredPilotsSeniorTo lists', () => {
+    const entries = [
+      makeEntry({ seniority_number: 100, retire_date: '2025-01-01' }),
+      makeEntry({ seniority_number: 105, retire_date: '2026-01-01' }),
+      makeEntry({ seniority_number: 108, retire_date: '2026-01-02' }),
+      makeEntry({ seniority_number: 125, retire_date: '2024-01-01' }),
+    ]
+
+    const listed = retiredPilotsSeniorTo(entries, 110, asOfDate)
+    expect(listed.map(entry => entry.seniority_number)).toEqual([100, 105])
+    expect(countRetiredPilotsSeniorTo(entries, 110, asOfDate)).toBe(listed.length)
   })
 
   it('applies the supplied entry predicate', () => {

@@ -90,6 +90,12 @@ const requiredColumns = [
               pilots ahead of you beside it. Rank, not Seniority Number, measures how far apart two pilots are.
             </p>
             <p>
+              <strong>Retired ahead</strong> counts every more-senior pilot whose retirement date is on or before
+              the As-of Date, including pilots still printed on the list whose date has already passed. Select the
+              count to see those pilots in List › Upcoming retirements. Every dashboard section uses today as its
+              As-of Date, so Upcoming retirements starts after today and lists no one already counted as retired.
+            </p>
+            <p>
               <strong>Publication Position</strong> is static. It is your position in the list as published, with
               retired pilots still counted, so it does not change with the As-of Date.
             </p>

@@ -57,6 +57,8 @@ import {
   type PresentedSeniorityTrajectory,
   type PresentedSeniorityTrajectoryComparison,
   formatQualificationScope,
+  formatPositionsAheadLabel,
+  presentRetiredPilotsSeniorToAnchor,
 } from '../seniority-analysis/presentation'
 
 export interface CreateSeniorityAnalysisOptions {
@@ -151,6 +153,11 @@ export interface RelativeUpcomingRetirementAnalysisOptions extends UpcomingRetir
   readonly seniorOnly?: boolean
 }
 
+export interface PresentedRelativeUpcomingRetirement extends RelativeUpcomingRetirement {
+  /** "1,943" for a senior pilot, "389 behind" for a junior one. */
+  readonly positionsAheadLabel: string
+}
+
 export interface CommonSeniorityAnalysis {
   readonly catalog: SeniorityCatalog
   qualificationViewer(
@@ -202,7 +209,11 @@ export interface AnchoredSeniorityAnalysis extends CommonSeniorityAnalysis {
   ): SeniorityOutput<HoldabilityDetail | null | NoResult, PresentedHoldabilityDetail | null | NoResult>
   relativeUpcomingRetirements(
     options: RelativeUpcomingRetirementAnalysisOptions,
-  ): readonly RelativeUpcomingRetirement[]
+  ): readonly PresentedRelativeUpcomingRetirement[]
+  /** The pilots counted as "retired ahead" in Standing, most senior first. */
+  retiredPilotsSeniorToAnchor(
+    options?: { readonly qualificationScope?: QualificationScope },
+  ): SeniorityOutput<readonly UpcomingRetirement[], { readonly viewLabel: string }>
 }
 
 function seniorityOutput<TDomain, TPresentation>(
@@ -318,7 +329,10 @@ function anchoredSeniorityAnalysis(lens: AnchoredSeniorityLens, asOfDate: PlainD
       return seniorityOutput(domain, presentQualificationPositions)
     },
     holdabilityDetail: options => seniorityOutput(lens.holdabilityDetail(options), presentHoldabilityDetail),
-    relativeUpcomingRetirements: options => lens.relativeUpcomingRetirements(options),
+    relativeUpcomingRetirements: options => lens.relativeUpcomingRetirements(options)
+      .map(row => ({ ...row, positionsAheadLabel: formatPositionsAheadLabel(row.positionsSeniorToAnchor) })),
+    retiredPilotsSeniorToAnchor: options =>
+      seniorityOutput(lens.retiredPilotsSeniorToAnchor(options), presentRetiredPilotsSeniorToAnchor),
   }
 }
 

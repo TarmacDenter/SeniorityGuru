@@ -321,4 +321,34 @@ describe('anchored analysis', () => {
 
     expect(rows.find(row => row.employeeNumber === 'G105')?.positionsSeniorToAnchor).toBe(1)
   })
+
+  it('lists the pilots behind Standing\'s retired-ahead count, scoped the same way, not as upcoming retirements', () => {
+    const anchoredAt125 = createOrganizationLens().withAnchor('E125')
+    const standing = resultOf(anchoredAt125.seniorityStanding())
+    const retired = anchoredAt125.retiredPilotsSeniorToAnchor()
+
+    expect(retired.map(row => row.employeeNumber)).toEqual(['E100'])
+    expect(retired).toHaveLength(standing.retiredPilotsSeniorToAnchor)
+    expect(anchoredAt125.upcomingRetirements({ through }).map(row => row.employeeNumber)).not.toContain('E100')
+
+    const scope = { base: 'ATL' }
+    const scoped = resultOf(anchoredAt125.seniorityStanding({ scenario: createSeniorityScenario({ qualificationScope: scope }) }))
+    expect(anchoredAt125.retiredPilotsSeniorToAnchor({ qualificationScope: scope })).toHaveLength(scoped.retiredPilotsSeniorToAnchor)
+    expect(scoped.retiredPilotsSeniorToAnchor).toBe(0)
+  })
+
+  it('derives every next-12-month count from the list Upcoming retirements shows (ADR 0012)', () => {
+    const lens = createOrganizationLens()
+    const nextYear = asOfDate.add({ years: 1 })
+    expect(lens.retirementsNext12Months()).toBe(lens.upcomingRetirements({ through: nextYear }).length)
+
+    const anchoredAt125 = lens.withAnchor('E125')
+    for (const qualificationScope of [{}, { base: 'JFK' }, { base: 'ATL' }]) {
+      const standing = resultOf(anchoredAt125.seniorityStanding({ scenario: createSeniorityScenario({ qualificationScope }) }))
+      expect(standing.rollingNext12MonthRetirements)
+        .toBe(anchoredAt125.upcomingRetirements({ through: nextYear, qualificationScope }).length)
+      expect(standing.rollingNext12MonthRetirementsSeniorToAnchor)
+        .toBe(anchoredAt125.relativeUpcomingRetirements({ through: nextYear, qualificationScope, seniorOnly: true }).length)
+    }
+  })
 })

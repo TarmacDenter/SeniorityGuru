@@ -6,7 +6,7 @@ import type { RetirementRow, RetirementSortKey } from '~/composables/seniority/m
 
 // List › Upcoming retirements. Range, scope, filtering, sorting and labels come from the composable.
 const {
-  hasData, hasAnchor, yearsHorizon, horizonMax, horizonLabelFor, emptyResultLabel, seniorOnly,
+  hasData, hasAnchor, view, viewItems, yearsHorizon, horizonMax, horizonLabelFor, emptyResultLabel, seniorOnly,
   filterBase, filterSeat, filterFleet, baseItems, seatItems, fleetItems, sortKey, sortDir, toggleSort, rows,
 } = useUpcomingRetirements()
 
@@ -41,8 +41,8 @@ function sortableColumn(key: RetirementSortKey, label: string, accessorKey: keyo
 const columns = computed<TableColumn<RetirementRow>[]>(() => [
   sortableColumn('seniorityNumber', 'Seniority Number', 'seniorityNumber'),
   { accessorKey: 'qualificationLabel', header: 'Qualification' },
-  ...(hasAnchor.value ? [sortableColumn('rankRelativeToMe', 'Rank relative to me', 'relativeLabel')] : []),
-  sortableColumn('retirementDate', 'Estimated retirement date', 'retirementDateLabel'),
+  ...(hasAnchor.value && view.value === 'upcoming' ? [sortableColumn('rankRelativeToMe', 'Positions ahead of you', 'relativeLabel')] : []),
+  sortableColumn('retirementDate', view.value === 'retired' ? 'Retirement date' : 'Estimated retirement date', 'retirementDateLabel'),
 ])
 </script>
 
@@ -58,16 +58,33 @@ const columns = computed<TableColumn<RetirementRow>[]>(() => [
     />
 
     <template v-else>
+      <UFieldGroup v-if="hasAnchor" size="sm" aria-label="Retirements to show">
+        <UButton
+          v-for="item in viewItems"
+          :key="item.value"
+          :label="item.label"
+          :color="view === item.value ? 'primary' : 'neutral'"
+          :variant="view === item.value ? 'solid' : 'outline'"
+          :aria-pressed="view === item.value"
+          @click="view = item.value"
+        />
+      </UFieldGroup>
+
+      <p v-if="view === 'retired'" class="border-l-2 border-default pl-3 text-sm text-muted">
+        Pilots senior to you whose retirement date is on or before today, including any still printed on the list.
+        These are the pilots behind "retired ahead" in Rank today.
+      </p>
+
       <DashboardControls v-slot="{ sheet }">
         <div class="space-y-4" >
-          <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
+          <div v-if="view === 'upcoming'" class="flex flex-wrap items-center gap-x-3 gap-y-2">
             <label for="retiring-within" class="whitespace-nowrap text-sm text-muted">Retiring within</label>
             <USlider id="retiring-within" v-model="sliderYears" :min="1" :max="horizonMax" :step="1" size="sm" :class="sheet ? 'min-w-32 flex-1' : 'w-40 sm:w-56'" aria-label="Retiring within years" />
             <span class="whitespace-nowrap font-mono text-sm font-semibold text-highlighted" aria-live="polite">{{ sliderLabel }}</span>
           </div>
 
           <div class="flex flex-wrap items-center gap-3">
-            <label class="flex items-center gap-2 text-sm" :class="hasAnchor ? '' : 'text-muted'">
+            <label v-if="view === 'upcoming'" class="flex items-center gap-2 text-sm" :class="hasAnchor ? '' : 'text-muted'">
               <AppSwitch v-model="seniorOnly" :disabled="!hasAnchor" size="sm" />
               Senior to me only
             </label>

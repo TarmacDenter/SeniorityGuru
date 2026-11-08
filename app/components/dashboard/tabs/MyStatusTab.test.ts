@@ -7,7 +7,7 @@ import { useStanding } from '~/composables/seniority/modules/useStanding'
 import { useListExcerpt } from '~/composables/seniority/modules/useListExcerpt'
 import { useDashboardList } from '~/composables/useDashboardList'
 import { resetMockStores } from '~/test-utils/seniority-mocks'
-import { parsePlainDate } from '~/utils/temporal'
+import { parsePlainDate, Temporal } from '~/utils/temporal'
 import type { QualificationScope } from '~/utils/seniority'
 import MyStatusTab from './MyStatusTab.vue'
 
@@ -110,6 +110,25 @@ describe('Now panel', () => {
 
     expect(figureValue(wrapper, 'Rank today')).toBe('2')
     expect(wrapper.find('[data-testid="standing-figures"]').text()).toContain('Publication Position 4 · 2 retired ahead')
+    const link = wrapper.find('[data-testid="standing-figures"] a')
+    expect(link.text()).toBe('Publication Position 4 · 2 retired ahead')
+    expect(link.attributes('href')).toContain('/dashboard/list/retirements')
+    expect(link.attributes('href')).toContain('view=retired')
+  })
+
+  it('links the next-12-month senior retirements to those pilots', async () => {
+    const soon = Temporal.Now.plainDateISO().add({ months: 6 }).toString()
+    mockStore.entries = [
+      makeEntry({ seniority_number: 10, employee_number: 'E1', retire_date: soon }),
+      makeEntry({ seniority_number: 20, employee_number: 'E2', retire_date: '2050-01-01' }),
+    ]
+    mockUserStore.employeeNumber = 'E2'
+    const wrapper = await mountSuspended(harness(ref<QualificationScope>({})))
+
+    expect(figureValue(wrapper, 'Retirements senior to you (next 12 months)')).toBe('1')
+    const link = wrapper.findAll('[data-testid="standing-figures"] a').find(a => a.text() === 'Show these pilots')!
+    expect(link.attributes('href')).toContain('/dashboard/list/retirements')
+    expect(link.attributes('href')).toContain('years=1')
   })
 
   it('labels a retired neighbor in the excerpt', async () => {

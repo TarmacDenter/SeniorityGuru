@@ -75,15 +75,15 @@ describe('useUpcomingRetirements', () => {
     expect(rows.value.map(row => row.seniorityNumber)).toEqual([2])
   })
 
-  it('shows only pilots senior to the Anchor Pilot, with a signed Rank difference, and all pilots when switched off', () => {
+  it('shows only pilots senior to the Anchor Pilot, with positions ahead of you, and all pilots when switched off', () => {
     mockStore.entries = [pilot(1, 6), pilot(2, 7), pilot(3, 600), pilot(4, 8)]
     mockUserStore.employeeNumber = 'E3'
 
     const { rows, hasAnchor, seniorOnly } = useUpcomingRetirements()
     expect(hasAnchor.value).toBe(true)
-    expect(rows.value.map(row => [row.seniorityNumber, row.relativeLabel])).toEqual([[1, '+2'], [2, '+1']])
+    expect(rows.value.map(row => [row.seniorityNumber, row.relativeLabel])).toEqual([[1, '2'], [2, '1']])
     seniorOnly.value = false
-    expect(rows.value.map(row => [row.seniorityNumber, row.relativeLabel])).toEqual([[1, '+2'], [2, '+1'], [4, '-1']])
+    expect(rows.value.map(row => [row.seniorityNumber, row.relativeLabel])).toEqual([[1, '2'], [2, '1'], [4, '1 behind']])
   })
 
   it('offers whole years from 1 to the year of the last scheduled retirement, starting at 2', () => {
@@ -136,23 +136,50 @@ describe('useUpcomingRetirements', () => {
     expect(rows.value.map(row => row.seniorityNumber)).toEqual([1, 2])
   })
 
-  it('counts the window from the selected list\'s As-of Date, not today', () => {
-    mockStore.entries = [pilot(1, -30), pilot(2, -40), pilot(3, 6)]
+  it('counts the window from today, the same As-of Date as Rank today, whatever list is selected', () => {
+    mockStore.entries = [pilot(1, -30), pilot(2, -1), pilot(3, 6), pilot(4, 0)]
     mockStore.lists = [{ id: 7, title: 'Old list', effectiveDate: Temporal.PlainDate.from(inMonths(-36)) }]
     mockStore.currentListId = 7
 
     const { rows } = useUpcomingRetirements()
-    expect(rows.value.map(row => row.seniorityNumber)).toEqual([1])
+    expect(rows.value.map(row => row.seniorityNumber)).toEqual([3])
   })
 
-  it('measures Rank relative to me as of the selected list\'s As-of Date, not today', () => {
-    mockStore.entries = [pilot(1, -20), pilot(2, -30), pilot(3, 600)]
-    mockStore.lists = [{ id: 7, title: 'Old list', effectiveDate: Temporal.PlainDate.from(inMonths(-36)) }]
-    mockStore.currentListId = 7
-    mockUserStore.employeeNumber = 'E3'
+  it('lists exactly the pilots counted as retired ahead in Standing, including any retired before publication', () => {
+    mockStore.entries = [pilot(1, -30), pilot(2, -1), pilot(3, 0), pilot(4, 6), pilot(5, 600), pilot(6, -2)]
+    mockUserStore.employeeNumber = 'E5'
 
-    const { rows } = useUpcomingRetirements()
-    expect(rows.value.map(row => [row.seniorityNumber, row.relativeLabel])).toEqual([[2, '+1'], [1, '+2']])
+    const { rows, view, viewItems } = useUpcomingRetirements()
+    expect(view.value).toBe('upcoming')
+    view.value = 'retired'
+    const standing = useSeniorityCore().anchoredAnalysis.value!.seniorityStanding().domain
+    expect(rows.value.map(row => row.seniorityNumber)).toEqual([1, 2, 3])
+    expect(rows.value).toHaveLength((standing as { retiredPilotsSeniorToAnchor: number }).retiredPilotsSeniorToAnchor)
+    expect(rows.value.every(row => row.relativeLabel === null)).toBe(true)
+    expect(viewItems.value[1]!.label).toBe('Retired ahead of you · 3')
+  })
+
+  it('falls back to upcoming retirements without an Anchor Pilot', () => {
+    mockStore.entries = [pilot(1, -30), pilot(2, 6)]
+
+    const { rows, view } = useUpcomingRetirements()
+    view.value = 'retired'
+    expect(view.value).toBe('upcoming')
+    expect(rows.value.map(row => row.seniorityNumber)).toEqual([2])
+  })
+
+  it('opens on the horizon a link asks for, as Current\'s next-12-month count does', async () => {
+    mockStore.entries = [pilot(1, 6), pilot(2, 18), pilot(3, 600)]
+    mockUserStore.employeeNumber = 'E3'
+    await useRouter().push({ path: '/', query: { years: '1' } })
+
+    const { yearsHorizon, rows, seniorOnly } = useUpcomingRetirements()
+    expect(yearsHorizon.value).toBe(1)
+    expect(seniorOnly.value).toBe(true)
+    const standing = useSeniorityCore().anchoredAnalysis.value!.seniorityStanding().domain as { rollingNext12MonthRetirementsSeniorToAnchor: number }
+    expect(rows.value.map(row => row.seniorityNumber)).toEqual([1])
+    expect(rows.value).toHaveLength(standing.rollingNext12MonthRetirementsSeniorToAnchor)
+    await useRouter().push('/')
   })
 
   it('is empty without a list', () => {

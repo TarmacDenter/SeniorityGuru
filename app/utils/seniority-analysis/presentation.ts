@@ -254,6 +254,19 @@ function holdabilitySummaryBySeat(standing: SeniorityStanding): Record<string, s
     : `Hypothetical Placement in ${group.hypothetical === group.count ? 'all' : 'the other'} ${formatSeatLabel(seat)} Qualifications`]))
 }
 
+/** The "Retired ahead of you" list with its heading, e.g. "Retired ahead of you · 16". */
+export function presentRetiredPilotsSeniorToAnchor(rows: readonly unknown[]) {
+  return { viewLabel: `Retired ahead of you · ${formatSeniorityCount(rows.length)}` }
+}
+
+/** A pilot's distance from the Anchor Pilot in Rank: "1,943" ahead, "389 behind", or "you". */
+export function formatPositionsAheadLabel(positionsSeniorToAnchor: number): string {
+  if (positionsSeniorToAnchor === 0) return 'you'
+  return positionsSeniorToAnchor > 0
+    ? formatSeniorityCount(positionsSeniorToAnchor)
+    : `${formatSeniorityCount(-positionsSeniorToAnchor)} behind`
+}
+
 /** How today's Rank follows from the published list, e.g. "Publication Position 50 · 3 retired ahead". */
 function rankNote(standing: SeniorityStanding): string {
   const position = `Publication Position ${formatSeniorityCount(standing.publicationPosition)}`

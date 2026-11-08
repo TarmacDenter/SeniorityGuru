@@ -447,7 +447,7 @@ describe('useStanding', () => {
         { label: 'Roster Size', value: '4' },
         { label: 'Seniority Percentile', value: '75.0%' },
         { label: 'Active pilots', value: '4' },
-        { label: RETIREMENTS, value: '1' },
+        { label: RETIREMENTS, value: '1', note: 'Show these pilots', noteLink: 'seniorRetirementsNextYear' },
       ])
     })
 
