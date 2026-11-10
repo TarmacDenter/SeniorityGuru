@@ -1,7 +1,4 @@
 <script setup lang="ts">
-import { h, resolveComponent } from 'vue'
-import { useMediaQuery } from '@vueuse/core'
-import type { TableColumn } from '@nuxt/ui'
 import { useDashboardList } from '~/composables/useDashboardList'
 import type { ListExcerptRow, QualificationSeatGroup, RankCardData, StandingFigure } from '~/composables/seniority'
 
@@ -20,23 +17,7 @@ defineProps<{
 }>()
 
 const { holdabilityLink, retiredAheadLink, seniorRetirementsNextYearLink } = useDashboardList()
-const noteLinks = { retiredAhead: retiredAheadLink, seniorRetirementsNextYear: seniorRetirementsNextYearLink }
-
-const isCompact = useMediaQuery('(max-width: 639px)')
-const numeric = { class: { th: 'text-right', td: 'text-right' } }
-const excerptColumns: TableColumn<ListExcerptRow>[] = [
-  { accessorKey: 'seniorityNumber', header: 'Seniority Number', meta: numeric },
-  {
-    accessorKey: 'nameLabel',
-    header: 'Name',
-    meta: { class: { td: '[overflow-wrap:anywhere]' } },
-    cell: ({ row }) => row.original.status === 'retired'
-      ? h('span', null, [row.original.nameLabel, ' ', h(resolveComponent('UBadge'), { color: 'neutral', variant: 'outline', size: 'sm', class: 'no-underline bg-transparent' }, () => 'retired')])
-      : row.original.nameLabel,
-  },
-  { accessorKey: 'rankLabel', header: 'Rank today', meta: numeric },
-  { accessorKey: 'publicationPositionLabel', header: 'Publication Position', meta: numeric },
-]
+const noteLinks = computed(() => ({ retiredAhead: retiredAheadLink.value, seniorRetirementsNextYear: seniorRetirementsNextYearLink.value }))
 </script>
 
 <template>
@@ -69,59 +50,8 @@ const excerptColumns: TableColumn<ListExcerptRow>[] = [
       <DashboardNewHireModeBanner v-if="isNewHireMode" />
 
       <div class="grid gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] lg:items-start">
-        <UCard :ui="{ body: 'p-0 sm:p-0' }" class="lg:order-2">
-          <template #header>
-            <div class="flex flex-wrap items-center gap-2">
-              <h2 class="text-base font-semibold text-highlighted">Your standing</h2>
-              <UPopover v-if="rankCard.percentileScaleLabel">
-                <UButton icon="i-lucide-info" color="neutral" variant="ghost" size="xs" aria-label="About these figures" />
-                <template #content>
-                  <p class="max-w-xs p-3 text-sm text-default">
-                    {{ rankCard.percentileScaleLabel }}. A Seniority Percentile of 100 is the most senior end.
-                  </p>
-                </template>
-              </UPopover>
-              <UBadge
-                v-if="rankCard.hypotheticalLabel"
-                data-testid="hypothetical-placement"
-                color="neutral"
-                variant="outline"
-              >
-                {{ rankCard.hypotheticalLabel }}
-              </UBadge>
-            </div>
-            <p class="mt-1 text-sm text-muted">{{ rankCard.base }} {{ rankCard.seat }} {{ rankCard.fleet }}</p>
-          </template>
-
-          <p v-if="rankCard.noResultLabel" data-testid="no-result" class="px-4 pt-4 font-mono font-semibold text-highlighted">
-            {{ rankCard.noResultLabel }}
-          </p>
-          <dl class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-2" data-testid="standing-figures">
-            <div v-for="figure in figures" :key="figure.label" class="px-4 py-3">
-              <dt class="text-xs text-muted">{{ figure.label }}</dt>
-              <dd class="mt-0.5 font-mono text-xl font-semibold text-highlighted">{{ figure.value }}</dd>
-              <dd v-if="figure.note" class="text-xs text-muted">
-                <ULink v-if="figure.noteLink" :to="noteLinks[figure.noteLink].value" class="underline">{{ figure.note }}</ULink>
-                <template v-else>{{ figure.note }}</template>
-              </dd>
-            </div>
-          </dl>
-        </UCard>
-
-        <UCard :ui="{ body: 'p-0 sm:p-0' }" class="lg:order-1">
-          <template #header>
-            <h2 class="text-base font-semibold text-highlighted">Your line on the Seniority List</h2>
-          </template>
-          <SeniorityAnchoredTable
-            v-if="excerptRows.length > 0"
-            :data="excerptRows"
-            :columns="excerptColumns"
-            mark-column="nameLabel"
-            :column-visibility="{ publicationPositionLabel: !isCompact }"
-            caption="Seniority List around your line"
-            :ui="{ caption: 'sr-only', td: 'px-3 py-1.5 font-mono text-sm whitespace-normal', th: 'px-3 py-1.5 text-xs font-medium text-muted' }"
-          />
-        </UCard>
+        <DashboardStandingCard :rank-card="rankCard" :figures="figures" :note-links="noteLinks" class="lg:order-2" />
+        <DashboardListExcerptCard :rows="excerptRows" class="lg:order-1" />
       </div>
 
       <DashboardBaseStatusTable :groups="qualificationGroups" :no-result-label="rankCard.noResultLabel" />
