@@ -83,7 +83,7 @@ async function enterDemo() {
         </section>
 
         <section class="space-y-6">
-          <LandingSectionHeading title="Check estimates against the next list" description="When a new list is published, compare it with the last one to see the departures, Qualification moves and new hires that a retirement-only projection leaves out." />
+          <LandingSectionHeading title="Browse the changes between two seniority publications" description="Pick two published lists to see who retired, departed, was hired, or changed Qualification or Seniority Number." />
           <LandingComparison :rows="diffRows" />
         </section>
       </div>
