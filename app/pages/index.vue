@@ -5,9 +5,9 @@ const { install } = usePwaInstall()
 
 useSeoMeta({
   title: 'SeniorityGuru — Pilot Seniority Tracker',
-  description: 'Upload an airline seniority list to see your Rank today, when you can hold each Qualification, and which retirements move you. Data stays on your device.',
+  description: 'Upload an airline seniority list and slice its retirements by base, seat, fleet and time horizon. Data stays on your device.',
   ogTitle: 'SeniorityGuru — Pilot Seniority Tracker',
-  ogDescription: 'Upload an airline seniority list to see your Rank today, when you can hold each Qualification, and which retirements move you. Data stays on your device.',
+  ogDescription: 'Upload an airline seniority list and slice its retirements by base, seat, fleet and time horizon. Data stays on your device.',
   twitterCard: 'summary',
 })
 
@@ -31,11 +31,12 @@ async function enterDemo() {
     <section class="pt-8 sm:pt-16 text-center">
       <div class="mx-auto flex max-w-3xl flex-col items-center gap-6">
         <h1 class="text-4xl font-bold leading-tight tracking-tight text-highlighted sm:text-5xl">
-          See where you'll be on the seniority list in 5, 10 and 20 years.
+          Slice your seniority list to see what could move you.
         </h1>
         <p class="max-w-2xl text-lg text-muted">
-          Upload your airline's list to see your Rank today, when you can hold each Qualification, and which
-          retirements move you.
+          Break scheduled retirements down by base, seat and fleet, change the time horizon, and compare
+          scenarios. Projections count scheduled retirements only; hiring, upgrades and other attrition can change
+          the result.
         </p>
         <div class="flex flex-wrap justify-center gap-3">
           <UButton size="xl" icon="i-lucide-play" :loading="demoEntering" @click="enterDemo">
@@ -57,8 +58,14 @@ async function enterDemo() {
 
     <LandingShowcase v-slot="{ diffRows }">
       <div class="space-y-16 sm:space-y-24">
-        <section class="mx-auto max-w-4xl">
-          <LandingTrajectory />
+        <section class="space-y-6">
+          <LandingSectionHeading title="Retirements by Qualification" description="Scheduled retirements by base, seat and fleet, year by year. Group the rows, show counts or shares of each group, and choose how many years ahead to look." />
+          <LandingHeatmap />
+        </section>
+
+        <section class="space-y-6">
+          <LandingSectionHeading title="Retirements senior to you" description="How many pilots senior to you are scheduled to retire within the horizon you choose. The line is an estimate from those retirement dates alone." />
+          <LandingRetirementWave />
         </section>
 
         <section class="space-y-6">
@@ -67,17 +74,17 @@ async function enterDemo() {
         </section>
 
         <section class="space-y-6">
-          <LandingSectionHeading title="When you can hold each Qualification" description="The year your Rank reaches each Qualification's most junior active pilot, from scheduled retirements." />
+          <LandingSectionHeading title="Each Qualification under scheduled retirements" description="An estimate of when your Rank would reach each Qualification's most junior active pilot if scheduled retirements were the only change. Switch seats to compare." />
           <LandingHoldability />
         </section>
 
         <section class="space-y-6">
-          <LandingSectionHeading title="Which retirements move you" description="Retirements per year, with your Seniority Percentile over them." />
-          <LandingRetirementWave />
+          <LandingSectionHeading title="Your Seniority Percentile under one scenario" description="Company-wide, scheduled retirements only. In the dashboard you can narrow the Qualification Scope, add Growth Assumptions and compare two scopes on one chart." />
+          <LandingTrajectory />
         </section>
 
         <section class="space-y-6">
-          <LandingSectionHeading title="What changed since the last list" description="Upload a newer list to see who retired, departed, was hired or changed Qualification." />
+          <LandingSectionHeading title="Check estimates against the next list" description="When a new list is published, compare it with the last one to see the departures, Qualification moves and new hires that a retirement-only projection leaves out." />
           <LandingComparison :rows="diffRows" />
         </section>
       </div>

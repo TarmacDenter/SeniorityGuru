@@ -10,7 +10,7 @@ const { projectionChart, endedByLabel, percentileScaleLabel } = useNextProjectio
   <DashboardTrajectoryChart :data="projectionChart" :ended-by-label="endedByLabel">
     <template #footer>
       <p class="mt-1 text-xs text-muted">
-        Sample pilot from the demo list<template v-if="percentileScaleLabel"> · {{ percentileScaleLabel }}</template>
+        Sample pilot from the demo list · Scheduled retirements only<template v-if="percentileScaleLabel"> · {{ percentileScaleLabel }}</template>
       </p>
     </template>
   </DashboardTrajectoryChart>

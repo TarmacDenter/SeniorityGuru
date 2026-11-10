@@ -24,10 +24,11 @@ async function mountIndex() {
 }
 
 describe('index.vue', () => {
-  it('leads with the outcome a pilot is looking for', async () => {
+  it('leads with slicing the list, not a promised outcome', async () => {
     const text = (await mountIndex()).text()
-    expect(text).toContain('See where you\'ll be on the seniority list in 5, 10 and 20 years.')
-    expect(text).toContain('Rank today')
+    expect(text).toContain('Slice your seniority list to see what could move you.')
+    expect(text).toContain('Projections count scheduled retirements only')
+    expect(text).not.toMatch(/you'll be|will be on the/)
   })
 
   it('offers View Demo once, Open Dashboard and Install App', async () => {
