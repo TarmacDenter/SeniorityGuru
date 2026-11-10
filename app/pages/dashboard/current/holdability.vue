@@ -2,10 +2,10 @@
 import { useHoldability, useSeniorityCore } from '~/composables/seniority'
 import { useDashboardList } from '~/composables/useDashboardList'
 
-const { loading } = useDashboardList()
+const { loading, juniorCaptainsLink } = useDashboardList()
 const { hasAnchor: userFound } = useSeniorityCore()
 const { qualificationScope, growthAssumptions } = useScenario()
-const { visibleGroups, seatOptions, selectedSeat, noResultLabel, columnLabels, selectedKey, select, detail, juniorCaptainsLink } = useHoldability(qualificationScope, growthAssumptions)
+const { visibleGroups, seatOptions, selectedSeat, noResultLabel, columnLabels, selectedKey, select, detail } = useHoldability(qualificationScope, growthAssumptions)
 </script>
 
 <template>

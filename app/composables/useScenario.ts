@@ -10,9 +10,9 @@ const COMPANY_WIDE = 'Company-wide'
  * State is held once (useState) so the scenario strip and every panel read the same values.
  */
 export function useScenario() {
-  const { listAnalysis } = useSeniorityCore()
-  const scopeLabel = useState<string>('scenarioScopeLabel', () => COMPANY_WIDE)
-  const growthAssumptions = useState<GrowthAssumptions>('scenarioGrowthAssumptions', () => ({ ...DEFAULT_SENIORITY_GROWTH_ASSUMPTIONS }))
+  const { listAnalysis, stateKey = '' } = useSeniorityCore()
+  const scopeLabel = useState<string>(`${stateKey}scenarioScopeLabel`, () => COMPANY_WIDE)
+  const growthAssumptions = useState<GrowthAssumptions>(`${stateKey}scenarioGrowthAssumptions`, () => ({ ...DEFAULT_SENIORITY_GROWTH_ASSUMPTIONS }))
 
   const scopeOptionList = computed(() => listAnalysis.value?.catalog.qualificationScopeOptions ?? [])
   const { scopeOptions: scopeLabels, specForLabel } = useScopeFilter(scopeOptionList)

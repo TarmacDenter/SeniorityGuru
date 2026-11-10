@@ -52,12 +52,12 @@ describe('useHoldability', () => {
 
     expect(rows['JFK 737 FO']).toMatchObject({ holdableLabel: 'Holdable now', holdableStatus: 'now', thresholdRelationLabel: null })
     expect(rows['LAX 777 FO']).toMatchObject({
-      holdableLabel: 'Holdable from 2028',
+      holdableLabel: 'Estimated from 2028',
       holdableStatus: 'later',
       thresholdRelationLabel: 'Junior to the most junior pilot (Seniority Number 2)',
     })
     expect(rows['JFK 737 CA']).toMatchObject({
-      holdableLabel: 'Not before your retirement',
+      holdableLabel: 'Not estimated before your retirement',
       holdableStatus: 'never',
       thresholdRelationLabel: 'Junior to the most junior pilot (Seniority Number 1)',
     })
@@ -73,7 +73,7 @@ describe('useHoldability', () => {
     await nextTick()
 
     expect(holdability.selectedKey.value).toBe(lax.key)
-    expect(holdability.detail.value).toMatchObject({ qualificationLabel: '777 FO LAX', holdableLabel: 'Holdable from 2028' })
+    expect(holdability.detail.value).toMatchObject({ qualificationLabel: '777 FO LAX', holdableLabel: 'Estimated from 2028' })
     expect(holdability.detail.value!.anchorSeries.length).toBeGreaterThan(1)
 
     holdability.select(lax.key)
@@ -104,19 +104,19 @@ describe('useHoldability', () => {
 
   it('links each Qualification to Junior captains in Demographics', () => {
     seed()
-    expect(useHoldability().juniorCaptainsLink.value).toBe('/dashboard/demographics/overview#junior-captains')
+    expect(useDashboardList().juniorCaptainsLink.value).toBe('/dashboard/demographics/overview#junior-captains')
   })
 
   it('keeps the selected list in Junior captains links as the shared selection changes', async () => {
     seed()
     const { selectedListId } = useDashboardList()
     selectedListId.value = 12
-    const holdability = useHoldability()
-    expect(holdability.juniorCaptainsLink.value).toBe('/dashboard/demographics/overview?list=12#junior-captains')
+    const { juniorCaptainsLink } = useDashboardList()
+    expect(juniorCaptainsLink.value).toBe('/dashboard/demographics/overview?list=12#junior-captains')
 
     selectedListId.value = 20
     await nextTick()
-    expect(holdability.juniorCaptainsLink.value).toBe('/dashboard/demographics/overview?list=20#junior-captains')
+    expect(juniorCaptainsLink.value).toBe('/dashboard/demographics/overview?list=20#junior-captains')
   })
 
   it('says why there are no rows when the Anchor Pilot has retired', () => {

@@ -15,7 +15,7 @@ const DEFAULT_TARGET_PERCENTILE = 50
  * and N-year retirement count. Reads the shared Scenario (Qualification Scope, Growth Assumptions).
  */
 export function useNextProjections() {
-  const { analysis, anchoredAnalysis, listAnalysis, projectionEndDate } = useSeniorityCore()
+  const { analysis, anchoredAnalysis, listAnalysis, projectionEndDate, stateKey = '' } = useSeniorityCore()
   const { growthAssumptions, qualificationScope, scopeLabel, scopeLabels } = useScenario()
   const { rankCard } = useStanding(qualificationScope)
   const trajectory = useTrajectory(growthAssumptions, qualificationScope)
@@ -30,7 +30,7 @@ export function useNextProjections() {
 
   // ── Compare with scope: a second trajectory on the Projection chart's axes ──
   // Held once so it survives moving between small views; undefined means no overlay.
-  const compareScopeLabel = useState<string | undefined>('trajectoryCompareScopeLabel', () => undefined)
+  const compareScopeLabel = useState<string | undefined>(`${stateKey}trajectoryCompareScopeLabel`, () => undefined)
   const compareScopeItems = computed(() => scopeLabels.value.filter(label => label !== scopeLabel.value))
   const scopeOptionList = computed(() => listAnalysis.value?.catalog.qualificationScopeOptions ?? [])
   const { specForLabel } = useScopeFilter(scopeOptionList)

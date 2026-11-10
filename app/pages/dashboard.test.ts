@@ -288,8 +288,8 @@ describe('dashboard.vue — sections', () => {
     ['/dashboard/trajectory/retirements', 'Trajectory', [['Projection', false], ['Retirements', true]]],
     ['/dashboard/demographics/overview', 'Demographics', [['Overview', true], ['Retirement heatmap', false]]],
     ['/dashboard/demographics/retirement-heatmap', 'Demographics', [['Overview', false], ['Retirement heatmap', true]]],
-    ['/dashboard/list/full', 'List', [['Full list', true], ['Upcoming retirements', false], ['Compare', false], ['Uploads', false]]],
-    ['/dashboard/list/uploads', 'List', [['Full list', false], ['Upcoming retirements', false], ['Compare', false], ['Uploads', true]]],
+    ['/dashboard/list/full', 'List', [['Full list', true], ['Upcoming retirements', false], ['Compare', false], ['Saved lists', false]]],
+    ['/dashboard/list/uploads', 'List', [['Full list', false], ['Upcoming retirements', false], ['Compare', false], ['Saved lists', true]]],
   ] as const)('%s is titled %s with its small views in a tab row', async (path, title, tabs) => {
     const wrapper = await mountDashboard(path)
     expect(wrapper.find('h1').text()).toContain(title)
@@ -360,7 +360,7 @@ describe('dashboard.vue — sections', () => {
     expect(wrapper.find('[data-testid="small-view"]').exists()).toBe(true)
   })
 
-  it('leads to Upload when no list exists', async () => {
+  it('leads to Import when no list exists', async () => {
     mockFetchLists.mockImplementation(() => { mockLists.value = [] })
     mockRoutePath.value = '/dashboard/trajectory/projection'
     const DashboardPage = await import('./dashboard.vue')

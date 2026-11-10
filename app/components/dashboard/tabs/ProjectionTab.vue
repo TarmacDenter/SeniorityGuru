@@ -26,7 +26,7 @@ const assumptionsNote = useTrajectoryAssumptionsNote()
 
 const emptyAction = computed(() => props.hasData
   ? { label: 'Enter your employee number', icon: 'i-lucide-user-round', to: '/settings', size: 'lg' as const }
-  : { label: 'Upload Seniority List', icon: 'i-lucide-upload', to: '/seniority/upload', size: 'lg' as const })
+  : { label: 'Import a list', icon: 'i-lucide-file-input', to: '/seniority/upload', size: 'lg' as const })
 </script>
 
 <template>
@@ -40,7 +40,7 @@ const emptyAction = computed(() => props.hasData
       v-else-if="!hasData || !userFound"
       icon="i-lucide-trending-up"
       title="No trajectory yet"
-      description="Upload a seniority list and enter your employee number to see how your Seniority Percentile moves as pilots senior to you retire."
+      description="Import a seniority list and enter your employee number to see how your Seniority Percentile moves as pilots senior to you retire."
       :actions="[emptyAction]"
       class="py-24"
     />

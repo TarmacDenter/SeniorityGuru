@@ -22,11 +22,11 @@ async function nav() {
 }
 
 describe('useSeniorityNav', () => {
-  it('shows the four sections, then Upload, Compare and Settings, then How it works, each below a divider', async () => {
+  it('shows the four sections, then Import, Compare and Settings, then How it works, each below a divider', async () => {
     const groups = await nav()
     expect(groups.map(group => group.map(item => item.label))).toEqual([
       ['Current', 'Trajectory', 'Demographics', 'List'],
-      ['Upload', 'Compare', 'Settings'],
+      ['Import', 'Compare', 'Settings'],
       ['How it works'],
     ])
   })

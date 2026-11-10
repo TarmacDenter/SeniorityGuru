@@ -32,22 +32,34 @@ describe('ComparisonDiffTab', () => {
     expect(wrapper.text()).toContain('No changes between these lists')
   })
 
-  it('applies red tint class to retired rows', async () => {
+  it('strikes through retired and departed pilots without colored row fills', async () => {
+    const wrapper = await mountSuspended(ComparisonDiffTab, {
+      props: { rows: [makeRetiredRow(), makeDepartedRow()] },
+    })
+    const rows = wrapper.findAll('tbody tr')
+    expect(rows).toHaveLength(2)
+    for (const row of rows) {
+      expect(row.classes().join(' ')).toContain('line-through')
+      expect(row.classes().join(' ')).not.toMatch(/bg-(error|warning|success)/)
+    }
+    expect(wrapper.text()).toContain('Retired')
+    expect(wrapper.text()).toContain('Departed')
+  })
+
+  it('shows the Qualification in Base, Seat, Fleet order', async () => {
     const wrapper = await mountSuspended(ComparisonDiffTab, {
       props: { rows: [makeRetiredRow()] },
     })
-    const row = wrapper.find('[data-kind="retired"]')
-    expect(row.exists()).toBe(true)
-    expect(row.classes().join(' ')).toContain('bg-error')
+    expect(wrapper.text()).toContain('Qualification')
+    expect(wrapper.text()).toContain('JFK CA 737')
   })
 
-  it('applies amber tint class to departed rows', async () => {
+  it('uses sentence-case column headers', async () => {
     const wrapper = await mountSuspended(ComparisonDiffTab, {
-      props: { rows: [makeDepartedRow()] },
+      props: { rows: [makeRetiredRow()] },
     })
-    const row = wrapper.find('[data-kind="departed"]')
-    expect(row.exists()).toBe(true)
-    expect(row.classes().join(' ')).toContain('bg-warning')
+    expect(wrapper.find('thead').text()).toContain('Seniority Number')
+    expect(wrapper.find('thead').html()).not.toMatch(/uppercase|tracking-/)
   })
 
   it('shows qual move badge with all changed fields inline', async () => {
@@ -63,7 +75,7 @@ describe('ComparisonDiffTab', () => {
     const wrapper = await mountSuspended(ComparisonDiffTab, {
       props: { rows: [makeSeniorityNumberChangeRow({ delta })] },
     })
-    await wrapper.find('[data-testid="seniority-number-change-toggle"]').trigger('click')
+    await wrapper.find('button[role="switch"]').trigger('click')
     expect(wrapper.text()).toContain(`Seniority Number ${label}`)
     expect(wrapper.text()).toContain('Show Seniority Number changes')
     expect(wrapper.text()).toContain('Delta = older Seniority Number − newer Seniority Number.')
@@ -76,7 +88,7 @@ describe('ComparisonDiffTab', () => {
       props: { rows: [makeSeniorityNumberChangeRow({ employee_number: '000123' })] },
       global: { stubs: { UPopover: { template: '<div><slot /><slot name="content" /></div>' } } },
     })
-    await wrapper.find('[data-testid="seniority-number-change-toggle"]').trigger('click')
+    await wrapper.find('button[role="switch"]').trigger('click')
     expect(wrapper.text()).toContain('Employee #: 000123')
     expect(wrapper.text()).toContain('Seniority Number: 500→488 (delta +12)')
     expect(wrapper.text()).not.toContain('Rank:')
@@ -87,8 +99,8 @@ describe('ComparisonDiffTab', () => {
     const wrapper = await mountSuspended(ComparisonDiffTab, {
       props: { rows },
     })
-    expect(wrapper.find('[data-kind="seniorityNumberChange"]').exists()).toBe(false)
-    expect(wrapper.find('[data-kind="retired"]').exists()).toBe(true)
+    expect(wrapper.text()).not.toContain('M. Torres')
+    expect(wrapper.text()).toContain('H. Johansson')
   })
 
   it('shows Seniority Number change rows after toggling the Seniority Number change switch', async () => {
@@ -96,11 +108,10 @@ describe('ComparisonDiffTab', () => {
     const wrapper = await mountSuspended(ComparisonDiffTab, {
       props: { rows },
     })
-    expect(wrapper.find('[data-kind="seniorityNumberChange"]').exists()).toBe(false)
+    expect(wrapper.text()).not.toContain('M. Torres')
 
-    const toggle = wrapper.find('[data-testid="seniority-number-change-toggle"]')
-    await toggle.trigger('click')
+    await wrapper.find('button[role="switch"]').trigger('click')
 
-    expect(wrapper.find('[data-kind="seniorityNumberChange"]').exists()).toBe(true)
+    expect(wrapper.text()).toContain('M. Torres')
   })
 })

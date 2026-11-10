@@ -34,6 +34,9 @@ export function useDashboardList() {
     query: selectedListId.value ? { list: String(selectedListId.value) } : {},
   }))
 
+  /** Demographics › Overview at Junior captains, keeping the selected list. */
+  const juniorCaptainsLink = computed(() => `/dashboard/demographics/overview${selectedListId.value ? `?list=${selectedListId.value}` : ''}#junior-captains`)
+
   /** List › Upcoming retirements opened on the pilots counted as "retired ahead" in Rank today. */
   const retiredAheadLink = computed(() => ({
     path: '/dashboard/list/retirements',
@@ -46,5 +49,5 @@ export function useDashboardList() {
     query: { ...(selectedListId.value ? { list: String(selectedListId.value) } : {}), years: '1' },
   }))
 
-  return { lists, selectedListId, loading, listOptions, isHistorical, selectedList, selectedListLabel, isDemoList, navbarDescription, holdabilityLink, retiredAheadLink, seniorRetirementsNextYearLink }
+  return { lists, selectedListId, loading, listOptions, isHistorical, selectedList, selectedListLabel, isDemoList, navbarDescription, holdabilityLink, juniorCaptainsLink, retiredAheadLink, seniorRetirementsNextYearLink }
 }

@@ -43,11 +43,11 @@ onMounted(async () => {
 const summaryStats = computed(() => {
   if (!comparison.value) return []
   return [
-    { label: 'Retired', count: comparison.value.retired.length, color: 'text-(--ui-text-muted)' },
-    { label: 'Departed', count: comparison.value.departed.length, color: 'text-(--ui-warning)' },
-    { label: 'Qual Moves', count: comparison.value.qualMoves.length, color: 'text-(--ui-text-toned)' },
-    { label: 'Seniority Number Changes', count: comparison.value.seniorityNumberChanges.length, color: 'text-(--ui-primary)' },
-    { label: 'New Hires', count: comparison.value.newHires.length, color: 'text-(--ui-success)' },
+    { label: 'Retired', count: comparison.value.retired.length },
+    { label: 'Departed', count: comparison.value.departed.length },
+    { label: 'Qualification moves', count: comparison.value.qualMoves.length },
+    { label: 'Seniority Number changes', count: comparison.value.seniorityNumberChanges.length },
+    { label: 'New hires', count: comparison.value.newHires.length },
   ]
 })
 
@@ -55,9 +55,9 @@ const compareTabs = [
   { label: 'Diff', value: 'diff' },
   { label: 'Retired', value: 'retired' },
   { label: 'Departed', value: 'departed' },
-  { label: 'Qual Moves', value: 'qual-moves' },
-  { label: 'Seniority Number Changes', value: 'seniority-number-changes' },
-  { label: 'New Hires', value: 'new-hires' },
+  { label: 'Qualification moves', value: 'qual-moves' },
+  { label: 'Seniority Number changes', value: 'seniority-number-changes' },
+  { label: 'New hires', value: 'new-hires' },
 ]
 
 const activeCompareTab = ref('diff')
@@ -97,7 +97,7 @@ const activeCompareTab = ref('diff')
       <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
         <UCard v-for="stat in summaryStats" :key="stat.label">
           <div class="text-center">
-            <p class="text-2xl font-bold" :class="stat.color">{{ stat.count }}</p>
+            <p class="font-mono text-2xl font-bold text-highlighted">{{ stat.count }}</p>
             <p class="text-xs text-(--ui-text-muted)">{{ stat.label }}</p>
           </div>
         </UCard>

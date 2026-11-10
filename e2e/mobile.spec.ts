@@ -52,7 +52,7 @@ test.describe('compact Seniority List layout', () => {
       await expect(page.getByRole('button', { name: "Don't ask again" })).toBeVisible()
       await page.getByRole('button', { name: 'Not now' }).click()
       await expect(page.getByText('Demo mode', { exact: true })).toBeVisible()
-      await expect(page.getByRole('link', { name: 'Upload my list' })).toBeVisible()
+      await expect(page.getByRole('link', { name: 'Import my list' })).toBeVisible()
       await expect(page.getByRole('button', { name: 'Dismiss' })).toBeVisible()
       await expect(page.getByRole('button', { name: 'Exit Demo' })).toBeVisible()
       await expect(page.locator('table tbody tr').first()).toBeVisible()

@@ -18,7 +18,7 @@ defineProps<{
         <UIcon :name="list.icon" class="text-lg text-muted shrink-0" />
         <div class="min-w-0">
           <p class="text-sm font-medium text-highlighted truncate">{{ list.title }}</p>
-          <p class="text-xs text-muted">{{ list.description }} · uploaded {{ list.date }}</p>
+          <p class="text-xs text-muted">{{ list.description }} · saved {{ list.date }}</p>
         </div>
       </li>
     </ul>

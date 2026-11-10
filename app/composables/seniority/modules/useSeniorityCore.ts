@@ -1,6 +1,6 @@
 import type { SeniorityEntry } from '~/utils/schemas/seniority-list'
 import type { AnchoredSeniorityAnalysis, SeniorityAnalysis } from '~/utils/seniority'
-import type { ComputedRef, Ref } from 'vue'
+import type { ComputedRef, InjectionKey, Ref } from 'vue'
 import { createSeniorityAnalysis } from '~/utils/seniority'
 import { computeRetireDateValue } from '~/utils/date'
 import { parsePlainDate, serializePlainDate, todayPlainDate, type PlainDate } from '~/utils/temporal'
@@ -25,6 +25,29 @@ export interface NewHireControls {
   retireDate: ComputedRef<PlainDate | null>
   syntheticEntry: ComputedRef<SeniorityEntry | null>
   reset(): void
+}
+
+/** The shape every seniority composable reads. The store core and the landing showcase's injected core both have it. */
+export interface SeniorityCore {
+  listAnalysis: ComputedRef<SeniorityAnalysis | null>
+  analysis: ComputedRef<SeniorityAnalysis | null>
+  anchoredAnalysis: ComputedRef<AnchoredSeniorityAnalysis | null>
+  userEntry: ComputedRef<SeniorityEntry | undefined>
+  entries: ComputedRef<SeniorityEntry[]>
+  projectionEndDate: ComputedRef<PlainDate | null>
+  hasData: ComputedRef<boolean>
+  hasAnchor: ComputedRef<boolean>
+  isNewHireMode: ComputedRef<boolean>
+  newHire: NewHireControls
+  /** Prefix for `useState` keys that hold scenario-like state. Absent on the store core. */
+  stateKey?: string
+}
+
+export const SENIORITY_CORE_KEY: InjectionKey<SeniorityCore> = Symbol('seniority-core')
+
+/** Provide a core to every descendant; their `useSeniorityCore()` returns it instead of the store core. */
+export function provideSeniorityCore(core: SeniorityCore) {
+  provide(SENIORITY_CORE_KEY, core)
 }
 
 const PREF_KEY_ENABLED = 'newHireEnabled'
@@ -55,7 +78,12 @@ export function _resetCoreSingletons() {
   _dbInitialized = false
 }
 
-export function useSeniorityCore() {
+export function useSeniorityCore(): SeniorityCore {
+  if (getCurrentInstance()) {
+    const injected = inject(SENIORITY_CORE_KEY, null)
+    if (injected) return injected
+  }
+
   const seniorityStore = useSeniorityStore()
   const userStore = useUserStore()
 

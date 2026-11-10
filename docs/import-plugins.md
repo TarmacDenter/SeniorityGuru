@@ -1,6 +1,6 @@
 # Import Plugin Contributor Guide
 
-Import Plugins define compiled-in Upload Types. The user selects an Upload Type before choosing a file. The application never infers a type or silently falls back to Generic spreadsheet.
+Import Plugins define compiled-in Import Types. The user selects an Import Type before choosing a file. The application never infers a type or silently falls back to Generic spreadsheet.
 
 ## Lifecycle
 
@@ -25,7 +25,7 @@ export const exampleImportPlugin = defineImportPlugin({
 
 The complete lifecycle is:
 
-1. The user selects an Upload Type.
+1. The user selects an Import Type.
 2. The spreadsheet adapter decodes a file and the user selects a sheet.
 3. `prepare()` returns a lossless `PreparationPatch`.
 4. The user confirms `ConfirmedMappings` in Match Columns.

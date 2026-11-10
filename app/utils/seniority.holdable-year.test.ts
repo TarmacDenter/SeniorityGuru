@@ -47,13 +47,13 @@ describe('Holdable Year per Qualification', () => {
   it('is the first projection year in which the projected Seniority Percentile meets the threshold', () => {
     const position = holdabilityOf(laxFirstOfficer)
     expect(position.holdableYear).toBe(2028)
-    expect(position.holdableLabel).toBe('Holdable from 2028')
+    expect(position.holdableLabel).toBe('Estimated from 2028')
   })
 
   it('is a no-result when the trajectory ends at retirement before the threshold is met', () => {
     const position = holdabilityOf(jfkCaptain)
     expect(position.holdableYear).toBeNull()
-    expect(position.holdableLabel).toBe('Not before your retirement')
+    expect(position.holdableLabel).toBe('Not estimated before your retirement')
   })
 
   it('says when the Anchor Pilot is junior to the Qualification\'s most junior pilot, and not when senior', () => {
@@ -73,27 +73,27 @@ describe('Holdable Year per Qualification', () => {
     const analysis = createSeniorityAnalysis({ entries, asOfDate }).withAnchor('P1001')
     const position = holdabilityOf(laxFirstOfficer, analysis)
     expect(position.currentPercentile).toBe(position.thresholdPercentile)
-    expect(position.holdableLabel).toBe('Not before your retirement')
+    expect(position.holdableLabel).toBe('Not estimated before your retirement')
     expect(position.thresholdRelationLabel).toBe('Junior to the most junior pilot (Seniority Number 1000)')
   })
 
   it('applies Growth Assumptions to the projected Seniority Percentile', () => {
-    expect(holdabilityOf(jfkCaptain, anchored(), growth).holdableLabel).toBe('Holdable from 2029')
+    expect(holdabilityOf(jfkCaptain, anchored(), growth).holdableLabel).toBe('Estimated from 2029')
   })
 
   it('does not move with Project forward: it is measured from the As-of Date', () => {
     const analysis = anchored()
     const projected = resultOf(analysis.qualificationPositions({ through: Temporal.PlainDate.from('2030-06-15') }).presentation)
-    expect(projected.find(position => position.qualification.base === 'LAX')!.holdableLabel).toBe('Holdable from 2028')
+    expect(projected.find(position => position.qualification.base === 'LAX')!.holdableLabel).toBe('Estimated from 2028')
   })
 
   it('uses the Hypothetical Placement in new-hire mode', () => {
     const newHire = makeEntry({ seniority_number: 7, employee_number: '_new_hire', ...laxFirstOfficer, retire_date: '2060-01-01' })
     const analysis = anchored({ modeledEntry: newHire })
     // Roster Size 7: the new hire sits at 14.3%; JFK FO 737's threshold (S6) is 28.6%, reached when S1 retires.
-    expect(holdabilityOf(jfkFirstOfficer, analysis).holdableLabel).toBe('Holdable from 2028')
+    expect(holdabilityOf(jfkFirstOfficer, analysis).holdableLabel).toBe('Estimated from 2028')
     // JFK CA 737's threshold (S2) is 85.7%; the new hire reaches it once S3, S4 and S6 retire in 2050.
-    expect(holdabilityOf(jfkCaptain, analysis).holdableLabel).toBe('Holdable from 2050')
+    expect(holdabilityOf(jfkCaptain, analysis).holdableLabel).toBe('Estimated from 2050')
   })
 })
 

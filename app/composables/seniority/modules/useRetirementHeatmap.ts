@@ -34,14 +34,14 @@ const EMPTY: PresentedRetirementHeatmap = { yearLabels: [], availableYearCount: 
  * The Scenario's Qualification Scope filters pilots; the chosen dimensions (any of Base, Seat, Fleet) split rows.
  * Reads the published list only, so a New Hire Mode pilot is never counted.
  */
-export function useRetirementHeatmap() {
-  const { listAnalysis, hasData } = useSeniorityCore()
+export function useRetirementHeatmap(options: { defaultGroupBy?: RetirementHeatmapDimension[] } = {}) {
+  const { listAnalysis, hasData, stateKey = '' } = useSeniorityCore()
   const { qualificationScope, scopeLabel } = useScenario()
 
-  const groupBy = useState<RetirementHeatmapDimension[]>('retirementHeatmapGroupBy', () => ['base'])
-  const showPercent = useState<boolean>('retirementHeatmapShowPercent', () => false)
-  const sortBy = useState<RetirementHeatmapSort>('retirementHeatmapSortBy', () => 'qualification')
-  const yearsChoice = useState<number>('retirementHeatmapYears', () => DEFAULT_YEARS)
+  const groupBy = useState<RetirementHeatmapDimension[]>(`${stateKey}retirementHeatmapGroupBy`, () => [...(options.defaultGroupBy ?? ['base'])])
+  const showPercent = useState<boolean>(`${stateKey}retirementHeatmapShowPercent`, () => false)
+  const sortBy = useState<RetirementHeatmapSort>(`${stateKey}retirementHeatmapSortBy`, () => 'qualification')
+  const yearsChoice = useState<number>(`${stateKey}retirementHeatmapYears`, () => DEFAULT_YEARS)
 
   const dimensions = computed(() => DIMENSIONS.map(dimension => ({ ...dimension, selected: groupBy.value.includes(dimension.value) })))
   function toggleDimension(dimension: RetirementHeatmapDimension) {

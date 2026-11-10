@@ -34,7 +34,7 @@ const columns: TableColumn<SeniorityList>[] = [
   { accessorKey: 'effectiveDate', header: sortableHeader<SeniorityList>('Effective Date'), sortingFn: plainDateSortingFn },
   {
     accessorKey: 'createdAt',
-    header: sortableHeader<SeniorityList>('Uploaded'),
+    header: sortableHeader<SeniorityList>('Saved'),
     cell: ({ row }) => formatInstantLocal(row.original.createdAt),
     sortingFn: instantSortingFn,
   },
@@ -143,7 +143,7 @@ onMounted(async () => {
     <UAlert v-if="listsError" icon="i-lucide-alert-triangle" color="error" :title="listsError" />
 
     <div class="flex flex-wrap items-baseline gap-x-6 gap-y-1">
-      <p class="text-sm text-muted">Lists Uploaded <span class="ml-1 font-mono text-base font-semibold text-highlighted">{{ listCountLabel }}</span></p>
+      <p class="text-sm text-muted">Saved lists <span class="ml-1 font-mono text-base font-semibold text-highlighted">{{ listCountLabel }}</span></p>
     </div>
 
     <DashboardRecentListsTimeline v-if="recentLists.length > 0" :lists="recentLists" />
@@ -155,7 +155,7 @@ onMounted(async () => {
         placeholder="Search lists..."
         class="max-w-sm flex-1"
       />
-      <UButton label="Upload New" icon="i-lucide-upload" to="/seniority/upload" />
+      <UButton label="Import a list" icon="i-lucide-file-input" to="/seniority/upload" />
     </div>
 
     <!-- Mobile: card list with dropdown actions -->

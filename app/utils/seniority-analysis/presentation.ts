@@ -458,12 +458,12 @@ export function presentQualificationQuantileMarker(
   }
 }
 
-const NOT_BEFORE_RETIREMENT_LABEL = 'Not before your retirement'
+const NOT_BEFORE_RETIREMENT_LABEL = 'Not estimated before your retirement'
 
 function holdableYearLabel(holdableYear: HoldableYear): string {
   if (holdableYear === 'now') return 'Holdable now'
   if (isNoResult(holdableYear)) return NOT_BEFORE_RETIREMENT_LABEL
-  return `Holdable from ${holdableYear}`
+  return `Estimated from ${holdableYear}`
 }
 
 export function presentQualificationPositions(

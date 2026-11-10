@@ -60,10 +60,10 @@ function saveDiagnosticFile() {
 const stepOrder = ['upload', 'mapping', 'review', 'confirm'] as const
 type Step = typeof stepOrder[number]
 const steps: StepperItem[] = [
-  { title: 'Upload', description: 'Choose file', icon: 'i-lucide-upload', value: 'upload' },
+  { title: 'File', description: 'Choose a file', icon: 'i-lucide-file-input', value: 'upload' },
   { title: 'Match Columns', description: 'Confirm fields', icon: 'i-lucide-columns-3', value: 'mapping' },
   { title: 'Review', description: 'Validate data', icon: 'i-lucide-scan-eye', value: 'review' },
-  { title: 'Save', description: 'Confirm & upload', icon: 'i-lucide-check-circle', value: 'confirm' },
+  { title: 'Save', description: 'Confirm & save', icon: 'i-lucide-check-circle', value: 'confirm' },
 ]
 
 const currentStep = ref<Step | number>('upload')
@@ -101,7 +101,7 @@ async function selectUploadType(uploadTypeId: string) {
 
 function changeFormat() {
   const replacingReview = currentStep.value === 'review' && upload.review.entries.value.length > 0
-  if (replacingReview && !window.confirm('Changing the upload type replaces your review edits. Continue?')) return
+  if (replacingReview && !window.confirm('Changing the Import Type replaces your review edits. Continue?')) return
   upload.clearUploadType()
   currentStep.value = 'upload'
   clearRowFilter()
@@ -140,12 +140,12 @@ function onDeleteErrorRows() {
 async function onSave() {
   try {
     const count = await upload.confirm.save(upload.review.toValidatedEntries())
-    toast.add({ title: `Uploaded ${count} entries`, color: 'success' })
+    toast.add({ title: `Saved ${count} entries`, color: 'success' })
     upload.reset()
     clearRowFilter()
     await navigateTo({ path: '/dashboard/list/full' })
   } catch {
-    toast.add({ title: upload.confirm.error.value ?? 'Upload failed', color: 'error' })
+    toast.add({ title: upload.confirm.error.value ?? 'Save failed', color: 'error' })
   }
 }
 </script>
@@ -153,7 +153,7 @@ async function onSave() {
 <template>
   <UDashboardPanel>
     <template #header>
-      <SeniorityNavbar title="Upload Seniority List" />
+      <SeniorityNavbar title="Import Seniority List" />
     </template>
 
     <template #body>
@@ -200,9 +200,9 @@ async function onSave() {
                 v-model="files"
                 accept=".csv,.xlsx,.xls"
                 variant="area"
-                icon="i-lucide-upload"
+                icon="i-lucide-file-input"
                 label="Drag & drop your CSV or XLSX file here"
-                description="or tap to choose a file"
+                description="or tap to choose a file. It stays on this device."
               />
 
               <UButton
