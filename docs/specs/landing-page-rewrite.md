@@ -68,7 +68,7 @@ Order, top to bottom:
 7. **Supported lists** (ticket 3): one compact row: Delta, jetBlue, Generic CSV/XLSX. Links: "Required format" → `/how-it-works#data-compatibility`; "Request an Import Plugin" (GitHub issue link and mailto, as today).
 8. **Closing call to action**: View Demo and Open Dashboard.
 
-Removed from the landing page: Position by qualification scale, Age Distribution, the six feature cards, the New Hire mock card, the Required Data Format collapsible, the duplicate trust-signal rows. Alternate section backgrounds so no two neighbours share one.
+Removed from the landing page: Position by qualification scale, Age Distribution, the six feature cards, the New Hire mock card, the Required Data Format collapsible, the duplicate trust-signal rows. Sections are separated by spacing and a rule, not alternating background bands: the default layout's `UContainer` boxes full-width bands.
 
 Delete once unused: `app/composables/useLandingDemo.ts` and its test, `app/components/demo/TrajectoryDemo.vue`, `app/components/demo/ComparisonDemo.vue`, `app/utils/diff-fixture.ts` (check every import first).
 

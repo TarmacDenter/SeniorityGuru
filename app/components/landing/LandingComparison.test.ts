@@ -12,7 +12,7 @@ describe('LandingComparison', () => {
   it('shows the title, the demo-list caption and the changes', async () => {
     const wrapper = await mountSuspended(LandingComparison, { props: { rows } })
     const text = wrapper.text()
-    expect(text).toContain('What changed since the last list')
+    expect(text).toContain('List comparison')
     expect(text).toContain('Demo lists: 2025-01-01 vs 2025-04-01')
     expect(text).toContain('H. Johansson')
     expect(text).toContain('JFK CA 320')

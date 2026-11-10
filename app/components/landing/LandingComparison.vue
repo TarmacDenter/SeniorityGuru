@@ -8,7 +8,7 @@ defineProps<{ rows: DiffRow[] }>()
   <UCard>
     <template #header>
       <div class="flex items-center gap-1.5">
-        <h2 class="text-base font-semibold text-highlighted">What changed since the last list</h2>
+        <h2 class="text-base font-semibold text-highlighted">List comparison</h2>
         <UPopover>
           <UButton icon="i-lucide-info" color="neutral" variant="ghost" size="xs" aria-label="About this comparison" />
           <template #content>
@@ -21,6 +21,6 @@ defineProps<{ rows: DiffRow[] }>()
       </div>
       <p class="mt-1 text-xs text-muted">Demo lists: 2025-01-01 vs 2025-04-01</p>
     </template>
-    <ComparisonDiffTab :rows="rows" />
+    <ComparisonDiffTab :rows="rows" :page-size="8" />
   </UCard>
 </template>

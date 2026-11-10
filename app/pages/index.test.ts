@@ -1,5 +1,4 @@
 import { describe, it, expect, vi } from 'vitest'
-import { nextTick } from 'vue'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 
 vi.mock('~/composables/usePwaInstall', () => ({
@@ -14,77 +13,49 @@ vi.mock('~/composables/usePwaInstall', () => ({
   }),
 }))
 
-vi.mock('~/components/demo/TrajectoryDemo.vue', () => ({
-  default: { template: '<div data-testid="trajectory-demo" />' },
+// The showcase loads the demo lists; its sections are covered by their own tests.
+vi.mock('~/components/landing/LandingShowcase.vue', () => ({
+  default: { template: '<div data-testid="landing-showcase" />' },
 }))
 
-vi.mock('~/components/demo/ComparisonDemo.vue', () => ({
-  default: { template: '<div data-testid="comparison-demo" />' },
-}))
+async function mountIndex() {
+  const IndexPage = await import('./index.vue')
+  return mountSuspended(IndexPage.default)
+}
 
-vi.mock('~/components/analytics/AgeDistributionChart.vue', () => ({
-  default: { template: '<div data-testid="age-distribution-chart" />' },
-}))
-
-vi.mock('~/components/analytics/RetirementWaveChart.vue', () => ({
-  default: { template: '<div data-testid="retirement-wave-chart" />' },
-}))
-
-describe('index.vue — CTA rendering', () => {
-  it('renders sample Qualification counts and independent scaling disclosure', async () => {
-    const IndexPage = await import('./index.vue')
-    const wrapper = await mountSuspended(IndexPage.default)
-
-    expect(wrapper.findAll('[data-testid="qualification-scale-active-count"]').map(count => count.text())).toEqual([
-      '94 active in this qualification',
-      '68 active in this qualification',
-      '198 active in this qualification',
-      '142 active in this qualification',
-    ])
-    expect(wrapper.find('[data-testid="qualification-scale-roster-size"]').exists()).toBe(false)
-    expect(wrapper.text()).toContain('Heights scale independently for each Qualification')
-    expect(wrapper.findAll('[data-testid="qualification-scale-projected-position"]')).toHaveLength(4)
+describe('index.vue', () => {
+  it('leads with the outcome a pilot is looking for', async () => {
+    const text = (await mountIndex()).text()
+    expect(text).toContain('See where you\'ll be on the seniority list in 5, 10 and 20 years.')
+    expect(text).toContain('Rank today')
   })
 
-  it('uses Seniority Number, Rank, and Seniority Percentile in the sample card', async () => {
-    const IndexPage = await import('./index.vue')
-    const text = (await mountSuspended(IndexPage.default)).text()
-    expect(text).toContain('Seniority Number')
-    expect(text).toContain('Seniority Percentile')
-    expect(text).toContain('of 4,892 on roster')
-    expect(text).not.toContain('0th')
-    expect(text).not.toContain('/ 4,892')
-    expect(text).not.toContain('Seniority #')
-  })
-
-  it('shows "Get Started" hero CTA linking to /dashboard', async () => {
-    const IndexPage = await import('./index.vue')
-    const wrapper = await mountSuspended(IndexPage.default)
-    expect(wrapper.text()).toContain('Dig')
+  it('offers View Demo once, Open Dashboard and Install App', async () => {
+    const wrapper = await mountIndex()
+    const labels = wrapper.findAll('button, a').map(el => el.text())
+    expect(labels.filter(label => label === 'View Demo')).toHaveLength(1)
+    expect(labels).toContain('Try the Demo')
+    expect(labels).toContain('Install App')
     expect(wrapper.html()).toContain('href="/dashboard"')
   })
 
-  it('names the New Hire sample after the Current › Status view', async () => {
-    const IndexPage = await import('./index.vue')
-    const text = (await mountSuspended(IndexPage.default)).text()
-    expect(text).toContain('Current › Status')
-    expect(text).not.toContain('My Status')
+  it('renders the showcase of demo-list sections', async () => {
+    const wrapper = await mountIndex()
+    expect(wrapper.find('[data-testid="landing-showcase"]').exists()).toBe(true)
   })
 
-  it('offers the retirement timing seats as tabs', async () => {
-    const IndexPage = await import('./index.vue')
-    const wrapper = await mountSuspended(IndexPage.default)
-    expect(wrapper.findAll('[role="tab"]').map(tab => tab.text())).toEqual(['All Pilots', 'FO', 'CA'])
+  it('states privacy and supported lists once', async () => {
+    const text = (await mountIndex()).text()
+    expect(text.match(/Local data/g)).toHaveLength(1)
+    expect(text).toContain('Supported lists')
+    expect(text).toContain('Delta')
+    expect(text).toContain('jetBlue')
   })
 
-  it('shows the Generic sample file with full column names once opened', async () => {
-    const IndexPage = await import('./index.vue')
-    const wrapper = await mountSuspended(IndexPage.default)
-    const toggle = wrapper.findAll('button').find(button => button.text() === 'Required Data Format (Generic)')
-    await toggle!.trigger('click')
-    await nextTick()
-    expect(wrapper.find('table').findAll('th').map(th => th.text())).toEqual([
-      'Seniority Number', 'Employee Number', 'Seat', 'Base', 'Fleet', 'Hire Date', 'Retire Date',
-    ])
+  it('drops the fabricated sample sections', async () => {
+    const text = (await mountIndex()).text()
+    expect(text).not.toContain('Position by qualification')
+    expect(text).not.toContain('Age Distribution')
+    expect(text).not.toContain('4,892')
   })
 })

@@ -7,6 +7,8 @@ import type { DiffRowView } from '~/utils/diff-row-presentation'
 const props = defineProps<{
   rows: DiffRow[]
   userEmployeeNumber?: string
+  /** Rows per page; the landing page shows a short sample. */
+  pageSize?: number
 }>()
 
 const showSeniorityNumberChanges = ref(false)
@@ -16,7 +18,7 @@ const viewRows = computed(() => presentDiffRows(props.rows, {
   userEmployeeNumber: props.userEmployeeNumber,
 }))
 
-const table = useTableFeatures<DiffRowView>('diffTable', { pageSize: 50 })
+const table = useTableFeatures<DiffRowView>('diffTable', { pageSize: props.pageSize ?? 50 })
 
 watch(showSeniorityNumberChanges, () => { table.pagination.value.pageIndex = 0 })
 

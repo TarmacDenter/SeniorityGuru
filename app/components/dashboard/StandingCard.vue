@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { RouteLocationRaw } from 'vue-router'
 import type { RankCardData, StandingFigure } from '~/composables/seniority'
 
 type NoteLink = NonNullable<StandingFigure['noteLink']>
@@ -8,7 +9,7 @@ type NoteLink = NonNullable<StandingFigure['noteLink']>
 defineProps<{
   rankCard: RankCardData
   figures: StandingFigure[]
-  noteLinks?: Partial<Record<NoteLink, string>>
+  noteLinks?: Partial<Record<NoteLink, RouteLocationRaw>>
 }>()
 
 defineEmits<{ 'note-click': [link: NoteLink] }>()

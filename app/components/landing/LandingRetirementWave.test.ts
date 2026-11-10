@@ -16,7 +16,7 @@ describe('LandingRetirementWave', () => {
     await until(() => wrapper.text().includes('Retirements within'))
     const text = wrapper.text()
 
-    expect(text).toContain('Which retirements move you')
+    expect(text).toContain('Retirement Wave')
     expect(text).toMatch(/\d+ retirements? senior to you in the next 5 years/)
     expect(text).toContain('Sample pilot from the demo list')
   })
