@@ -156,8 +156,8 @@ const requiredColumns = [
             </p>
             <ul class="list-disc list-inside space-y-1 text-muted">
               <li><strong>Holdable now</strong>: you are already senior to the Qualification's most junior active pilot.</li>
-              <li><strong>Holdable from &lt;year&gt;</strong>: the first year your projected percentile meets the threshold.</li>
-              <li><strong>Not before your retirement</strong>: the projection ends at your retirement first.</li>
+              <li><strong>Estimated from &lt;year&gt;</strong>: the first year your projected percentile meets the threshold, counting scheduled retirements only.</li>
+              <li><strong>Not estimated before your retirement</strong>: the projection ends at your retirement first.</li>
             </ul>
             <p class="text-muted">
               Scheduled retirements and Growth Assumptions change your projected Seniority Percentile.

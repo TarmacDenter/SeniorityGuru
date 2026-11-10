@@ -3,9 +3,15 @@ import { Chart } from 'vue-chartjs'
 import { Chart as ChartJS, CategoryScale, Tooltip, type ChartData, type ChartOptions, type ScriptableContext, type TooltipItem } from 'chart.js'
 import { color } from 'chart.js/helpers'
 import { MatrixController, MatrixElement } from 'chartjs-chart-matrix'
+import type { RetirementHeatmapDimension } from '~/utils/seniority'
 import { useRetirementHeatmap, type RetirementHeatmapPoint } from '~/composables/seniority'
 
 ChartJS.register(MatrixController, MatrixElement, CategoryScale, Tooltip)
+
+const props = defineProps<{
+  /** Rows to group by before the viewer changes it; the dashboard starts on Base. */
+  defaultGroupBy?: RetirementHeatmapDimension[]
+}>()
 
 // Demographics › Retirement heatmap. Rows, years, values and sentences come from the composable;
 // this component only maps them onto the matrix chart.
@@ -13,7 +19,7 @@ const {
   hasData, dimensions, toggleDimension, showPercent, scopeLabel, groupedByLabel, isEmpty,
   undatedPilotNote, yearLabels, rowLabels, points, valueLegend, summaryLabel,
   sortBy, sortItems, years, maxYears, yearsLabelFor, yearRangeLabel,
-} = useRetirementHeatmap()
+} = useRetirementHeatmap({ defaultGroupBy: props.defaultGroupBy })
 
 // The thumb and its readout move live; the chart follows once it rests.
 const sliderYears = useSettledModel(years)

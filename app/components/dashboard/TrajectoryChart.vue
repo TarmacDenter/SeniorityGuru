@@ -91,7 +91,7 @@ const chartOptions = computed(() => ({
           <slot name="badge" />
         </div>
         <slot name="controls">
-          <UBadge color="primary" variant="subtle" size="sm">Projected</UBadge>
+          <UBadge color="primary" variant="subtle" size="sm">Estimate</UBadge>
         </slot>
       </div>
     </template>

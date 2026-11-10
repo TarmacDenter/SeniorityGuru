@@ -19,7 +19,7 @@ const Page = defineComponent({
 beforeEach(() => _resetCoreSingletons())
 
 describe('LandingTrajectory', () => {
-  it('shows the demo pilot\'s Seniority Percentile over time with its scale', async () => {
+  it('shows the demo pilot\'s Seniority Percentile over time as one retirements-only scenario', async () => {
     const wrapper = await mountSuspended(Page)
     await until(() => wrapper.text().includes('Seniority Percentile over time'))
 
@@ -27,7 +27,7 @@ describe('LandingTrajectory', () => {
     expect(wrapper.text()).toContain('Sample pilot from the demo list')
     expect(wrapper.find('[data-testid="line-chart"]').exists()).toBe(true)
     expect(wrapper.text()).not.toContain('Compare')
-    expect(wrapper.text()).toContain('Percentile measured against Roster Size')
+    expect(wrapper.text()).toContain('Scheduled retirements only')
     expect(wrapper.findAll('h2').filter(h2 => h2.text() === 'Your Seniority Percentile over time')).toHaveLength(1)
   })
 })

@@ -25,7 +25,7 @@ describe('LandingHoldability', () => {
     await until(() => wrapper.text().includes('Holdable'))
     const text = wrapper.text()
 
-    expect(text).toContain('When can you hold each Qualification?')
+    expect(text).toContain('Holdability by Qualification')
     expect(text).toContain('Rank today')
     expect(text).toContain('Seniority Percentile')
     expect(text).toMatch(/Holdable (now|from \d{4})/)

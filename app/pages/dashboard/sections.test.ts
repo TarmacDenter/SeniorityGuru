@@ -66,7 +66,7 @@ const views = {
 describe('dashboard small views', () => {
   it.each([
     ['Current › Status', 'Your line on the Seniority List'],
-    ['Current › Holdability', 'When can you hold each Qualification?'],
+    ['Current › Holdability', 'Holdability by Qualification'],
     ['Trajectory › Projection', 'Your Seniority Percentile over time'],
     ['Trajectory › Retirements', 'Retirement Projections'],
     ['Demographics › Overview', 'Who holds each Qualification'],

@@ -41,13 +41,13 @@ const rowId = (row: HoldabilityRow) => row.key
   <UCard>
     <template #header>
       <div class="flex items-center gap-1.5">
-        <h2 class="font-semibold text-highlighted">When can you hold each Qualification?</h2>
+        <h2 class="font-semibold text-highlighted">Holdability by Qualification</h2>
         <UPopover>
           <UButton icon="i-lucide-info" color="neutral" variant="ghost" size="xs" aria-label="About Holdable" />
           <template #content>
             <div class="max-w-xs space-y-2 p-3 text-sm text-muted">
               <p>Holdable is a modeled outcome, not a vacancy or an award.</p>
-              <p>A Qualification is Holdable from the first year your projected company Seniority Percentile meets its Qualification Threshold as of today. Future occupancy, vacancies, bids, transfers and awards are not modeled.</p>
+              <p>The estimate is the first year your projected company Seniority Percentile meets its Qualification Threshold as of today. Future occupancy, vacancies, bids, transfers and awards are not modeled.</p>
               <p>Rank today already leaves out pilots who have retired since the list was published.</p>
               <NuxtLink to="/how-it-works#holdability" class="text-highlighted underline">Learn more about Holdable and Qualification Thresholds</NuxtLink>
             </div>

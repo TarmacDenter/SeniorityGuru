@@ -28,6 +28,8 @@ describe('LandingHeatmap', () => {
     expect(text).toContain('Group by')
     expect(wrapper.findAll('[aria-label="Group rows by"] button').map(button => button.text())).toEqual(['Base', 'Seat', 'Fleet'])
     expect(text).toMatch(/Next \d+ years/)
+    expect(text).toContain('By base, seat')
+    expect(wrapper.findAll('[aria-label="Group rows by"] button[aria-pressed="true"]').map(button => button.text())).toEqual(['Base', 'Seat'])
     expect(text).toContain('Demo list')
   })
 })

@@ -89,7 +89,7 @@ describe('seniority/compare.vue — route-synced ref / watcher race condition', 
     mockComparison.value = { retired: [], departed: [], qualMoves: [], seniorityNumberChanges: [], newHires: [] }
     const ComparePage = await import('./compare.vue')
     const wrapper = await mountSuspended(ComparePage.default)
-    expect(wrapper.text()).toContain('Seniority Number Changes')
+    expect(wrapper.text()).toContain('Seniority Number changes')
     expect(wrapper.text()).not.toContain('Rank Changes')
   })
 

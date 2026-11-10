@@ -87,6 +87,7 @@ A modeled outcome in which an Anchor Pilot's projected Seniority Percentile meet
 
 **Holdable Year**:
 The first projection year in which the Anchor Pilot's projected Seniority Percentile meets a Qualification Threshold's As-of Date value. It is "now" when the Anchor Pilot is already senior to the Qualification's most junior active pilot, and there is none when the projection ends at the Anchor Pilot's retirement first.
+Shown as "Holdable now", "Estimated from <year>" or "Not estimated before your retirement".
 _Avoid_: Hold date, Bid year
 
 **Retirement Wave**:

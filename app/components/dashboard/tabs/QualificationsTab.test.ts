@@ -24,11 +24,11 @@ const groups: HoldabilitySeatGroup[] = [{
     row({
       key: '777 CA LAX', baseFleetLabel: 'LAX 777', rankLabel: '91', rosterOfLabel: 'of 91', percentileLabel: '1.1%',
       hypotheticalLabel: 'Hypothetical Placement in LAX CA 777',
-      holdableLabel: 'Holdable from 2029', holdableStatus: 'later',
+      holdableLabel: 'Estimated from 2029', holdableStatus: 'later',
       thresholdRelationLabel: 'Junior to the most junior pilot (Seniority Number 812)',
     }),
     row({
-      key: '787 CA SFO', baseFleetLabel: 'SFO 787', holdableLabel: 'Not before your retirement', holdableStatus: 'never',
+      key: '787 CA SFO', baseFleetLabel: 'SFO 787', holdableLabel: 'Not estimated before your retirement', holdableStatus: 'never',
       thresholdRelationLabel: 'Junior to the most junior pilot (Seniority Number 40)',
     }),
   ],
@@ -38,7 +38,7 @@ const columnLabels = { qualification: 'Qualification', rank: 'Rank today', roste
 
 const detail: HoldabilityDetailView = {
   qualificationLabel: '777 CA LAX',
-  holdableLabel: 'Holdable from 2029',
+  holdableLabel: 'Estimated from 2029',
   thresholdPercentile: 70,
   thresholdPercentileLabel: '70.0%',
   labels: ['2026-06-15', '2027-06-15'],
@@ -69,8 +69,8 @@ describe('Current › Holdability', () => {
 
     expect(text).toContain('Rank today')
     expect(text).toContain('Holdable now')
-    expect(text).toContain('Holdable from 2029')
-    expect(text).toContain('Not before your retirement')
+    expect(text).toContain('Estimated from 2029')
+    expect(text).toContain('Not estimated before your retirement')
   })
 
   it('names Hypothetical Placement once for the seat, not on every row', async () => {
