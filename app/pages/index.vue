@@ -5,9 +5,9 @@ const { install } = usePwaInstall()
 
 useSeoMeta({
   title: 'SeniorityGuru — Pilot Seniority Tracker',
-  description: 'Upload an airline seniority list and slice its retirements by base, seat, fleet and time horizon. Data stays on your device.',
+  description: 'Analyze your company seniority list in your browser: retirements by base, seat and fleet over the time horizon you choose. The file is saved on your device and never sent to a server.',
   ogTitle: 'SeniorityGuru — Pilot Seniority Tracker',
-  ogDescription: 'Upload an airline seniority list and slice its retirements by base, seat, fleet and time horizon. Data stays on your device.',
+  ogDescription: 'Analyze your company seniority list in your browser: retirements by base, seat and fleet over the time horizon you choose. The file is saved on your device and never sent to a server.',
   twitterCard: 'summary',
 })
 
@@ -31,12 +31,11 @@ async function enterDemo() {
     <section class="pt-8 sm:pt-16 text-center">
       <div class="mx-auto flex max-w-3xl flex-col items-center gap-6">
         <h1 class="text-4xl font-bold leading-tight tracking-tight text-highlighted sm:text-5xl">
-          Slice your seniority list to see what could move you.
+          Analyze your company seniority deeply and locally.
         </h1>
         <p class="max-w-2xl text-lg text-muted">
-          Break scheduled retirements down by base, seat and fleet, change the time horizon, and compare
-          scenarios. Projections count scheduled retirements only; hiring, upgrades and other attrition can change
-          the result.
+          Open your airline's seniority list in your browser. Filter retirements by base, seat and fleet, and
+          change the time horizon. The file is read and saved on this device; nothing is sent to a server.
         </p>
         <div class="flex flex-wrap justify-center gap-3">
           <UButton size="xl" icon="i-lucide-play" :loading="demoEntering" @click="enterDemo">
@@ -50,7 +49,7 @@ async function enterDemo() {
           </UButton>
         </div>
         <p class="text-sm text-muted">
-          Stays on your device · No account · Works offline ·
+          Saved on this device only · No account · Works offline ·
           <a href="https://github.com/TarmacDenter/SeniorityGuru" target="_blank" class="text-highlighted underline">Open source</a>
         </p>
       </div>
@@ -101,7 +100,7 @@ async function enterDemo() {
     <section class="border-t border-default py-16 text-center">
       <div class="mx-auto max-w-xl space-y-6">
         <h2 class="text-2xl font-bold tracking-tight text-highlighted sm:text-3xl">
-          Try it with the demo list, then upload yours.
+          Try it with the demo list, then import yours.
         </h2>
         <div class="flex flex-wrap justify-center gap-3">
           <UButton size="xl" icon="i-lucide-play" :loading="demoEntering" @click="enterDemo">

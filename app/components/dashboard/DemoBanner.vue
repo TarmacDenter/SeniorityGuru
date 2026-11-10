@@ -20,7 +20,7 @@ async function dismissBanner() {
     <span class="font-medium text-highlighted">Demo mode</span>
     <span class="hidden text-muted sm:inline">Sample data only.</span>
     <span class="flex-1" />
-    <UButton size="xs" color="neutral" variant="outline" to="/seniority/upload" icon="i-lucide-upload">Upload my list</UButton>
+    <UButton size="xs" color="neutral" variant="outline" to="/seniority/upload" icon="i-lucide-file-input">Import my list</UButton>
     <UButton size="xs" variant="ghost" color="neutral" @click="dismissBanner">Dismiss</UButton>
     <UButton size="xs" variant="ghost" color="neutral" @click="exit">Exit Demo</UButton>
   </div>

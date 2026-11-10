@@ -14,7 +14,7 @@ defineProps<{ rows: DiffRow[] }>()
           <template #content>
             <p class="max-w-xs p-3 text-sm text-default">
               Compares two published Seniority Lists: pilots who retired or departed, new hires, and Qualification moves.
-              Upload two lists of your own to see the same view for your airline.
+              Import two lists of your own to see the same view for your airline.
             </p>
           </template>
         </UPopover>

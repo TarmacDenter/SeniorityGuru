@@ -64,7 +64,7 @@ export const DASHBOARD_SECTIONS: DashboardSection[] = [
       { label: 'Full list', path: '/dashboard/list/full' },
       { label: 'Upcoming retirements', path: '/dashboard/list/retirements' },
       { label: 'Compare', path: '/dashboard/list/compare' },
-      { label: 'Uploads', path: '/dashboard/list/uploads' },
+      { label: 'Saved lists', path: '/dashboard/list/uploads' },
     ],
     hasScenario: false,
     needsAnchor: false,
@@ -73,7 +73,7 @@ export const DASHBOARD_SECTIONS: DashboardSection[] = [
 
 /** Occasional actions below the sections in the sidebar and in the phone More sheet. */
 export const DASHBOARD_ACTIONS = [
-  { label: 'Upload', icon: 'i-lucide-upload', to: '/seniority/upload' },
+  { label: 'Import', icon: 'i-lucide-file-input', to: '/seniority/upload' },
   { label: 'Compare', icon: 'i-lucide-git-compare-arrows', to: '/dashboard/list/compare' },
   { label: 'Settings', icon: 'i-lucide-settings', to: '/settings' },
 ] as const

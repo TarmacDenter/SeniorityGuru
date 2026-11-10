@@ -32,7 +32,7 @@ function useListSelectionRoute() {
     await navigateTo({ path: route.path, query }, { replace: true })
   }
 
-  // A link that names a list (e.g. from List › Uploads) selects it while the dashboard is open.
+  // A link that names a list (e.g. from List › Saved lists) selects it while the dashboard is open.
   watch(() => route.query.list, (raw) => {
     const id = raw ? Number(raw) : undefined
     if (!initializing.value && id && id !== selectedListId.value) selectedListId.value = id
@@ -69,7 +69,7 @@ const { scopeLabel, scopeLabels, growthAssumptions, growthLabel, asOfLabel } = u
 const compactNoticeDismissed = ref<string | null>(null)
 const showScenarioStrip = computed(() => !loading.value && hasData.value && !!section.value?.hasScenario
   && (hasAnchor.value || !section.value.needsAnchor))
-// The list picker serves the List views that read the chosen list; Compare and Uploads pick their own.
+// The list picker serves the List views that read the chosen list; Compare and Saved lists pick their own.
 const showListPicker = computed(() => route.path === '/dashboard/list/full' || route.path === '/dashboard/list/retirements')
 const compactNotice = computed(() => {
   if (showInstallBanner.value && compactNoticeDismissed.value !== 'install') return 'install'
@@ -106,7 +106,7 @@ const panelUi = computed(() => ({
         v-if="!loading && lists.length === 0"
         class="flex flex-col items-center justify-center h-full gap-6 py-24 text-center px-4"
       >
-        <UIcon name="i-lucide-upload-cloud" class="size-16 text-muted" />
+        <UIcon name="i-lucide-file-input" class="size-16 text-muted" />
         <div class="space-y-2">
           <h2 class="text-xl font-semibold">No seniority list yet</h2>
           <p class="text-muted max-w-sm">
@@ -114,7 +114,7 @@ const panelUi = computed(() => ({
           </p>
         </div>
         <div class="flex gap-3 flex-wrap justify-center">
-          <UButton to="/seniority/upload" icon="i-lucide-upload" size="lg">
+          <UButton to="/seniority/upload" icon="i-lucide-file-input" size="lg">
             Import a list
           </UButton>
           <UButton to="/settings" variant="ghost" icon="i-lucide-settings" size="lg">

@@ -24,10 +24,11 @@ async function mountIndex() {
 }
 
 describe('index.vue', () => {
-  it('leads with slicing the list, not a promised outcome', async () => {
+  it('leads with local analysis and says the file is never sent anywhere', async () => {
     const text = (await mountIndex()).text()
-    expect(text).toContain('Slice your seniority list to see what could move you.')
-    expect(text).toContain('Projections count scheduled retirements only')
+    expect(text).toContain('Analyze your company seniority deeply and locally.')
+    expect(text).toContain('nothing is sent to a server')
+    expect(text).not.toMatch(/upload/i)
     expect(text).not.toMatch(/you'll be|will be on the/)
   })
 

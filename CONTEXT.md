@@ -99,14 +99,14 @@ One of four parts of the dashboard, split by subject (the Anchor Pilot or the li
 _Avoid_: Tab, Panel
 
 **Small View**:
-A page inside a Dashboard Section, reached from the section's tab row. Current has **Status** and **Holdability**. Trajectory has **Projection** and **Retirements**. Demographics has **Overview** and **Retirement heatmap**. List has **Full list**, **Upcoming retirements**, **Compare** and **Uploads**. Each presentation lives in exactly one Small View.
+A page inside a Dashboard Section, reached from the section's tab row. Current has **Status** and **Holdability**. Trajectory has **Projection** and **Retirements**. Demographics has **Overview** and **Retirement heatmap**. List has **Full list**, **Upcoming retirements**, **Compare** and **Saved lists**. Each presentation lives in exactly one Small View.
 _Avoid_: Subtab
 
 ## Seniority List Import Language
 
 **Import Plugin**: A compiled-in definition that prepares an airline format or Generic spreadsheet and may transform mapped entries. Avoid: pre-parser, parser framework.
 
-**Upload Type**: The user-facing choice that selects an Import Plugin. Avoid: parser, plugin.
+**Import Type**: The user-facing choice that selects an Import Plugin. Avoid: Upload Type, parser, plugin.
 
 **Import Pipeline**: The shared sequence that prepares a decoded Source Sheet, maps fields, transforms mapped entries, validates entries, and produces saved data. Avoid: upload parser.
 
@@ -134,7 +134,7 @@ _Avoid_: Subtab
 
 **Blocking Import Error**: A read or decode error that prevents a Source Sheet from being created.
 
-**Import Attempt**: A locally retained diagnostic record for one upload. Attempts and saved seniority lists have independent deletion lifecycles.
+**Import Attempt**: A locally retained diagnostic record for one import. Attempts and saved seniority lists have independent deletion lifecycles.
 
 **Diagnostic Bundle**: A user-created export of one Import Attempt. It can include pilot and seniority-list data and is never sent automatically.
 

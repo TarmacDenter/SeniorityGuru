@@ -21,7 +21,7 @@ test.describe('dashboard', () => {
   test('List small views are a tab row', async ({ page }) => {
     await page.goto('/dashboard/list/full')
     const views = page.getByRole('navigation', { name: 'Section views' })
-    for (const view of ['Full list', 'Upcoming retirements', 'Compare', 'Uploads']) {
+    for (const view of ['Full list', 'Upcoming retirements', 'Compare', 'Saved lists']) {
       await expect(views.getByRole('link', { name: view })).toBeVisible()
     }
     await views.getByRole('link', { name: 'Upcoming retirements' }).click()

@@ -186,7 +186,7 @@ function scrollToUserRow() {
 
     <div class="flex-1 min-h-0 overflow-hidden">
       <div :class="isCompact ? 'h-full min-h-0 p-0 short:px-4 flex flex-col' : 'h-full min-h-0 sm:p-6 flex flex-col'">
-        <UEmpty v-if="!latestList && !isLoading" icon="i-lucide-list-ordered" title="No Seniority List Yet" description="Upload your airline's seniority list to view your position." :actions="[{ label: 'Upload Seniority List', icon: 'i-lucide-upload', to: '/seniority/upload', size: 'lg' as const }]" class="py-24" />
+        <UEmpty v-if="!latestList && !isLoading" icon="i-lucide-list-ordered" title="No Seniority List Yet" description="Import your airline's seniority list to view your position." :actions="[{ label: 'Import a list', icon: 'i-lucide-file-input', to: '/seniority/upload', size: 'lg' as const }]" class="py-24" />
         <template v-else>
           <p v-if="latestList && !isCompact" class="shrink-0 text-sm text-muted mb-4">{{ isQualMode ? `${qualificationScope.base}-${qualificationScope.fleet}-${qualificationScope.seat}` : 'Company-wide' }} · {{ projected.rosterSize }} on roster · {{ projected.activePilotCount }} active</p>
           <div class="flex min-h-0 flex-1 flex-col">

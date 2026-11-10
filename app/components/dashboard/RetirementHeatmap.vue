@@ -89,7 +89,7 @@ const chartOptions = computed<ChartOptions<'matrix'>>(() => ({
     icon="i-lucide-grid-3x3"
     title="No seniority list loaded"
     description="Import your airline's seniority list to see where retirements fall."
-    :actions="[{ label: 'Upload Seniority List', icon: 'i-lucide-upload', to: '/seniority/upload', size: 'lg' as const }]"
+    :actions="[{ label: 'Import a list', icon: 'i-lucide-file-input', to: '/seniority/upload', size: 'lg' as const }]"
     class="py-24"
   />
 

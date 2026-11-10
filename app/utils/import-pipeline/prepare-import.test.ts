@@ -115,7 +115,7 @@ describe('prepareImport', () => {
     expect(result.preparedSheet.columns).toEqual(sourceSheet.columns)
     expect(result.issues).toEqual([{
       kind: 'preparation-failed',
-      message: 'This Upload Type could not prepare the sheet. Match the columns manually.',
+      message: 'This Import Type could not prepare the sheet. Match the columns manually.',
     }])
   })
 

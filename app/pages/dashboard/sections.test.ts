@@ -60,7 +60,7 @@ const views = {
   'List › Full list': () => import('./list/full.vue'),
   'List › Upcoming retirements': () => import('./list/retirements.vue'),
   'List › Compare': () => import('./list/compare.vue'),
-  'List › Uploads': () => import('./list/uploads.vue'),
+  'List › Saved lists': () => import('./list/uploads.vue'),
 }
 
 describe('dashboard small views', () => {
@@ -74,7 +74,7 @@ describe('dashboard small views', () => {
     ['List › Full list', 'Pilot Four'],
     ['List › Upcoming retirements', 'Senior to me only'],
     ['List › Compare', 'Older List'],
-    ['List › Uploads', 'Fleet list'],
+    ['List › Saved lists', 'Fleet list'],
   ] as const)('%s shows %s', async (view, text) => {
     const wrapper = await visit(views[view]())
     expect(wrapper.text()).toContain(text)
@@ -98,14 +98,14 @@ describe('dashboard small views', () => {
 })
 
 describe('list metadata', () => {
-  it('lives in List › Uploads, not Current › Status', async () => {
-    const uploads = await visit(views['List › Uploads']())
-    expect(uploads.text()).toContain('Lists Uploaded')
+  it('lives in List › Saved lists, not Current › Status', async () => {
+    const uploads = await visit(views['List › Saved lists']())
+    expect(uploads.text()).toContain('Saved lists')
     expect(uploads.text()).toContain('Recent Lists')
     uploads.unmount()
 
     const status = await visit(views['Current › Status']())
-    expect(status.text()).not.toContain('Lists Uploaded')
+    expect(status.text()).not.toContain('Saved lists')
     expect(status.text()).not.toContain('Recent Lists')
   })
 })

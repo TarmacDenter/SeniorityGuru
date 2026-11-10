@@ -8,7 +8,7 @@ describe('dashboard sections', () => {
       ['Current', ['Status', 'Holdability']],
       ['Trajectory', ['Projection', 'Retirements']],
       ['Demographics', ['Overview', 'Retirement heatmap']],
-      ['List', ['Full list', 'Upcoming retirements', 'Compare', 'Uploads']],
+      ['List', ['Full list', 'Upcoming retirements', 'Compare', 'Saved lists']],
     ])
   })
 

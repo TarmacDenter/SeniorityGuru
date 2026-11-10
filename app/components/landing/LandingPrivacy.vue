@@ -3,7 +3,7 @@ const items = [
   {
     icon: 'i-lucide-plane',
     title: 'Use your airline\'s data',
-    description: 'Upload a seniority spreadsheet without special access or an airline account.',
+    description: 'Open the seniority spreadsheet you already have. No special access or airline account needed.',
   },
   {
     icon: 'i-lucide-hard-drive',

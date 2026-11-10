@@ -23,8 +23,8 @@ const { computeRetirementProjection, scopeOptions } = useNextProjections()
       v-else-if="!hasData || !userFound"
       icon="i-lucide-trending-up"
       title="No trajectory yet"
-      description="Upload a seniority list and enter your employee number to see which retirements move you."
-      :actions="[{ label: 'Upload Seniority List', icon: 'i-lucide-upload', to: '/seniority/upload', size: 'lg' as const }]"
+      description="Import a seniority list and enter your employee number to see which retirements move you."
+      :actions="[{ label: 'Import a list', icon: 'i-lucide-file-input', to: '/seniority/upload', size: 'lg' as const }]"
       class="py-24"
     />
 

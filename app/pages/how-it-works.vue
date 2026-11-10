@@ -9,7 +9,7 @@ const sections = [
   { id: 'growth-model', title: 'Growth Assumptions' },
   { id: 'projection-limits', title: 'Projection Limitations' },
   { id: 'threshold-calculator', title: 'Percentile Threshold' },
-  { id: 'data-compatibility', title: 'Upload Types and Data' },
+  { id: 'data-compatibility', title: 'Import Types and Data' },
 ] as const
 
 const requiredColumnHeaders = [
@@ -217,7 +217,7 @@ const requiredColumns = [
               <li>Furloughs or voluntary leaves</li>
               <li>Non-retirement attrition, such as resignations or medical leave</li>
               <li>Changes to the mandatory retirement age</li>
-              <li>Corrections to source-list data after upload</li>
+              <li>Corrections to source-list data after import</li>
             </ul>
             <UAlert color="neutral" variant="subtle" icon="i-lucide-clock" title="Projection Through Date"
               description="Projections run through your retirement date. Without one, they run through the latest retirement date in the loaded seniority list. Results are directional estimates." />
@@ -245,7 +245,7 @@ const requiredColumns = [
 
         <!-- Data Compatibility -->
         <section id="data-compatibility">
-          <h2 class="text-xl font-bold mb-3">Upload Types and Data</h2>
+          <h2 class="text-xl font-bold mb-3">Import Types and Data</h2>
           <USeparator class="mb-4" />
           <div class="space-y-6 text-sm text-default">
             <p>
@@ -369,7 +369,7 @@ const requiredColumns = [
             </div>
 
             <UAlert color="neutral" variant="subtle" icon="i-lucide-info" title="Airline not listed?"
-              description="Use “Don't see your airline?” on the upload page to request a new Upload Type. Until then, Generic spreadsheet can read most files." />
+              description="Use “Don't see your airline?” on the Import page to request a new Import Type. Until then, Generic spreadsheet can read most files." />
           </div>
         </section>
       </div>

@@ -32,8 +32,8 @@ const noteLinks = computed(() => ({ retiredAhead: retiredAheadLink.value, senior
       v-else-if="!hasData"
       icon="i-lucide-list-ordered"
       title="No Seniority Data Yet"
-      description="Upload your airline's seniority list to see your position, track retirements, and project your trajectory."
-      :actions="[{ label: 'Upload Seniority List', icon: 'i-lucide-upload', to: '/seniority/upload', size: 'lg' as const }]"
+      description="Import your airline's seniority list to see your position, track retirements, and project your trajectory."
+      :actions="[{ label: 'Import a list', icon: 'i-lucide-file-input', to: '/seniority/upload', size: 'lg' as const }]"
       class="py-24"
     />
 

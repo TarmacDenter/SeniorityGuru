@@ -53,16 +53,16 @@ describe('MobileBottomBar', () => {
     expect(current.map(link => link.text())).toEqual([label])
   })
 
-  it('opens a sheet with Upload, Compare, Settings and How it works from More', async () => {
+  it('opens a sheet with Import, Compare, Settings and How it works from More', async () => {
     const wrapper = await mountBar()
-    expect(document.body.textContent).not.toContain('Upload')
+    expect(document.body.textContent).not.toContain('Import')
 
     await wrapper.findAll('button').find(button => button.text() === 'More')!.trigger('click')
     await flushPromises()
 
     const links = [...document.body.querySelectorAll('[role="dialog"] a')].map(link => [link.textContent?.trim(), link.getAttribute('href')])
     expect(links).toEqual([
-      ['Upload', '/seniority/upload'],
+      ['Import', '/seniority/upload'],
       ['Compare', '/dashboard/list/compare'],
       ['Settings', '/settings'],
       ['How it works', '/how-it-works'],

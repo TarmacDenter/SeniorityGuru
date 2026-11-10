@@ -53,7 +53,7 @@ const columns = computed<TableColumn<RetirementRow>[]>(() => [
       icon="i-lucide-calendar-x"
       title="No seniority list loaded"
       description="Import your airline's seniority list to see upcoming retirements."
-      :actions="[{ label: 'Import a list', icon: 'i-lucide-upload', to: '/seniority/upload' }]"
+      :actions="[{ label: 'Import a list', icon: 'i-lucide-file-input', to: '/seniority/upload' }]"
       class="py-16"
     />
 
