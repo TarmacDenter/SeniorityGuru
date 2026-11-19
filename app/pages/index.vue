@@ -8,7 +8,8 @@ useSeoMeta({
   description: 'Analyze your company seniority list in your browser: retirements by base, seat and fleet over the time horizon you choose. The file is saved on your device and never sent to a server.',
   ogTitle: 'SeniorityGuru — Pilot Seniority Tracker',
   ogDescription: 'Analyze your company seniority list in your browser: retirements by base, seat and fleet over the time horizon you choose. The file is saved on your device and never sent to a server.',
-  twitterCard: 'summary',
+  ogImage: 'https://seniorityguru.com/og-image.png',
+  twitterCard: 'summary_large_image',
 })
 
 const demoEntering = ref(false)
