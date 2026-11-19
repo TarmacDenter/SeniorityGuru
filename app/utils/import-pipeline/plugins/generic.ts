@@ -4,14 +4,14 @@ import type { ImportField, ImportIssue, ImportPlugin, PreparedColumn, Preparatio
 import { matchingColumns, preparedColumn, preparedColumnId } from './aliases'
 
 const FIELD_ALIASES: Readonly<Record<ImportField, readonly string[]>> = {
-  seniority_number: ['seniority number', 'seniority', 'sen #', 'sen num', 'sen_num'],
-  employee_number: ['employee number', 'employee id', 'employee', 'emp id', 'emp_id', 'empid'],
-  name: ['name', 'pilot name', 'full name'],
-  seat: ['seat', 'position', 'pos', 'status'],
-  base: ['base', 'domicile', 'dom', 'station'],
-  fleet: ['fleet', 'equipment', 'equip', 'aircraft', 'acft', 'ac type'],
-  hire_date: ['hire date', 'hire', 'hire_date', 'doh', 'date of hire'],
-  retire_date: ['retire date', 'retirement date', 'retire', 'retirement', 'retire_date'],
+  seniority_number: ['seniority number', 'seniority', 'sen #', 'sen num', 'sen_num', 'sen no', 'sen number', 'seniority no', 'seniority num', 'seniority nbr', 'snr'],
+  employee_number: ['employee number', 'employee id', 'employee', 'emp id', 'emp_id', 'empid', 'emp no', 'empno', 'emp num', 'emp number', 'employee no', 'employee nbr', 'file number', 'file no', 'cmid', 'crew id', 'crewmember id', 'pilot id'],
+  name: ['name', 'pilot name', 'full name', 'employee name', 'crewmember name', 'crew name'],
+  seat: ['seat', 'position', 'pos', 'status', 'crew position'],
+  base: ['base', 'domicile', 'dom', 'station', 'crew base', 'home base'],
+  fleet: ['fleet', 'equipment', 'equip', 'aircraft', 'acft', 'ac type', 'a/c', 'aircraft type', 'equipment type', 'equip type'],
+  hire_date: ['hire date', 'hire', 'hire_date', 'doh', 'date of hire', 'hiredate', 'hire dt', 'date hired'],
+  retire_date: ['retire date', 'retirement date', 'retire', 'retirement', 'retire_date', 'rtrdate', 'rtr date', 'rtr', 'retdate', 'ret date', 'retire dt', 'retirement dt'],
 }
 
 
